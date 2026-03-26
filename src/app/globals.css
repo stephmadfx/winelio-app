@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@theme {
+  --color-kiparlo-orange: #FF6B35;
+  --color-kiparlo-amber: #F7931E;
+  --color-kiparlo-dark: #2D3436;
+  --color-kiparlo-gray: #636E72;
+  --color-kiparlo-light: #F8F9FA;
+}
