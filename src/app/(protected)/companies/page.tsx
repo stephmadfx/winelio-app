@@ -1,0 +1,110 @@
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+
+export default async function CompaniesPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  const { data: companies } = await supabase
+    .from("companies")
+    .select("id, name, city, is_verified, category:categories(name)")
+    .eq("owner_id", user.id)
+    .order("created_at", { ascending: false });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-kiparlo-dark">
+          Mes entreprises
+        </h2>
+        <Link
+          href="/companies/new"
+          className="px-5 py-2.5 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
+        >
+          Ajouter une entreprise
+        </Link>
+      </div>
+
+      {!companies || companies.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10 flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-kiparlo-orange"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-kiparlo-dark mb-2">
+            Aucune entreprise
+          </h3>
+          <p className="text-kiparlo-gray mb-6">
+            Ajoutez votre première entreprise pour commencer à recevoir des recommandations.
+          </p>
+          <Link
+            href="/companies/new"
+            className="inline-block px-6 py-3 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
+          >
+            Ajouter une entreprise
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {companies.map((company) => {
+            const cat = company.category as { name: string } | { name: string }[] | null;
+            const categoryName =
+              cat && !Array.isArray(cat)
+                ? cat.name
+                : Array.isArray(cat) && cat.length > 0
+                ? cat[0].name
+                : null;
+
+            return (
+              <div
+                key={company.id}
+                className="bg-white rounded-2xl border border-gray-200 p-6"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-kiparlo-dark">
+                    {company.name}
+                  </h3>
+                  {company.is_verified ? (
+                    <span className="px-2.5 py-1 text-xs font-medium bg-green-50 text-green-700 rounded-full border border-green-200">
+                      Vérifié
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-1 text-xs font-medium bg-yellow-50 text-yellow-700 rounded-full border border-yellow-200">
+                      En attente
+                    </span>
+                  )}
+                </div>
+                {categoryName && (
+                  <p className="text-sm text-kiparlo-orange font-medium mb-1">
+                    {categoryName}
+                  </p>
+                )}
+                {company.city && (
+                  <p className="text-sm text-kiparlo-gray">{company.city}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
