@@ -3,13 +3,29 @@
 import { useState } from "react";
 
 export function CopyButton({ code }: { code: string }) {
-  const [copied, setCopied] = useState(false);
+  const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
 
   const handleCopy = async () => {
-    const url = `${window.location.origin}/auth/register?ref=${code}`;
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(code);
+      setStatus("copied");
+    } catch {
+      // Fallback pour les contextes sans clipboard API
+      try {
+        const el = document.createElement("textarea");
+        el.value = code;
+        el.style.position = "fixed";
+        el.style.opacity = "0";
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+        setStatus("copied");
+      } catch {
+        setStatus("error");
+      }
+    }
+    setTimeout(() => setStatus("idle"), 2000);
   };
 
   return (
@@ -17,12 +33,19 @@ export function CopyButton({ code }: { code: string }) {
       onClick={handleCopy}
       className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity cursor-pointer"
     >
-      {copied ? (
+      {status === "copied" ? (
         <>
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
           Copié !
+        </>
+      ) : status === "error" ? (
+        <>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Erreur
         </>
       ) : (
         <>
@@ -38,11 +61,23 @@ export function CopyButton({ code }: { code: string }) {
 
 export function ShareButton({ code }: { code: string }) {
   const handleShare = async () => {
-    const url = `${window.location.origin}/auth/register?ref=${code}`;
+    const url = `${window.location.origin}/auth/login?mode=register`;
+    const text = `Rejoins Kiparlo avec mon code parrain : ${code}`;
     if (navigator.share) {
-      await navigator.share({ title: "Rejoins Kiparlo", url });
+      await navigator.share({ title: "Rejoins Kiparlo", text, url });
     } else {
-      await navigator.clipboard.writeText(url);
+      try {
+        await navigator.clipboard.writeText(`${text}\n${url}`);
+      } catch {
+        const el = document.createElement("textarea");
+        el.value = `${text}\n${url}`;
+        el.style.position = "fixed";
+        el.style.opacity = "0";
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+      }
     }
   };
 
