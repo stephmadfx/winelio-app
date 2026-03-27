@@ -49,7 +49,21 @@ export default async function NetworkPage() {
     })
   );
 
-  // Count total network members (all levels, recursive via commission_transactions)
+  // Count total network members across ALL levels (up to 5) recursively
+  let totalNetworkMembers = 0;
+  let currentLevelIds = [user.id];
+  for (let lvl = 1; lvl <= 5; lvl++) {
+    if (currentLevelIds.length === 0) break;
+    const { data: lvlMembers } = await supabase
+      .from("profiles")
+      .select("id")
+      .in("sponsor_id", currentLevelIds);
+    if (!lvlMembers || lvlMembers.length === 0) break;
+    totalNetworkMembers += lvlMembers.length;
+    currentLevelIds = lvlMembers.map((m) => m.id);
+  }
+
+  // Network gains from commission_transactions
   const { data: networkCommissions } = await supabase
     .from("commission_transactions")
     .select("amount, level, created_at")
@@ -108,8 +122,8 @@ export default async function NetworkPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="Total membres"
-            value={String(totalReferrals ?? 0)}
-            subtitle="Filleuls directs"
+            value={String(totalNetworkMembers)}
+            subtitle={`dont ${totalReferrals ?? 0} filleuls directs`}
             icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
           />
           <StatCard
