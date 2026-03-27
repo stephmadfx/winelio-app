@@ -17,16 +17,31 @@ function LoginForm() {
   const [step, setStep] = useState<"email" | "code">("email");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [sponsorName, setSponsorName] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const isRegister = searchParams.get("mode") === "register";
   const refCode = searchParams.get("ref");
 
-  // Stocker le code de parrainage dès l'arrivée sur la page
+  // Stocker le code de parrainage et récupérer le nom du parrain
   useEffect(() => {
-    if (refCode) {
-      localStorage.setItem("kiparlo_ref", refCode);
-    }
+    if (!refCode) return;
+    localStorage.setItem("kiparlo_ref", refCode);
+
+    // Fetch le nom du parrain (sans auth, profils publics)
+    import("@/lib/supabase/client").then(({ createClient }) => {
+      const supabase = createClient();
+      supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("sponsor_code", refCode)
+        .single()
+        .then(({ data }) => {
+          if (data?.first_name || data?.last_name) {
+            setSponsorName(`${data.first_name ?? ""} ${data.last_name ?? ""}`.trim());
+          }
+        });
+    });
   }, [refCode]);
 
   // Appliquer le parrainage après connexion réussie
@@ -162,7 +177,7 @@ function LoginForm() {
             </p>
             {refCode && isRegister && (
               <p className="mt-3 text-sm text-kiparlo-orange font-medium">
-                🎁 Vous avez été invité — votre parrain sera automatiquement assigné.
+                🎁 Vous avez été invité{sponsorName ? ` par ${sponsorName}` : ""} — votre parrain sera automatiquement assigné.
               </p>
             )}
           </div>
