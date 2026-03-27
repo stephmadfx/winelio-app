@@ -3,12 +3,12 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-  host: "dahu.o2switch.net",
-  port: 587,
+  host: process.env.SMTP_HOST || "dahu.o2switch.net",
+  port: Number(process.env.SMTP_PORT) || 587,
   secure: false,
   auth: {
-    user: "contact@aide-multimedia.fr",
-    pass: "04660466aA@@@",
+    user: process.env.SMTP_USER || "contact@aide-multimedia.fr",
+    pass: process.env.SMTP_PASS || "",
   },
 });
 
@@ -126,7 +126,7 @@ export async function POST(req: Request) {
 
     // Send custom email
     await transporter.sendMail({
-      from: '"Kiparlo" <contact@aide-multimedia.fr>',
+      from: `"${process.env.SMTP_SENDER_NAME || "Kiparlo"}" <${process.env.SMTP_ADMIN_EMAIL || process.env.SMTP_USER || "contact@aide-multimedia.fr"}>`,
       to: email,
       subject: "Votre code de connexion Kiparlo",
       html: buildEmailHtml(code),
