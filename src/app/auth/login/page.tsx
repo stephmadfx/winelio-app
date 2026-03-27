@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
@@ -20,6 +20,56 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isRegister = searchParams.get("mode") === "register";
+  const refCode = searchParams.get("ref");
+
+  // Stocker le code de parrainage dès l'arrivée sur la page
+  useEffect(() => {
+    if (refCode) {
+      localStorage.setItem("kiparlo_ref", refCode);
+    }
+  }, [refCode]);
+
+  // Appliquer le parrainage après connexion réussie
+  const applyReferral = async (supabase: Awaited<ReturnType<typeof import("@/lib/supabase/client")["createClient"]>>) => {
+    const storedRef = localStorage.getItem("kiparlo_ref");
+    if (!storedRef) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Vérifier que le nouveau user n'a pas déjà un sponsor
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("sponsor_id, sponsored_by")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.sponsor_id || profile?.sponsored_by) {
+      localStorage.removeItem("kiparlo_ref");
+      return;
+    }
+
+    // Trouver le parrain via son sponsor_code
+    const { data: sponsor } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("sponsor_code", storedRef)
+      .neq("id", user.id) // Ne pas se parrainer soi-même
+      .single();
+
+    if (!sponsor) {
+      localStorage.removeItem("kiparlo_ref");
+      return;
+    }
+
+    // Assigner le parrain
+    await supabase
+      .from("profiles")
+      .update({ sponsor_id: sponsor.id, sponsored_by: sponsor.id })
+      .eq("id", user.id);
+
+    localStorage.removeItem("kiparlo_ref");
+  };
 
   // Step 1: demander le code via notre API (pas GoTrue)
   const handleSendCode = async (e: React.FormEvent) => {
@@ -79,6 +129,7 @@ function LoginForm() {
         setLoading(false);
         return;
       }
+      await applyReferral(supabase);
       router.push("/dashboard");
       return;
     }
@@ -109,6 +160,11 @@ function LoginForm() {
             <p className="text-kiparlo-gray text-sm tracking-widest uppercase">
               {isRegister ? "Créer un compte" : "Se connecter"}
             </p>
+            {refCode && isRegister && (
+              <p className="mt-3 text-sm text-kiparlo-orange font-medium">
+                🎁 Vous avez été invité — votre parrain sera automatiquement assigné.
+              </p>
+            )}
           </div>
 
           <form onSubmit={handleSendCode} className="space-y-5">

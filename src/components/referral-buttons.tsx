@@ -6,14 +6,15 @@ export function CopyButton({ code }: { code: string }) {
   const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
 
   const handleCopy = async () => {
+    const url = `${window.location.origin}/auth/login?mode=register&ref=${code}`;
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(url);
       setStatus("copied");
     } catch {
       // Fallback pour les contextes sans clipboard API
       try {
         const el = document.createElement("textarea");
-        el.value = code;
+        el.value = url;
         el.style.position = "fixed";
         el.style.opacity = "0";
         document.body.appendChild(el);
@@ -61,16 +62,16 @@ export function CopyButton({ code }: { code: string }) {
 
 export function ShareButton({ code }: { code: string }) {
   const handleShare = async () => {
-    const url = `${window.location.origin}/auth/login?mode=register`;
-    const text = `Rejoins Kiparlo avec mon code parrain : ${code}`;
+    const url = `${window.location.origin}/auth/login?mode=register&ref=${code}`;
+    const text = `Rejoins Kiparlo avec mon lien de parrainage !`;
     if (navigator.share) {
       await navigator.share({ title: "Rejoins Kiparlo", text, url });
     } else {
       try {
-        await navigator.clipboard.writeText(`${text}\n${url}`);
+        await navigator.clipboard.writeText(url);
       } catch {
         const el = document.createElement("textarea");
-        el.value = `${text}\n${url}`;
+        el.value = url;
         el.style.position = "fixed";
         el.style.opacity = "0";
         document.body.appendChild(el);
