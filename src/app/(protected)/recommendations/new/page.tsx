@@ -130,7 +130,7 @@ export default function NewRecommendationPage() {
   useEffect(() => {
     let query = supabase
       .from("profiles")
-      .select("id, first_name, last_name, city, latitude, longitude, company:companies(name, category:categories(name)), reviews(rating)")
+      .select("id, first_name, last_name, city, latitude, longitude, company:companies(name, category:categories(name)), reviews!professional_id(rating)")
       .eq("is_professional", true)
       .order("last_name");
 
