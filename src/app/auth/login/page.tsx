@@ -45,7 +45,7 @@ function LoginForm() {
     setLoading(false);
   };
 
-  // Step 2: vérifier le code et obtenir un lien de session
+  // Step 2: vérifier le code et créer la session
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (code.length !== 6) return;
@@ -66,8 +66,31 @@ function LoginForm() {
       return;
     }
 
-    // Redirect to GoTrue action_link → GoTrue creates session → callback
-    window.location.href = data.action_link;
+    // Cas 1 : le serveur a extrait les tokens directement → setSession côté client
+    if (data.access_token) {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token || "",
+      });
+      if (sessionError) {
+        setError("Erreur lors de la connexion. Réessayez.");
+        setLoading(false);
+        return;
+      }
+      router.push("/dashboard");
+      return;
+    }
+
+    // Cas 2 : fallback → redirect vers action_link GoTrue
+    if (data.action_link) {
+      window.location.href = data.action_link;
+      return;
+    }
+
+    setError("Erreur inattendue. Réessayez.");
+    setLoading(false);
   };
 
   // ─── UI : saisie email ────────────────────────────────────────────────────
