@@ -18,7 +18,6 @@ export default async function DashboardPage() {
   const [
     { count: recoThisMonth },
     { data: wallet },
-    { count: networkCount },
     { count: totalRecos },
     { count: completedRecos },
   ] = await Promise.all([
@@ -34,11 +33,6 @@ export default async function DashboardPage() {
       .select("total_earned")
       .eq("user_id", user.id)
       .single(),
-    // Direct network members
-    supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("sponsor_id", user.id),
     // Total recommendations (all time) for success rate
     supabase
       .from("recommendations")
@@ -51,6 +45,20 @@ export default async function DashboardPage() {
       .eq("referrer_id", user.id)
       .eq("status", "COMPLETED"),
   ]);
+
+  // Total network members across ALL levels (up to 5) recursively
+  let networkCount = 0;
+  let currentLevelIds = [user.id];
+  for (let lvl = 1; lvl <= 5; lvl++) {
+    if (currentLevelIds.length === 0) break;
+    const { data: lvlMembers } = await supabase
+      .from("profiles")
+      .select("id")
+      .in("sponsor_id", currentLevelIds);
+    if (!lvlMembers || lvlMembers.length === 0) break;
+    networkCount += lvlMembers.length;
+    currentLevelIds = lvlMembers.map((m) => m.id);
+  }
 
   const totalEarned = wallet?.total_earned ?? 0;
   const successRate =
