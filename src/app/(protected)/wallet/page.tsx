@@ -90,16 +90,16 @@ export default async function WalletPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-kiparlo-dark">Wallet</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-kiparlo-dark">Wallet</h1>
           <p className="text-kiparlo-gray text-sm mt-1">
             Gerez vos gains et retraits
           </p>
         </div>
         <Link
           href="/wallet/withdraw"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-medium text-sm hover:opacity-90 transition-opacity"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-medium text-sm hover:opacity-90 transition-opacity"
         >
           <svg
             className="w-4 h-4"
@@ -145,7 +145,7 @@ export default async function WalletPage() {
 
       {/* Recent Transactions */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-kiparlo-dark">
             Dernieres transactions
           </h2>
@@ -166,9 +166,9 @@ export default async function WalletPage() {
             {transactions.map((tx) => (
               <li
                 key={`${tx.type}-${tx.id}`}
-                className="flex items-center justify-between px-6 py-4 hover:bg-gray-50/50 transition-colors"
+                className="flex items-center justify-between px-4 sm:px-6 py-4 hover:bg-gray-50/50 transition-colors gap-3"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                   {/* Icon */}
                   <div
                     className={`w-10 h-10 rounded-xl flex items-center justify-center ${
@@ -216,7 +216,7 @@ export default async function WalletPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4 shrink-0">
                   <span
                     className={`text-sm font-semibold ${
                       tx.type === "commission"

@@ -135,8 +135,18 @@ sshpass -p '04660466aA@@@' ssh root@31.97.152.195 "docker ps --filter name=supab
 ## Code source de l'ancien développeur
 Décompressé dans `/Users/steph/PROJETS/WINKO/_old_app/` (frontend React Native) et `/Users/steph/PROJETS/WINKO/_old_backend/` (backend FastAPI + backoffice Nuxt). À utiliser comme référence pour la logique métier.
 
-## Règles
+## Documentation Architecture
+
+Fichiers de reference dans `/doc/` :
+- `@doc/architecture.md` — Arbre relationnel complet (CORE/FEATURE/SUB/HOOK/UTILITY + verbes de relation)
+- `@doc/database.md` — Schema des tables Supabase/PostgreSQL avec relations et statuts
+- `@doc/api-routes.md` — Liste des endpoints API, methodes, validations et routes pages
+
+## Regles
 - Ne jamais commiter de credentials dans le code (utiliser les env vars Coolify)
 - Les `NEXT_PUBLIC_*` doivent être des "Build Variables" dans Coolify
 - Le config.ts applique `.replace(/\s/g, "")` pour nettoyer les espaces parasites des env vars
 - Toujours tester le build (`npm run build`) avant de push
+- Le flux auth utilise PKCE (pas implicit) — voir `lib/supabase/client.ts`
+- Les operations financieres (retraits) passent par l'API Route serveur `/api/wallet/withdraw`
+- Les headers de securite sont configures dans `next.config.ts`

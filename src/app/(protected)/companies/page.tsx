@@ -20,20 +20,20 @@ export default async function CompaniesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-kiparlo-dark">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-kiparlo-dark">
           Mes entreprises
         </h2>
         <Link
           href="/companies/new"
-          className="px-5 py-2.5 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
+          className="px-5 py-2.5 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity text-center"
         >
           Ajouter une entreprise
         </Link>
       </div>
 
       {!companies || companies.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-12 text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10 flex items-center justify-center">
             <svg
               className="w-8 h-8 text-kiparlo-orange"

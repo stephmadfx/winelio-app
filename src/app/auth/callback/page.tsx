@@ -11,57 +11,34 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const supabase = createClient();
 
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) {
-        router.push("/dashboard");
-      }
-    });
+    // PKCE flow: exchange code for session
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
 
-    // Handle hash fragment from magic link
-    const hashParams = new URLSearchParams(
-      window.location.hash.substring(1)
-    );
-    const accessToken = hashParams.get("access_token");
-    const refreshToken = hashParams.get("refresh_token");
-
-    if (accessToken && refreshToken) {
-      supabase.auth
-        .setSession({ access_token: accessToken, refresh_token: refreshToken })
-        .then(({ error: err }) => {
-          if (err) {
-            setError(err.message);
-          } else {
-            router.push("/dashboard");
-          }
-        });
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error: err }) => {
+        if (err) {
+          console.error("Auth error:", err.message);
+          setError("Une erreur est survenue lors de la connexion.");
+        } else {
+          router.push("/dashboard");
+        }
+      });
     } else {
-      // Try code exchange (PKCE flow)
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get("code");
-      if (code) {
-        supabase.auth.exchangeCodeForSession(code).then(({ error: err }) => {
-          if (err) {
-            setError(err.message);
-          } else {
-            router.push("/dashboard");
-          }
-        });
-      } else {
-        // Check if already authenticated
-        supabase.auth.getSession().then(({ data }) => {
-          if (data.session) {
-            router.push("/dashboard");
-          } else {
-            setError("Lien de connexion invalide ou expiré.");
-          }
-        });
-      }
+      // Check if already authenticated
+      supabase.auth.getSession().then(({ data }) => {
+        if (data.session) {
+          router.push("/dashboard");
+        } else {
+          setError("Lien de connexion invalide ou expiré.");
+        }
+      });
     }
   }, [router]);
 
   if (error) {
     return (
-      <div className="min-h-screen bg-kiparlo-dark flex items-center justify-center px-4">
+      <div className="min-h-dvh bg-kiparlo-dark flex items-center justify-center px-4">
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8 max-w-md w-full text-center">
           <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-red-500/10 flex items-center justify-center">
             <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -79,7 +56,7 @@ export default function AuthCallbackPage() {
   }
 
   return (
-    <div className="min-h-screen bg-kiparlo-dark flex items-center justify-center">
+    <div className="min-h-dvh bg-kiparlo-dark flex items-center justify-center">
       <div className="text-center">
         <div className="w-12 h-12 mx-auto mb-4 border-4 border-kiparlo-orange border-t-transparent rounded-full animate-spin" />
         <p className="text-gray-400">Connexion en cours...</p>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { geocodeAddress } from "@/lib/geocode";
 import { useRouter } from "next/navigation";
 
 interface Category {
@@ -68,6 +69,26 @@ export function NewCompanyForm({
       setError("Erreur lors de la création. Veuillez réessayer.");
       setSaving(false);
       return;
+    }
+
+    // Auto-geocode address and update profile with coordinates
+    if (form.city || form.postal_code) {
+      const coords = await geocodeAddress(
+        form.address,
+        form.city,
+        form.postal_code
+      );
+      if (coords) {
+        await supabase
+          .from("profiles")
+          .update({
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            city: form.city || undefined,
+            postal_code: form.postal_code || undefined,
+          })
+          .eq("id", userId);
+      }
     }
 
     router.push("/companies");

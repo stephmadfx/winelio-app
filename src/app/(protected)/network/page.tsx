@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { NetworkTree } from "@/components/network-tree";
+import { NetworkGraph } from "@/components/network-graph";
 
 export default async function NetworkPage() {
   const supabase = await createClient();
@@ -16,14 +17,14 @@ export default async function NetworkPage() {
   // Fetch current user profile
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name, sponsor_code")
+    .select("id, first_name, last_name, sponsor_code")
     .eq("id", user.id)
     .single();
 
   // Fetch direct referrals (level 1)
   const { data: referrals, count: totalReferrals } = await supabase
     .from("profiles")
-    .select("id, full_name, created_at, avatar_url", { count: "exact" })
+    .select("id, first_name, last_name, created_at, avatar", { count: "exact" })
     .eq("sponsor_id", user.id);
 
   // For each referral, count their own referrals
@@ -92,38 +93,16 @@ export default async function NetworkPage() {
   const sponsorCode = profile?.sponsor_code ?? "";
 
   return (
-    <div className="min-h-screen bg-kiparlo-light">
-      {/* Header */}
-      <header className="bg-kiparlo-dark text-white">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/dashboard">
-            <h1 className="text-2xl font-extrabold tracking-tight">
-              <span className="text-white">KI</span>
-              <span className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent">
-                PAR
-              </span>
-              <span className="text-white">LO</span>
-            </h1>
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link
-              href="/dashboard"
-              className="text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/network/stats"
-              className="text-sm text-kiparlo-orange hover:text-kiparlo-amber transition-colors font-medium"
-            >
-              Stats detaillees
-            </Link>
-          </nav>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-kiparlo-dark mb-6">Mon Reseau</h2>
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-kiparlo-dark">Mon Reseau</h2>
+        <Link
+          href="/network/stats"
+          className="text-sm text-kiparlo-orange hover:text-kiparlo-amber transition-colors font-medium"
+        >
+          Stats detaillees
+        </Link>
+      </div>
 
         {/* Stats cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -218,16 +197,15 @@ export default async function NetworkPage() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber flex items-center justify-center text-white font-bold text-sm">
-                      {(ref.full_name ?? "?")
-                        .split(" ")
+                      {[ref.first_name, ref.last_name]
+                        .filter(Boolean)
                         .map((n: string) => n[0])
                         .join("")
-                        .slice(0, 2)
-                        .toUpperCase()}
+                        .toUpperCase() || "?"}
                     </div>
                     <div>
                       <p className="font-semibold text-kiparlo-dark">
-                        {ref.full_name ?? "Sans nom"}
+                        {((ref.first_name ?? "") + " " + (ref.last_name ?? "")).trim() || "Sans nom"}
                       </p>
                       <p className="text-xs text-kiparlo-gray">
                         Inscrit le{" "}
@@ -259,14 +237,24 @@ export default async function NetworkPage() {
           )}
         </div>
 
-        {/* Network tree */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        {/* Network graph - visual pyramid */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 mb-8">
+          <h3 className="text-lg font-semibold text-kiparlo-dark mb-4">
+            Vue graphique du reseau
+          </h3>
+          <NetworkGraph
+            userId={user.id}
+            userName={`${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim()}
+          />
+        </div>
+
+        {/* Network tree - detailed list */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
           <h3 className="text-lg font-semibold text-kiparlo-dark mb-6">
-            Arbre du reseau
+            Liste detaillee du reseau
           </h3>
           <NetworkTree userId={user.id} />
         </div>
-      </main>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { createCommissions } from "@/lib/commission";
 import { StepTimeline } from "@/components/step-timeline";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -9,9 +8,9 @@ import { useEffect, useState } from "react";
 interface RecommendationDetail {
   id: string;
   status: string;
-  deal_amount: number | null;
-  description: string | null;
-  urgency: string | null;
+  amount: number | null;
+  project_description: string | null;
+  urgency_level: string | null;
   created_at: string;
   referrer_id: string;
   professional_id: string;
@@ -23,26 +22,46 @@ interface RecommendationDetail {
 interface StepRow {
   id: string;
   step_id: string;
-  step_order: number;
-  completed: boolean;
   completed_at: string | null;
   data: Record<string, unknown> | null;
-  step: { name: string; description: string | null; completion_role: string | null } | null;
+  step: { name: string; description: string | null; completion_role: string | null; index: number } | null;
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: "En attente",
-  in_progress: "En cours",
-  completed: "Terminee",
-  cancelled: "Annulee",
+  PENDING: "En attente",
+  VALIDATED: "Validée",
+  COMPLETED: "Terminée",
+  CANCELLED: "Annulée",
+  REJECTED: "Refusée",
+  EXPIRED: "Expirée",
+  TRANSFERRED: "Transférée",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  in_progress: "bg-kiparlo-orange/15 text-kiparlo-orange",
-  completed: "bg-green-100 text-green-800",
-  cancelled: "bg-red-100 text-red-800",
+const STATUS_CONFIG: Record<string, { bg: string; text: string; dot: string; banner: string }> = {
+  PENDING:     { bg: "bg-amber-50",  text: "text-amber-700",  dot: "bg-amber-400",  banner: "from-amber-500/10 to-amber-500/5" },
+  VALIDATED:   { bg: "bg-orange-50", text: "text-kiparlo-orange", dot: "bg-kiparlo-orange", banner: "from-kiparlo-orange/15 to-kiparlo-orange/5" },
+  COMPLETED:   { bg: "bg-green-50",  text: "text-green-700",  dot: "bg-green-500",  banner: "from-green-500/15 to-green-500/5" },
+  CANCELLED:   { bg: "bg-red-50",    text: "text-red-600",    dot: "bg-red-400",    banner: "from-red-400/10 to-red-400/5" },
+  REJECTED:    { bg: "bg-red-50",    text: "text-red-600",    dot: "bg-red-400",    banner: "from-red-400/10 to-red-400/5" },
+  EXPIRED:     { bg: "bg-gray-50",   text: "text-gray-500",   dot: "bg-gray-300",   banner: "from-gray-400/10 to-gray-400/5" },
+  TRANSFERRED: { bg: "bg-blue-50",   text: "text-blue-600",   dot: "bg-blue-400",   banner: "from-blue-400/10 to-blue-400/5" },
 };
+
+const URGENCY_CONFIG: Record<string, { label: string; color: string }> = {
+  urgent:   { label: "Urgent",   color: "text-red-600 bg-red-50" },
+  normal:   { label: "Normal",   color: "text-kiparlo-orange bg-kiparlo-orange/10" },
+  flexible: { label: "Flexible", color: "text-green-700 bg-green-50" },
+};
+
+function Initials({ name }: { name: string }) {
+  const parts = name.trim().split(" ");
+  const init = parts.length >= 2 ? `${parts[0][0]}${parts[parts.length - 1][0]}` : name.slice(0, 2);
+  return (
+    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-kiparlo-orange to-kiparlo-amber flex items-center justify-center shrink-0 shadow-md shadow-kiparlo-orange/20">
+      <span className="text-lg font-bold text-white uppercase">{init}</span>
+    </div>
+  );
+}
 
 export default function RecommendationDetailPage() {
   const params = useParams();
@@ -65,11 +84,10 @@ export default function RecommendationDetailPage() {
 
   const fetchData = async () => {
     setLoading(true);
-
     const { data: rec } = await supabase
       .from("recommendations")
       .select(
-        `id, status, deal_amount, description, urgency, created_at, referrer_id, professional_id,
+        `id, status, amount, project_description, urgency_level, created_at, referrer_id, professional_id,
          contact:contacts(first_name, last_name, email, phone),
          professional:profiles!recommendations_professional_id_fkey(first_name, last_name, company:companies(name)),
          referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name)`
@@ -89,17 +107,16 @@ export default function RecommendationDetailPage() {
 
     const { data: recSteps } = await supabase
       .from("recommendation_steps")
-      .select("id, step_id, step_order, completed, completed_at, data, step:steps(name, description, completion_role)")
-      .eq("recommendation_id", id)
-      .order("step_order");
+      .select("id, step_id, completed_at, data, step:steps(name, description, completion_role, index)")
+      .eq("recommendation_id", id);
 
     if (recSteps) {
-      setSteps(
-        recSteps.map((s) => ({
-          ...s,
-          step: Array.isArray(s.step) ? s.step[0] ?? null : s.step,
-        })) as StepRow[]
-      );
+      const mapped = recSteps.map((s) => ({
+        ...s,
+        step: Array.isArray(s.step) ? s.step[0] ?? null : s.step,
+      })) as StepRow[];
+      mapped.sort((a, b) => (a.step?.index ?? 0) - (b.step?.index ?? 0));
+      setSteps(mapped);
     }
 
     setLoading(false);
@@ -110,8 +127,8 @@ export default function RecommendationDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const currentStep = steps.find((s) => !s.completed);
-  const currentStepOrder = currentStep?.step_order ?? (steps.length > 0 ? steps[steps.length - 1].step_order + 1 : 1);
+  const currentStep = steps.find((s) => !s.completed_at);
+  const currentStepIndex = currentStep?.step?.index ?? (steps.length > 0 ? (steps[steps.length - 1].step?.index ?? 0) + 1 : 1);
 
   const canComplete = () => {
     if (!currentStep || !userId || !recommendation) return false;
@@ -124,72 +141,23 @@ export default function RecommendationDetailPage() {
   const handleCompleteStep = async () => {
     if (!currentStep || !recommendation) return;
     setCompleting(true);
-
-    const stepData: Record<string, unknown> = {};
-    const isQuoteStep = currentStep.step_order === 5;
-    const isValidationStep = currentStep.step_order === 6;
-
-    if (isQuoteStep) {
-      const amount = parseFloat(quoteAmount);
-      if (isNaN(amount) || amount <= 0) {
-        setCompleting(false);
-        return;
+    try {
+      const res = await fetch("/api/recommendations/complete-step", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recommendation_id: recommendation.id,
+          step_id: currentStep.id,
+          quote_amount: (currentStep?.step?.index ?? 0) === 5 ? quoteAmount : undefined,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        console.error("Erreur complétion:", data.error);
       }
-      stepData.montant = amount;
-
-      // Update deal_amount on recommendation
-      await supabase
-        .from("recommendations")
-        .update({ deal_amount: amount })
-        .eq("id", recommendation.id);
+    } catch (err) {
+      console.error("Erreur réseau:", err);
     }
-
-    // Complete the step
-    await supabase
-      .from("recommendation_steps")
-      .update({
-        completed: true,
-        completed_at: new Date().toISOString(),
-        data: Object.keys(stepData).length > 0 ? stepData : null,
-      })
-      .eq("id", currentStep.id);
-
-    // If validation step, trigger commission logic
-    if (isValidationStep && recommendation.deal_amount) {
-      try {
-        // Get the professional's compensation plan
-        const { data: proProfile } = await supabase
-          .from("profiles")
-          .select("compensation_plan_id")
-          .eq("id", recommendation.professional_id)
-          .single();
-
-        if (proProfile?.compensation_plan_id) {
-          await createCommissions(
-            supabase,
-            recommendation.id,
-            recommendation.deal_amount,
-            recommendation.referrer_id,
-            proProfile.compensation_plan_id
-          );
-        }
-      } catch (err) {
-        console.error("Erreur calcul commissions:", err);
-      }
-    }
-
-    // Update recommendation status
-    const allCompleted = steps.every(
-      (s) => s.completed || s.id === currentStep.id
-    );
-
-    await supabase
-      .from("recommendations")
-      .update({
-        status: allCompleted ? "completed" : "in_progress",
-      })
-      .eq("id", recommendation.id);
-
     await fetchData();
     setCompleting(false);
     setQuoteAmount("");
@@ -197,17 +165,26 @@ export default function RecommendationDetailPage() {
 
   if (loading) {
     return (
-      <div className="py-20 text-center text-kiparlo-gray">Chargement...</div>
+      <div className="mx-auto max-w-3xl space-y-4">
+        <div className="h-10 w-32 rounded-xl bg-kiparlo-gray/10 animate-pulse" />
+        <div className="h-48 rounded-2xl bg-kiparlo-gray/10 animate-pulse" />
+        <div className="h-64 rounded-2xl bg-kiparlo-gray/10 animate-pulse" />
+      </div>
     );
   }
 
   if (!recommendation) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
-        <p className="text-kiparlo-gray">Recommandation introuvable</p>
+      <div className="mx-auto max-w-3xl px-4 py-16 text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-kiparlo-light">
+          <svg className="h-7 w-7 text-kiparlo-gray/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <p className="font-semibold text-kiparlo-dark">Recommandation introuvable</p>
         <button
           onClick={() => router.push("/recommendations")}
-          className="mt-4 text-sm text-kiparlo-orange hover:text-kiparlo-amber"
+          className="mt-4 text-sm font-medium text-kiparlo-orange hover:text-kiparlo-amber transition-colors cursor-pointer"
         >
           Retour aux recommandations
         </button>
@@ -215,47 +192,77 @@ export default function RecommendationDetailPage() {
     );
   }
 
+  const cfg = STATUS_CONFIG[recommendation.status] ?? STATUS_CONFIG.EXPIRED;
+  const contactName = recommendation.contact
+    ? `${recommendation.contact.first_name} ${recommendation.contact.last_name}`
+    : "Contact inconnu";
+  const completedCount = steps.filter((s) => s.completed_at).length;
+  const progressPct = steps.length > 0 ? Math.round((completedCount / steps.length) * 100) : 0;
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      {/* Back link */}
+    <div className="mx-auto max-w-3xl space-y-5">
+
+      {/* ── Back ── */}
       <button
         onClick={() => router.push("/recommendations")}
-        className="mb-6 text-sm text-kiparlo-gray hover:text-kiparlo-dark"
+        className="inline-flex items-center gap-1.5 text-sm text-kiparlo-gray hover:text-kiparlo-dark transition-colors cursor-pointer"
       >
-        &larr; Retour aux recommandations
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Recommandations
       </button>
 
-      {/* Header card */}
-      <div className="mb-8 rounded-xl border border-kiparlo-gray/10 bg-white p-6 shadow-sm">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-kiparlo-dark">
-              {recommendation.contact
-                ? `${recommendation.contact.first_name} ${recommendation.contact.last_name}`
-                : "Contact inconnu"}
-            </h1>
-            {recommendation.contact?.email && (
-              <p className="mt-1 text-sm text-kiparlo-gray">
-                {recommendation.contact.email}
-                {recommendation.contact.phone
-                  ? ` - ${recommendation.contact.phone}`
-                  : ""}
-              </p>
-            )}
+      {/* ── Header card ── */}
+      <div className="overflow-hidden rounded-2xl border border-kiparlo-gray/10 bg-white shadow-sm">
+        {/* Gradient banner */}
+        <div className={`bg-gradient-to-r ${cfg.banner} px-6 py-5`}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <Initials name={contactName} />
+              <div>
+                <h1 className="text-xl font-bold text-kiparlo-dark">{contactName}</h1>
+                {recommendation.contact?.email && (
+                  <p className="mt-0.5 text-sm text-kiparlo-gray">
+                    {recommendation.contact.email}
+                    {recommendation.contact.phone ? ` · ${recommendation.contact.phone}` : ""}
+                  </p>
+                )}
+                <p className="mt-1 text-xs text-kiparlo-gray/60">
+                  Créée le {new Date(recommendation.created_at).toLocaleDateString("fr-FR", {
+                    day: "numeric", month: "long", year: "numeric",
+                  })}
+                </p>
+              </div>
+            </div>
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold shrink-0 ${cfg.bg} ${cfg.text}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+              {STATUS_LABELS[recommendation.status] ?? recommendation.status}
+            </span>
           </div>
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              STATUS_COLORS[recommendation.status] ?? "bg-gray-100 text-gray-700"
-            }`}
-          >
-            {STATUS_LABELS[recommendation.status] ?? recommendation.status}
-          </span>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-4 border-t border-kiparlo-gray/10 pt-4">
+        {/* Progress bar */}
+        {steps.length > 0 && (
+          <div className="px-6 py-3 border-b border-kiparlo-gray/8">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-kiparlo-gray">Progression</span>
+              <span className="text-xs font-bold text-kiparlo-dark">{completedCount}/{steps.length} étapes</span>
+            </div>
+            <div className="h-2 rounded-full bg-kiparlo-gray/10 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber transition-all duration-500"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Info grid */}
+        <div className="p-6 grid grid-cols-2 gap-6">
           <div>
-            <p className="text-xs text-kiparlo-gray">Professionnel</p>
-            <p className="font-medium text-kiparlo-dark">
+            <p className="text-xs font-semibold uppercase tracking-widest text-kiparlo-gray/60 mb-1">Professionnel</p>
+            <p className="font-semibold text-kiparlo-dark">
               {recommendation.professional
                 ? `${recommendation.professional.first_name} ${recommendation.professional.last_name}`
                 : "Inconnu"}
@@ -267,75 +274,94 @@ export default function RecommendationDetailPage() {
             )}
           </div>
           <div>
-            <p className="text-xs text-kiparlo-gray">Recommande par</p>
-            <p className="font-medium text-kiparlo-dark">
+            <p className="text-xs font-semibold uppercase tracking-widest text-kiparlo-gray/60 mb-1">Recommandé par</p>
+            <p className="font-semibold text-kiparlo-dark">
               {recommendation.referrer
                 ? `${recommendation.referrer.first_name} ${recommendation.referrer.last_name}`
                 : "Inconnu"}
             </p>
           </div>
+
+          {recommendation.amount != null && (
+            <div className="col-span-2 rounded-2xl bg-gradient-to-r from-kiparlo-orange/8 to-kiparlo-amber/8 border border-kiparlo-orange/15 p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-kiparlo-orange/70">Montant du deal</p>
+                <p className="mt-0.5 text-2xl font-bold text-kiparlo-dark tabular-nums">
+                  {recommendation.amount.toLocaleString("fr-FR")} <span className="text-lg text-kiparlo-gray">€</span>
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-kiparlo-orange/15 flex items-center justify-center">
+                <svg className="w-6 h-6 text-kiparlo-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          )}
+
+          {recommendation.project_description && (
+            <div className="col-span-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-kiparlo-gray/60 mb-2">Description du projet</p>
+              <p className="text-sm text-kiparlo-dark leading-relaxed">{recommendation.project_description}</p>
+            </div>
+          )}
+
+          {recommendation.urgency_level && URGENCY_CONFIG[recommendation.urgency_level] && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-kiparlo-gray/60 mb-1">Urgence</p>
+              <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${URGENCY_CONFIG[recommendation.urgency_level].color}`}>
+                {URGENCY_CONFIG[recommendation.urgency_level].label}
+              </span>
+            </div>
+          )}
         </div>
-
-        {recommendation.deal_amount != null && (
-          <div className="mt-4 border-t border-kiparlo-gray/10 pt-4">
-            <p className="text-xs text-kiparlo-gray">Montant du deal</p>
-            <p className="text-lg font-bold text-kiparlo-orange">
-              {recommendation.deal_amount.toLocaleString("fr-FR")} EUR
-            </p>
-          </div>
-        )}
-
-        {recommendation.description && (
-          <div className="mt-4 border-t border-kiparlo-gray/10 pt-4">
-            <p className="text-xs text-kiparlo-gray">Description</p>
-            <p className="mt-1 text-sm text-kiparlo-dark">
-              {recommendation.description}
-            </p>
-          </div>
-        )}
-
-        <p className="mt-4 text-xs text-kiparlo-gray/60">
-          Creee le{" "}
-          {new Date(recommendation.created_at).toLocaleDateString("fr-FR", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          })}
-        </p>
       </div>
 
-      {/* Timeline */}
-      <div className="rounded-xl border border-kiparlo-gray/10 bg-white p-6 shadow-sm">
-        <h2 className="mb-6 text-lg font-semibold text-kiparlo-dark">
-          Suivi des etapes
-        </h2>
+      {/* ── Timeline card ── */}
+      <div className="rounded-2xl border border-kiparlo-gray/10 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-kiparlo-dark">Suivi des étapes</h2>
+          {steps.length > 0 && (
+            <span className="text-sm font-semibold text-kiparlo-orange">
+              {progressPct}%
+            </span>
+          )}
+        </div>
 
         <StepTimeline
           steps={steps.map((s) => ({
             id: s.id,
             step_id: s.step_id,
-            step_order: s.step_order,
-            step_name: s.step?.name ?? `Etape ${s.step_order}`,
+            step_order: s.step?.index ?? 0,
+            step_name: s.step?.name ?? `Étape ${s.step?.index ?? 0}`,
             step_description: s.step?.description ?? null,
-            completed: s.completed,
+            completed: !!s.completed_at,
             completed_at: s.completed_at,
             data: s.data,
             completion_role: s.step?.completion_role ?? null,
           }))}
-          currentStepOrder={currentStepOrder}
+          currentStepOrder={currentStepIndex}
         />
 
-        {/* Complete step action */}
+        {/* ── Complete step action ── */}
         {currentStep && canComplete() && (
-          <div className="mt-8 rounded-lg border border-kiparlo-orange/20 bg-kiparlo-orange/5 p-5">
-            <p className="mb-3 font-medium text-kiparlo-dark">
-              Completer : {currentStep.step?.name ?? `Etape ${currentStep.step_order}`}
-            </p>
+          <div className="mt-8 rounded-2xl border border-kiparlo-orange/20 bg-gradient-to-br from-kiparlo-orange/8 to-kiparlo-amber/5 p-5">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-9 h-9 rounded-full bg-kiparlo-orange/15 flex items-center justify-center shrink-0">
+                <span className="relative flex h-3 w-3">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-kiparlo-orange opacity-75" />
+                  <span className="relative inline-flex h-3 w-3 rounded-full bg-kiparlo-orange" />
+                </span>
+              </div>
+              <div>
+                <p className="font-bold text-kiparlo-dark">Étape à valider</p>
+                <p className="text-sm text-kiparlo-gray">{currentStep.step?.name ?? `Étape ${currentStep.step?.index ?? 0}`}</p>
+              </div>
+            </div>
 
-            {currentStep.step_order === 5 && (
+            {(currentStep?.step?.index ?? 0) === 5 && (
               <div className="mb-4">
-                <label className="mb-1 block text-sm font-medium text-kiparlo-dark">
-                  Montant du devis (EUR)
+                <label className="mb-1.5 block text-sm font-semibold text-kiparlo-dark">
+                  Montant du devis (€)
                 </label>
                 <input
                   type="number"
@@ -344,17 +370,29 @@ export default function RecommendationDetailPage() {
                   placeholder="0.00"
                   min="0"
                   step="0.01"
-                  className="w-full rounded-lg border border-kiparlo-gray/20 px-4 py-2.5 text-sm focus:border-kiparlo-orange focus:outline-none focus:ring-1 focus:ring-kiparlo-orange"
+                  className="w-full rounded-xl border border-kiparlo-gray/20 px-4 py-3 text-sm focus:border-kiparlo-orange focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/15"
                 />
               </div>
             )}
 
             <button
               onClick={handleCompleteStep}
-              disabled={completing || (currentStep.step_order === 5 && !quoteAmount)}
-              className="rounded-lg bg-kiparlo-orange px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-kiparlo-amber disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={completing || ((currentStep?.step?.index ?? 0) === 5 && !quoteAmount)}
+              className="inline-flex items-center gap-2 rounded-xl bg-kiparlo-orange px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-kiparlo-orange/25 transition-all hover:bg-kiparlo-amber hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none cursor-pointer"
             >
-              {completing ? "Validation..." : "Valider cette etape"}
+              {completing ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Validation...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Valider cette étape
+                </>
+              )}
             </button>
           </div>
         )}

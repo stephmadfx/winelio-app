@@ -11,42 +11,61 @@ export default async function DashboardPage() {
     redirect("/auth/login");
   }
 
+  // Fetch dashboard data in parallel
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  const [
+    { count: recoThisMonth },
+    { data: wallet },
+    { count: networkCount },
+    { count: totalRecos },
+    { count: completedRecos },
+  ] = await Promise.all([
+    // Recommendations this month
+    supabase
+      .from("recommendations")
+      .select("*", { count: "exact", head: true })
+      .eq("referrer_id", user.id)
+      .gte("created_at", startOfMonth),
+    // Wallet summary
+    supabase
+      .from("user_wallet_summaries")
+      .select("total_earned")
+      .eq("user_id", user.id)
+      .single(),
+    // Direct network members
+    supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("sponsor_id", user.id),
+    // Total recommendations (all time) for success rate
+    supabase
+      .from("recommendations")
+      .select("*", { count: "exact", head: true })
+      .eq("referrer_id", user.id),
+    // Completed recommendations for success rate
+    supabase
+      .from("recommendations")
+      .select("*", { count: "exact", head: true })
+      .eq("referrer_id", user.id)
+      .eq("status", "COMPLETED"),
+  ]);
+
+  const totalEarned = wallet?.total_earned ?? 0;
+  const successRate =
+    totalRecos && totalRecos > 0
+      ? Math.round(((completedRecos ?? 0) / totalRecos) * 100)
+      : 0;
+
   return (
     <div>
-      <h2 className="text-2xl font-bold text-kiparlo-dark mb-6">
+      <h2 className="text-xl sm:text-2xl font-bold text-kiparlo-dark mb-6">
         Tableau de bord
       </h2>
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          title="Recommandations"
-          value="0"
-          subtitle="Ce mois-ci"
-          icon="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-        />
-        <StatCard
-          title="Gains"
-          value="0 EUR"
-          subtitle="Total gagné"
-          icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-        <StatCard
-          title="Réseau"
-          value="0"
-          subtitle="Membres"
-          icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-        />
-        <StatCard
-          title="Taux de succès"
-          value="0%"
-          subtitle="Recommandations validées"
-          icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </div>
-
-      {/* Empty state */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+      {/* Welcome card - en premier */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-12 text-center">
         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10 flex items-center justify-center">
           <svg
             className="w-10 h-10 text-kiparlo-orange"
@@ -70,13 +89,41 @@ export default async function DashboardPage() {
           des membres dans votre réseau.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button className="px-6 py-3 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+          <a href="/recommendations/new" className="px-6 py-3 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity text-center">
             Faire une recommandation
-          </button>
-          <button className="px-6 py-3 border-2 border-kiparlo-orange text-kiparlo-orange font-semibold rounded-xl hover:bg-kiparlo-orange hover:text-white transition-colors">
+          </a>
+          <a href="/network" className="px-6 py-3 border-2 border-kiparlo-orange text-kiparlo-orange font-semibold rounded-xl hover:bg-kiparlo-orange hover:text-white transition-colors text-center">
             Inviter un membre
-          </button>
+          </a>
         </div>
+      </div>
+
+      {/* Stats cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-6">
+        <StatCard
+          title="Recommandations"
+          value={String(recoThisMonth ?? 0)}
+          subtitle="Ce mois-ci"
+          icon="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+        />
+        <StatCard
+          title="Gains"
+          value={`${Number(totalEarned).toFixed(2)} EUR`}
+          subtitle="Total gagné"
+          icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+        <StatCard
+          title="Réseau"
+          value={String(networkCount ?? 0)}
+          subtitle="Membres"
+          icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+        />
+        <StatCard
+          title="Taux de succès"
+          value={`${successRate}%`}
+          subtitle="Recommandations validées"
+          icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
       </div>
     </div>
   );

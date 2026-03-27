@@ -1,0 +1,189 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { calculateCommissions } from "@/lib/commission";
+
+export async function POST(request: Request) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { recommendation_id, step_id, quote_amount } = body;
+
+    if (!recommendation_id || !step_id) {
+      return NextResponse.json(
+        { error: "Paramètres manquants" },
+        { status: 400 }
+      );
+    }
+
+    // Fetch recommendation server-side
+    const { data: rec } = await supabase
+      .from("recommendations")
+      .select("id, status, amount, referrer_id, professional_id")
+      .eq("id", recommendation_id)
+      .single();
+
+    if (!rec) {
+      return NextResponse.json(
+        { error: "Recommandation introuvable" },
+        { status: 404 }
+      );
+    }
+
+    // Fetch step to complete
+    const { data: stepRow } = await supabase
+      .from("recommendation_steps")
+      .select(
+        "id, completed_at, step:steps(completion_role, index)"
+      )
+      .eq("id", step_id)
+      .eq("recommendation_id", recommendation_id)
+      .single();
+
+    if (!stepRow) {
+      return NextResponse.json(
+        { error: "Étape introuvable" },
+        { status: 404 }
+      );
+    }
+
+    if (stepRow.completed_at) {
+      return NextResponse.json(
+        { error: "Étape déjà complétée" },
+        { status: 400 }
+      );
+    }
+
+    // Validate role authorization server-side
+    const step = Array.isArray(stepRow.step) ? stepRow.step[0] : stepRow.step;
+    const role = step?.completion_role;
+    if (role === "REFERRER" && user.id !== rec.referrer_id) {
+      return NextResponse.json(
+        { error: "Non autorisé : seul le recommandeur peut valider cette étape" },
+        { status: 403 }
+      );
+    }
+    if (role === "PROFESSIONAL" && user.id !== rec.professional_id) {
+      return NextResponse.json(
+        { error: "Non autorisé : seul le professionnel peut valider cette étape" },
+        { status: 403 }
+      );
+    }
+
+    const stepData: Record<string, unknown> = {};
+    const stepIndex = step?.index ?? 0;
+    const isQuoteStep = stepIndex === 5;
+    const isValidationStep = stepIndex === 6;
+
+    // Handle quote amount for step 5
+    if (isQuoteStep) {
+      const amount = parseFloat(quote_amount);
+      if (isNaN(amount) || amount <= 0 || amount > 1000000) {
+        return NextResponse.json(
+          { error: "Montant du devis invalide" },
+          { status: 400 }
+        );
+      }
+      stepData.montant = amount;
+
+      await supabase
+        .from("recommendations")
+        .update({ amount: amount })
+        .eq("id", rec.id);
+    }
+
+    // Complete the step
+    await supabase
+      .from("recommendation_steps")
+      .update({
+        completed_at: new Date().toISOString(),
+        data: Object.keys(stepData).length > 0 ? stepData : undefined,
+      })
+      .eq("id", stepRow.id);
+
+    // If validation step (6), trigger commission creation server-side
+    if (isValidationStep && rec.amount) {
+      const { data: proProfile } = await supabase
+        .from("profiles")
+        .select("compensation_plan_id")
+        .eq("id", rec.professional_id)
+        .single();
+
+      if (proProfile?.compensation_plan_id) {
+        // Fetch plan
+        const { data: plan } = await supabase
+          .from("compensation_plans")
+          .select("*")
+          .eq("id", proProfile.compensation_plan_id)
+          .single();
+
+        if (plan) {
+          const { referrer_commission, level_commissions } =
+            calculateCommissions(rec.amount, plan);
+
+          // Insert referrer commission
+          await supabase.from("commission_transactions").insert({
+            recommendation_id: rec.id,
+            profile_id: rec.referrer_id,
+            amount: referrer_commission,
+            type: "referrer",
+            level: 0,
+            status: "pending",
+          });
+
+          // Walk sponsor chain server-side
+          let currentProfileId = rec.referrer_id;
+          for (const lc of level_commissions) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("sponsor_id")
+              .eq("id", currentProfileId)
+              .single();
+
+            if (!profile?.sponsor_id) break;
+
+            await supabase.from("commission_transactions").insert({
+              recommendation_id: rec.id,
+              profile_id: profile.sponsor_id,
+              amount: lc.amount,
+              type: "sponsor",
+              level: lc.level,
+              status: "pending",
+            });
+
+            currentProfileId = profile.sponsor_id;
+          }
+        }
+      }
+    }
+
+    // Update recommendation status
+    const { data: allSteps } = await supabase
+      .from("recommendation_steps")
+      .select("completed_at")
+      .eq("recommendation_id", rec.id);
+
+    const allCompleted = (allSteps ?? []).every((s) => s.completed_at !== null);
+
+    await supabase
+      .from("recommendations")
+      .update({
+        status: allCompleted ? "COMPLETED" : "VALIDATED",
+      })
+      .eq("id", rec.id);
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json(
+      { error: "Erreur interne du serveur" },
+      { status: 500 }
+    );
+  }
+}

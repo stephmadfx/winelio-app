@@ -83,38 +83,22 @@ export default function WithdrawPage() {
     setError("");
 
     try {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifie");
-
-      // Insert withdrawal
-      const { error: insertError } = await supabase
-        .from("withdrawals")
-        .insert({
-          user_id: user.id,
+      const res = await fetch("/api/wallet/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           amount: parsedAmount,
           payment_method: method,
-          payment_details:
-            method === "bank_transfer"
-              ? { iban: iban.trim() }
-              : { email: paypalEmail.trim() },
-          status: "pending",
-        });
+          iban: method === "bank_transfer" ? iban.trim() : undefined,
+          paypal_email: method === "paypal" ? paypalEmail.trim() : undefined,
+        }),
+      });
 
-      if (insertError) throw insertError;
+      const data = await res.json();
 
-      // Update wallet summary
-      const { error: updateError } = await supabase
-        .from("user_wallet_summaries")
-        .update({
-          available: available - parsedAmount,
-          total_withdrawn: (available - parsedAmount) >= 0 ? parsedAmount : 0,
-        })
-        .eq("user_id", user.id);
-
-      if (updateError) throw updateError;
+      if (!res.ok) {
+        throw new Error(data.error ?? "Une erreur est survenue.");
+      }
 
       setStep("success");
     } catch (err) {

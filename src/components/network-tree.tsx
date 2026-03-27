@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 interface TreeNode {
   id: string;
-  full_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
   referral_count: number;
   total_earned: number;
   children: TreeNode[];
@@ -13,19 +14,23 @@ interface TreeNode {
   expanded: boolean;
 }
 
-function anonymizeName(name: string | null): string {
-  if (!name) return "***";
-  const parts = name.trim().split(" ");
-  if (parts.length === 0) return "***";
-  const first = parts[0][0]?.toUpperCase() ?? "?";
-  const last = parts.length > 1 ? parts[parts.length - 1][0]?.toUpperCase() ?? "" : "";
-  return `${first}.${last}***`;
+const LEVEL_COLORS: Array<{ border: string; badge: string; bg: string; text: string }> = [
+  { border: "border-l-gray-300", badge: "bg-gray-400", bg: "bg-gray-50", text: "text-gray-500" }, // 0 unused
+  { border: "border-l-kiparlo-orange", badge: "bg-kiparlo-orange", bg: "bg-kiparlo-orange/5", text: "text-kiparlo-orange" },
+  { border: "border-l-kiparlo-amber", badge: "bg-kiparlo-amber", bg: "bg-kiparlo-amber/5", text: "text-kiparlo-amber" },
+  { border: "border-l-yellow-400", badge: "bg-yellow-400", bg: "bg-yellow-50", text: "text-yellow-600" },
+  { border: "border-l-emerald-400", badge: "bg-emerald-400", bg: "bg-emerald-50", text: "text-emerald-600" },
+  { border: "border-l-blue-400", badge: "bg-blue-400", bg: "bg-blue-50", text: "text-blue-600" },
+];
+
+function getColors(level: number) {
+  return LEVEL_COLORS[level] ?? { border: "border-l-gray-300", badge: "bg-gray-400", bg: "bg-gray-50", text: "text-gray-500" };
 }
 
 export function NetworkTree({ userId }: { userId: string }) {
   const [roots, setRoots] = useState<TreeNode[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [initialized, setInitialized] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
 
   const supabase = createClient();
 
@@ -33,7 +38,7 @@ export function NetworkTree({ userId }: { userId: string }) {
     async (parentId: string): Promise<TreeNode[]> => {
       const { data: children } = await supabase
         .from("profiles")
-        .select("id, full_name")
+        .select("id, first_name, last_name")
         .eq("sponsor_id", parentId);
 
       if (!children || children.length === 0) return [];
@@ -48,7 +53,7 @@ export function NetworkTree({ userId }: { userId: string }) {
           const { data: commissions } = await supabase
             .from("commission_transactions")
             .select("amount")
-            .eq("source_user_id", child.id);
+            .eq("user_id", child.id);
 
           const totalEarned = (commissions ?? []).reduce(
             (sum, c) => sum + (c.amount ?? 0),
@@ -57,7 +62,8 @@ export function NetworkTree({ userId }: { userId: string }) {
 
           return {
             id: child.id,
-            full_name: child.full_name,
+            first_name: child.first_name,
+            last_name: child.last_name,
             referral_count: count ?? 0,
             total_earned: totalEarned,
             children: [],
@@ -72,13 +78,18 @@ export function NetworkTree({ userId }: { userId: string }) {
     [supabase]
   );
 
-  const loadInitial = useCallback(async () => {
-    setLoading(true);
-    const nodes = await fetchChildren(userId);
-    // Mark level 1 as loaded since we have them
-    setRoots(nodes);
-    setInitialized(true);
-    setLoading(false);
+  // Auto-load on mount
+  useEffect(() => {
+    async function init() {
+      setLoading(true);
+      const nodes = await fetchChildren(userId);
+      setRoots(nodes);
+      // Count total network
+      const total = nodes.reduce((sum, n) => sum + 1 + n.referral_count, 0);
+      setTotalCount(total);
+      setLoading(false);
+    }
+    init();
   }, [userId, fetchChildren]);
 
   const toggleNode = useCallback(
@@ -98,9 +109,7 @@ export function NetworkTree({ userId }: { userId: string }) {
         if (!node) return prev;
 
         if (!node.loaded) {
-          // Mark as loading, then fetch
           node.expanded = true;
-          // We'll handle async loading separately
           fetchChildren(node.id).then((children) => {
             setRoots((prevState) => {
               const updated = structuredClone(prevState);
@@ -129,16 +138,11 @@ export function NetworkTree({ userId }: { userId: string }) {
     [fetchChildren]
   );
 
-  if (!initialized) {
+  if (loading) {
     return (
-      <div className="text-center py-8">
-        <button
-          onClick={loadInitial}
-          disabled={loading}
-          className="px-6 py-3 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
-        >
-          {loading ? "Chargement..." : "Charger l'arbre du reseau"}
-        </button>
+      <div className="py-8 flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-3 border-kiparlo-orange border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-kiparlo-gray">Chargement du reseau...</p>
       </div>
     );
   }
@@ -152,16 +156,39 @@ export function NetworkTree({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="space-y-1">
-      {roots.map((node, i) => (
-        <TreeNodeRow
-          key={node.id}
-          node={node}
-          level={1}
-          path={[i]}
-          onToggle={toggleNode}
-        />
-      ))}
+    <div>
+      {/* Network summary bar */}
+      <div className="flex items-center gap-4 mb-4 p-3 rounded-xl bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10">
+        <div className="flex items-center gap-2">
+          <svg className="w-5 h-5 text-kiparlo-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span className="text-sm font-semibold text-kiparlo-dark">{roots.length} filleuls directs</span>
+        </div>
+        <div className="h-4 w-px bg-kiparlo-orange/20" />
+        <div className="flex gap-3">
+          {[1, 2, 3, 4, 5].map((l) => (
+            <span key={l} className={`inline-flex items-center gap-1 text-[10px] font-bold ${getColors(l).text}`}>
+              <span className={`w-2 h-2 rounded-full ${getColors(l).badge}`} />
+              N{l}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Tree */}
+      <div className="space-y-1">
+        {roots.map((node, i) => (
+          <TreeNodeRow
+            key={node.id}
+            node={node}
+            level={1}
+            path={[i]}
+            onToggle={toggleNode}
+            isLast={i === roots.length - 1}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -171,99 +198,98 @@ function TreeNodeRow({
   level,
   path,
   onToggle,
+  isLast,
 }: {
   node: TreeNode;
   level: number;
   path: number[];
   onToggle: (path: number[]) => void;
+  isLast: boolean;
 }) {
   const maxLevel = 5;
-  const displayName = level === 1 ? (node.full_name ?? "Sans nom") : anonymizeName(node.full_name);
+  const fullName = [node.first_name, node.last_name].filter(Boolean).join(" ") || "Sans nom";
+  const initials = [node.first_name, node.last_name]
+    .filter(Boolean)
+    .map((n) => n![0])
+    .join("")
+    .toUpperCase();
   const canExpand = level < maxLevel && node.referral_count > 0;
-
-  const levelColors: Record<number, string> = {
-    1: "border-l-kiparlo-orange",
-    2: "border-l-kiparlo-amber",
-    3: "border-l-yellow-400",
-    4: "border-l-emerald-400",
-    5: "border-l-blue-400",
-  };
-
-  const levelBadgeColors: Record<number, string> = {
-    1: "bg-kiparlo-orange",
-    2: "bg-kiparlo-amber",
-    3: "bg-yellow-400",
-    4: "bg-emerald-400",
-    5: "bg-blue-400",
-  };
+  const colors = getColors(level);
 
   return (
-    <div style={{ paddingLeft: `${(level - 1) * 24}px` }}>
+    <div className="relative" style={{ paddingLeft: level > 1 ? "20px" : "0" }}>
+      {/* Vertical connector line */}
+      {level > 1 && (
+        <>
+          <div
+            className="absolute left-[9px] top-0 w-px bg-gray-200"
+            style={{ height: isLast ? "20px" : "100%" }}
+          />
+          <div className="absolute left-[9px] top-[20px] w-[11px] h-px bg-gray-200" />
+        </>
+      )}
+
+      {/* Node */}
       <div
-        className={`flex items-center justify-between p-3 rounded-lg border-l-4 ${levelColors[level] ?? "border-l-gray-300"} bg-kiparlo-light hover:bg-gray-100 transition-colors`}
+        className={`relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl border-l-4 ${colors.border} ${colors.bg} hover:brightness-95 transition-all mb-1`}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {/* Expand/collapse */}
           {canExpand ? (
             <button
               onClick={() => onToggle(path)}
-              className="w-6 h-6 rounded flex items-center justify-center text-kiparlo-gray hover:text-kiparlo-dark transition-colors cursor-pointer"
+              className={`w-7 h-7 rounded-lg flex items-center justify-center ${colors.badge} text-white shrink-0 transition-transform active:scale-95`}
             >
               <svg
-                className={`w-4 h-4 transition-transform ${node.expanded ? "rotate-90" : ""}`}
+                className={`w-3.5 h-3.5 transition-transform duration-200 ${node.expanded ? "rotate-90" : ""}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                strokeWidth={2.5}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </button>
           ) : (
-            <div className="w-6 h-6 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-gray-200/50 shrink-0">
               <div className="w-2 h-2 rounded-full bg-gray-300" />
             </div>
           )}
 
-          <span
-            className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold text-white ${levelBadgeColors[level] ?? "bg-gray-400"}`}
-          >
-            {level}
-          </span>
-
-          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber flex items-center justify-center text-white font-bold text-xs">
-            {(node.full_name ?? "?")
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase()}
+          {/* Avatar */}
+          <div className={`w-9 h-9 rounded-full bg-gradient-to-br from-kiparlo-orange to-kiparlo-amber flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm`}>
+            {initials || "?"}
           </div>
 
-          <span className="font-medium text-kiparlo-dark text-sm">
-            {displayName}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-4 text-xs">
-          <div className="text-center">
-            <span className="font-bold text-kiparlo-dark">{node.referral_count}</span>
-            <span className="text-kiparlo-gray ml-1">filleuls</span>
-          </div>
-          <div className="text-center">
-            <span className="font-bold text-kiparlo-orange">
-              {node.total_earned.toFixed(2)}
-            </span>
-            <span className="text-kiparlo-gray ml-1">EUR</span>
+          {/* Name + level badge */}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-kiparlo-dark text-sm truncate">
+                {fullName}
+              </span>
+              <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold text-white ${colors.badge} shrink-0`}>
+                N{level}
+              </span>
+            </div>
+            {node.referral_count > 0 && (
+              <p className="text-[11px] text-kiparlo-gray mt-0.5">
+                {node.referral_count} membre{node.referral_count > 1 ? "s" : ""} dans son reseau
+              </p>
+            )}
           </div>
         </div>
+
+        {/* Stats */}
+        {node.total_earned > 0 && (
+          <span className={`text-xs font-bold ${colors.text} shrink-0 ml-2`}>
+            {node.total_earned.toFixed(0)} EUR
+          </span>
+        )}
       </div>
 
+      {/* Children */}
       {node.expanded && node.children.length > 0 && (
-        <div className="mt-1 space-y-1">
+        <div className="relative">
           {node.children.map((child, i) => (
             <TreeNodeRow
               key={child.id}
@@ -271,35 +297,17 @@ function TreeNodeRow({
               level={level + 1}
               path={[...path, i]}
               onToggle={onToggle}
+              isLast={i === node.children.length - 1}
             />
           ))}
         </div>
       )}
 
+      {/* Loading */}
       {node.expanded && !node.loaded && (
-        <div style={{ paddingLeft: "24px" }} className="py-2">
-          <div className="flex items-center gap-2 text-sm text-kiparlo-gray">
-            <svg
-              className="w-4 h-4 animate-spin"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
-            </svg>
-            Chargement...
-          </div>
+        <div className="ml-8 py-2 flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-kiparlo-orange border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs text-kiparlo-gray">Chargement...</span>
         </div>
       )}
     </div>
