@@ -1,32 +1,27 @@
 "use client";
 
-// Délais en secondes — définissent l'ordre d'apparition dans le réseau.
-// Avec animation-delay positif + infinite, le décalage est conservé à chaque boucle :
-// line A (delay=0) joue ses cycles à t=0,24,48…  line Z (delay=9) à t=9,33,57…
-// → le réseau se reconstruit toujours dans le même ordre, indéfiniment.
-
-const CYCLE = 24; // secondes par boucle complète (tracé + tenue + disparition)
+const CYCLE = 26; // secondes par boucle
 
 const LINES = [
   { x1: 110, y1: 130, x2: 310, y2: 260, delay: 0.0, amber: false },
   { x1: 110, y1: 130, x2: 148, y2: 418, delay: 0.5, amber: false },
-  { x1: 310, y1: 260, x2: 590, y2: 185, delay: 1.0, amber: true },
+  { x1: 310, y1: 260, x2: 590, y2: 185, delay: 1.0, amber: true  },
   { x1: 310, y1: 260, x2: 475, y2: 460, delay: 1.5, amber: false },
   { x1: 590, y1: 185, x2: 730, y2: 75,  delay: 2.0, amber: false },
-  { x1: 730, y1: 75,  x2: 840, y2: 295, delay: 2.5, amber: true },
+  { x1: 730, y1: 75,  x2: 840, y2: 295, delay: 2.5, amber: true  },
   { x1: 730, y1: 75,  x2: 1055,y2: 148, delay: 3.0, amber: false },
   { x1: 1055,y1: 148, x2: 1330,y2: 190, delay: 3.5, amber: false },
-  { x1: 1330,y1: 190, x2: 1240,y2: 548, delay: 4.0, amber: true },
+  { x1: 1330,y1: 190, x2: 1240,y2: 548, delay: 4.0, amber: true  },
   { x1: 1330,y1: 190, x2: 1385,y2: 758, delay: 4.5, amber: false },
-  { x1: 840, y1: 295, x2: 960, y2: 490, delay: 5.0, amber: true },
+  { x1: 840, y1: 295, x2: 960, y2: 490, delay: 5.0, amber: true  },
   { x1: 960, y1: 490, x2: 1080,y2: 710, delay: 5.5, amber: false },
-  { x1: 1080,y1: 710, x2: 1240,y2: 548, delay: 6.0, amber: true },
+  { x1: 1080,y1: 710, x2: 1240,y2: 548, delay: 6.0, amber: true  },
   { x1: 1080,y1: 710, x2: 672, y2: 645, delay: 6.5, amber: false },
-  { x1: 475, y1: 460, x2: 340, y2: 615, delay: 7.0, amber: true },
+  { x1: 475, y1: 460, x2: 340, y2: 615, delay: 7.0, amber: true  },
   { x1: 340, y1: 615, x2: 180, y2: 770, delay: 7.5, amber: false },
-  { x1: 180, y1: 770, x2: 148, y2: 418, delay: 8.0, amber: true },
+  { x1: 180, y1: 770, x2: 148, y2: 418, delay: 8.0, amber: true  },
   { x1: 672, y1: 645, x2: 340, y2: 615, delay: 8.5, amber: false },
-  { x1: 1385,y1: 758, x2: 1240,y2: 548, delay: 9.0, amber: true },
+  { x1: 1385,y1: 758, x2: 1240,y2: 548, delay: 9.0, amber: true  },
 ];
 
 const HUBS = [
@@ -56,37 +51,40 @@ const NODES = [
   { cx: 1385, cy: 758, r: 4.5, fill: "#F7931E", delay: 4.6 },
 ];
 
+// Keyframes en 4 phases bien séparées :
+//   0–25%  → tracé progressif (opacity monte doucement pendant le tracé)
+//  25–72%  → tenue avec respiration lente
+//  72–84%  → fondu sortant
+//  84–100% → invisible (pause avant reboucle)
+// Le reset du dashoffset se fait à 85% quand opacity=0, donc invisible → pas de saut visible.
 const ANIMATION_CSS = `
-  /* ── Lignes : tracé → tenue → disparition → pause → reboucle ── */
   @keyframes kip-lineLoop {
-    0%   { stroke-dashoffset: 2000; opacity: 0; }
-    4%   { stroke-dashoffset: 2000; opacity: 0.85; }
-    24%  { stroke-dashoffset: 0;    opacity: 0.32; }
-    42%  { stroke-dashoffset: 0;    opacity: 0.17; }
-    64%  { stroke-dashoffset: 0;    opacity: 0.32; }
-    76%  { stroke-dashoffset: 0;    opacity: 0; }
-    77%  { stroke-dashoffset: 2000; opacity: 0; }
-    100% { stroke-dashoffset: 2000; opacity: 0; }
+    0%    { stroke-dashoffset: 2000; opacity: 0; }
+    7%    { stroke-dashoffset: 1500; opacity: 0.5; }
+    25%   { stroke-dashoffset: 0;    opacity: 0.28; }
+    48%   { stroke-dashoffset: 0;    opacity: 0.14; }
+    72%   { stroke-dashoffset: 0;    opacity: 0.28; }
+    84%   { stroke-dashoffset: 0;    opacity: 0; }
+    85%   { stroke-dashoffset: 2000; opacity: 0; }
+    100%  { stroke-dashoffset: 2000; opacity: 0; }
   }
 
-  /* ── Nœuds : apparition → pulse → disparition → pause → reboucle ── */
   @keyframes kip-nodeLoop {
-    0%   { opacity: 0; transform: scale(0.4); }
-    7%   { opacity: 0.9; transform: scale(1.12); }
-    13%  { opacity: 0.65; transform: scale(1); }
-    42%  { opacity: 0.42; }
-    64%  { opacity: 0.72; }
-    76%  { opacity: 0; transform: scale(0.7); }
-    77%  { opacity: 0; transform: scale(0.4); }
-    100% { opacity: 0; transform: scale(0.4); }
+    0%    { opacity: 0; transform: scale(0.4); }
+    10%   { opacity: 0.7; transform: scale(1.08); }
+    16%   { opacity: 0.55; transform: scale(1); }
+    48%   { opacity: 0.35; }
+    72%   { opacity: 0.58; }
+    84%   { opacity: 0; transform: scale(0.85); }
+    85%   { opacity: 0; transform: scale(0.4); }
+    100%  { opacity: 0; transform: scale(0.4); }
   }
 
-  /* ── Ondulation des hubs (cycle court indépendant) ── */
   @keyframes kip-ripple {
-    0%   { transform: scale(1);   opacity: 0; }
-    6%   { transform: scale(1.1); opacity: 0.42; }
-    78%  { transform: scale(4.6); opacity: 0; }
-    100% { transform: scale(4.6); opacity: 0; }
+    0%    { transform: scale(1);   opacity: 0; }
+    5%    { transform: scale(1.05); opacity: 0.38; }
+    80%   { transform: scale(4.5); opacity: 0; }
+    100%  { transform: scale(4.5); opacity: 0; }
   }
 `;
 
@@ -99,7 +97,10 @@ export function NetworkBackground() {
         inset: 0,
         overflow: "hidden",
         pointerEvents: "none",
-        filter: "blur(0.8px)",        // flou global, doux et atmosphérique
+        // Flou léger sur le conteneur — crée la douceur sans toucher au SVG
+        // will-change hints le GPU à composer ce layer séparément
+        filter: "blur(0.6px)",
+        willChange: "transform",
       }}
     >
       <svg
@@ -112,30 +113,26 @@ export function NetworkBackground() {
         <defs>
           <style>{ANIMATION_CSS}</style>
 
-          {/* Halo lumineux pour les hubs */}
-          <filter id="kip-glow" x="-80%" y="-80%" width="260%" height="260%">
-            <feGaussianBlur stdDeviation="4" result="blur" />
+          {/* Halo uniquement sur les 5 hubs — coût minimal */}
+          <filter id="kip-glow" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="3.5" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
-
-          {/* Flou doux pour les lignes */}
-          <filter id="kip-soft" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="0.6" />
-          </filter>
         </defs>
 
-        {/* Lignes du réseau */}
-        <g filter="url(#kip-soft)">
+        {/* Lignes */}
+        <g>
           {LINES.map((l, i) => (
             <line
               key={i}
               x1={l.x1} y1={l.y1}
               x2={l.x2} y2={l.y2}
               stroke={l.amber ? "#F7931E" : "#FF6B35"}
-              strokeWidth="1"
+              strokeWidth="0.9"
+              strokeLinecap="round"
               strokeDasharray="2000"
               strokeDashoffset="2000"
               fill="none"
@@ -154,11 +151,11 @@ export function NetworkBackground() {
               cx={h.cx} cy={h.cy} r="7"
               fill="none"
               stroke="#FF6B35"
-              strokeWidth="1.5"
+              strokeWidth="1.2"
               style={{
                 transformBox: "fill-box",
                 transformOrigin: "center",
-                animation: `kip-ripple 4.5s ease-out infinite ${h.delay + 1.5}s`,
+                animation: `kip-ripple 5s ease-out infinite ${h.delay + 1.8}s`,
               }}
             />
           ))}
