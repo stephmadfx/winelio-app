@@ -3,13 +3,17 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { NetworkBackground } from "@/components/NetworkBackground";
 type SupabaseClient = ReturnType<typeof createClient>;
 
 export default function LoginPage() {
   return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
+    <div className="relative min-h-screen bg-kiparlo-dark overflow-hidden">
+      <NetworkBackground />
+      <Suspense>
+        <LoginForm />
+      </Suspense>
+    </div>
   );
 }
 
@@ -204,7 +208,7 @@ function LoginForm() {
   // ─── Blocage inscription sans parrain ────────────────────────────────────
   if (isRegister && !refCode) {
     return (
-      <div className="min-h-screen bg-kiparlo-dark flex items-center justify-center px-4">
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4">
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-extrabold tracking-tight mb-2">
@@ -279,7 +283,7 @@ function LoginForm() {
 
   if (step === "email") {
     return (
-      <div className="min-h-screen bg-kiparlo-dark flex items-center justify-center px-4">
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4">
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-extrabold tracking-tight mb-2">
@@ -364,7 +368,7 @@ function LoginForm() {
 
   // ─── UI : saisie code ─────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-kiparlo-dark flex items-center justify-center px-4">
+    <div className="relative z-10 min-h-screen flex items-center justify-center px-4">
       <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
         <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber flex items-center justify-center">
           <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
