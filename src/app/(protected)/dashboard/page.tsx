@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { OnboardingModal } from "@/components/onboarding-modal";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -46,6 +47,15 @@ export default async function DashboardPage() {
       .eq("status", "COMPLETED"),
   ]);
 
+  // Fetch profile to check onboarding
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("first_name, last_name")
+    .eq("id", user.id)
+    .single();
+
+  const needsOnboarding = !profile?.first_name || !profile?.last_name;
+
   // Total network members across ALL levels (up to 5) recursively
   let networkCount = 0;
   let currentLevelIds = [user.id];
@@ -68,6 +78,8 @@ export default async function DashboardPage() {
 
   return (
     <div>
+      {needsOnboarding && <OnboardingModal userId={user.id} />}
+
       <h2 className="text-xl sm:text-2xl font-bold text-kiparlo-dark mb-6">
         Tableau de bord
       </h2>

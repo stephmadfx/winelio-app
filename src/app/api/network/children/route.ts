@@ -43,7 +43,7 @@ export async function GET(request: Request) {
           // Or just use the profiles-based approach
           supabase.rpc("count_user_recos_by_status", {
             p_user_id: child.id,
-            p_statuses: ["PENDING", "VALIDATED"],
+            p_statuses: ["PENDING", "ACCEPTED", "CONTACT_MADE", "MEETING_SCHEDULED", "QUOTE_SUBMITTED", "QUOTE_VALIDATED", "PAYMENT_RECEIVED"],
           }).then(
             (r) => ({ count: r.data ?? 0 }),
             () => ({ count: 0 })

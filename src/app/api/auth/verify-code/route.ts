@@ -35,7 +35,9 @@ export async function POST(req: Request) {
     });
 
     // 4. Generate admin magic link (does NOT send email)
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    // Use request origin so it works on any local port and in production
+    const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, "").split("/").slice(0, 3).join("/");
+    const siteUrl = origin || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const { data: linkData, error: linkError } =
       await supabaseAdmin.auth.admin.generateLink({
         type: "magiclink",

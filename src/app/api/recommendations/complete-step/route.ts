@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     const { data: stepRow } = await supabase
       .from("recommendation_steps")
       .select(
-        "id, completed_at, step:steps(completion_role, index)"
+        "id, completed_at, step:steps(completion_role, order_index)"
       )
       .eq("id", step_id)
       .eq("recommendation_id", recommendation_id)
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     }
 
     const stepData: Record<string, unknown> = {};
-    const stepIndex = step?.index ?? 0;
+    const stepIndex = step?.order_index ?? 0;
     const isQuoteStep = stepIndex === 5;
     const isValidationStep = stepIndex === 6;
 
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
           // Insert referrer commission
           await supabase.from("commission_transactions").insert({
             recommendation_id: rec.id,
-            profile_id: rec.referrer_id,
+            user_id: rec.referrer_id,
             amount: referrer_commission,
             type: "referrer",
             level: 0,
@@ -151,7 +151,7 @@ export async function POST(request: Request) {
 
             await supabase.from("commission_transactions").insert({
               recommendation_id: rec.id,
-              profile_id: profile.sponsor_id,
+              user_id: profile.sponsor_id,
               amount: lc.amount,
               type: "sponsor",
               level: lc.level,
@@ -164,19 +164,22 @@ export async function POST(request: Request) {
       }
     }
 
-    // Update recommendation status
-    const { data: allSteps } = await supabase
-      .from("recommendation_steps")
-      .select("completed_at")
-      .eq("recommendation_id", rec.id);
-
-    const allCompleted = (allSteps ?? []).every((s) => s.completed_at !== null);
+    // Update recommendation status based on completed step
+    const STATUS_BY_STEP: Record<number, string> = {
+      1: "PENDING",
+      2: "ACCEPTED",
+      3: "CONTACT_MADE",
+      4: "MEETING_SCHEDULED",
+      5: "QUOTE_SUBMITTED",
+      6: "QUOTE_VALIDATED",
+      7: "PAYMENT_RECEIVED",
+      8: "COMPLETED",
+    };
+    const newStatus = STATUS_BY_STEP[stepIndex] ?? rec.status;
 
     await supabase
       .from("recommendations")
-      .update({
-        status: allCompleted ? "COMPLETED" : "VALIDATED",
-      })
+      .update({ status: newStatus })
       .eq("id", rec.id);
 
     return NextResponse.json({ success: true });

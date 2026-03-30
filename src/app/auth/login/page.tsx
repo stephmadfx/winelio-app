@@ -2,6 +2,8 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+type SupabaseClient = ReturnType<typeof createClient>;
 
 export default function LoginPage() {
   return (
@@ -18,6 +20,9 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [sponsorName, setSponsorName] = useState<string | null>(null);
+  const [sponsorInput, setSponsorInput] = useState("");
+  const [sponsorError, setSponsorError] = useState("");
+  const [sponsorChecking, setSponsorChecking] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const isRegister = searchParams.get("mode") === "register";
@@ -28,24 +33,31 @@ function LoginForm() {
     if (!refCode) return;
     localStorage.setItem("kiparlo_ref", refCode);
 
+    // Nom déjà dans l'URL (passé par handleSponsorCodeSubmit) ?
+    const nameFromUrl = searchParams.get("sponsor_name");
+    if (nameFromUrl) {
+      setSponsorName(decodeURIComponent(nameFromUrl));
+      return;
+    }
+
     // Fetch le nom du parrain (sans auth, profils publics)
     import("@/lib/supabase/client").then(({ createClient }) => {
       const supabase = createClient();
       supabase
         .from("profiles")
-        .select("first_name, last_name")
+        .select("first_name, last_name, email")
         .eq("sponsor_code", refCode)
         .single()
         .then(({ data }) => {
-          if (data?.first_name || data?.last_name) {
-            setSponsorName(`${data.first_name ?? ""} ${data.last_name ?? ""}`.trim());
-          }
+          if (!data) return;
+          const name = [data.first_name, data.last_name].filter(Boolean).join(" ");
+          setSponsorName(name || data.email || null);
         });
     });
-  }, [refCode]);
+  }, [refCode, searchParams]);
 
   // Appliquer le parrainage après connexion réussie
-  const applyReferral = async (supabase: Awaited<ReturnType<typeof import("@/lib/supabase/client")["createClient"]>>) => {
+  const applyReferral = async (supabase: SupabaseClient) => {
     const storedRef = localStorage.getItem("kiparlo_ref");
     if (!storedRef) return;
 
@@ -55,11 +67,11 @@ function LoginForm() {
     // Vérifier que le nouveau user n'a pas déjà un sponsor
     const { data: profile } = await supabase
       .from("profiles")
-      .select("sponsor_id, sponsored_by")
+      .select("sponsor_id")
       .eq("id", user.id)
       .single();
 
-    if (profile?.sponsor_id || profile?.sponsored_by) {
+    if (profile?.sponsor_id) {
       localStorage.removeItem("kiparlo_ref");
       return;
     }
@@ -80,7 +92,7 @@ function LoginForm() {
     // Assigner le parrain
     await supabase
       .from("profiles")
-      .update({ sponsor_id: sponsor.id, sponsored_by: sponsor.id })
+      .update({ sponsor_id: sponsor.id })
       .eq("id", user.id);
 
     localStorage.removeItem("kiparlo_ref");
@@ -108,6 +120,35 @@ function LoginForm() {
 
     setStep("code");
     setLoading(false);
+  };
+
+  // Valider un code parrain saisi manuellement
+  const handleSponsorCodeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = sponsorInput.trim().toLowerCase();
+    if (!trimmed) {
+      setSponsorError("Veuillez saisir un code parrain.");
+      return;
+    }
+    setSponsorChecking(true);
+    setSponsorError("");
+    const { createClient } = await import("@/lib/supabase/client");
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("profiles")
+      .select("sponsor_code, first_name, last_name, email")
+      .eq("sponsor_code", trimmed)
+      .single();
+    setSponsorChecking(false);
+    if (!data) {
+      setSponsorError("Code parrain invalide. Demandez le code à votre parrain.");
+      return;
+    }
+    localStorage.setItem("kiparlo_ref", trimmed);
+    const name = [data.first_name, data.last_name].filter(Boolean).join(" ") || data.email || "";
+    setSponsorName(name || null);
+    const nameParam = name ? `&sponsor_name=${encodeURIComponent(name)}` : "";
+    router.replace(`/auth/login?mode=register&ref=${trimmed}${nameParam}`);
   };
 
   // Step 2: vérifier le code et créer la session
@@ -160,6 +201,82 @@ function LoginForm() {
   };
 
   // ─── UI : saisie email ────────────────────────────────────────────────────
+  // ─── Blocage inscription sans parrain ────────────────────────────────────
+  if (isRegister && !refCode) {
+    return (
+      <div className="min-h-screen bg-kiparlo-dark flex items-center justify-center px-4">
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-extrabold tracking-tight mb-2">
+              <span className="text-white">KI</span>
+              <span className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent">PAR</span>
+              <span className="text-white">LO</span>
+            </h1>
+            <div className="mt-4 flex items-center justify-center w-14 h-14 rounded-full bg-kiparlo-orange/20 mx-auto mb-3">
+              <svg className="w-7 h-7 text-kiparlo-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <p className="text-white font-semibold text-lg">Inscription sur invitation</p>
+            <p className="text-kiparlo-gray text-sm mt-2">
+              Kiparlo est un réseau fermé. Pour créer un compte, vous devez disposer du code parrain d&apos;un membre du réseau.
+            </p>
+          </div>
+
+          <form onSubmit={handleSponsorCodeSubmit} className="space-y-5">
+            <div>
+              <label htmlFor="sponsor" className="block text-sm font-medium text-gray-300 mb-2">
+                Code parrain <span className="text-kiparlo-orange">*</span>
+              </label>
+              <input
+                id="sponsor"
+                type="text"
+                value={sponsorInput}
+                onChange={(e) => setSponsorInput(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))}
+                placeholder="ex : 4bd0e7"
+                required
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white font-mono text-lg tracking-widest placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-kiparlo-orange focus:border-transparent transition"
+              />
+            </div>
+
+            {sponsorError && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm">
+                {sponsorError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={sponsorChecking}
+              className="w-full py-3 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sponsorChecking ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Vérification...
+                </span>
+              ) : (
+                "Valider le code parrain"
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => router.push("/auth/login")}
+              className="text-kiparlo-gray hover:text-kiparlo-orange text-sm transition-colors"
+            >
+              Déjà un compte ? Se connecter
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (step === "email") {
     return (
       <div className="min-h-screen bg-kiparlo-dark flex items-center justify-center px-4">

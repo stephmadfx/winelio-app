@@ -13,7 +13,7 @@ interface Profile {
   postal_code: string | null;
   is_professional: boolean;
   sponsor_code: string | null;
-  sponsored_by: string | null;
+  sponsor_id: string | null;
 }
 
 export function ProfileForm({ profile }: { profile: Profile }) {
@@ -85,7 +85,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
 
     const { error } = await supabase
       .from("profiles")
-      .update({ sponsored_by: sponsor.id })
+      .update({ sponsor_id: sponsor.id })
       .eq("id", profile.id);
 
     if (error) {
@@ -141,7 +141,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       </div>
 
       {/* Sponsor input (if not already sponsored) */}
-      {!profile.sponsored_by && (
+      {!profile.sponsor_id && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-kiparlo-dark mb-4">
             Entrer un code parrain

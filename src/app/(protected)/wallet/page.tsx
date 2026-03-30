@@ -44,13 +44,13 @@ export default async function WalletPage() {
     .single();
 
   const available = wallet?.available ?? 0;
-  const pending = wallet?.pending ?? 0;
+  const pending = wallet?.pending_commissions ?? 0;
   const totalWins = wallet?.total_wins ?? 0;
 
   // Fetch recent commissions
   const { data: commissions } = await supabase
     .from("commission_transactions")
-    .select("id, amount, created_at, status, description")
+    .select("id, amount, created_at, status, type, level")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(5);
@@ -71,7 +71,7 @@ export default async function WalletPage() {
       amount: c.amount,
       created_at: c.created_at,
       status: c.status,
-      description: c.description,
+      description: c.type ? `Commission niveau ${c.level ?? "?"}` : undefined,
     })),
     ...(withdrawals ?? []).map((w) => ({
       id: w.id,
