@@ -22,6 +22,7 @@ interface ProfileNode {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  email: string | null;
   sponsor_id: string | null;
   is_professional: boolean;
   is_active: boolean;
