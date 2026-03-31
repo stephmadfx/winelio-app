@@ -26,7 +26,7 @@ export default async function AdminRecoDetail({
       `*,
        referrer:profiles!referrer_id(id, first_name, last_name, email),
        professional:profiles!professional_id(id, first_name, last_name, email),
-       recommendation_steps(id, step_order, completed, completed_at)`
+       recommendation_steps(id, completed_at, step:steps(order_index, name))`
     )
     .eq("id", id)
     .single();
@@ -34,7 +34,8 @@ export default async function AdminRecoDetail({
   if (!reco) notFound();
 
   const steps = (reco.recommendation_steps ?? []).sort(
-    (a: { step_order: number }, b: { step_order: number }) => a.step_order - b.step_order
+    (a: { step: { order_index: number } }, b: { step: { order_index: number } }) =>
+      (a.step?.order_index ?? 0) - (b.step?.order_index ?? 0)
   );
   const referrer = Array.isArray(reco.referrer) ? reco.referrer[0] : reco.referrer;
   const professional = Array.isArray(reco.professional) ? reco.professional[0] : reco.professional;
@@ -64,7 +65,7 @@ export default async function AdminRecoDetail({
         <div>
           <p className="text-gray-500 text-xs mb-0.5">Montant deal</p>
           <p className="text-emerald-400 font-bold">
-            {reco.deal_amount ? `${reco.deal_amount.toLocaleString("fr-FR")} €` : "Non défini"}
+            {reco.amount ? `${Number(reco.amount).toLocaleString("fr-FR")} €` : "Non défini"}
           </p>
         </div>
         <div>
@@ -79,25 +80,27 @@ export default async function AdminRecoDetail({
           Étapes du workflow
         </h2>
         <div className="space-y-2">
-          {steps.map((step: { id: string; step_order: number; completed: boolean; completed_at: string | null }) => (
+          {steps.map((step: { id: string; completed_at: string | null; step: { order_index: number; name: string } }) => {
+            const isCompleted = !!step.completed_at;
+            return (
             <div
               key={step.id}
               className={`flex items-center gap-3 p-3 rounded-lg ${
-                step.completed ? "bg-emerald-500/10" : "bg-white/5"
+                isCompleted ? "bg-emerald-500/10" : "bg-white/5"
               }`}
             >
               <div
                 className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                  step.completed
+                  isCompleted
                     ? "bg-emerald-500 text-white"
                     : "bg-gray-700 text-gray-400"
                 }`}
               >
-                {step.completed ? "✓" : step.step_order}
+                {isCompleted ? "✓" : step.step?.order_index}
               </div>
               <div className="flex-1">
-                <p className={`text-sm ${step.completed ? "text-emerald-300" : "text-gray-300"}`}>
-                  {STEP_NAMES[step.step_order - 1] ?? `Étape ${step.step_order}`}
+                <p className={`text-sm ${isCompleted ? "text-emerald-300" : "text-gray-300"}`}>
+                  {step.step?.name ?? `Étape ${step.step?.order_index}`}
                 </p>
                 {step.completed_at && (
                   <p className="text-xs text-gray-500">
@@ -105,11 +108,11 @@ export default async function AdminRecoDetail({
                   </p>
                 )}
               </div>
-              {!step.completed && (
+              {!isCompleted && (
                 <form
                   action={async () => {
                     "use server";
-                    await advanceRecommendationStep(id, step.step_order);
+                    await advanceRecommendationStep(id, step.id);
                   }}
                 >
                   <button
@@ -121,7 +124,8 @@ export default async function AdminRecoDetail({
                 </form>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

@@ -27,10 +27,10 @@ export default async function AdminRecommandations({
   let query = supabaseAdmin
     .from("recommendations")
     .select(
-      `id, status, deal_amount, created_at,
+      `id, status, amount, created_at,
        referrer:profiles!referrer_id(first_name, last_name),
        professional:profiles!professional_id(first_name, last_name),
-       recommendation_steps(step_order, completed)`,
+       recommendation_steps(id, completed_at)`,
       { count: "exact" }
     )
     .order("created_at", { ascending: false })
@@ -85,7 +85,7 @@ export default async function AdminRecommandations({
             )}
             {(recos ?? []).map((reco) => {
               const steps = reco.recommendation_steps ?? [];
-              const completedSteps = steps.filter((s: { completed: boolean }) => s.completed).length;
+              const completedSteps = steps.filter((s: { completed_at: string | null }) => s.completed_at).length;
               const st = STATUS_LABELS[reco.status] ?? { label: reco.status, color: "text-gray-400 bg-white/5" };
               const referrer = Array.isArray(reco.referrer) ? reco.referrer[0] : reco.referrer;
               const professional = Array.isArray(reco.professional) ? reco.professional[0] : reco.professional;
@@ -101,7 +101,7 @@ export default async function AdminRecommandations({
                     </span>
                   </td>
                   <td className="px-4 py-3 text-emerald-400">
-                    {reco.deal_amount ? `${Number(reco.deal_amount).toLocaleString("fr-FR")} €` : "—"}
+                    {reco.amount ? `${Number(reco.amount).toLocaleString("fr-FR")} €` : "—"}
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">
                     {completedSteps}/{steps.length}

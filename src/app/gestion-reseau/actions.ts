@@ -20,29 +20,36 @@ async function assertSuperAdmin() {
 
 export async function advanceRecommendationStep(
   recommendationId: string,
-  stepOrder: number
+  stepId: string
 ) {
   await assertSuperAdmin();
 
   // Marquer l'étape comme complétée
   const { error: stepError } = await supabaseAdmin
     .from("recommendation_steps")
-    .update({ completed: true, completed_at: new Date().toISOString() })
-    .eq("recommendation_id", recommendationId)
-    .eq("step_order", stepOrder);
+    .update({ completed_at: new Date().toISOString() })
+    .eq("id", stepId);
 
   if (stepError) throw new Error(`Erreur mise à jour étape: ${stepError.message}`);
 
-  // Si étape 6 (devis validé) : déclencher les commissions
-  if (stepOrder === 6) {
-    // Récupérer la recommandation pour avoir le montant
+  // Vérifier si c'est l'étape "devis validé" (order_index=6) pour déclencher les commissions
+  const { data: stepRow } = await supabaseAdmin
+    .from("recommendation_steps")
+    .select("step:steps(order_index)")
+    .eq("id", stepId)
+    .single();
+
+  const stepData = Array.isArray(stepRow?.step) ? stepRow.step[0] : stepRow?.step;
+  const orderIndex = (stepData as { order_index: number } | null | undefined)?.order_index;
+
+  if (orderIndex === 6) {
     const { data: reco } = await supabaseAdmin
       .from("recommendations")
-      .select("id, referrer_id, professional_id, deal_amount")
+      .select("id, referrer_id, professional_id, amount")
       .eq("id", recommendationId)
       .single();
 
-    if (reco && reco.deal_amount) {
+    if (reco && reco.amount) {
       await createCommissionsForReco(reco);
     }
   }
@@ -55,7 +62,7 @@ async function createCommissionsForReco(reco: {
   id: string;
   referrer_id: string;
   professional_id: string;
-  deal_amount: number;
+  amount: number;
 }) {
   // Idempotency : vérifier si des commissions existent déjà pour cette recommandation
   const { count } = await supabaseAdmin
@@ -81,7 +88,7 @@ async function createCommissionsForReco(reco: {
     recommendation_id: reco.id,
     user_id: reco.referrer_id,
     source_user_id: reco.referrer_id,
-    amount: reco.deal_amount * 0.6,
+    amount: reco.amount * 0.6,
     type: "referrer",
     level: 0,
     status: "EARNED",
@@ -102,7 +109,7 @@ async function createCommissionsForReco(reco: {
       recommendation_id: reco.id,
       user_id: profile.sponsor_id,
       source_user_id: reco.referrer_id,
-      amount: reco.deal_amount * 0.04,
+      amount: reco.amount * 0.04,
       type: "mlm",
       level,
       status: "EARNED",
