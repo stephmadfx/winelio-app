@@ -12,10 +12,11 @@ import type { SyntheticEvent } from "react";
 
 interface ProfileNode {
   id: string;
-  full_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
   sponsor_id: string | null;
   is_professional: boolean;
-  is_suspended: boolean;
+  is_active: boolean;
 }
 
 function buildTree(nodes: ProfileNode[], rootIds: string[]): RawNodeDatum[] {
@@ -34,11 +35,11 @@ function buildTree(nodes: ProfileNode[], rootIds: string[]): RawNodeDatum[] {
     const node = nodeMap.get(id)!;
     const childIds = childrenMap.get(id) ?? [];
     return {
-      name: node.full_name ?? id,
+      name: `${node.first_name ?? ""} ${node.last_name ?? ""}`.trim() || id,
       attributes: {
         id,
         is_professional: String(node.is_professional),
-        is_suspended: String(node.is_suspended),
+        is_active: String(node.is_active),
       },
       children: childIds.map(buildSubtree),
     };
@@ -49,14 +50,14 @@ function buildTree(nodes: ProfileNode[], rootIds: string[]): RawNodeDatum[] {
 
 function CustomNode({ nodeDatum, toggleNode }: CustomNodeElementProps) {
   const isPro = nodeDatum.attributes?.is_professional === "true";
-  const isSuspended = nodeDatum.attributes?.is_suspended === "true";
+  const isInactive = nodeDatum.attributes?.is_active === "false";
 
   return (
     <g onClick={toggleNode} style={{ cursor: "pointer" }}>
       <circle
         r={20}
-        fill={isSuspended ? "#ef4444" : isPro ? "#3b82f6" : "#FF6B35"}
-        stroke={isSuspended ? "#dc2626" : isPro ? "#2563eb" : "#F7931E"}
+        fill={isInactive ? "#ef4444" : isPro ? "#3b82f6" : "#FF6B35"}
+        stroke={isInactive ? "#dc2626" : isPro ? "#2563eb" : "#F7931E"}
         strokeWidth={2}
       />
       <text
@@ -107,7 +108,7 @@ export function NetworkTree({
     if (search.trim() === "") return rootIds;
     return nodes
       .filter((n) =>
-        n.full_name?.toLowerCase().includes(search.toLowerCase())
+        `${n.first_name ?? ""} ${n.last_name ?? ""}`.toLowerCase().includes(search.toLowerCase())
       )
       .map((n) => {
         // Remonter jusqu'à la racine

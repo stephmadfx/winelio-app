@@ -24,8 +24,8 @@ export default async function AdminRecoDetail({
     .from("recommendations")
     .select(
       `*,
-       referrer:profiles!referrer_id(id, full_name, email),
-       professional:profiles!professional_id(id, full_name, email),
+       referrer:profiles!referrer_id(id, first_name, last_name, email),
+       professional:profiles!professional_id(id, first_name, last_name, email),
        recommendation_steps(id, step_order, completed, completed_at)`
     )
     .eq("id", id)
@@ -53,12 +53,12 @@ export default async function AdminRecoDetail({
       <div className="bg-gray-900 rounded-xl border border-white/5 p-5 mb-4 grid grid-cols-2 gap-4 text-sm">
         <div>
           <p className="text-gray-500 text-xs mb-0.5">Referrer</p>
-          <p className="text-white font-medium">{referrer?.full_name}</p>
+          <p className="text-white font-medium">{`${referrer?.first_name ?? ""} ${referrer?.last_name ?? ""}`.trim() || "—"}</p>
           <p className="text-gray-400 text-xs">{referrer?.email}</p>
         </div>
         <div>
           <p className="text-gray-500 text-xs mb-0.5">Professionnel</p>
-          <p className="text-white font-medium">{professional?.full_name}</p>
+          <p className="text-white font-medium">{`${professional?.first_name ?? ""} ${professional?.last_name ?? ""}`.trim() || "—"}</p>
           <p className="text-gray-400 text-xs">{professional?.email}</p>
         </div>
         <div>
@@ -131,7 +131,7 @@ export default async function AdminRecoDetail({
           Changer le statut
         </h2>
         <div className="flex gap-2 flex-wrap">
-          {["pending", "accepted", "in_progress", "completed", "cancelled"].map((s) => (
+          {["PENDING", "ACCEPTED", "CONTACT_MADE", "QUOTE_SUBMITTED", "QUOTE_VALIDATED", "PAYMENT_RECEIVED", "COMPLETED", "CANCELLED"].map((s) => (
             <form
               key={s}
               action={async () => {

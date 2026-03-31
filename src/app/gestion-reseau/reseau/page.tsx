@@ -4,8 +4,7 @@ import { NetworkTreeWrapper } from "./NetworkTreeWrapper";
 export default async function AdminReseau() {
   const { data: profiles } = await supabaseAdmin
     .from("profiles")
-    .select("id, full_name, sponsor_id, is_professional, is_suspended")
-    .neq("role", "super_admin");
+    .select("id, first_name, last_name, sponsor_id, is_professional, is_active");
 
   const nodes = profiles ?? [];
 

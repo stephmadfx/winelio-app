@@ -20,10 +20,11 @@ const NetworkTree = dynamic(
 
 interface ProfileNode {
   id: string;
-  full_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
   sponsor_id: string | null;
   is_professional: boolean;
-  is_suspended: boolean;
+  is_active: boolean;
 }
 
 export function NetworkTreeWrapper({

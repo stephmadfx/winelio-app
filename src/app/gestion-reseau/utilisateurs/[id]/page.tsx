@@ -17,7 +17,7 @@ export default async function AdminUserDetail({
     await Promise.all([
       supabaseAdmin
         .from("profiles")
-        .select("*, sponsor:profiles!sponsor_id(full_name)")
+        .select("*, sponsor:profiles!sponsor_id(first_name, last_name)")
         .eq("id", id)
         .single(),
       supabaseAdmin
@@ -48,8 +48,8 @@ export default async function AdminUserDetail({
           ← Utilisateurs
         </a>
         <span className="text-gray-600">/</span>
-        <h1 className="text-xl font-bold">{profile.full_name}</h1>
-        {profile.is_suspended && (
+        <h1 className="text-xl font-bold">{`${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() || "—"}</h1>
+        {!profile.is_active && (
           <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">Suspendu</span>
         )}
       </div>
@@ -62,7 +62,7 @@ export default async function AdminUserDetail({
         </div>
         <div>
           <p className="text-gray-500 text-xs mb-0.5">Parrain</p>
-          <p className="text-white">{sponsor?.full_name ?? "Aucun"}</p>
+          <p className="text-white">{`${sponsor?.first_name ?? ""} ${sponsor?.last_name ?? ""}`.trim() || "Aucun"}</p>
         </div>
         <div>
           <p className="text-gray-500 text-xs mb-0.5">Code parrainage</p>
@@ -125,7 +125,7 @@ export default async function AdminUserDetail({
         <form
           action={async () => {
             "use server";
-            if (profile.is_suspended) {
+            if (!profile.is_active) {
               await reactivateUser(id);
             } else {
               await suspendUser(id);
@@ -135,12 +135,12 @@ export default async function AdminUserDetail({
           <button
             type="submit"
             className={`text-sm px-4 py-2 rounded-xl font-medium transition-colors ${
-              profile.is_suspended
+              !profile.is_active
                 ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
                 : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
             }`}
           >
-            {profile.is_suspended ? "✓ Réactiver le compte" : "⊘ Suspendre le compte"}
+            {!profile.is_active ? "✓ Réactiver le compte" : "⊘ Suspendre le compte"}
           </button>
         </form>
 

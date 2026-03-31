@@ -12,15 +12,14 @@ export default async function AdminUtilisateurs({
 
   let query = supabaseAdmin
     .from("profiles")
-    .select("id, full_name, is_professional, is_suspended, created_at, sponsor_id, role", {
+    .select("id, first_name, last_name, is_professional, is_active, created_at, sponsor_id", {
       count: "exact",
     })
-    .neq("role", "super_admin")
     .order("created_at", { ascending: false })
     .range((page - 1) * pageSize, page * pageSize - 1);
 
   if (params.search) {
-    query = query.ilike("full_name", `%${params.search}%`);
+    query = query.or(`first_name.ilike.%${params.search}%,last_name.ilike.%${params.search}%`);
   }
 
   const { data: users, count } = await query;
@@ -57,7 +56,7 @@ export default async function AdminUtilisateurs({
           <tbody className="divide-y divide-white/5">
             {(users ?? []).map((user) => (
               <tr key={user.id} className="hover:bg-white/2">
-                <td className="px-4 py-3 text-white">{user.full_name ?? "—"}</td>
+                <td className="px-4 py-3 text-white">{`${user.first_name ?? ""} ${user.last_name ?? ""}`.trim() || "—"}</td>
                 <td className="px-4 py-3">
                   <span
                     className={`text-xs px-2 py-0.5 rounded ${
@@ -72,12 +71,12 @@ export default async function AdminUtilisateurs({
                 <td className="px-4 py-3">
                   <span
                     className={`text-xs px-2 py-0.5 rounded ${
-                      user.is_suspended
+                      !user.is_active
                         ? "bg-red-500/10 text-red-400"
                         : "bg-emerald-500/10 text-emerald-400"
                     }`}
                   >
-                    {user.is_suspended ? "Suspendu" : "Actif"}
+                    {!user.is_active ? "Suspendu" : "Actif"}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-gray-400 text-xs">

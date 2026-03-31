@@ -8,7 +8,7 @@ import {
 export default async function AdminRetraits() {
   const { data: withdrawals } = await supabaseAdmin
     .from("withdrawals")
-    .select(`*, user:profiles!user_id(id, full_name, email)`)
+    .select(`*, user:profiles!user_id(id, first_name, last_name, email)`)
     .order("created_at", { ascending: true });
 
   const pending = (withdrawals ?? []).filter((w) => w.status === "PENDING");
@@ -31,7 +31,7 @@ export default async function AdminRetraits() {
           return (
             <div key={w.id} className="p-4 flex items-center gap-4">
               <div className="flex-1">
-                <p className="text-sm font-medium text-white">{user?.full_name}</p>
+                <p className="text-sm font-medium text-white">{`${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim() || "—"}</p>
                 <p className="text-xs text-gray-400">{user?.email}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {new Date(w.created_at).toLocaleDateString("fr-FR")}
@@ -103,7 +103,7 @@ export default async function AdminRetraits() {
           return (
             <div key={w.id} className="px-4 py-3 flex items-center gap-4">
               <div className="flex-1">
-                <p className="text-sm text-white">{user?.full_name}</p>
+                <p className="text-sm text-white">{`${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim() || "—"}</p>
                 <p className="text-xs text-gray-500">
                   {new Date(w.created_at).toLocaleDateString("fr-FR")}
                 </p>

@@ -209,7 +209,7 @@ export async function suspendUser(userId: string) {
 
   const { error: suspendError } = await supabaseAdmin
     .from("profiles")
-    .update({ is_suspended: true })
+    .update({ is_active: false })
     .eq("id", userId);
 
   if (suspendError) throw new Error(`Erreur suspension utilisateur: ${suspendError.message}`);
@@ -228,7 +228,7 @@ export async function reactivateUser(userId: string) {
 
   const { error: reactivateError } = await supabaseAdmin
     .from("profiles")
-    .update({ is_suspended: false })
+    .update({ is_active: true })
     .eq("id", userId);
 
   if (reactivateError) throw new Error(`Erreur réactivation utilisateur: ${reactivateError.message}`);
