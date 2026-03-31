@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Tree from "react-d3-tree";
 import type {
   RawNodeDatum,
@@ -81,8 +81,17 @@ export function NetworkTree({
   nodes: ProfileNode[];
   rootIds: string[];
 }) {
-  const treeData = buildTree(nodes, rootIds);
   const [search, setSearch] = useState("");
+
+  const nodeMap = useMemo(
+    () => new Map(nodes.map((n) => [n.id, n])),
+    [nodes]
+  );
+
+  const treeData = useMemo(
+    () => buildTree(nodes, rootIds),
+    [nodes, rootIds]
+  );
 
   const handleNodeClick = useCallback(
     (node: HierarchyPointNode<TreeNodeDatum>, _event: SyntheticEvent) => {
@@ -94,29 +103,31 @@ export function NetworkTree({
     []
   );
 
-  const filteredRootIds =
-    search.trim() === ""
-      ? rootIds
-      : nodes
-          .filter((n) =>
-            n.full_name?.toLowerCase().includes(search.toLowerCase())
-          )
-          .map((n) => {
-            // Remonter jusqu'à la racine
-            let curr = n;
-            const visited = new Set<string>();
-            while (curr.sponsor_id && !visited.has(curr.id)) {
-              visited.add(curr.id);
-              const parent = nodes.find((x) => x.id === curr.sponsor_id);
-              if (!parent) break;
-              curr = parent;
-            }
-            return curr.id;
-          })
-          .filter((id, i, arr) => arr.indexOf(id) === i);
+  const filteredRootIds = useMemo(() => {
+    if (search.trim() === "") return rootIds;
+    return nodes
+      .filter((n) =>
+        n.full_name?.toLowerCase().includes(search.toLowerCase())
+      )
+      .map((n) => {
+        // Remonter jusqu'à la racine
+        let curr = n;
+        const visited = new Set<string>();
+        while (curr.sponsor_id && !visited.has(curr.id)) {
+          visited.add(curr.id);
+          const parent = nodeMap.get(curr.sponsor_id);
+          if (!parent) break;
+          curr = parent;
+        }
+        return curr.id;
+      })
+      .filter((id, i, arr) => arr.indexOf(id) === i);
+  }, [search, nodes, nodeMap, rootIds]);
 
-  const displayData =
-    search.trim() === "" ? treeData : buildTree(nodes, filteredRootIds);
+  const displayData = useMemo(
+    () => (search.trim() === "" ? treeData : buildTree(nodes, filteredRootIds)),
+    [search, treeData, nodes, filteredRootIds]
+  );
 
   if (displayData.length === 0) {
     return (

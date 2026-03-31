@@ -5,7 +5,17 @@ import dynamic from "next/dynamic";
 const NetworkTree = dynamic(
   () =>
     import("@/components/admin/NetworkTree").then((m) => m.NetworkTree),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="bg-gray-900 rounded-xl border border-white/5 flex items-center justify-center"
+        style={{ height: "70vh" }}
+      >
+        <p className="text-gray-500 text-sm">Chargement de l&apos;arbre...</p>
+      </div>
+    ),
+  }
 );
 
 interface ProfileNode {
