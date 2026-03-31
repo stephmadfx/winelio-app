@@ -129,7 +129,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             type="text"
             readOnly
             value={profile.sponsor_code ?? ""}
-            className="flex-1 px-4 py-2.5 bg-kiparlo-light border border-gray-200 rounded-xl text-kiparlo-dark font-mono text-lg tracking-wider"
+            className="flex-1 min-w-0 px-4 py-2.5 bg-kiparlo-light border border-gray-200 rounded-xl text-kiparlo-dark font-mono text-lg tracking-wider"
           />
           <button
             onClick={copyCode}
@@ -152,7 +152,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
               value={sponsorInput}
               onChange={(e) => setSponsorInput(e.target.value)}
               placeholder="Code parrain"
-              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/50 focus:border-kiparlo-orange"
+              className="flex-1 min-w-0 px-4 py-2.5 border border-gray-200 rounded-xl text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/50 focus:border-kiparlo-orange"
             />
             <button
               onClick={handleSponsor}

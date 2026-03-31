@@ -81,7 +81,7 @@ export default function NewRecommendationPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "granted" | "denied">("idle");
+  const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "granted" | "denied" | "unavailable">("idle");
   const [radius, setRadius] = useState<number>(25);
   const [sortBy, setSortBy] = useState<"distance" | "name">("name");
 
@@ -116,6 +116,10 @@ export default function NewRecommendationPage() {
   }
 
   function requestGeo() {
+    if (!navigator.geolocation) {
+      setGeoStatus("unavailable");
+      return;
+    }
     setGeoStatus("loading");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -535,6 +539,14 @@ export default function NewRecommendationPage() {
             <div className="mb-4 flex items-center justify-center gap-2 rounded-2xl bg-kiparlo-orange/8 px-4 py-3.5 text-sm font-medium text-kiparlo-orange">
               <div className="w-4 h-4 border-2 border-kiparlo-orange border-t-transparent rounded-full animate-spin" />
               Localisation en cours...
+            </div>
+          )}
+          {geoStatus === "unavailable" && (
+            <div className="mb-4 flex items-start gap-2.5 rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3.5 text-sm text-amber-700">
+              <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+              Géolocalisation indisponible. Recherchez par nom ou catégorie.
             </div>
           )}
           {geoStatus === "denied" && (

@@ -43,6 +43,8 @@ export function NetworkGraph({ userId, userName }: { userId: string; userName: s
     const THRESHOLD = 5;
     let moved = false;
     let mouseStartX = 0, mouseStartY = 0;
+    let pinchStartDist = 0;
+    let pinchStartScale = 1;
 
     function onMouseDown(e: MouseEvent) {
       if (e.button !== 0) return;
@@ -80,6 +82,17 @@ export function NetworkGraph({ userId, userName }: { userId: string; userName: s
 
     // Touch support
     function onTouchStart(e: TouchEvent) {
+      if (e.touches.length === 2) {
+        // Pinch start
+        dragState.current.dragging = false;
+        pinchStartDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        pinchStartScale = dragState.current.scale;
+        e.preventDefault();
+        return;
+      }
       if (e.touches.length !== 1) return;
       moved = false;
       mouseStartX = e.touches[0].clientX;
@@ -90,6 +103,27 @@ export function NetworkGraph({ userId, userName }: { userId: string; userName: s
     }
 
     function onTouchMove(e: TouchEvent) {
+      if (e.touches.length === 2) {
+        // Pinch zoom
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const newScale = Math.min(Math.max(pinchStartScale * (dist / pinchStartDist), 0.2), 4);
+        const oldScale = dragState.current.scale;
+        const rect = vp!.getBoundingClientRect();
+        // Zoom toward midpoint of the two fingers
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+        const ratio = newScale / oldScale;
+        dragState.current.tx = midX - ratio * (midX - dragState.current.tx);
+        dragState.current.ty = midY - ratio * (midY - dragState.current.ty);
+        dragState.current.scale = newScale;
+        applyTransform();
+        rerender(n => n + 1);
+        e.preventDefault();
+        return;
+      }
       if (!dragState.current.dragging || e.touches.length !== 1) return;
       const dx = e.touches[0].clientX - mouseStartX;
       const dy = e.touches[0].clientY - mouseStartY;
