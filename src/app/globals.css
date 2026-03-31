@@ -8,6 +8,12 @@
   --color-kiparlo-light: #F8F9FA;
 }
 
+/* Empêche le zoom automatique d'iOS Safari sur les champs de saisie.
+   Safari zoome quand font-size < 16px — forcer 1rem corrige ça. */
+input, textarea, select {
+  font-size: max(16px, 1em);
+}
+
 /* Pulsing ring animation for active recommendations on network graph nodes */
 @keyframes kiparlo-ping {
   0%, 100% {
