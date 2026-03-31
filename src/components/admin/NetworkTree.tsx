@@ -51,25 +51,30 @@ function buildTree(nodes: ProfileNode[], rootIds: string[]): RawNodeDatum[] {
 function CustomNode({ nodeDatum, toggleNode }: CustomNodeElementProps) {
   const isPro = nodeDatum.attributes?.is_professional === "true";
   const isInactive = nodeDatum.attributes?.is_active === "false";
+  const fill = isInactive ? "#ef4444" : isPro ? "#3b82f6" : "#FF6B35";
+  const label = nodeDatum.name.length > 18 ? nodeDatum.name.slice(0, 16) + "…" : nodeDatum.name;
+  const labelWidth = Math.max(label.length * 7, 60);
 
   return (
     <g onClick={toggleNode} style={{ cursor: "pointer" }}>
-      <circle
-        r={20}
-        fill={isInactive ? "#ef4444" : isPro ? "#3b82f6" : "#FF6B35"}
-        stroke={isInactive ? "#dc2626" : isPro ? "#2563eb" : "#F7931E"}
-        strokeWidth={2}
+      {/* Cercle coloré */}
+      <circle r={18} fill={fill} stroke="rgba(255,255,255,0.3)" strokeWidth={1.5} />
+      {/* Initiales dans le cercle */}
+      <text fill="white" fontSize={11} textAnchor="middle" dy={4} fontWeight="700">
+        {nodeDatum.name.split(" ").map((w: string) => w[0] ?? "").slice(0, 2).join("").toUpperCase()}
+      </text>
+      {/* Fond du label */}
+      <rect
+        x={-labelWidth / 2}
+        y={24}
+        width={labelWidth}
+        height={18}
+        rx={4}
+        fill="rgba(15,23,42,0.85)"
       />
-      <text
-        fill="white"
-        fontSize={9}
-        textAnchor="middle"
-        dy={35}
-        fontWeight="500"
-      >
-        {nodeDatum.name.length > 16
-          ? nodeDatum.name.slice(0, 14) + "…"
-          : nodeDatum.name}
+      {/* Texte du label */}
+      <text fill="#e2e8f0" fontSize={11} textAnchor="middle" dy={36} fontWeight="500">
+        {label}
       </text>
     </g>
   );
@@ -181,10 +186,10 @@ export function NetworkTree({
           onNodeClick={handleNodeClick}
           renderCustomNodeElement={(props) => <CustomNode {...props} />}
           separation={{ siblings: 1.5, nonSiblings: 2 }}
-          translate={{ x: 600, y: 60 }}
+          translate={{ x: 600, y: 80 }}
           zoom={0.7}
-          nodeSize={{ x: 160, y: 100 }}
-          pathClassFunc={() => "stroke-gray-700 fill-none"}
+          nodeSize={{ x: 160, y: 110 }}
+          pathClassFunc={() => "stroke-slate-500 fill-none"}
         />
       </div>
     </div>
