@@ -122,6 +122,13 @@ function LoginForm() {
       .eq("id", user.id);
 
     localStorage.removeItem("kiparlo_ref");
+
+    // Notifie toute la chaîne de parrainage (jusqu'à 5 niveaux)
+    fetch("/api/network/new-referral", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newUserId: user.id }),
+    }).catch(() => {/* non bloquant */});
   };
 
   // Step 1: demander le code via notre API (pas GoTrue)
