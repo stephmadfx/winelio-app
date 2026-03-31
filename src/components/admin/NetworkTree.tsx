@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   ReactFlow,
@@ -376,6 +376,20 @@ function Row({
   );
 }
 
+// ─── Auto fitView when search changes (inside ReactFlow context) ──────────────
+
+function FitViewOnSearch({ search }: { search: string }) {
+  const { fitView } = useReactFlow();
+  useEffect(() => {
+    if (search.trim()) {
+      // Small delay to let the layout recalculate first
+      const timer = setTimeout(() => fitView({ padding: 0.3, duration: 400 }), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [search, fitView]);
+  return null;
+}
+
 // ─── Panel positioned above the selected node (inside ReactFlow context) ──────
 
 const NODE_WIDTH = 190;
@@ -633,12 +647,14 @@ export function NetworkTree({
 
   const filteredNodes = useMemo(() => {
     if (!search.trim()) return nodes;
-    const q = search.toLowerCase();
+    const normalize = (s: string) =>
+      s.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
+    const q = normalize(search);
     const matched = new Set<string>();
 
     for (const n of nodes) {
-      const name = `${n.first_name ?? ""} ${n.last_name ?? ""}`.toLowerCase();
-      const email = (n.email ?? "").toLowerCase();
+      const name = normalize(`${n.first_name ?? ""} ${n.last_name ?? ""}`);
+      const email = normalize(n.email ?? "");
       if (name.includes(q) || email.includes(q)) {
         matched.add(n.id);
         let curr = n;
@@ -768,6 +784,9 @@ export function NetworkTree({
             }}
             style={{ background: "#0f172a" }}
           />
+
+          {/* Auto fitView on search */}
+          <FitViewOnSearch search={search} />
 
           {/* Panel portal — uses useReactFlow() so must be inside ReactFlow */}
           {selectedProfile && selectedId && (
