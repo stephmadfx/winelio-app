@@ -221,18 +221,7 @@ export default function NewRecommendationPage() {
 
       if (recError) throw new Error("Erreur création recommandation");
 
-      const { data: steps } = await supabase
-        .from("steps")
-        .select("id")
-        .eq("is_active", true)
-        .order("index");
-
-      if (steps && steps.length > 0) {
-        await supabase.from("recommendation_steps").insert(
-          steps.map((s) => ({ recommendation_id: recommendation.id, step_id: s.id }))
-        );
-      }
-
+      // Les étapes sont créées automatiquement par le trigger on_recommendation_created
       router.push(`/recommendations/${recommendation.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue");

@@ -1,0 +1,103 @@
+# Test Détail Recommandation (iOS Safari)
+#
+# Tests : ouverture d'une reco depuis la liste, affichage du détail, timeline des étapes
+# Prérequis :
+# - Simulateur iOS (iPhone 15+)
+# - App Next.js en cours sur localhost:3000
+# - Au moins 1 recommandation existante pour l'utilisateur connecté
+
+appId: com.apple.mobilesafari
+env:
+  APP_URL: http://localhost:3000
+tags:
+  - ios
+  - reco
+  - detail
+---
+
+# ==========================================
+# STEP 1 : LANCEMENT + NAVIGATION
+# ==========================================
+
+- launchApp
+
+# Prévention crash XCTest cold boot
+- swipe:
+    direction: DOWN
+    duration: 100
+
+- openLink: "${APP_URL}/recommendations"
+
+- extendedWaitUntil:
+    visible: "Recommandations"
+    timeout: 15000
+
+- takeScreenshot: 01-liste-recos
+
+# ==========================================
+# STEP 2 : OUVRIR UNE RECOMMANDATION
+# ==========================================
+
+- extendedWaitUntil:
+    notVisible: "animate-pulse"
+    timeout: 8000
+
+- runFlow:
+    when:
+      visible: "En attente"
+    commands:
+      - tapOn: "En attente"
+      - takeScreenshot: 02-reco-detail-opened
+
+- runFlow:
+    when:
+      visible: "Contact inconnu"
+    commands:
+      - tapOn: "Contact inconnu"
+
+# ==========================================
+# STEP 3 : VÉRIFICATION PAGE DÉTAIL
+# ==========================================
+
+- extendedWaitUntil:
+    visible: "Statut"
+    timeout: 8000
+
+- takeScreenshot: 03-detail-chargee
+
+- assertVisible: "Contact"
+
+- runFlow:
+    when:
+      visible: "Étapes"
+    commands:
+      - assertVisible: "Étapes"
+      - takeScreenshot: 04-timeline-etapes
+
+# ==========================================
+# STEP 4 : SCROLL IOS (swipe up)
+# ==========================================
+
+- swipe:
+    direction: UP
+    duration: 500
+
+- takeScreenshot: 05-page-bas
+
+# ==========================================
+# STEP 5 : RETOUR À LA LISTE
+# ==========================================
+
+- tapOn: "Retour"
+
+- runFlow:
+    when:
+      notVisible: "Recommandations"
+    commands:
+      - openLink: "${APP_URL}/recommendations"
+
+- extendedWaitUntil:
+    visible: "Recommandations"
+    timeout: 8000
+
+- takeScreenshot: 06-retour-liste

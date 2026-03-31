@@ -1,0 +1,6 @@
+# Configuration partagée Maestro - Kiparlo
+# App web Next.js testée dans les navigateurs mobiles
+
+env:
+  APP_URL: http://localhost:3000
+  TEST_EMAIL: test@kiparlo.dev

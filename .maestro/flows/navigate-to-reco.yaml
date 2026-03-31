@@ -1,0 +1,8 @@
+# Sub-flow : Navigation vers la page Recommandations
+# Utilisé par tous les tests reco après auth
+
+- openLink: "${APP_URL}/recommendations"
+
+- extendedWaitUntil:
+    visible: "Recommandations"
+    timeout: 10000

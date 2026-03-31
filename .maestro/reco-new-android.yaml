@@ -1,0 +1,150 @@
+# Test Création Recommandation - 3 étapes (Android Chrome)
+#
+# Tests : formulaire 3 étapes (Contact → Professionnel → Projet), validation, soumission
+# Prérequis :
+# - Émulateur Android démarré avec Chrome
+# - App Next.js en cours sur localhost:3000
+# - Au moins 1 contact existant dans Supabase pour l'utilisateur connecté
+# - Au moins 1 professionnel inscrit dans Supabase
+
+appId: com.android.chrome
+env:
+  APP_URL: http://localhost:3000
+tags:
+  - android
+  - reco
+  - create
+---
+
+# ==========================================
+# STEP 1 : NAVIGATION VERS NOUVELLE RECO
+# ==========================================
+
+- launchApp
+
+- openLink: "${APP_URL}/recommendations/new"
+
+- extendedWaitUntil:
+    visible: "Contact"
+    timeout: 15000
+
+- takeScreenshot: 01-etape-contact
+
+# ==========================================
+# STEP 2 : ÉTAPE 1 — SÉLECTION CONTACT
+# ==========================================
+
+# Vérifier le stepper 3 étapes
+- assertVisible: "Contact"
+- assertVisible: "Professionnel"
+- assertVisible: "Projet"
+
+# Cas A : un contact existant est disponible → le sélectionner
+- runFlow:
+    when:
+      visible: "Sélectionner"
+    commands:
+      - tapOn: "Sélectionner"
+      - takeScreenshot: 02-contact-selectionne
+
+# Cas B : aucun contact existant → créer un nouveau contact
+- runFlow:
+    when:
+      visible: "Nouveau contact"
+    commands:
+      - tapOn: "Nouveau contact"
+      - extendedWaitUntil:
+          visible: "Prénom"
+          timeout: 5000
+      - tapOn: "Prénom"
+      - inputText: "Jean"
+      - tapOn: "Nom"
+      - inputText: "Dupont"
+      - tapOn: "Email"
+      - inputText: "jean.dupont@test.com"
+      - takeScreenshot: 02-nouveau-contact-rempli
+
+# Bouton suivant
+- extendedWaitUntil:
+    visible: "Suivant"
+    timeout: 5000
+
+- tapOn: "Suivant"
+
+# ==========================================
+# STEP 3 : ÉTAPE 2 — SÉLECTION PROFESSIONNEL
+# ==========================================
+
+- extendedWaitUntil:
+    visible: "Professionnel"
+    timeout: 8000
+
+- takeScreenshot: 03-etape-professionnel
+
+# Rechercher un professionnel
+- runFlow:
+    when:
+      visible: "Rechercher"
+    commands:
+      - tapOn: "Rechercher"
+      - inputText: "plom"
+      - takeScreenshot: 04-recherche-pro
+
+# Sélectionner le premier professionnel disponible
+- runFlow:
+    when:
+      visible: "Sélectionner"
+    commands:
+      - tapOn: "Sélectionner"
+      - takeScreenshot: 05-pro-selectionne
+
+- extendedWaitUntil:
+    visible: "Suivant"
+    timeout: 5000
+
+- tapOn: "Suivant"
+
+# ==========================================
+# STEP 4 : ÉTAPE 3 — PROJET
+# ==========================================
+
+- extendedWaitUntil:
+    visible: "Projet"
+    timeout: 8000
+
+- takeScreenshot: 06-etape-projet
+
+# Description du projet
+- runFlow:
+    when:
+      visible: "Description"
+    commands:
+      - tapOn: "Description"
+      - inputText: "Fuite sous l'évier de la cuisine, besoin d'un plombier rapidement."
+
+# Urgence - sélectionner "Urgent"
+- runFlow:
+    when:
+      visible: "Urgent"
+    commands:
+      - tapOn: "Urgent"
+      - takeScreenshot: 07-urgence-urgent
+
+- takeScreenshot: 08-projet-rempli
+
+# ==========================================
+# STEP 5 : SOUMISSION
+# ==========================================
+
+- extendedWaitUntil:
+    visible: "Envoyer"
+    timeout: 5000
+
+- tapOn: "Envoyer"
+
+# Attendre la redirection vers la liste ou le détail
+- extendedWaitUntil:
+    visible: "Recommandations"
+    timeout: 10000
+
+- takeScreenshot: 09-reco-creee-succes

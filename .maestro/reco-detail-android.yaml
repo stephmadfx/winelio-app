@@ -1,0 +1,102 @@
+# Test Détail Recommandation (Android Chrome)
+#
+# Tests : ouverture d'une reco depuis la liste, affichage du détail, timeline des étapes
+# Prérequis :
+# - Émulateur Android avec Chrome
+# - App Next.js en cours sur localhost:3000
+# - Au moins 1 recommandation existante pour l'utilisateur connecté
+
+appId: com.android.chrome
+env:
+  APP_URL: http://localhost:3000
+tags:
+  - android
+  - reco
+  - detail
+---
+
+# ==========================================
+# STEP 1 : NAVIGATION LISTE RECOS
+# ==========================================
+
+- launchApp
+
+- openLink: "${APP_URL}/recommendations"
+
+- extendedWaitUntil:
+    visible: "Recommandations"
+    timeout: 15000
+
+- takeScreenshot: 01-liste-recos
+
+# ==========================================
+# STEP 2 : OUVRIR UNE RECOMMANDATION
+# ==========================================
+
+# Attendre qu'au moins une reco soit chargée (pas de skeleton)
+- extendedWaitUntil:
+    notVisible: "animate-pulse"
+    timeout: 8000
+
+# Chercher si une reco avec statut "En attente" est visible
+- runFlow:
+    when:
+      visible: "En attente"
+    commands:
+      - tapOn: "En attente"
+      - takeScreenshot: 02-reco-detail-opened
+
+# Si pas "En attente", tapper la première carte visible par son texte "Contact"
+- runFlow:
+    when:
+      visible: "Contact inconnu"
+    commands:
+      - tapOn: "Contact inconnu"
+
+# ==========================================
+# STEP 3 : VÉRIFICATION PAGE DÉTAIL
+# ==========================================
+
+- extendedWaitUntil:
+    visible: "Détail"
+    timeout: 8000
+
+- takeScreenshot: 03-detail-chargee
+
+# Vérifier les sections clés du détail
+- assertVisible: "Statut"
+- assertVisible: "Contact"
+
+# Vérifier la timeline des étapes est présente
+- runFlow:
+    when:
+      visible: "Étapes"
+    commands:
+      - assertVisible: "Étapes"
+      - takeScreenshot: 04-timeline-etapes
+
+# ==========================================
+# STEP 4 : SCROLL POUR VOIR TOUTE LA PAGE
+# ==========================================
+
+- scroll
+
+- takeScreenshot: 05-page-bas
+
+# ==========================================
+# STEP 5 : RETOUR À LA LISTE
+# ==========================================
+
+- tapOn: "Retour"
+
+- runFlow:
+    when:
+      notVisible: "Recommandations"
+    commands:
+      - openLink: "${APP_URL}/recommendations"
+
+- extendedWaitUntil:
+    visible: "Recommandations"
+    timeout: 8000
+
+- takeScreenshot: 06-retour-liste

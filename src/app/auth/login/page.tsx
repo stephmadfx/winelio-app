@@ -27,8 +27,24 @@ function LoginForm() {
   const [sponsorInput, setSponsorInput] = useState("");
   const [sponsorError, setSponsorError] = useState("");
   const [sponsorChecking, setSponsorChecking] = useState(false);
+  const [kbPadding, setKbPadding] = useState(0);
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Remonte le contenu au-dessus du clavier mobile (visualViewport API)
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      setKbPadding(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+    };
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
   const isRegister = searchParams.get("mode") === "register";
   const refCode = searchParams.get("ref");
 
@@ -208,7 +224,7 @@ function LoginForm() {
   // ─── Blocage inscription sans parrain ────────────────────────────────────
   if (isRegister && !refCode) {
     return (
-      <div className="relative z-10 min-h-screen flex items-center justify-center px-4">
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4" style={{ paddingBottom: kbPadding }}>
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-extrabold tracking-tight mb-2">
@@ -283,7 +299,7 @@ function LoginForm() {
 
   if (step === "email") {
     return (
-      <div className="relative z-10 min-h-screen flex items-center justify-center px-4">
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4" style={{ paddingBottom: kbPadding }}>
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-extrabold tracking-tight mb-2">
@@ -368,7 +384,7 @@ function LoginForm() {
 
   // ─── UI : saisie code ─────────────────────────────────────────────────────
   return (
-    <div className="relative z-10 min-h-screen flex items-center justify-center px-4">
+    <div className="relative z-10 min-h-screen flex items-center justify-center px-4" style={{ paddingBottom: kbPadding }}>
       <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
         <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber flex items-center justify-center">
           <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">

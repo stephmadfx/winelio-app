@@ -1,0 +1,154 @@
+# Test Création Recommandation - 3 étapes (iOS Safari)
+#
+# Tests : formulaire 3 étapes (Contact → Professionnel → Projet), validation, soumission
+# Prérequis :
+# - Simulateur iOS démarré (iPhone 15 ou 16)
+# - App Next.js en cours sur localhost:3000
+# - Au moins 1 contact existant dans Supabase pour l'utilisateur connecté
+# - Au moins 1 professionnel inscrit dans Supabase
+
+appId: com.apple.mobilesafari
+env:
+  APP_URL: http://localhost:3000
+tags:
+  - ios
+  - reco
+  - create
+---
+
+# ==========================================
+# STEP 1 : LANCEMENT + NAVIGATION
+# ==========================================
+
+- launchApp
+
+# Prévention crash XCTest sur cold boot iOS
+- swipe:
+    direction: DOWN
+    duration: 100
+
+- openLink: "${APP_URL}/recommendations/new"
+
+- extendedWaitUntil:
+    visible: "Contact"
+    timeout: 15000
+
+- takeScreenshot: 01-etape-contact
+
+# ==========================================
+# STEP 2 : ÉTAPE 1 — SÉLECTION CONTACT
+# ==========================================
+
+- assertVisible: "Contact"
+- assertVisible: "Professionnel"
+- assertVisible: "Projet"
+
+# Cas A : contact existant disponible
+- runFlow:
+    when:
+      visible: "Sélectionner"
+    commands:
+      - tapOn: "Sélectionner"
+      - takeScreenshot: 02-contact-selectionne
+
+# Cas B : créer un nouveau contact
+- runFlow:
+    when:
+      visible: "Nouveau contact"
+    commands:
+      - tapOn: "Nouveau contact"
+      - extendedWaitUntil:
+          visible: "Prénom"
+          timeout: 5000
+      - tapOn: "Prénom"
+      - inputText: "Jean"
+      # iOS : masquer le clavier avant de tapper le champ suivant
+      - hideKeyboard
+      - tapOn: "Nom"
+      - inputText: "Dupont"
+      - hideKeyboard
+      - tapOn: "Email"
+      - inputText: "jean.dupont@test.com"
+      - hideKeyboard
+      - takeScreenshot: 02-nouveau-contact-rempli
+
+- extendedWaitUntil:
+    visible: "Suivant"
+    timeout: 5000
+
+- tapOn: "Suivant"
+
+# ==========================================
+# STEP 3 : ÉTAPE 2 — SÉLECTION PROFESSIONNEL
+# ==========================================
+
+- extendedWaitUntil:
+    visible: "Professionnel"
+    timeout: 8000
+
+- takeScreenshot: 03-etape-professionnel
+
+- runFlow:
+    when:
+      visible: "Rechercher"
+    commands:
+      - tapOn: "Rechercher"
+      - inputText: "plom"
+      - hideKeyboard
+      - takeScreenshot: 04-recherche-pro
+
+- runFlow:
+    when:
+      visible: "Sélectionner"
+    commands:
+      - tapOn: "Sélectionner"
+      - takeScreenshot: 05-pro-selectionne
+
+- extendedWaitUntil:
+    visible: "Suivant"
+    timeout: 5000
+
+- tapOn: "Suivant"
+
+# ==========================================
+# STEP 4 : ÉTAPE 3 — PROJET
+# ==========================================
+
+- extendedWaitUntil:
+    visible: "Projet"
+    timeout: 8000
+
+- takeScreenshot: 06-etape-projet
+
+- runFlow:
+    when:
+      visible: "Description"
+    commands:
+      - tapOn: "Description"
+      - inputText: "Fuite sous l'évier de la cuisine, besoin d'un plombier rapidement."
+      - hideKeyboard
+
+- runFlow:
+    when:
+      visible: "Urgent"
+    commands:
+      - tapOn: "Urgent"
+      - takeScreenshot: 07-urgence-urgent
+
+- takeScreenshot: 08-projet-rempli
+
+# ==========================================
+# STEP 5 : SOUMISSION
+# ==========================================
+
+- extendedWaitUntil:
+    visible: "Envoyer"
+    timeout: 5000
+
+- tapOn: "Envoyer"
+
+- extendedWaitUntil:
+    visible: "Recommandations"
+    timeout: 10000
+
+- takeScreenshot: 09-reco-creee-succes
