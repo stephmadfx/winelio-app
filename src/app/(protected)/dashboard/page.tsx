@@ -47,14 +47,16 @@ export default async function DashboardPage() {
       .eq("status", "COMPLETED"),
   ]);
 
-  // Fetch profile to check onboarding and role
+  // Fetch profile to check onboarding
   const { data: profile } = await supabase
     .from("profiles")
-    .select("first_name, last_name, role")
+    .select("first_name, last_name")
     .eq("id", user.id)
     .single();
 
-  const needsOnboarding = !profile?.first_name || !profile?.last_name;
+  // Super admin role stored in app_metadata (JWT), no extra DB query needed
+  const isSuperAdmin = user.app_metadata?.role === "super_admin";
+  const needsOnboarding = !isSuperAdmin && (!profile?.first_name || !profile?.last_name);
 
   // Total network members across ALL levels (up to 5) recursively
   let networkCount = 0;
@@ -76,7 +78,6 @@ export default async function DashboardPage() {
       ? Math.round(((completedRecos ?? 0) / totalRecos) * 100)
       : 0;
 
-  const isSuperAdmin = profile?.role === "super_admin";
 
   return (
     <div>

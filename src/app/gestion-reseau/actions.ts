@@ -9,13 +9,8 @@ async function assertSuperAdmin() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Non authentifié");
 
-  const { data: profile } = await supabaseAdmin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || profile.role !== "super_admin") {
+  // Role stored in app_metadata (JWT), no extra DB query needed
+  if (user.app_metadata?.role !== "super_admin") {
     throw new Error("Accès refusé");
   }
   return user;
