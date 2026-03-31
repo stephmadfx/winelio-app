@@ -50,7 +50,9 @@ const EXCLUDED_DOMAINS = [
   "wordpress.com","wixsite.com","jimdo.com","squarespace.com",
   "w3.org","schema.org","mozilla.org","apple.com","microsoft.com",
   "amazon.com","cloudflare.com","datatables.net","webador.fr",
-  "webador.com","wix.com","wixpress.com","wixsite.com","godaddy.com","ovh.com","ionos.fr",
+  "webador.com","wix.com","wixpress.com","sentry.wixpress.com","sentry-next.wixpress.com",
+  "wixsite.com","godaddy.com","ovh.com","ionos.fr",
+  "hubspot.com","mailchimp.com","sendinblue.com","brevo.com",
 ];
 const EXCLUDED_PATTERNS = [".png",".jpg",".gif",".svg",".webp",".css",".js",".php",".woff",".ttf"];
 
