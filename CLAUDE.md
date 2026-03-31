@@ -45,15 +45,19 @@ src/
 └── middleware.ts              # Protection des routes
 ```
 
-## Supabase (self-hosted sur VPS)
-- **URL API (Kong)** : http://supabasekong-r9bbynb4m22odtnie78je6fx.31.97.152.195.sslip.io
-- **Container DB** : supabase-db-r9bbynb4m22odtnie78je6fx
-- **Container Auth** : supabase-auth-r9bbynb4m22odtnie78je6fx
+## Supabase Cloud
+- **URL** : https://dxnebmxtkvauergvrmod.supabase.co
+- **Dashboard** : https://supabase.com/dashboard/project/dxnebmxtkvauergvrmod
+- Utilisé en dev local ET en production (via `.env.local` et Coolify)
 
 ### Variables d'environnement (dans Coolify, PAS dans le code)
-- `NEXT_PUBLIC_SUPABASE_URL` — URL du Kong API Gateway
+- `NEXT_PUBLIC_SUPABASE_URL` — URL Supabase Cloud
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Clé publique anon
 - `SUPABASE_SERVICE_ROLE_KEY` — Clé admin (server-side uniquement)
+
+### Rôle super_admin
+Stocké dans `auth.users.app_metadata.role` (JWT). Jamais dans `profiles`.
+Pour attribuer : `PUT /auth/v1/admin/users/{id}` avec `{"app_metadata": {"role": "super_admin"}}`
 
 ### Tables de la base de données
 | Table | Description |
@@ -122,14 +126,8 @@ Toutes les tables ont des politiques RLS actives. Les utilisateurs ne voient que
 # Build local
 npm run build
 
-# Accéder à la DB Supabase
-sshpass -p '04660466aA@@@' ssh root@31.97.152.195 "docker exec supabase-db-r9bbynb4m22odtnie78je6fx psql -U supabase_admin -d postgres"
-
-# Voir les logs auth
-sshpass -p '04660466aA@@@' ssh root@31.97.152.195 "docker logs supabase-auth-r9bbynb4m22odtnie78je6fx 2>&1 | tail -20"
-
-# Voir les containers Supabase
-sshpass -p '04660466aA@@@' ssh root@31.97.152.195 "docker ps --filter name=supabase --format 'table {{.Names}}\t{{.Status}}'"
+# Accéder à la DB Supabase (production sur VPS — container temp-supabase-db)
+sshpass -p '04660466aA@@@' ssh root@31.97.152.195 "docker exec temp-supabase-db psql -U supabase_admin -d postgres"
 ```
 
 ## Code source de l'ancien développeur
