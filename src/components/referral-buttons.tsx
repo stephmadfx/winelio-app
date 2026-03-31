@@ -118,7 +118,7 @@ export function EmailInviteButton({ code }: { code: string }) {
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl">
+        <DialogContent className="p-0 overflow-hidden rounded-2xl">
           {/* Header gradient */}
           <div className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber p-6 text-white">
             <div className="flex items-center gap-3 mb-1">
@@ -260,7 +260,7 @@ export function ShareButton({ code }: { code: string }) {
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm p-0 overflow-hidden rounded-2xl">
+        <DialogContent className="p-0 overflow-hidden rounded-2xl">
           {/* Header */}
           <div className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber px-6 pt-6 pb-5 text-white text-center">
             <DialogHeader>
