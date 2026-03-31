@@ -18,7 +18,7 @@ export default async function NewCompanyPage() {
     .order("name");
 
   return (
-    <div className="max-w-3xl">
+    <div className="">
       <h2 className="text-2xl font-bold text-kiparlo-dark mb-6">
         Nouvelle entreprise
       </h2>

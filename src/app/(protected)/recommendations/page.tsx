@@ -156,7 +156,7 @@ export default function RecommendationsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="">
 
       {/* ── Hero Header ── */}
       <div className="relative mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-kiparlo-dark via-[#3d4042] to-[#2D3436] px-6 py-7 sm:px-8">

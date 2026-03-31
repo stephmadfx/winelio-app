@@ -274,7 +274,7 @@ export default function NewRecommendationPage() {
     }`;
 
   return (
-    <div className="mx-auto max-w-2xl pb-24 lg:pb-0">
+    <div className="pb-24 lg:pb-0">
 
       {/* ── Header ── */}
       <div className="mb-8">

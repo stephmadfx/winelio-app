@@ -23,7 +23,7 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div className="">
       <h2 className="text-2xl font-bold text-kiparlo-dark mb-6">Mon profil</h2>
       <ProfileForm profile={profile} />
     </div>
