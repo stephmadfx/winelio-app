@@ -139,6 +139,88 @@ async function getPlaceDetails(placeId) {
   return data.result || null;
 }
 
+// ─── Scraping email depuis site web ──────────────────────────────────────────
+
+const MAILTO_REGEX = /mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6})/gi;
+const EMAIL_REGEX  = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6}/g;
+
+const EXCLUDED_EMAIL_DOMAINS = [
+  "example.com","test.com","sentry.io","google.com","facebook.com",
+  "instagram.com","twitter.com","linkedin.com","youtube.com",
+  "wordpress.com","wixsite.com","jimdo.com","squarespace.com",
+  "w3.org","schema.org","mozilla.org","apple.com","microsoft.com",
+];
+const EXCLUDED_EMAIL_PATTERNS = [".png",".jpg",".gif",".svg",".webp",".css",".js",".php",".woff"];
+
+function isValidScrapedEmail(email) {
+  const lower = email.toLowerCase();
+  if (EXCLUDED_EMAIL_PATTERNS.some((p) => lower.includes(p))) return false;
+  if (EXCLUDED_EMAIL_DOMAINS.some((d) => lower.endsWith("@" + d) || lower.includes("@" + d + "."))) return false;
+  if (email.length > 80) return false;
+  // Au moins 2 chars avant @, domaine avec point
+  if (!/^.{2,}@.+\..{2,}$/.test(email)) return false;
+  return true;
+}
+
+function normalizeUrl(url) {
+  if (!url) return null;
+  if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+  return url.replace(/\/$/, "");
+}
+
+async function fetchHtml(url, timeoutMs = 7000) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
+      signal: controller.signal,
+      redirect: "follow",
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.includes("text/html") && !ct.includes("text/plain")) return null;
+    return await res.text();
+  } catch {
+    return null;
+  }
+}
+
+function extractEmailsFromHtml(html) {
+  // Priorité : mailto: links (plus fiables)
+  const mailto = [...html.matchAll(MAILTO_REGEX)].map((m) => m[1]);
+  const fromMailto = mailto.filter(isValidScrapedEmail);
+  if (fromMailto.length > 0) return fromMailto;
+
+  // Fallback : regex brute
+  const raw = html.match(EMAIL_REGEX) || [];
+  return raw.filter(isValidScrapedEmail);
+}
+
+async function scrapeEmailFromWebsite(websiteUrl) {
+  const base = normalizeUrl(websiteUrl);
+  if (!base) return null;
+
+  const pagesToTry = [
+    base,
+    `${base}/contact`,
+    `${base}/nous-contacter`,
+    `${base}/contactez-nous`,
+    `${base}/contact.html`,
+    `${base}/contact.php`,
+  ];
+
+  for (const url of pagesToTry) {
+    const html = await fetchHtml(url);
+    if (!html) continue;
+    const emails = extractEmailsFromHtml(html);
+    if (emails.length > 0) return emails[0];
+    await sleep(300);
+  }
+  return null;
+}
+
 // ─── Import dans Supabase ─────────────────────────────────────────────────────
 
 const importedPlaceIds = new Set();
@@ -165,11 +247,21 @@ async function importProfessional(place, categorySlug, categoryId) {
   const postalCode = extractPostalCode(address);
   const city = extractCity(address);
 
-  // Email fictif basé sur place_id (unique, mais non-fonctionnel)
-  const email = `pro.${place.place_id.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20)}@kiparlo-pro.fr`;
+  // Tentative de récupération du vrai email depuis le site web
+  let scrapedEmail = null;
+  if (website) {
+    try {
+      scrapedEmail = await scrapeEmailFromWebsite(website);
+    } catch { /* ignore */ }
+  }
+
+  // Utilise le vrai email si trouvé, sinon email fictif unique
+  const fallbackEmail = `pro.${place.place_id.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20)}@kiparlo-pro.fr`;
+  const email = scrapedEmail || fallbackEmail;
 
   if (dryRun) {
-    console.log(`[DRY-RUN] ${name} | ${city} | ${phone || "no phone"} | ${email}`);
+    const emailSource = scrapedEmail ? "✉ réel" : "🔧 fictif";
+    console.log(`[DRY-RUN] ${name} | ${city} | ${phone || "no phone"} | ${email} (${emailSource})`);
     return { success: true, dry: true };
   }
 
