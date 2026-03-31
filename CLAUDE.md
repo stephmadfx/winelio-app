@@ -1,7 +1,7 @@
-# Kiparlo - Instructions pour Claude Code
+# Kiparlo / Buzreco - Instructions pour Claude Code
 
 ## Projet
-Kiparlo est une plateforme de recommandations professionnelles avec système MLM (réseau de parrainage à 5 niveaux). Migration depuis React Native + FastAPI vers Next.js + Supabase.
+Buzreco (nom de marque) / Kiparlo (nom technique du repo) est une plateforme de recommandations professionnelles avec système MLM (réseau de parrainage à 5 niveaux). Migration depuis React Native + FastAPI vers Next.js + Supabase.
 
 ## Stack technique
 - **Frontend** : Next.js 15 (App Router, Server Components)
@@ -23,24 +23,46 @@ Kiparlo est une plateforme de recommandations professionnelles avec système MLM
 src/
 ├── app/
 │   ├── (protected)/          # Routes authentifiées (avec sidebar)
-│   │   ├── layout.tsx        # Layout avec sidebar
+│   │   ├── layout.tsx        # Layout avec sidebar + DemoBanner + AppBackground
 │   │   ├── dashboard/        # Tableau de bord
 │   │   ├── profile/          # Profil utilisateur
 │   │   ├── companies/        # Gestion entreprises
 │   │   ├── recommendations/  # Workflow 8 étapes
 │   │   ├── network/          # Réseau MLM (arbre 5 niveaux)
-│   │   └── wallet/           # Wallet EUR + Wins
+│   │   ├── wallet/           # Wallet EUR + Wins
+│   │   └── settings/         # Paramètres (thème clair/sombre)
+│   ├── gestion-reseau/       # Super admin (role super_admin requis)
+│   │   ├── layout.tsx        # AdminLayoutShell (sidebar collapsible)
+│   │   ├── page.tsx          # Dashboard admin
+│   │   ├── recommandations/  # Liste + détail recommandations
+│   │   ├── retraits/         # Gestion des demandes de retrait
+│   │   ├── utilisateurs/     # Liste + fiche utilisateurs
+│   │   ├── professionnels/   # Liste professionnels avec SIRET
+│   │   ├── reseau/           # Arbre MLM global
+│   │   └── actions.ts        # Server actions admin
 │   ├── auth/
 │   │   ├── login/            # Page de connexion (Magic Link)
 │   │   └── callback/         # Callback après vérification email
-│   ├── api/auth/callback/    # Route API callback (PKCE flow)
+│   ├── api/
+│   │   ├── auth/callback/    # Route API callback (PKCE flow)
+│   │   └── network/send-invite/ # Envoi email d'invitation parrainage
 │   └── page.tsx              # Landing page
-├── components/               # Composants réutilisables
+├── components/
+│   ├── ui/                   # Composants shadcn (dialog, button, etc.)
+│   ├── admin/
+│   │   ├── AdminLayoutShell.tsx  # Layout admin avec sidebar collapsible
+│   │   └── ProfessionnelsTable.tsx
+│   ├── referral-buttons.tsx  # Boutons Copier/Inviter/Partager (QR code + email invite)
+│   ├── AppBackground.tsx     # Fond animé de l'app
+│   ├── sidebar.tsx           # Sidebar desktop
+│   ├── mobile-nav.tsx        # Nav bar mobile bas d'écran
+│   └── mobile-header.tsx     # Header mobile
 ├── lib/
 │   ├── supabase/
 │   │   ├── config.ts         # URL + Anon Key (depuis env vars)
 │   │   ├── client.ts         # Client browser
-│   │   └── server.ts         # Client server
+│   │   ├── server.ts         # Client server
+│   │   └── admin.ts          # Client admin (service role)
 │   └── commission.ts         # Logique calcul commissions MLM
 └── middleware.ts              # Protection des routes
 ```
@@ -54,6 +76,9 @@ src/
 - `NEXT_PUBLIC_SUPABASE_URL` — URL Supabase Cloud
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Clé publique anon
 - `SUPABASE_SERVICE_ROLE_KEY` — Clé admin (server-side uniquement)
+- `NEXT_PUBLIC_DEMO_MODE` — `"true"` pour afficher le bandeau démo
+- `NEXT_PUBLIC_APP_URL` — URL publique de l'app (pour les liens d'invitation)
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SENDER_NAME` — Config email
 
 ### Rôle super_admin
 Stocké dans `auth.users.app_metadata.role` (JWT). Jamais dans `profiles`.
@@ -64,7 +89,7 @@ Pour attribuer : `PUT /auth/v1/admin/users/{id}` avec `{"app_metadata": {"role":
 |-------|-------------|
 | profiles | Extends auth.users (nom, phone, sponsor_code, sponsor_id, is_professional) |
 | categories | 15 catégories de services (plomberie, électricité, etc.) |
-| companies | Entreprises des professionnels |
+| companies | Entreprises des professionnels (siret, siren, vat_number, is_verified) |
 | contacts | Prospects pour les recommandations |
 | compensation_plans | Plans de commission (taux, pourcentages par niveau) |
 | steps | 8 étapes du workflow de recommandation |
@@ -89,6 +114,9 @@ Toutes les tables ont des politiques RLS actives. Les utilisateurs ne voient que
 1. User entre son email → `signInWithOtp()` → email envoyé via SMTP o2switch
 2. User clique le lien → Supabase vérifie → redirige vers `/auth/callback`
 3. Callback page gère le token (hash fragment ou PKCE code) → session créée → redirect `/dashboard`
+
+### Inscription obligatoire par parrainage
+**Règle absolue** : impossible de s'inscrire sans code parrain valide. C'est une règle métier fondamentale du MLM. Ne jamais la retirer ni la contourner.
 
 ### Workflow de recommandation (8 étapes)
 1. Recommandation reçue (auto)
@@ -121,10 +149,24 @@ Toutes les tables ont des politiques RLS actives. Les utilisateurs ne voient que
 - **Coolify** : http://31.97.152.195:8000 (contact@aide-multimedia.fr / 04660466aA@@@)
 - **SMTP** : dahu.o2switch.net port 587 (contact@aide-multimedia.fr)
 
+## Serveur de développement local
+- Port : **3001** (`http://localhost:3001`)
+- **Après chaque `git push`, relancer le serveur dev** :
+  ```bash
+  pkill -f "next dev" ; sleep 1 ; cd /Users/steph/PROJETS/WINKO/kiparlo && npm run dev &
+  ```
+- Vérifier que le serveur tourne bien avant de tester dans le navigateur.
+
 ## Commandes utiles
 ```bash
 # Build local
 npm run build
+
+# Serveur dev (port 3001)
+npm run dev
+
+# Relancer le serveur dev (après un push)
+pkill -f "next dev" ; sleep 1 ; npm run dev &
 
 # Accéder à la DB Supabase (production sur VPS — container temp-supabase-db)
 sshpass -p '04660466aA@@@' ssh root@31.97.152.195 "docker exec temp-supabase-db psql -U supabase_admin -d postgres"
@@ -140,7 +182,9 @@ Fichiers de reference dans `/doc/` :
 - `@doc/database.md` — Schema des tables Supabase/PostgreSQL avec relations et statuts
 - `@doc/api-routes.md` — Liste des endpoints API, methodes, validations et routes pages
 
-## Regles
+## Règles
+
+### Général
 - Ne jamais commiter de credentials dans le code (utiliser les env vars Coolify)
 - Les `NEXT_PUBLIC_*` doivent être des "Build Variables" dans Coolify
 - Le config.ts applique `.replace(/\s/g, "")` pour nettoyer les espaces parasites des env vars
@@ -148,3 +192,14 @@ Fichiers de reference dans `/doc/` :
 - Le flux auth utilise PKCE (pas implicit) — voir `lib/supabase/client.ts`
 - Les operations financieres (retraits) passent par l'API Route serveur `/api/wallet/withdraw`
 - Les headers de securite sont configures dans `next.config.ts`
+- **Après chaque `git push`, relancer le serveur dev local** (voir commande ci-dessus)
+
+### Tailwind CSS v4 — IMPORTANT
+- **Ne jamais construire des classes dynamiques partielles** : Tailwind JIT scanne statiquement le code.
+  - ❌ `md:${collapsed ? "ml-16" : "ml-64"}` — la classe n'est PAS détectée
+  - ✅ `${collapsed ? "md:ml-16" : "md:ml-64"}` — les deux classes complètes sont détectées
+- Toujours écrire les classes Tailwind en entier dans le code source.
+
+### shadcn/ui
+- Les composants générés par `npx shadcn@latest add` dans `src/components/ui/` doivent toujours être commités.
+- Ne pas oublier de commiter les nouveaux fichiers `ui/*.tsx` après installation.
