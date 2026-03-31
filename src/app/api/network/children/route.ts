@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -18,8 +19,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "parentId requis" }, { status: 400 });
   }
 
-  // Use service-level query that bypasses RLS for counting recos
-  const { data: children } = await supabase
+  const { data: children } = await supabaseAdmin
     .from("profiles")
     .select("id, first_name, last_name")
     .eq("sponsor_id", parentId);
@@ -28,34 +28,33 @@ export async function GET(request: Request) {
     return NextResponse.json({ children: [] });
   }
 
-  // For each child, get counts using admin-like queries
-  // Since this is server-side, we can use RPC or direct queries
+  const ACTIVE_STATUSES = [
+    "PENDING", "ACCEPTED", "CONTACT_MADE", "MEETING_SCHEDULED",
+    "QUOTE_SUBMITTED", "QUOTE_VALIDATED", "PAYMENT_RECEIVED",
+  ];
+
   const results = await Promise.all(
     children.map(async (child) => {
-      const [{ count: childCount }, { count: activeRecos }, { count: completedRecos }] =
-        await Promise.all([
-          supabase
-            .from("profiles")
-            .select("id", { count: "exact", head: true })
-            .eq("sponsor_id", child.id),
-          // For recommendation counts, we need to bypass RLS
-          // Use a workaround: count via commission_transactions which may have different RLS
-          // Or just use the profiles-based approach
-          supabase.rpc("count_user_recos_by_status", {
-            p_user_id: child.id,
-            p_statuses: ["PENDING", "ACCEPTED", "CONTACT_MADE", "MEETING_SCHEDULED", "QUOTE_SUBMITTED", "QUOTE_VALIDATED", "PAYMENT_RECEIVED"],
-          }).then(
-            (r) => ({ count: r.data ?? 0 }),
-            () => ({ count: 0 })
-          ),
-          supabase.rpc("count_user_recos_by_status", {
-            p_user_id: child.id,
-            p_statuses: ["COMPLETED"],
-          }).then(
-            (r) => ({ count: r.data ?? 0 }),
-            () => ({ count: 0 })
-          ),
-        ]);
+      const [
+        { count: childCount },
+        { count: activeRecos },
+        { count: completedRecos },
+      ] = await Promise.all([
+        supabaseAdmin
+          .from("profiles")
+          .select("id", { count: "exact", head: true })
+          .eq("sponsor_id", child.id),
+        supabaseAdmin
+          .from("recommendations")
+          .select("id", { count: "exact", head: true })
+          .eq("referrer_id", child.id)
+          .in("status", ACTIVE_STATUSES),
+        supabaseAdmin
+          .from("recommendations")
+          .select("id", { count: "exact", head: true })
+          .eq("referrer_id", child.id)
+          .eq("status", "COMPLETED"),
+      ]);
 
       return {
         id: child.id,
