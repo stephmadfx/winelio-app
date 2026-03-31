@@ -13,7 +13,7 @@ export default async function AdminUserDetail({
 }) {
   const { id } = await params;
 
-  const [profileRes, walletRes, recoCountRes, sponsorCountRes] =
+  const [profileRes, walletRes, recoCountRes, sponsorCountRes, companyRes] =
     await Promise.all([
       supabaseAdmin
         .from("profiles")
@@ -33,12 +33,18 @@ export default async function AdminUserDetail({
         .from("profiles")
         .select("id", { count: "exact", head: true })
         .eq("sponsor_id", id),
+      supabaseAdmin
+        .from("companies")
+        .select("name, legal_name, siret, siren, vat_number, email, phone, website, address, city, postal_code, is_verified")
+        .eq("owner_id", id)
+        .maybeSingle(),
     ]);
 
   if (!profileRes.data) notFound();
 
   const profile = profileRes.data;
   const wallet = walletRes.data;
+  const company = companyRes.data;
   const sponsor = Array.isArray(profile.sponsor) ? profile.sponsor[0] : profile.sponsor;
 
   return (
@@ -83,6 +89,87 @@ export default async function AdminUserDetail({
           </p>
         </div>
       </div>
+
+      {/* Entreprise (pros uniquement) */}
+      {profile.is_professional && (
+        <div className="bg-gray-900 rounded-xl border border-white/5 p-5 mb-4">
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            Entreprise
+            {company?.is_verified && (
+              <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-xs normal-case">
+                ✓ Vérifiée
+              </span>
+            )}
+          </h2>
+          {company ? (
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="col-span-2">
+                <p className="text-gray-500 text-xs mb-0.5">Raison sociale</p>
+                <p className="text-white">{company.legal_name || company.name || "—"}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs mb-0.5">SIRET</p>
+                <p className="text-white font-mono text-xs tracking-widest">
+                  {company.siret
+                    ? company.siret.replace(/(\d{3})(\d{3})(\d{3})(\d{5})/, "$1 $2 $3 $4")
+                    : <span className="text-gray-600 not-italic font-sans">Non renseigné</span>
+                  }
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs mb-0.5">SIREN</p>
+                <p className="text-white font-mono text-xs tracking-widest">
+                  {company.siren
+                    ? company.siren.replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3")
+                    : <span className="text-gray-600 not-italic font-sans">—</span>
+                  }
+                </p>
+              </div>
+              {company.vat_number && (
+                <div>
+                  <p className="text-gray-500 text-xs mb-0.5">N° TVA</p>
+                  <p className="text-white font-mono text-xs">{company.vat_number}</p>
+                </div>
+              )}
+              {company.email && (
+                <div>
+                  <p className="text-gray-500 text-xs mb-0.5">Email entreprise</p>
+                  <p className="text-white text-xs">{company.email}</p>
+                </div>
+              )}
+              {company.website && (
+                <div className="col-span-2">
+                  <p className="text-gray-500 text-xs mb-0.5">Site web</p>
+                  <a href={company.website} target="_blank" rel="noopener noreferrer"
+                     className="text-kiparlo-orange text-xs hover:underline truncate block">
+                    {company.website}
+                  </a>
+                </div>
+              )}
+              {company.address && (
+                <div className="col-span-2">
+                  <p className="text-gray-500 text-xs mb-0.5">Adresse</p>
+                  <p className="text-white text-xs">{company.address}{company.city ? `, ${company.city}` : ""}{company.postal_code ? ` ${company.postal_code}` : ""}</p>
+                </div>
+              )}
+              {company.siret && (
+                <div className="col-span-2 pt-1">
+                  <a
+                    href={`https://www.societe.com/cgi-bin/search?champs=${company.siret}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-gray-500 hover:text-kiparlo-orange transition-colors"
+                  >
+                    Vérifier sur societe.com →
+                  </a>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-gray-600 text-sm italic">Aucune entreprise associée</p>
+          )}
+        </div>
+      )}
 
       {/* Wallet */}
       {wallet && (

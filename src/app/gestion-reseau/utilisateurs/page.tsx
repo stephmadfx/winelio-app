@@ -12,9 +12,10 @@ export default async function AdminUtilisateurs({
 
   let query = supabaseAdmin
     .from("profiles")
-    .select("id, first_name, last_name, is_professional, is_active, created_at, sponsor_id", {
-      count: "exact",
-    })
+    .select(
+      "id, first_name, last_name, is_professional, is_active, created_at, sponsor_id, company:companies(name, siret, siren)",
+      { count: "exact" }
+    )
     .order("created_at", { ascending: false })
     .range((page - 1) * pageSize, page * pageSize - 1);
 
@@ -48,15 +49,21 @@ export default async function AdminUtilisateurs({
             <tr>
               <th className="text-left px-4 py-3">Nom</th>
               <th className="text-left px-4 py-3">Type</th>
+              <th className="text-left px-4 py-3">SIRET</th>
               <th className="text-left px-4 py-3">Statut</th>
               <th className="text-left px-4 py-3">Inscrit le</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {(users ?? []).map((user) => (
+            {(users ?? []).map((user) => {
+              const company = Array.isArray(user.company) ? user.company[0] : user.company;
+              return (
               <tr key={user.id} className="hover:bg-white/2">
-                <td className="px-4 py-3 text-white">{`${user.first_name ?? ""} ${user.last_name ?? ""}`.trim() || "—"}</td>
+                <td className="px-4 py-3">
+                  <p className="text-white">{`${user.first_name ?? ""} ${user.last_name ?? ""}`.trim() || "—"}</p>
+                  {company?.name && <p className="text-gray-500 text-xs">{company.name}</p>}
+                </td>
                 <td className="px-4 py-3">
                   <span
                     className={`text-xs px-2 py-0.5 rounded ${
@@ -67,6 +74,15 @@ export default async function AdminUtilisateurs({
                   >
                     {user.is_professional ? "Pro" : "Particulier"}
                   </span>
+                </td>
+                <td className="px-4 py-3 text-xs font-mono">
+                  {company?.siret ? (
+                    <span className="text-gray-300">{company.siret}</span>
+                  ) : user.is_professional ? (
+                    <span className="text-gray-600 italic">non renseigné</span>
+                  ) : (
+                    <span className="text-gray-700">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <span
@@ -91,7 +107,8 @@ export default async function AdminUtilisateurs({
                   </Link>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
