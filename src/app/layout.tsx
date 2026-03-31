@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Montserrat, Geist } from "next/font/google";
 import "./globals.css";
 import { KeyboardScrollProvider } from "@/components/KeyboardScrollProvider";
+import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
@@ -29,10 +30,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={cn("font-sans", geist.variable)}>
+    <html lang="fr" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
       <body className={`${montserrat.variable} font-sans antialiased`}>
-        <KeyboardScrollProvider />
-        {children}
+        <ThemeProvider>
+          <KeyboardScrollProvider />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -174,3 +174,42 @@ input, textarea, select {
     @apply font-sans;
   }
 }
+
+/* ── Dark mode — override des patterns clair existants ──────────────────── */
+
+/* Textes */
+.dark .text-kiparlo-dark   { color: #f1f5f9; }
+.dark .text-kiparlo-gray   { color: #94a3b8; }
+.dark .text-gray-500       { color: #94a3b8; }
+.dark .text-gray-600       { color: #64748b; }
+.dark .text-gray-700       { color: #94a3b8; }
+.dark .text-gray-800       { color: #e2e8f0; }
+.dark .text-gray-900       { color: #f1f5f9; }
+
+/* Fonds de page */
+.dark .bg-kiparlo-light    { background-color: #0f172a; }
+
+/* Cartes blanches → fond dark */
+.dark .bg-white            { background-color: #1e293b; }
+.dark .bg-gray-50          { background-color: #1e293b; }
+.dark .bg-gray-100         { background-color: #1e293b; }
+
+/* Bordures */
+.dark .border-gray-100     { border-color: rgba(255,255,255,0.08); }
+.dark .border-gray-200     { border-color: rgba(255,255,255,0.10); }
+.dark .border-gray-300     { border-color: rgba(255,255,255,0.15); }
+
+/* Hover states */
+.dark .hover\:bg-gray-50:hover   { background-color: #334155; }
+.dark .hover\:bg-gray-100:hover  { background-color: #334155; }
+
+/* Inputs */
+.dark input:not([class*="bg-"]),
+.dark textarea:not([class*="bg-"]),
+.dark select:not([class*="bg-"]) {
+  background-color: #1e293b;
+  border-color: rgba(255,255,255,0.15);
+  color: #f1f5f9;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #475569; }

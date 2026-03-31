@@ -19,7 +19,7 @@ export default async function ProtectedLayout({
   }
 
   return (
-    <div className="min-h-dvh bg-kiparlo-light">
+    <div className="min-h-dvh bg-kiparlo-light dark:bg-slate-900 transition-colors duration-200">
       {/* Desktop: sidebar */}
       <div className="hidden lg:block">
         <Sidebar userEmail={user.email ?? ""} />
