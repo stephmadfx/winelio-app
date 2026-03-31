@@ -15,7 +15,8 @@ export function SignOutButton({ iconOnly = false }: { iconOnly?: boolean }) {
   return (
     <button
       onClick={handleSignOut}
-      className="px-4 py-2 text-sm text-gray-400 hover:text-white border border-white/20 rounded-lg hover:border-white/40 transition-colors"
+      aria-label={iconOnly ? "Déconnexion" : undefined}
+      className={`${iconOnly ? "p-2" : "px-4 py-2"} text-sm text-gray-400 hover:text-white border border-white/20 rounded-lg hover:border-white/40 transition-colors`}
     >
       {!iconOnly && <span>Déconnexion</span>}
       {iconOnly && (

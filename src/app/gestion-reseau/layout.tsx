@@ -10,7 +10,7 @@ export default async function AdminLayout({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) redirect("/dashboard");
+  if (!user) redirect("/auth/login");
 
   return (
     <div className="min-h-dvh bg-gray-950 text-white">
