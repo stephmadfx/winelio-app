@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { StickyFormActions } from "@/components/StickyFormActions";
 
 interface Contact {
   id: string;
@@ -280,7 +281,7 @@ export default function NewRecommendationPage() {
     }`;
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl pb-24 lg:pb-0">
 
       {/* ── Header ── */}
       <div className="mb-8">
@@ -749,7 +750,7 @@ export default function NewRecommendationPage() {
       )}
 
       {/* ── Navigation ── */}
-      <div className="mt-10 flex items-center justify-between">
+      <StickyFormActions>
         {step > 1 ? (
           <button
             onClick={() => setStep(step - 1)}
@@ -796,7 +797,7 @@ export default function NewRecommendationPage() {
             )}
           </button>
         )}
-      </div>
+      </StickyFormActions>
     </div>
   );
 }
