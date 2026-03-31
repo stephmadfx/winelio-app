@@ -7,8 +7,7 @@ async function getKPIs() {
       supabaseAdmin
         .from("profiles")
         .select("id", { count: "exact", head: true })
-        .eq("is_suspended", false)
-        .neq("role", "super_admin"),
+        .eq("is_active", true),
       supabaseAdmin
         .from("commission_transactions")
         .select("amount")
@@ -16,7 +15,7 @@ async function getKPIs() {
       supabaseAdmin
         .from("recommendations")
         .select("id", { count: "exact", head: true })
-        .not("status", "in", '("completed","cancelled")'),
+        .not("status", "in", '("COMPLETED","CANCELLED")'),
       supabaseAdmin
         .from("withdrawals")
         .select("id", { count: "exact", head: true })
