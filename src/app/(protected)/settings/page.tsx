@@ -113,10 +113,6 @@ export default function SettingsPage() {
             <span className="text-kiparlo-gray">Version</span>
             <span className="font-medium text-kiparlo-dark">1.0.0</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-kiparlo-gray">Plateforme</span>
-            <span className="font-medium text-kiparlo-dark">Next.js 15 + Supabase</span>
-          </div>
         </div>
       </div>
     </div>
