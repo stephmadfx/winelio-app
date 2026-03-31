@@ -47,41 +47,37 @@ export function AdminLayoutShell({
 }) {
   const pathname = usePathname();
 
-  // Desktop : collapsed = icônes seules, expanded = labels visibles
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("admin-sidebar-collapsed") === "true";
   });
 
-  // Mobile : drawer ouvert ou fermé
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("admin-sidebar-collapsed", String(collapsed));
   }, [collapsed]);
 
-  // Ferme le drawer mobile quand on change de page
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
   const sidebarContent = (mobile = false) => (
     <div className="flex flex-col h-full">
-      {/* Logo + toggle collapse (desktop) */}
-      <div className={`flex items-center py-4 ${collapsed && !mobile ? "justify-center px-2" : "justify-between px-4"}`}>
+      {/* Logo + toggle */}
+      <div className={`flex items-center py-4 border-b border-border ${collapsed && !mobile ? "justify-center px-2" : "justify-between px-4"}`}>
         <Link href="/gestion-reseau" className="flex items-center gap-2 min-w-0">
           <span className="text-sm font-extrabold tracking-tight text-kiparlo-orange shrink-0">KP</span>
           {(!collapsed || mobile) && (
-            <span className="text-xs font-semibold text-white/60 uppercase tracking-widest truncate">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest truncate">
               Admin
             </span>
           )}
         </Link>
-        {/* Bouton collapse (desktop uniquement) */}
         {!mobile && (
           <button
             onClick={() => setCollapsed((p) => !p)}
-            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
             aria-label={collapsed ? "Étendre la sidebar" : "Réduire la sidebar"}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -96,7 +92,7 @@ export function AdminLayoutShell({
       </div>
 
       {/* Nav */}
-      <nav className={`flex-1 flex flex-col gap-1 ${collapsed && !mobile ? "px-2" : "px-3"}`}>
+      <nav className={`flex-1 flex flex-col gap-1 py-3 ${collapsed && !mobile ? "px-2" : "px-3"}`}>
         {navItems.map((item) => {
           const isActive =
             item.href === "/gestion-reseau"
@@ -112,7 +108,7 @@ export function AdminLayoutShell({
               } ${
                 isActive
                   ? "bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white"
-                  : "text-gray-400 hover:text-white hover:bg-white/10"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
               <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -126,10 +122,10 @@ export function AdminLayoutShell({
         })}
       </nav>
 
-      {/* Footer : email + logout */}
-      <div className={`mt-auto pb-4 flex flex-col gap-2 ${collapsed && !mobile ? "px-2 items-center" : "px-4"}`}>
+      {/* Footer */}
+      <div className={`mt-auto pb-4 flex flex-col gap-2 border-t border-border pt-3 ${collapsed && !mobile ? "px-2 items-center" : "px-4"}`}>
         {(!collapsed || mobile) && (
-          <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+          <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
         )}
         <SignOutButton iconOnly={collapsed && !mobile} />
       </div>
@@ -137,17 +133,17 @@ export function AdminLayoutShell({
   );
 
   return (
-    <div className="min-h-dvh bg-gray-950 text-white">
-      {/* ── Sidebar desktop ─────────────────────────────────── */}
+    <div className="min-h-dvh bg-background text-foreground">
+      {/* Sidebar desktop */}
       <aside
-        className={`hidden md:flex fixed left-0 top-0 h-screen flex-col bg-kiparlo-dark z-50 transition-all duration-300 ${
+        className={`hidden md:flex fixed left-0 top-0 h-screen flex-col bg-card border-r border-border z-50 transition-all duration-300 ${
           collapsed ? "w-16" : "w-64"
         }`}
       >
         {sidebarContent(false)}
       </aside>
 
-      {/* ── Drawer mobile (overlay) ──────────────────────────── */}
+      {/* Drawer mobile overlay */}
       {mobileOpen && (
         <div
           className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
@@ -155,29 +151,23 @@ export function AdminLayoutShell({
         />
       )}
       <aside
-        className={`md:hidden fixed left-0 top-0 h-screen w-72 bg-kiparlo-dark z-50 transition-transform duration-300 ${
+        className={`md:hidden fixed left-0 top-0 h-screen w-72 bg-card border-r border-border z-50 transition-transform duration-300 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {sidebarContent(true)}
       </aside>
 
-      {/* ── Contenu principal ────────────────────────────────── */}
-      <div
-        className={`hidden md:block transition-all duration-300 ${
-          collapsed ? "md:ml-16" : "md:ml-64"
-        }`}
-      />
+      {/* Contenu principal */}
       <div
         className={`flex flex-col min-h-dvh transition-all duration-300 md:${
           collapsed ? "ml-16" : "ml-64"
         }`}
       >
         {/* Topbar */}
-        <header className="h-12 bg-gray-900 border-b border-white/5 flex items-center px-4 gap-3 sticky top-0 z-30">
-          {/* Hamburger mobile */}
+        <header className="h-12 bg-card border-b border-border flex items-center px-4 gap-3 sticky top-0 z-30">
           <button
-            className="md:hidden p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="md:hidden p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             onClick={() => setMobileOpen((p) => !p)}
             aria-label="Ouvrir le menu"
           >
@@ -188,9 +178,18 @@ export function AdminLayoutShell({
           <span className="text-xs font-semibold uppercase tracking-widest text-kiparlo-orange">
             Super Admin
           </span>
-          <span className="text-gray-600">·</span>
-          <span className="text-sm text-gray-300">Kiparlo</span>
-          <span className="ml-auto text-xs text-gray-500 hidden sm:block">{userEmail}</span>
+          <span className="text-muted-foreground">·</span>
+          <span className="text-sm text-foreground">Kiparlo</span>
+          <Link
+            href="/dashboard"
+            className="ml-auto flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            App
+          </Link>
+          <span className="text-xs text-muted-foreground hidden sm:block">{userEmail}</span>
         </header>
 
         <main className="flex-1 p-4 md:p-6">{children}</main>
