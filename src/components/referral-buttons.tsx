@@ -283,14 +283,7 @@ export function ShareButton({ code }: { code: string }) {
                   bgColor="#ffffff"
                   fgColor="#2D3436"
                   level="M"
-                  imageSettings={{
-                    src: "/logo-qr.png",
-                    x: undefined,
-                    y: undefined,
-                    height: 36,
-                    width: 36,
-                    excavate: true,
-                  }}
+                  style={{ display: "block" }}
                 />
               </div>
               {/* Badge code parrain */}
