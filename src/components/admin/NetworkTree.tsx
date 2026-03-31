@@ -741,6 +741,14 @@ export function NetworkTree({
           colorMode="dark"
           minZoom={0.05}
           maxZoom={2}
+          // Pan & zoom
+          nodesDraggable={false}
+          panOnDrag={true}
+          panOnScroll={false}
+          zoomOnScroll={true}
+          zoomOnPinch={true}
+          zoomOnDoubleClick={true}
+          preventScrolling={true}
           defaultEdgeOptions={{
             style: { stroke: "#475569", strokeWidth: 1.5 },
           }}
