@@ -51,11 +51,11 @@ export function Sidebar({ userEmail, isSuperAdmin }: { userEmail: string; isSupe
       <div className="px-6 py-6 border-b border-white/10">
         <Link href="/dashboard">
           <h1 className="text-2xl font-extrabold tracking-tight">
-            <span className="text-white">KI</span>
+            <span className="text-white">BUZ</span>
             <span className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent">
-              PAR
+              RE
             </span>
-            <span className="text-white">LO</span>
+            <span className="text-white">CO</span>
           </h1>
         </Link>
       </div>

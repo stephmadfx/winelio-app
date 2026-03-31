@@ -53,11 +53,11 @@ export function MobileHeader({ userEmail, isSuperAdmin }: { userEmail: string; i
         <div className="flex items-center justify-between px-4 h-14">
           <Link href="/dashboard">
             <h1 className="text-xl font-extrabold tracking-tight">
-              <span className="text-white">KI</span>
+              <span className="text-white">BUZ</span>
               <span className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent">
-                PAR
+                RE
               </span>
-              <span className="text-white">LO</span>
+              <span className="text-white">CO</span>
             </h1>
           </Link>
 

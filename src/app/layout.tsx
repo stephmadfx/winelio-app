@@ -19,7 +19,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Kiparlo - Recommandez. Gagnez.",
+  title: "Buzreco - Recommandez. Gagnez.",
   description:
     "Plateforme de recommandations professionnelles avec réseau de parrainage.",
 };

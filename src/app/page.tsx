@@ -6,11 +6,11 @@ export default function Home() {
       <div className="text-center max-w-2xl">
         {/* Logo text */}
         <h1 className="text-6xl md:text-8xl font-extrabold tracking-tight mb-4">
-          <span className="text-white">KI</span>
+          <span className="text-white">BUZ</span>
           <span className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent">
-            PAR
+            RE
           </span>
-          <span className="text-white">LO</span>
+          <span className="text-white">CO</span>
         </h1>
 
         <p className="text-kiparlo-gray text-lg md:text-xl tracking-[0.3em] uppercase mb-12">
@@ -39,7 +39,7 @@ export default function Home() {
       </div>
 
       <footer className="absolute bottom-6 text-kiparlo-gray text-sm">
-        &copy; {new Date().getFullYear()} Kiparlo. Tous droits réservés.
+        &copy; {new Date().getFullYear()} Buzreco. Tous droits réservés.
       </footer>
     </div>
   );

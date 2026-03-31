@@ -103,7 +103,7 @@ export function EmailInviteButton({ code }: { code: string }) {
 
   const referralUrl = typeof window !== "undefined"
     ? `${window.location.origin}/auth/login?mode=register&ref=${code}`
-    : `https://kiparlo.fr/auth/login?mode=register&ref=${code}`;
+    : `https://buzreco.fr/auth/login?mode=register&ref=${code}`;
 
   return (
     <>
@@ -166,7 +166,7 @@ export function EmailInviteButton({ code }: { code: string }) {
               <textarea
                 value={message}
                 onChange={e => setMessage(e.target.value)}
-                placeholder="Bonjour ! Je pense que Kiparlo peut vraiment t'aider à développer ton activité…"
+                placeholder="Bonjour ! Je pense que Buzreco peut vraiment t'aider à développer ton activité…"
                 rows={3}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-kiparlo-orange focus:ring-2 focus:ring-kiparlo-orange/20 transition-all resize-none"
               />
@@ -219,7 +219,7 @@ export function ShareButton({ code }: { code: string }) {
 
   const referralUrl = typeof window !== "undefined"
     ? `${window.location.origin}/auth/login?mode=register&ref=${code}`
-    : `https://kiparlo.fr/auth/login?mode=register&ref=${code}`;
+    : `https://buzreco.fr/auth/login?mode=register&ref=${code}`;
 
   const handleCopyLink = async () => {
     try {
@@ -240,8 +240,8 @@ export function ShareButton({ code }: { code: string }) {
   const handleNativeShare = async () => {
     if (navigator.share) {
       await navigator.share({
-        title: "Rejoins Kiparlo",
-        text: "Rejoins Kiparlo avec mon lien de parrainage !",
+        title: "Rejoins Buzreco",
+        text: "Rejoins Buzreco avec mon lien de parrainage !",
         url: referralUrl,
       });
     }

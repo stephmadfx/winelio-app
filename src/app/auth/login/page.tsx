@@ -242,9 +242,9 @@ function LoginForm() {
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-extrabold tracking-tight mb-2">
-              <span className="text-white">KI</span>
-              <span className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent">PAR</span>
-              <span className="text-white">LO</span>
+              <span className="text-white">BUZ</span>
+              <span className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent">RE</span>
+              <span className="text-white">CO</span>
             </h1>
             <div className="mt-4 flex items-center justify-center w-14 h-14 rounded-full bg-kiparlo-orange/20 mx-auto mb-3">
               <svg className="w-7 h-7 text-kiparlo-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -253,7 +253,7 @@ function LoginForm() {
             </div>
             <p className="text-white font-semibold text-lg">Inscription sur invitation</p>
             <p className="text-kiparlo-gray text-sm mt-2">
-              Kiparlo est un réseau fermé. Pour créer un compte, vous devez disposer du code parrain d&apos;un membre du réseau.
+              Buzreco est un réseau fermé. Pour créer un compte, vous devez disposer du code parrain d&apos;un membre du réseau.
             </p>
           </div>
 
@@ -317,11 +317,11 @@ function LoginForm() {
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-extrabold tracking-tight mb-2">
-              <span className="text-white">KI</span>
+              <span className="text-white">BUZ</span>
               <span className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent">
-                PAR
+                RE
               </span>
-              <span className="text-white">LO</span>
+              <span className="text-white">CO</span>
             </h1>
             <p className="text-kiparlo-gray text-sm tracking-widest uppercase">
               {isRegister ? "Créer un compte" : "Se connecter"}

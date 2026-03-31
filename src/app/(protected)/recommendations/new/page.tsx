@@ -518,7 +518,7 @@ export default function NewRecommendationPage() {
           <div className="mb-6">
             <h2 className="text-lg font-bold text-kiparlo-dark">Quel professionnel recommandez-vous ?</h2>
             <p className="mt-1 text-sm text-kiparlo-gray">
-              Choisissez un professionnel Kiparlo — si le deal aboutit, vous touchez une commission.
+              Choisissez un professionnel Buzreco — si le deal aboutit, vous touchez une commission.
             </p>
           </div>
 

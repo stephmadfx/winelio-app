@@ -21,7 +21,7 @@ function buildEmailHtml(code: string): string {
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Votre code Kiparlo</title>
+  <title>Votre code Buzreco</title>
 </head>
 <body style="margin:0;padding:0;background:#0f1117;font-family:Arial,Helvetica,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -33,7 +33,7 @@ function buildEmailHtml(code: string): string {
           <tr>
             <td align="center" style="padding-bottom:24px;">
               <div style="font-size:28px;font-weight:800;line-height:1;">
-                <span style="color:#ffffff;">KI</span><span style="color:#f97316;">PAR</span><span style="color:#ffffff;">LO</span>
+                <span style="color:#ffffff;">BUZ</span><span style="color:#f97316;">RE</span><span style="color:#ffffff;">CO</span>
               </div>
               <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#475569;margin-top:6px;">
                 Plateforme de recommandation
@@ -88,7 +88,7 @@ function buildEmailHtml(code: string): string {
           <!-- Footer -->
           <tr>
             <td align="center" style="padding-top:24px;font-size:12px;color:#334155;">
-              2025 Kiparlo &middot; Tous droits reserves
+              2025 Buzreco &middot; Tous droits reserves
             </td>
           </tr>
 
@@ -126,9 +126,9 @@ export async function POST(req: Request) {
 
     // Send custom email
     await transporter.sendMail({
-      from: `"${process.env.SMTP_SENDER_NAME || "Kiparlo"}" <${process.env.SMTP_ADMIN_EMAIL || process.env.SMTP_USER || "contact@aide-multimedia.fr"}>`,
+      from: `"${process.env.SMTP_SENDER_NAME || "Buzreco"}" <${process.env.SMTP_ADMIN_EMAIL || process.env.SMTP_USER || "contact@aide-multimedia.fr"}>`,
       to: email,
-      subject: "Votre code de connexion Kiparlo",
+      subject: "Votre code de connexion Buzreco",
       html: buildEmailHtml(code),
     });
 

@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://kiparlo.fr";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://buzreco.fr";
 
 function buildInviteEmail(
   senderName: string,
@@ -38,7 +38,7 @@ function buildInviteEmail(
           <tr>
             <td align="center" style="padding-bottom:28px;">
               <div style="font-size:28px;font-weight:900;letter-spacing:-1px;">
-                <span style="color:#2D3436;">KI</span><span style="color:#FF6B35;">PAR</span><span style="color:#2D3436;">LO</span>
+                <span style="color:#2D3436;">BUZ</span><span style="color:#FF6B35;">RE</span><span style="color:#2D3436;">CO</span>
               </div>
               <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#636E72;margin-top:4px;">
                 Réseau de recommandation
@@ -56,7 +56,7 @@ function buildInviteEmail(
                   🤝
                 </div>
                 <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0 0 8px;">
-                  Vous êtes invité(e) à rejoindre Kiparlo !
+                  Vous êtes invité(e) à rejoindre Buzreco !
                 </h1>
                 <p style="color:rgba(255,255,255,0.85);font-size:14px;margin:0;">
                   <strong>${senderName}</strong> souhaite vous avoir dans son réseau
@@ -75,12 +75,12 @@ function buildInviteEmail(
                   <p style="margin:8px 0 0;color:#636E72;font-size:12px;">— ${senderName}</p>
                 </div>` : ""}
 
-                <!-- What is Kiparlo -->
+                <!-- What is Buzreco -->
                 <p style="color:#2D3436;font-size:15px;font-weight:600;margin:0 0 12px;">
-                  Qu'est-ce que Kiparlo ?
+                  Qu'est-ce que Buzreco ?
                 </p>
                 <p style="color:#636E72;font-size:14px;line-height:1.7;margin:0 0 24px;">
-                  Kiparlo est la plateforme qui transforme vos recommandations en revenus.
+                  Buzreco est la plateforme qui transforme vos recommandations en revenus.
                   Mettez en relation vos proches avec des professionnels de confiance
                   et soyez récompensé à chaque mission validée.
                 </p>
@@ -117,7 +117,7 @@ function buildInviteEmail(
                 <div style="text-align:center;">
                   <a href="${referralUrl}"
                      style="display:inline-block;background:linear-gradient(135deg,#FF6B35,#F7931E);color:#ffffff;font-size:16px;font-weight:700;padding:16px 40px;border-radius:12px;text-decoration:none;letter-spacing:0.5px;">
-                    Rejoindre Kiparlo →
+                    Rejoindre Buzreco →
                   </a>
                   <p style="margin:12px 0 0;color:#adb5bd;font-size:11px;">
                     Ou copiez ce lien : <a href="${referralUrl}" style="color:#FF6B35;word-break:break-all;">${referralUrl}</a>
@@ -132,7 +132,7 @@ function buildInviteEmail(
           <tr>
             <td style="padding-top:24px;text-align:center;">
               <p style="color:#adb5bd;font-size:12px;margin:0 0 4px;">
-                © Kiparlo · <a href="${SITE_URL}" style="color:#FF6B35;text-decoration:none;">kiparlo.fr</a>
+                © Buzreco · <a href="${SITE_URL}" style="color:#FF6B35;text-decoration:none;">buzreco.fr</a>
               </p>
               <p style="color:#ced4da;font-size:11px;margin:0;">
                 Vous recevez cet email car ${senderName} vous a invité(e) personnellement.
@@ -171,13 +171,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Code parrainage introuvable" }, { status: 400 });
     }
 
-    const senderName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Un membre Kiparlo";
+    const senderName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Un membre Buzreco";
 
     await transporter.sendMail({
-      from: `"${senderName} via Kiparlo" <${process.env.SMTP_USER || "contact@aide-multimedia.fr"}>`,
+      from: `"${senderName} via Buzreco" <${process.env.SMTP_USER || "contact@aide-multimedia.fr"}>`,
       to,
       replyTo: user.email,
-      subject: `${senderName} vous invite à rejoindre Kiparlo 🤝`,
+      subject: `${senderName} vous invite à rejoindre Buzreco 🤝`,
       html: buildInviteEmail(senderName, to, profile.sponsor_code, personalMessage),
     });
 

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { OnboardingModal } from "@/components/onboarding-modal";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -89,38 +90,40 @@ export default async function DashboardPage() {
       </h2>
 
       {/* Welcome card - en premier */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-12 text-center">
-        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10 flex items-center justify-center">
-          <svg
-            className="w-10 h-10 text-kiparlo-orange"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-            />
-          </svg>
-        </div>
-        <h3 className="text-xl font-semibold text-kiparlo-dark mb-2">
-          Bienvenue sur Kiparlo !
-        </h3>
-        <p className="text-kiparlo-gray mb-6 max-w-md mx-auto">
-          Commencez par recommander un professionnel de confiance ou invitez
-          des membres dans votre réseau.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <a href="/recommendations/new" className="px-6 py-3 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity text-center">
-            Faire une recommandation
-          </a>
-          <a href="/network" className="px-6 py-3 border-2 border-kiparlo-orange text-kiparlo-orange font-semibold rounded-xl hover:bg-kiparlo-orange hover:text-white transition-colors text-center">
-            Inviter un membre
-          </a>
-        </div>
-      </div>
+      <Card className="!rounded-2xl text-center">
+        <CardContent className="p-6 sm:p-12 flex flex-col items-center">
+          <div className="w-20 h-20 mb-6 rounded-full bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10 flex items-center justify-center">
+            <svg
+              className="w-10 h-10 text-kiparlo-orange"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold text-kiparlo-dark mb-2">
+            Bienvenue sur Buzreco !
+          </h3>
+          <p className="text-kiparlo-gray mb-6 max-w-md mx-auto">
+            Commencez par recommander un professionnel de confiance ou invitez
+            des membres dans votre réseau.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <a href="/recommendations/new" className="px-6 py-3 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity text-center">
+              Faire une recommandation
+            </a>
+            <a href="/network" className="px-6 py-3 border-2 border-kiparlo-orange text-kiparlo-orange font-semibold rounded-xl hover:bg-kiparlo-orange hover:text-white transition-colors text-center">
+              Inviter un membre
+            </a>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-6">
@@ -165,27 +168,29 @@ function StatCard({
   icon: string;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm font-medium text-kiparlo-gray">{title}</span>
-        <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10 flex items-center justify-center">
-          <svg
-            className="w-5 h-5 text-kiparlo-orange"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d={icon}
-            />
-          </svg>
+    <Card className="!rounded-2xl">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-sm font-medium text-kiparlo-gray">{title}</span>
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10 flex items-center justify-center">
+            <svg
+              className="w-5 h-5 text-kiparlo-orange"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d={icon}
+              />
+            </svg>
+          </div>
         </div>
-      </div>
-      <p className="text-2xl font-bold text-kiparlo-dark">{value}</p>
-      <p className="text-sm text-kiparlo-gray mt-1">{subtitle}</p>
-    </div>
+        <p className="text-2xl font-bold text-kiparlo-dark">{value}</p>
+        <p className="text-sm text-kiparlo-gray mt-1">{subtitle}</p>
+      </CardContent>
+    </Card>
   );
 }

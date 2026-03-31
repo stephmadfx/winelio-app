@@ -47,7 +47,7 @@ export function OnboardingModal({ userId }: { userId: string }) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-black text-white">Bienvenue sur Kiparlo !</h2>
+          <h2 className="text-2xl font-black text-white">Bienvenue sur Buzreco !</h2>
           <p className="text-white/80 text-sm mt-1">Pour commencer, présentez-vous à votre réseau.</p>
         </div>
 

@@ -30,7 +30,7 @@ export default async function AdminProfessionnels() {
           </span>
         </h1>
         <p className="text-gray-500 text-sm mt-1">
-          Annuaire complet des entreprises inscrites sur Kiparlo
+          Annuaire complet des entreprises inscrites sur Buzreco
         </p>
       </div>
 

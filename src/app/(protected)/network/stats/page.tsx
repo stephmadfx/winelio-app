@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface LevelStat {
   level: number;
@@ -88,11 +89,11 @@ export default async function NetworkStatsPage() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/dashboard">
             <h1 className="text-2xl font-extrabold tracking-tight">
-              <span className="text-white">KI</span>
+              <span className="text-white">BUZ</span>
               <span className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent">
-                PAR
+                RE
               </span>
-              <span className="text-white">LO</span>
+              <span className="text-white">CO</span>
             </h1>
           </Link>
           <nav className="flex items-center gap-4">
@@ -115,7 +116,7 @@ export default async function NetworkStatsPage() {
         </p>
 
         {/* Summary card */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
+        <Card className="!rounded-2xl mb-8"><CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-kiparlo-gray font-medium">
@@ -141,17 +142,17 @@ export default async function NetworkStatsPage() {
               </svg>
             </div>
           </div>
-        </div>
+        </CardContent></Card>
 
         {/* Table by level */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
+        <Card className="!rounded-2xl mb-8"><CardContent className="p-6">
           <h3 className="text-lg font-semibold text-kiparlo-dark mb-6">
             Commissions par niveau
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-200">
+                <tr className="border-b border-border">
                   <th className="text-left text-sm font-medium text-kiparlo-gray py-3 pr-4">
                     Niveau
                   </th>
@@ -206,7 +207,7 @@ export default async function NetworkStatsPage() {
                 ))}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-gray-200">
+                <tr className="border-t-2 border-border">
                   <td className="py-4 pr-4 font-bold text-kiparlo-dark">Total</td>
                   <td className="py-4 px-4 text-center font-bold text-kiparlo-dark">
                     {levelStats.reduce((sum, s) => sum + s.members, 0)}
@@ -221,10 +222,10 @@ export default async function NetworkStatsPage() {
               </tfoot>
             </table>
           </div>
-        </div>
+        </CardContent></Card>
 
         {/* CSS Bar chart */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
+        <Card className="!rounded-2xl mb-8"><CardContent className="p-6">
           <h3 className="text-lg font-semibold text-kiparlo-dark mb-6">
             Graphique des commissions par niveau
           </h3>
@@ -236,10 +237,10 @@ export default async function NetworkStatsPage() {
                   : 0;
               return (
                 <div key={stat.level} className="flex items-center gap-4">
-                  <span className="text-sm font-medium text-kiparlo-gray w-24 shrink-0">
+                  <span className="text-sm font-medium text-muted-foreground w-24 shrink-0">
                     Niveau {stat.level}
                   </span>
-                  <div className="flex-1 bg-gray-100 rounded-full h-8 overflow-hidden relative">
+                  <div className="flex-1 bg-muted rounded-full h-8 overflow-hidden relative">
                     <div
                       className={`h-full rounded-full bg-gradient-to-r ${levelBarColors[stat.level]} transition-all duration-500`}
                       style={{ width: `${pct}%`, minWidth: stat.total > 0 ? "2rem" : "0" }}
@@ -255,14 +256,14 @@ export default async function NetworkStatsPage() {
             })}
           </div>
           {maxCommission <= 1 && (
-            <p className="text-center text-kiparlo-gray text-sm mt-6">
+            <p className="text-center text-muted-foreground text-sm mt-6">
               Aucune commission reseau pour le moment.
             </p>
           )}
-        </div>
+        </CardContent></Card>
 
         {/* Commission history */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <Card className="!rounded-2xl"><CardContent className="p-6">
           <h3 className="text-lg font-semibold text-kiparlo-dark mb-6">
             Historique des commissions reseau
           </h3>
@@ -284,7 +285,7 @@ export default async function NetworkStatsPage() {
                   />
                 </svg>
               </div>
-              <p className="text-kiparlo-gray">
+              <p className="text-muted-foreground">
                 Aucune commission reseau enregistree.
               </p>
             </div>
@@ -293,7 +294,7 @@ export default async function NetworkStatsPage() {
               {allCommissions.map((c) => (
                 <div
                   key={c.id}
-                  className="flex items-center justify-between p-4 rounded-xl bg-kiparlo-light"
+                  className="flex items-center justify-between p-4 rounded-xl bg-muted/50"
                 >
                   <div className="flex items-center gap-4">
                     <span
@@ -305,7 +306,7 @@ export default async function NetworkStatsPage() {
                       <p className="font-medium text-kiparlo-dark text-sm">
                         {c.description ?? `Commission niveau ${c.level}`}
                       </p>
-                      <p className="text-xs text-kiparlo-gray">
+                      <p className="text-xs text-muted-foreground">
                         {new Date(c.created_at).toLocaleDateString("fr-FR", {
                           day: "numeric",
                           month: "short",
@@ -323,7 +324,7 @@ export default async function NetworkStatsPage() {
               ))}
             </div>
           )}
-        </div>
+        </CardContent></Card>
       </main>
     </div>
   );

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
 
 type Transaction = {
   id: string;
@@ -160,10 +161,11 @@ export default function WalletHistoryPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+      <Card className="!rounded-2xl">
+       <CardContent className="p-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="block text-xs font-medium text-kiparlo-gray mb-1.5">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               Type
             </label>
             <select
@@ -171,7 +173,7 @@ export default function WalletHistoryPage() {
               onChange={(e) =>
                 setFilterType(e.target.value as "all" | "commission" | "withdrawal")
               }
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/30 focus:border-kiparlo-orange"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/30 focus:border-kiparlo-orange"
             >
               <option value="all">Tous</option>
               <option value="commission">Commissions</option>
@@ -179,13 +181,13 @@ export default function WalletHistoryPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-kiparlo-gray mb-1.5">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               Statut
             </label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/30 focus:border-kiparlo-orange"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/30 focus:border-kiparlo-orange"
             >
               <option value="all">Tous</option>
               <option value="completed">Completee</option>
@@ -196,36 +198,37 @@ export default function WalletHistoryPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-kiparlo-gray mb-1.5">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               Du
             </label>
             <input
               type="date"
               value={filterFrom}
               onChange={(e) => setFilterFrom(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/30 focus:border-kiparlo-orange"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/30 focus:border-kiparlo-orange"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-kiparlo-gray mb-1.5">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               Au
             </label>
             <input
               type="date"
               value={filterTo}
               onChange={(e) => setFilterTo(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/30 focus:border-kiparlo-orange"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/30 focus:border-kiparlo-orange"
             />
           </div>
         </div>
-      </div>
+       </CardContent>
+      </Card>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <Card className="!rounded-2xl !py-0 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100 text-left">
+              <tr className="border-b border-border text-left">
                 <th className="px-6 py-3.5 text-xs font-semibold text-kiparlo-gray uppercase tracking-wider">
                   Date
                 </th>
@@ -243,12 +246,12 @@ export default function WalletHistoryPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-6 py-12 text-center text-kiparlo-gray"
+                    className="px-6 py-12 text-center text-muted-foreground"
                   >
                     Chargement...
                   </td>
@@ -257,7 +260,7 @@ export default function WalletHistoryPage() {
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-6 py-12 text-center text-kiparlo-gray"
+                    className="px-6 py-12 text-center text-muted-foreground"
                   >
                     Aucune transaction trouvee.
                   </td>
@@ -266,7 +269,7 @@ export default function WalletHistoryPage() {
                 transactions.map((tx) => (
                   <tr
                     key={`${tx.type}-${tx.id}`}
-                    className="hover:bg-gray-50/50 transition-colors"
+                    className="hover:bg-muted/50 transition-colors"
                   >
                     <td className="px-6 py-4 text-kiparlo-dark whitespace-nowrap">
                       {new Date(tx.created_at).toLocaleDateString("fr-FR", {
@@ -321,27 +324,27 @@ export default function WalletHistoryPage() {
 
         {/* Pagination */}
         {!loading && transactions.length > 0 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-border">
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={page === 0}
-              className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-200 text-kiparlo-dark hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-sm font-medium rounded-xl border border-border text-kiparlo-dark hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Precedent
             </button>
-            <span className="text-sm text-kiparlo-gray">
+            <span className="text-sm text-muted-foreground">
               Page {page + 1}
             </span>
             <button
               onClick={() => setPage((p) => p + 1)}
               disabled={!hasMore}
-              className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-200 text-kiparlo-dark hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-sm font-medium rounded-xl border border-border text-kiparlo-dark hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Suivant
             </button>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

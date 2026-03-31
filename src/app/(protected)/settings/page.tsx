@@ -2,6 +2,7 @@
 
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -17,7 +18,8 @@ export default function SettingsPage() {
       </div>
 
       {/* Apparence */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 mb-4">
+      <Card className="!rounded-2xl mb-4">
+       <CardContent className="p-5 sm:p-6">
         <h3 className="text-base font-semibold text-kiparlo-dark mb-4 flex items-center gap-2">
           <svg className="w-5 h-5 text-kiparlo-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
@@ -91,30 +93,33 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <p className="text-xs text-kiparlo-gray mt-4">
+        <p className="text-xs text-muted-foreground mt-4">
           Le mode sombre réduit la fatigue oculaire dans les environnements peu éclairés.
         </p>
-      </div>
+       </CardContent>
+      </Card>
 
       {/* Infos app */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6">
-        <h3 className="text-base font-semibold text-kiparlo-dark mb-4 flex items-center gap-2">
-          <svg className="w-5 h-5 text-kiparlo-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          À propos
-        </h3>
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-kiparlo-gray">Application</span>
-            <span className="font-medium text-kiparlo-dark">Kiparlo</span>
+      <Card className="!rounded-2xl">
+        <CardContent className="p-5 sm:p-6">
+          <h3 className="text-base font-semibold text-kiparlo-dark mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-kiparlo-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            À propos
+          </h3>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Application</span>
+              <span className="font-medium text-kiparlo-dark">Kiparlo</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Version</span>
+              <span className="font-medium text-kiparlo-dark">1.0.0</span>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span className="text-kiparlo-gray">Version</span>
-            <span className="font-medium text-kiparlo-dark">1.0.0</span>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

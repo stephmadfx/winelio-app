@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { WalletCard } from "@/components/wallet-card";
+import { Card, CardContent } from "@/components/ui/card";
 
 type Transaction = {
   id: string;
@@ -144,8 +145,8 @@ export default async function WalletPage() {
       </div>
 
       {/* Recent Transactions */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
+      <Card className="!rounded-2xl !py-0 overflow-hidden">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border">
           <h2 className="text-lg font-semibold text-kiparlo-dark">
             Dernieres transactions
           </h2>
@@ -158,22 +159,21 @@ export default async function WalletPage() {
         </div>
 
         {transactions.length === 0 ? (
-          <div className="px-6 py-12 text-center text-kiparlo-gray text-sm">
+          <div className="px-6 py-12 text-center text-muted-foreground text-sm">
             Aucune transaction pour le moment.
           </div>
         ) : (
-          <ul className="divide-y divide-gray-50">
+          <ul className="divide-y divide-border">
             {transactions.map((tx) => (
               <li
                 key={`${tx.type}-${tx.id}`}
-                className="flex items-center justify-between px-4 sm:px-6 py-4 hover:bg-gray-50/50 transition-colors gap-3"
+                className="flex items-center justify-between px-4 sm:px-6 py-4 hover:bg-muted/50 transition-colors gap-3"
               >
                 <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                  {/* Icon */}
                   <div
                     className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                       tx.type === "commission"
-                        ? "bg-green-100"
+                        ? "bg-green-100 dark:bg-green-900/30"
                         : "bg-kiparlo-orange/10"
                     }`}
                   >
@@ -202,11 +202,9 @@ export default async function WalletPage() {
 
                   <div>
                     <p className="text-sm font-medium text-kiparlo-dark">
-                      {tx.type === "commission"
-                        ? "Commission"
-                        : "Retrait"}
+                      {tx.type === "commission" ? "Commission" : "Retrait"}
                     </p>
-                    <p className="text-xs text-kiparlo-gray">
+                    <p className="text-xs text-muted-foreground">
                       {new Date(tx.created_at).toLocaleDateString("fr-FR", {
                         day: "numeric",
                         month: "short",
@@ -242,7 +240,7 @@ export default async function WalletPage() {
             ))}
           </ul>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
