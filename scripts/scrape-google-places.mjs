@@ -255,13 +255,14 @@ async function importProfessional(place, categorySlug, categoryId) {
     } catch { /* ignore */ }
   }
 
-  // Utilise le vrai email si trouvé, sinon email fictif unique
-  const fallbackEmail = `pro.${place.place_id.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20)}@kiparlo-pro.fr`;
-  const email = scrapedEmail || fallbackEmail;
+  // Si aucun email trouvé → on passe ce pro (pas d'email fictif)
+  if (!scrapedEmail) {
+    return { skipped: true, reason: "no_email" };
+  }
+  const email = scrapedEmail;
 
   if (dryRun) {
-    const emailSource = scrapedEmail ? "✉ réel" : "🔧 fictif";
-    console.log(`[DRY-RUN] ${name} | ${city} | ${phone || "no phone"} | ${email} (${emailSource})`);
+    console.log(`[DRY-RUN] ${name} | ${city} | ${phone || "no phone"} | ${email}`);
     return { success: true, dry: true };
   }
 

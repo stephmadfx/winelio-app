@@ -49,9 +49,17 @@ const EXCLUDED_DOMAINS = [
   "instagram.com","twitter.com","linkedin.com","youtube.com",
   "wordpress.com","wixsite.com","jimdo.com","squarespace.com",
   "w3.org","schema.org","mozilla.org","apple.com","microsoft.com",
-  "amazon.com","cloudflare.com","datatables.net",
+  "amazon.com","cloudflare.com","datatables.net","webador.fr",
+  "webador.com","wix.com","wixpress.com","wixsite.com","godaddy.com","ovh.com","ionos.fr",
 ];
 const EXCLUDED_PATTERNS = [".png",".jpg",".gif",".svg",".webp",".css",".js",".php",".woff",".ttf"];
+
+// Emails génériques/démo à rejeter (partie locale avant @)
+const GENERIC_LOCAL_PARTS = [
+  "john","jane","test","demo","admin","webmaster","noreply","no-reply",
+  "donotreply","example","user","sample","info123","contact123","support123",
+  "email@email","your@","your.email","name@","firstname","lastname",
+];
 
 function isValidEmail(email) {
   const lower = email.toLowerCase();
@@ -59,6 +67,8 @@ function isValidEmail(email) {
   if (EXCLUDED_DOMAINS.some((d) => lower.endsWith("@" + d) || lower.includes("@" + d + "."))) return false;
   if (email.length > 80) return false;
   if (!/^.{2,}@.+\..{2,}$/.test(email)) return false;
+  const localPart = lower.split("@")[0];
+  if (GENERIC_LOCAL_PARTS.some((g) => localPart === g)) return false;
   return true;
 }
 
@@ -143,15 +153,20 @@ async function loadTargetPros() {
 
   console.log(`   ${allFakeUsers.length} pros avec email fictif trouvés dans Auth`);
 
-  // Récupère les sites web depuis la table companies
+  // Récupère les sites web depuis la table companies (par batches de 200 IDs)
   const userIds = allFakeUsers.map((u) => u.id);
-  const { data: companies, error: cErr } = await supabase
-    .from("companies")
-    .select("owner_id, name, website")
-    .in("owner_id", userIds)
-    .not("website", "is", null);
-
-  if (cErr) { console.error("❌ companies query error:", cErr.message); return []; }
+  const companies = [];
+  const batchSize = 200;
+  for (let i = 0; i < userIds.length; i += batchSize) {
+    const batch = userIds.slice(i, i + batchSize);
+    const { data, error: cErr } = await supabase
+      .from("companies")
+      .select("owner_id, name, website")
+      .in("owner_id", batch)
+      .not("website", "is", null);
+    if (cErr) { console.error("❌ companies query error:", cErr.message); return []; }
+    if (data) companies.push(...data);
+  }
 
   const websiteByUserId = Object.fromEntries(
     (companies || []).filter((c) => c.website).map((c) => [c.owner_id, { website: c.website, name: c.name }])
