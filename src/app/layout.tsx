@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
+import { KeyboardScrollProvider } from "@/components/KeyboardScrollProvider";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className={`${montserrat.variable} font-sans antialiased`}>
+        <KeyboardScrollProvider />
         {children}
       </body>
     </html>
