@@ -21,6 +21,12 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"email" | "code">("email");
+
+  // Restaure le dernier email utilisé
+  useEffect(() => {
+    const saved = localStorage.getItem("kiparlo_last_email");
+    if (saved) setEmail(saved);
+  }, []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [sponsorName, setSponsorName] = useState<string | null>(null);
@@ -138,6 +144,7 @@ function LoginForm() {
       return;
     }
 
+    localStorage.setItem("kiparlo_last_email", email);
     setStep("code");
     setLoading(false);
   };

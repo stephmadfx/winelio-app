@@ -22,13 +22,18 @@ export function StickyFormActions({
     const vv = window.visualViewport;
     if (!vv || !el) return;
 
+    // Hauteur de la MobileNav pour positionner la barre au-dessus
+    const navEl = document.querySelector("nav.fixed") as HTMLElement | null;
+    const navHeight = navEl ? navEl.offsetHeight : 64;
+
     const update = () => {
       // Hauteur cachée en bas = layout height - (visual height + visual offset)
       const hiddenBottom = Math.max(
         0,
         window.innerHeight - vv.height - vv.offsetTop
       );
-      el.style.bottom = `${hiddenBottom}px`;
+      // Sans clavier → au-dessus de la nav. Avec clavier → au-dessus du clavier.
+      el.style.bottom = `${Math.max(hiddenBottom, navHeight)}px`;
     };
 
     vv.addEventListener("resize", update);
@@ -47,7 +52,7 @@ export function StickyFormActions({
       <div
         ref={ref}
         className="
-          fixed left-0 right-0 bottom-0 z-40
+          fixed left-0 right-0 bottom-0 z-[60]
           flex items-center justify-between
           gap-3 px-4 py-3
           bg-kiparlo-light/95 backdrop-blur-sm
