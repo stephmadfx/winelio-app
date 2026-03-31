@@ -1,19 +1,17 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import Link from "next/link";
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  PENDING:           { label: "En attente",         color: "text-yellow-400 bg-yellow-400/10" },
-  ACCEPTED:          { label: "Acceptée",            color: "text-blue-400 bg-blue-400/10" },
-  CONTACT_MADE:      { label: "Contact établi",      color: "text-indigo-400 bg-indigo-400/10" },
-  MEETING_SCHEDULED: { label: "RDV fixé",            color: "text-purple-400 bg-purple-400/10" },
-  QUOTE_SUBMITTED:   { label: "Devis soumis",        color: "text-orange-400 bg-orange-400/10" },
-  QUOTE_VALIDATED:   { label: "Devis validé",        color: "text-kiparlo-amber bg-amber-400/10" },
-  PAYMENT_RECEIVED:  { label: "Paiement reçu",       color: "text-emerald-300 bg-emerald-300/10" },
-  COMPLETED:         { label: "Terminée",            color: "text-emerald-400 bg-emerald-400/10" },
-  CANCELLED:         { label: "Annulée",             color: "text-red-400 bg-red-400/10" },
+const STATUS_LABELS: Record<string, { label: string; color: string; dot: string }> = {
+  PENDING:           { label: "En attente",    color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",   dot: "bg-yellow-400" },
+  ACCEPTED:          { label: "Acceptée",       color: "text-blue-400 bg-blue-400/10 border-blue-400/20",        dot: "bg-blue-400" },
+  CONTACT_MADE:      { label: "Contact établi", color: "text-indigo-400 bg-indigo-400/10 border-indigo-400/20",  dot: "bg-indigo-400" },
+  MEETING_SCHEDULED: { label: "RDV fixé",       color: "text-purple-400 bg-purple-400/10 border-purple-400/20", dot: "bg-purple-400" },
+  QUOTE_SUBMITTED:   { label: "Devis soumis",   color: "text-orange-400 bg-orange-400/10 border-orange-400/20", dot: "bg-orange-400" },
+  QUOTE_VALIDATED:   { label: "Devis validé",   color: "text-amber-400 bg-amber-400/10 border-amber-400/20",    dot: "bg-amber-400" },
+  PAYMENT_RECEIVED:  { label: "Paiement reçu",  color: "text-emerald-300 bg-emerald-300/10 border-emerald-300/20", dot: "bg-emerald-300" },
+  COMPLETED:         { label: "Terminée",       color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20", dot: "bg-emerald-400" },
+  CANCELLED:         { label: "Annulée",        color: "text-red-400 bg-red-400/10 border-red-400/20",          dot: "bg-red-400" },
 };
-
-const FILTER_STATUSES = ["", ...Object.keys(STATUS_LABELS)];
 
 export default async function AdminRecommandations({
   searchParams,
@@ -41,75 +39,120 @@ export default async function AdminRecommandations({
   const { data: recos, count } = await query;
   const totalPages = Math.ceil((count ?? 0) / pageSize);
 
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Recommandations</h1>
+  // Compter par statut pour les pills
+  const { data: statusCounts } = await supabaseAdmin
+    .from("recommendations")
+    .select("status");
+  const countByStatus = (statusCounts ?? []).reduce<Record<string, number>>((acc, r) => {
+    acc[r.status] = (acc[r.status] ?? 0) + 1;
+    return acc;
+  }, {});
+  const totalCount = statusCounts?.length ?? 0;
 
-      {/* Filtres */}
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {FILTER_STATUSES.map((s) => (
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Recommandations</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{totalCount} au total</p>
+        </div>
+      </div>
+
+      {/* Filtres statut — scroll horizontal sur mobile */}
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap">
+        <Link
+          href="/gestion-reseau/recommandations"
+          className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+            !params.status
+              ? "bg-kiparlo-orange text-white border-kiparlo-orange"
+              : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+        >
+          Toutes
+          <span className="opacity-70 text-[10px]">{totalCount}</span>
+        </Link>
+        {Object.entries(STATUS_LABELS).map(([s, { label, dot }]) => (
           <Link
             key={s}
-            href={`/gestion-reseau/recommandations${s ? `?status=${s}` : ""}`}
-            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-              (params.status ?? "") === s
-                ? "bg-kiparlo-orange text-white"
-                : "bg-white/5 text-gray-400 hover:text-white"
+            href={`/gestion-reseau/recommandations?status=${s}`}
+            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+              params.status === s
+                ? "bg-kiparlo-orange text-white border-kiparlo-orange"
+                : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
             }`}
           >
-            {s === "" ? "Toutes" : STATUS_LABELS[s]?.label ?? s}
+            <span className={`w-1.5 h-1.5 rounded-full ${dot} flex-shrink-0`} />
+            {label}
+            {countByStatus[s] ? (
+              <span className="opacity-60 text-[10px]">{countByStatus[s]}</span>
+            ) : null}
           </Link>
         ))}
       </div>
 
-      {/* Table */}
-      <div className="bg-gray-900 rounded-xl border border-white/5 overflow-hidden">
+      {/* Table desktop */}
+      <div className="hidden md:block bg-card rounded-xl border border-border overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="border-b border-white/5 text-xs text-gray-500 uppercase">
+          <thead className="border-b border-border">
             <tr>
-              <th className="text-left px-4 py-3">Referrer</th>
-              <th className="text-left px-4 py-3">Professionnel</th>
-              <th className="text-left px-4 py-3">Statut</th>
-              <th className="text-left px-4 py-3">Montant</th>
-              <th className="text-left px-4 py-3">Étape</th>
-              <th className="px-4 py-3"></th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Référent</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Professionnel</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Statut</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Montant</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Étapes</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date</th>
+              <th className="px-4 py-3" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-border">
             {(recos ?? []).length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                  Aucune recommandation trouvée.
+                <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
+                  Aucune recommandation trouvée
                 </td>
               </tr>
             )}
             {(recos ?? []).map((reco) => {
               const steps = reco.recommendation_steps ?? [];
-              const completedSteps = steps.filter((s: { completed_at: string | null }) => s.completed_at).length;
-              const st = STATUS_LABELS[reco.status] ?? { label: reco.status, color: "text-gray-400 bg-white/5" };
+              const done = steps.filter((s: { completed_at: string | null }) => s.completed_at).length;
+              const st = STATUS_LABELS[reco.status] ?? { label: reco.status, color: "text-muted-foreground bg-muted border-border", dot: "bg-gray-400" };
               const referrer = Array.isArray(reco.referrer) ? reco.referrer[0] : reco.referrer;
               const professional = Array.isArray(reco.professional) ? reco.professional[0] : reco.professional;
               const referrerName = referrer ? `${referrer.first_name ?? ""} ${referrer.last_name ?? ""}`.trim() : "—";
               const professionalName = professional ? `${professional.first_name ?? ""} ${professional.last_name ?? ""}`.trim() : "—";
               return (
-                <tr key={reco.id} className="hover:bg-white/[0.02]">
-                  <td className="px-4 py-3 text-white">{referrerName}</td>
-                  <td className="px-4 py-3 text-gray-300">{professionalName}</td>
+                <tr key={reco.id} className="hover:bg-muted/30 transition-colors">
+                  <td className="px-4 py-3 font-medium text-foreground">{referrerName}</td>
+                  <td className="px-4 py-3 text-muted-foreground max-w-[200px] truncate">{professionalName}</td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${st.color}`}>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${st.color}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
                       {st.label}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-emerald-400">
-                    {reco.amount ? `${Number(reco.amount).toLocaleString("fr-FR")} €` : "—"}
+                  <td className="px-4 py-3">
+                    {reco.amount
+                      ? <span className="font-semibold text-emerald-400">{Number(reco.amount).toLocaleString("fr-FR")} €</span>
+                      : <span className="text-muted-foreground">—</span>}
                   </td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">
-                    {completedSteps}/{steps.length}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: steps.length || 8 }, (_, i) => (
+                          <div key={i} className={`w-2 h-2 rounded-sm ${i < done ? "bg-emerald-400" : "bg-white/10"}`} />
+                        ))}
+                      </div>
+                      <span className="text-xs text-muted-foreground">{done}/{steps.length || 8}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
+                    {new Date(reco.created_at).toLocaleDateString("fr-FR")}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link
                       href={`/gestion-reseau/recommandations/${reco.id}`}
-                      className="text-kiparlo-orange text-xs hover:underline"
+                      className="text-xs font-medium text-kiparlo-orange hover:text-kiparlo-amber transition-colors"
                     >
                       Détail →
                     </Link>
@@ -121,17 +164,62 @@ export default async function AdminRecommandations({
         </table>
       </div>
 
+      {/* Cards mobile */}
+      <div className="md:hidden space-y-3">
+        {(recos ?? []).length === 0 && (
+          <p className="text-center text-muted-foreground py-8">Aucune recommandation trouvée</p>
+        )}
+        {(recos ?? []).map((reco) => {
+          const steps = reco.recommendation_steps ?? [];
+          const done = steps.filter((s: { completed_at: string | null }) => s.completed_at).length;
+          const st = STATUS_LABELS[reco.status] ?? { label: reco.status, color: "text-muted-foreground bg-muted border-border", dot: "bg-gray-400" };
+          const referrer = Array.isArray(reco.referrer) ? reco.referrer[0] : reco.referrer;
+          const professional = Array.isArray(reco.professional) ? reco.professional[0] : reco.professional;
+          const referrerName = referrer ? `${referrer.first_name ?? ""} ${referrer.last_name ?? ""}`.trim() : "—";
+          const professionalName = professional ? `${professional.first_name ?? ""} ${professional.last_name ?? ""}`.trim() : "—";
+          return (
+            <div key={reco.id} className="bg-card rounded-xl border border-border p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground truncate">{referrerName}</p>
+                  <p className="text-xs text-muted-foreground truncate">→ {professionalName}</p>
+                </div>
+                <span className={`flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${st.color}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
+                  {st.label}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex gap-0.5">
+                  {Array.from({ length: steps.length || 8 }, (_, i) => (
+                    <div key={i} className={`w-4 h-1.5 rounded-sm ${i < done ? "bg-emerald-400" : "bg-white/10"}`} />
+                  ))}
+                </div>
+                <div className="flex items-center gap-3">
+                  {reco.amount && (
+                    <span className="text-sm font-semibold text-emerald-400">
+                      {Number(reco.amount).toLocaleString("fr-FR")} €
+                    </span>
+                  )}
+                  <Link href={`/gestion-reseau/recommandations/${reco.id}`} className="text-xs font-medium text-kiparlo-orange">
+                    Détail →
+                  </Link>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex gap-2 mt-4 justify-end">
+        <div className="flex gap-2 justify-end flex-wrap">
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
             <Link
               key={p}
               href={`/gestion-reseau/recommandations?page=${p}${params.status ? `&status=${params.status}` : ""}`}
-              className={`px-3 py-1 rounded text-xs ${
-                p === page
-                  ? "bg-kiparlo-orange text-white"
-                  : "bg-white/5 text-gray-400 hover:text-white"
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                p === page ? "bg-kiparlo-orange text-white" : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
               {p}

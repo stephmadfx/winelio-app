@@ -160,8 +160,8 @@ export function AdminLayoutShell({
 
       {/* Contenu principal */}
       <div
-        className={`flex flex-col min-h-dvh transition-all duration-300 md:${
-          collapsed ? "ml-16" : "ml-64"
+        className={`flex flex-col min-h-dvh transition-all duration-300 ${
+          collapsed ? "md:ml-16" : "md:ml-64"
         }`}
       >
         {/* Topbar */}
