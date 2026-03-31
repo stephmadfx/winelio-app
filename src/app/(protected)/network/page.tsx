@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { NetworkTree } from "@/components/network-tree";
 import { NetworkGraph } from "@/components/network-graph";
-import { CopyButton, ShareButton } from "@/components/referral-buttons";
+import { CopyButton, ShareButton, EmailInviteButton } from "@/components/referral-buttons";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default async function NetworkPage() {
   const supabase = await createClient();
@@ -116,110 +117,121 @@ export default async function NetworkPage() {
             accent: growth > 0,
           },
         ].map((s) => (
-          <div key={s.title} className="bg-white dark:bg-white rounded-2xl border border-gray-200 p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-kiparlo-gray uppercase tracking-wider">{s.title}</span>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${s.accent ? "bg-kiparlo-orange/10" : "bg-gray-50"}`}>
-                <svg className={`w-4 h-4 ${s.accent ? "text-kiparlo-orange" : "text-kiparlo-gray"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={s.icon} />
-                </svg>
+          <Card key={s.title} className="!rounded-2xl">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium text-kiparlo-gray uppercase tracking-wider">{s.title}</span>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${s.accent ? "bg-kiparlo-orange/10" : "bg-muted"}`}>
+                  <svg className={`w-4 h-4 ${s.accent ? "text-kiparlo-orange" : "text-muted-foreground"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={s.icon} />
+                  </svg>
+                </div>
               </div>
-            </div>
-            <p className={`text-xl font-extrabold tabular-nums ${s.accent ? "text-kiparlo-orange" : "text-kiparlo-dark"}`}>{s.value}</p>
-            <p className="text-xs text-kiparlo-gray mt-0.5 truncate">{s.sub}</p>
-          </div>
+              <p className={`text-xl font-extrabold tabular-nums ${s.accent ? "text-kiparlo-orange" : "text-kiparlo-dark"}`}>{s.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">{s.sub}</p>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
       {/* Sponsor code */}
-      <div className="bg-white dark:bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 mb-6">
-        <h3 className="text-sm font-semibold text-kiparlo-gray uppercase tracking-wider mb-4">Mon code parrain</h3>
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-          <div className="bg-kiparlo-light rounded-xl border-2 border-dashed border-kiparlo-orange px-8 py-3 text-center w-full sm:w-auto">
-            <span className="text-3xl font-extrabold tracking-[0.2em] bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent select-all">
-              {sponsorCode}
-            </span>
+      <Card className="!rounded-2xl mb-6">
+        <CardContent className="p-5 sm:p-6">
+          <h3 className="text-sm font-semibold text-kiparlo-gray uppercase tracking-wider mb-4">Mon code parrain</h3>
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="bg-kiparlo-light dark:bg-muted rounded-xl border-2 border-dashed border-kiparlo-orange px-8 py-3 text-center w-full sm:w-auto">
+              <span className="text-3xl font-extrabold tracking-[0.2em] bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent select-all">
+                {sponsorCode}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-3 w-full sm:w-auto">
+              <CopyButton code={sponsorCode} />
+              <EmailInviteButton code={sponsorCode} />
+              <ShareButton code={sponsorCode} />
+            </div>
           </div>
-          <div className="flex gap-3 w-full sm:w-auto">
-            <CopyButton code={sponsorCode} />
-            <ShareButton code={sponsorCode} />
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Filleuls directs */}
-      <div className="bg-white dark:bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 mb-6">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-base font-semibold text-kiparlo-dark">
-            Filleuls directs
-            <span className="ml-2 text-sm font-normal text-kiparlo-gray">({totalReferrals ?? 0})</span>
-          </h3>
-          <Link href="/network/stats" className="text-sm text-kiparlo-orange hover:text-kiparlo-amber transition-colors font-medium">
-            Voir tout
-          </Link>
-        </div>
+      <Card className="!rounded-2xl mb-6">
+        <CardContent className="p-5 sm:p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-base font-semibold text-kiparlo-dark">
+              Filleuls directs
+              <span className="ml-2 text-sm font-normal text-muted-foreground">({totalReferrals ?? 0})</span>
+            </h3>
+            <Link href="/network/stats" className="text-sm text-kiparlo-orange hover:text-kiparlo-amber transition-colors font-medium">
+              Voir tout
+            </Link>
+          </div>
 
-        {referralsWithStats.length === 0 ? (
-          <div className="text-center py-10">
-            <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10 flex items-center justify-center">
-              <svg className="w-7 h-7 text-kiparlo-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
+          {referralsWithStats.length === 0 ? (
+            <div className="text-center py-10">
+              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10 flex items-center justify-center">
+                <svg className="w-7 h-7 text-kiparlo-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+              </div>
+              <p className="text-muted-foreground text-sm">Aucun filleul pour le moment.</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Partagez votre code parrain !</p>
             </div>
-            <p className="text-kiparlo-gray text-sm">Aucun filleul pour le moment.</p>
-            <p className="text-xs text-gray-400 mt-1">Partagez votre code parrain !</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {referralsWithStats.map((ref) => {
-              const initials = [ref.first_name, ref.last_name].filter(Boolean).map((n: string) => n[0]).join("").toUpperCase() || "?";
-              const fullName = ((ref.first_name ?? "") + " " + (ref.last_name ?? "")).trim() || "Sans nom";
-              return (
-                <div key={ref.id} className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-kiparlo-light hover:bg-gray-100 transition-colors">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber flex items-center justify-center text-white font-bold text-xs shrink-0">
-                      {initials}
+          ) : (
+            <div className="space-y-2">
+              {referralsWithStats.map((ref) => {
+                const initials = [ref.first_name, ref.last_name].filter(Boolean).map((n: string) => n[0]).join("").toUpperCase() || "?";
+                const fullName = ((ref.first_name ?? "") + " " + (ref.last_name ?? "")).trim() || "Sans nom";
+                return (
+                  <div key={ref.id} className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber flex items-center justify-center text-white font-bold text-xs shrink-0">
+                        {initials}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-kiparlo-dark text-sm truncate">{fullName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(ref.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-kiparlo-dark text-sm truncate">{fullName}</p>
-                      <p className="text-xs text-kiparlo-gray">
-                        {new Date(ref.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 sm:gap-6 shrink-0 ml-2">
-                    <div className="text-center">
-                      <p className="font-bold text-kiparlo-dark text-sm tabular-nums">{ref.sub_referrals}</p>
-                      <p className="text-[10px] text-kiparlo-gray">filleuls</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="font-bold text-kiparlo-orange text-sm tabular-nums">{ref.total_commissions.toFixed(2)} €</p>
-                      <p className="text-[10px] text-kiparlo-gray">commissions</p>
+                    <div className="flex items-center gap-4 sm:gap-6 shrink-0 ml-2">
+                      <div className="text-center">
+                        <p className="font-bold text-kiparlo-dark text-sm tabular-nums">{ref.sub_referrals}</p>
+                        <p className="text-[10px] text-muted-foreground">filleuls</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-bold text-kiparlo-orange text-sm tabular-nums">{ref.total_commissions.toFixed(2)} €</p>
+                        <p className="text-[10px] text-muted-foreground">commissions</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Graphe */}
-      <div className="bg-white dark:bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 mb-6">
-        <h3 className="text-base font-semibold text-kiparlo-dark mb-1">Vue graphique</h3>
-        <p className="text-xs text-kiparlo-gray mb-4">Pincez pour zoomer · Glissez pour naviguer</p>
-        <NetworkGraph
-          userId={user.id}
-          userName={`${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim()}
-        />
-      </div>
+      <Card className="!rounded-2xl mb-6">
+        <CardContent className="p-4 sm:p-6">
+          <h3 className="text-base font-semibold text-kiparlo-dark mb-1">Vue graphique</h3>
+          <p className="text-xs text-muted-foreground mb-4">Pincez pour zoomer · Glissez pour naviguer</p>
+          <NetworkGraph
+            userId={user.id}
+            userName={`${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim()}
+          />
+        </CardContent>
+      </Card>
 
       {/* Arbre */}
-      <div className="bg-white dark:bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
-        <h3 className="text-base font-semibold text-kiparlo-dark mb-1">Liste détaillée</h3>
-        <p className="text-xs text-kiparlo-gray mb-4">Réseau complet sur 5 niveaux</p>
-        <NetworkTree userId={user.id} />
-      </div>
+      <Card className="!rounded-2xl">
+        <CardContent className="p-4 sm:p-6">
+          <h3 className="text-base font-semibold text-kiparlo-dark mb-1">Liste détaillée</h3>
+          <p className="text-xs text-muted-foreground mb-4">Réseau complet sur 5 niveaux</p>
+          <NetworkTree userId={user.id} />
+        </CardContent>
+      </Card>
     </div>
   );
 }
