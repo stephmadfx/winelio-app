@@ -30,11 +30,13 @@ export async function advanceRecommendationStep(
   await assertSuperAdmin();
 
   // Marquer l'étape comme complétée
-  await supabaseAdmin
+  const { error: stepError } = await supabaseAdmin
     .from("recommendation_steps")
     .update({ completed: true, completed_at: new Date().toISOString() })
     .eq("recommendation_id", recommendationId)
     .eq("step_order", stepOrder);
+
+  if (stepError) throw new Error(`Erreur mise à jour étape: ${stepError.message}`);
 
   // Si étape 6 (devis validé) : déclencher les commissions
   if (stepOrder === 6) {
@@ -60,6 +62,14 @@ async function createCommissionsForReco(reco: {
   professional_id: string;
   deal_amount: number;
 }) {
+  // Idempotency : vérifier si des commissions existent déjà pour cette recommandation
+  const { count } = await supabaseAdmin
+    .from("commission_transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("recommendation_id", reco.id);
+
+  if ((count ?? 0) > 0) return; // Déjà créées, ne pas dupliquer
+
   // Récupérer la chaîne de sponsors du referrer (5 niveaux)
   const commissions: Array<{
     recommendation_id: string;
@@ -147,6 +157,7 @@ export async function adjustCommission(
     level: 0,
     status: "EARNED",
     recommendation_id: null,
+    notes: reason,
   });
 
   await recalculateWallet(userId);
@@ -201,10 +212,12 @@ async function recalculateWallet(userId: string) {
 export async function suspendUser(userId: string) {
   await assertSuperAdmin();
 
-  await supabaseAdmin
+  const { error: suspendError } = await supabaseAdmin
     .from("profiles")
     .update({ is_suspended: true })
     .eq("id", userId);
+
+  if (suspendError) throw new Error(`Erreur suspension utilisateur: ${suspendError.message}`);
 
   // Désactiver via Supabase Auth Admin API
   await supabaseAdmin.auth.admin.updateUserById(userId, {
@@ -218,10 +231,12 @@ export async function suspendUser(userId: string) {
 export async function reactivateUser(userId: string) {
   await assertSuperAdmin();
 
-  await supabaseAdmin
+  const { error: reactivateError } = await supabaseAdmin
     .from("profiles")
     .update({ is_suspended: false })
     .eq("id", userId);
+
+  if (reactivateError) throw new Error(`Erreur réactivation utilisateur: ${reactivateError.message}`);
 
   await supabaseAdmin.auth.admin.updateUserById(userId, {
     ban_duration: "none",
@@ -236,10 +251,12 @@ export async function reactivateUser(userId: string) {
 export async function validateWithdrawal(withdrawalId: string, userId: string) {
   await assertSuperAdmin();
 
-  await supabaseAdmin
+  const { error: validateError } = await supabaseAdmin
     .from("withdrawals")
     .update({ status: "approved" })
     .eq("id", withdrawalId);
+
+  if (validateError) throw new Error(`Erreur validation retrait: ${validateError.message}`);
 
   await recalculateWallet(userId);
   revalidatePath("/gestion-reseau/retraits");
@@ -252,17 +269,12 @@ export async function rejectWithdrawal(
 ) {
   await assertSuperAdmin();
 
-  // Récupérer le montant pour recréditer
-  const { data: withdrawal } = await supabaseAdmin
-    .from("withdrawals")
-    .select("amount")
-    .eq("id", withdrawalId)
-    .single();
-
-  await supabaseAdmin
+  const { error: rejectError } = await supabaseAdmin
     .from("withdrawals")
     .update({ status: "rejected", rejection_reason: reason })
     .eq("id", withdrawalId);
+
+  if (rejectError) throw new Error(`Erreur rejet retrait: ${rejectError.message}`);
 
   // Recréditer : recalculer le wallet (le retrait rejeté est exclu du total_withdrawn)
   await recalculateWallet(userId);
@@ -272,10 +284,12 @@ export async function rejectWithdrawal(
 export async function markWithdrawalPaid(withdrawalId: string, userId: string) {
   await assertSuperAdmin();
 
-  await supabaseAdmin
+  const { error: paidError } = await supabaseAdmin
     .from("withdrawals")
     .update({ status: "paid" })
     .eq("id", withdrawalId);
+
+  if (paidError) throw new Error(`Erreur marquage retrait payé: ${paidError.message}`);
 
   await recalculateWallet(userId);
   revalidatePath("/gestion-reseau/retraits");
