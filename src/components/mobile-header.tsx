@@ -43,7 +43,7 @@ const moreItems = [
   },
 ];
 
-export function MobileHeader({ userEmail }: { userEmail: string }) {
+export function MobileHeader({ userEmail, isSuperAdmin }: { userEmail: string; isSuperAdmin?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
 
@@ -132,6 +132,19 @@ export function MobileHeader({ userEmail }: { userEmail: string }) {
                   </Link>
                 );
               })}
+
+              {isSuperAdmin && (
+                <Link
+                  href="/gestion-reseau"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-kiparlo-orange/80 active:bg-kiparlo-orange/10 transition-colors"
+                >
+                  <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                  Super Admin
+                </Link>
+              )}
 
               <div className="border-t border-white/10 pt-3 mt-2">
                 <p className="text-xs text-gray-500 px-3 mb-2 truncate">

@@ -18,15 +18,17 @@ export default async function ProtectedLayout({
     redirect("/auth/login");
   }
 
+  const isSuperAdmin = user.app_metadata?.role === "super_admin";
+
   return (
     <div className="min-h-dvh bg-kiparlo-light dark:bg-slate-900 transition-colors duration-200">
       {/* Desktop: sidebar */}
       <div className="hidden lg:block">
-        <Sidebar userEmail={user.email ?? ""} />
+        <Sidebar userEmail={user.email ?? ""} isSuperAdmin={isSuperAdmin} />
       </div>
 
       {/* Mobile: header + bottom nav */}
-      <MobileHeader userEmail={user.email ?? ""} />
+      <MobileHeader userEmail={user.email ?? ""} isSuperAdmin={isSuperAdmin} />
       <MobileNav />
 
       {/* Main content: adaptatif mobile/desktop */}
