@@ -111,7 +111,7 @@ export default function SettingsPage() {
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Application</span>
-              <span className="font-medium text-kiparlo-dark">Kiparlo</span>
+              <span className="font-medium text-kiparlo-dark">Buzreco</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Version</span>

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 import { MobileHeader } from "@/components/mobile-header";
+import { AppBackground } from "@/components/AppBackground";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
@@ -33,7 +34,8 @@ export default async function ProtectedLayout({
   const isSuperAdmin = user.app_metadata?.role === "super_admin";
 
   return (
-    <div className={`min-h-dvh bg-kiparlo-light dark:bg-slate-900 transition-colors duration-200 ${DEMO_MODE ? "pt-6" : ""}`}>
+    <div className={`relative min-h-dvh bg-kiparlo-light dark:bg-slate-900 transition-colors duration-200 ${DEMO_MODE ? "pt-6" : ""}`}>
+      <AppBackground />
       <DemoBanner />
 
       {/* Desktop: sidebar */}
@@ -46,7 +48,7 @@ export default async function ProtectedLayout({
       <MobileNav />
 
       {/* Main content: adaptatif mobile/desktop */}
-      <main className="pt-14 pb-20 px-4 lg:pt-0 lg:pb-0 lg:ml-64 lg:px-8 lg:py-8">
+      <main className="relative z-10 pt-14 pb-20 px-4 lg:pt-0 lg:pb-0 lg:ml-64 lg:px-8 lg:py-8">
         {children}
       </main>
     </div>
