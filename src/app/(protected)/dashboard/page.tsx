@@ -47,10 +47,10 @@ export default async function DashboardPage() {
       .eq("status", "COMPLETED"),
   ]);
 
-  // Fetch profile to check onboarding
+  // Fetch profile to check onboarding and role
   const { data: profile } = await supabase
     .from("profiles")
-    .select("first_name, last_name")
+    .select("first_name, last_name, role")
     .eq("id", user.id)
     .single();
 
@@ -76,9 +76,24 @@ export default async function DashboardPage() {
       ? Math.round(((completedRecos ?? 0) / totalRecos) * 100)
       : 0;
 
+  const isSuperAdmin = profile?.role === "super_admin";
+
   return (
     <div>
       {needsOnboarding && <OnboardingModal userId={user.id} />}
+
+      {/* Super Admin access button — visible only for super_admin role */}
+      {isSuperAdmin && (
+        <a
+          href="/gestion-reseau"
+          className="flex items-center gap-2 mb-4 px-4 py-2 bg-kiparlo-dark text-white text-xs font-semibold rounded-xl w-fit hover:opacity-90 transition-opacity"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          Administration
+        </a>
+      )}
 
       <h2 className="text-xl sm:text-2xl font-bold text-kiparlo-dark mb-6">
         Tableau de bord
