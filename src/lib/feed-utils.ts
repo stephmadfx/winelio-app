@@ -21,7 +21,7 @@ export function formatUserName(
 }
 
 export function formatRelativeTime(timestamp: string): string {
-  const diff = Date.now() - new Date(timestamp).getTime()
+  const diff = Math.max(0, Date.now() - new Date(timestamp).getTime())
   const minutes = Math.floor(diff / 60_000)
   if (minutes < 1) return "À l'instant"
   if (minutes < 60) return `il y a ${minutes} min`

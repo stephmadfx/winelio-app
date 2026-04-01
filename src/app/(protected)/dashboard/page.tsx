@@ -83,11 +83,13 @@ export default async function DashboardPage() {
 
   // Highlights globaux via RPC
   const { data: globalRaw } = await supabase.rpc("get_global_highlights");
-  const globalEvents: FeedEvent[] = ((globalRaw as FeedEvent[] | null) ?? []).map(
+  // La RPC retourne un tableau d'objets jsonb sans champ `id` — on l'injecte ici
+  type GlobalHighlightRaw = Omit<FeedEvent, "id"> & { id?: string }
+  const globalEvents: FeedEvent[] = ((globalRaw as GlobalHighlightRaw[] | null) ?? []).map(
     (e, i) => ({
       ...e,
-      id: (e as { id?: string }).id ?? `global-${i}-${Date.now()}`,
-    })
+      id: e.id ?? `global-${i}-${Date.now()}`,
+    } as FeedEvent)
   );
 
   // Événements personnels

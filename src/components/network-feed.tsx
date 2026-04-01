@@ -195,7 +195,11 @@ export function NetworkFeed({
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [userId]) // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // networkIds est une prop SSR statique (jamais re-passée côté client), et
+  // prependGlobal/prependPersonal ferment sur des setState stables de React.
+  // Ajouter networkIds en dep causerait une reconnexion inutile à chaque render.
+  }, [userId])
 
   return (
     <Card className="!rounded-2xl mt-6">
