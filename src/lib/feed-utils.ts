@@ -16,7 +16,7 @@ export function formatUserName(
   lastName: string | null
 ): string {
   if (!firstName && !lastName) return "Un membre"
-  if (!lastName) return firstName!
+  if (!lastName) return firstName || "Un membre"
   return `${firstName} ${lastName.charAt(0)}.`
 }
 
