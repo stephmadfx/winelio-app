@@ -24,7 +24,7 @@ export default async function NetworkPage() {
 
   const { data: referrals, count: totalReferrals } = await supabase
     .from("profiles")
-    .select("id, first_name, last_name, created_at, avatar", { count: "exact" })
+    .select("id, first_name, last_name, city, created_at, avatar, is_professional, companies!owner_id(alias, city, category:categories(name))", { count: "exact" })
     .eq("sponsor_id", user.id);
 
   const referralsWithStats = await Promise.all(
@@ -38,7 +38,22 @@ export default async function NetworkPage() {
         .select("amount")
         .eq("source_user_id", ref.id);
       const totalCommissions = (commData ?? []).reduce((sum, c) => sum + (c.amount ?? 0), 0);
-      return { ...ref, sub_referrals: count ?? 0, total_commissions: totalCommissions };
+      return {
+        ...ref,
+        sub_referrals: count ?? 0,
+        total_commissions: totalCommissions,
+        company: (() => {
+          const rawCompany = Array.isArray(ref.companies) ? ref.companies[0] ?? null : (ref.companies ?? null);
+          if (!rawCompany) return null;
+          const rawCat = (rawCompany as Record<string, unknown>).category;
+          const catName = Array.isArray(rawCat) ? (rawCat[0] as { name: string } | undefined)?.name ?? null : (rawCat as { name: string } | null)?.name ?? null;
+          return {
+            alias: (rawCompany as { alias?: string | null }).alias ?? null,
+            city: (rawCompany as { city?: string | null }).city ?? null,
+            category: catName,
+          };
+        })(),
+      };
     })
   );
 
@@ -180,7 +195,13 @@ export default async function NetworkPage() {
             <div className="space-y-2">
               {referralsWithStats.map((ref) => {
                 const initials = [ref.first_name, ref.last_name].filter(Boolean).map((n: string) => n[0]).join("").toUpperCase() || "?";
-                const fullName = ((ref.first_name ?? "") + " " + (ref.last_name ?? "")).trim() || "Sans nom";
+                const isPro = ref.is_professional && ref.company?.alias;
+                const displayName = isPro
+                  ? ref.company!.alias!
+                  : (((ref.first_name ?? "") + " " + (ref.last_name ?? "")).trim() || "Sans nom");
+                const displaySub = isPro
+                  ? [ref.company!.category, ref.company!.city ?? ref.city].filter(Boolean).join(" · ")
+                  : null;
                 return (
                   <div key={ref.id} className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
                     <div className="flex items-center gap-3 min-w-0">
@@ -188,8 +209,13 @@ export default async function NetworkPage() {
                         {initials}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-semibold text-kiparlo-dark text-sm truncate">{fullName}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className={`font-semibold text-sm truncate ${isPro ? "font-mono text-kiparlo-orange" : "text-kiparlo-dark"}`}>
+                          {displayName}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {displaySub
+                            ? <span className="mr-1">{displaySub} ·</span>
+                            : ref.city && <span className="mr-1">{ref.city} ·</span>}
                           {new Date(ref.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
                         </p>
                       </div>
