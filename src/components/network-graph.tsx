@@ -5,6 +5,10 @@ interface GraphNode {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  city: string | null;
+  is_professional: boolean;
+  company_alias: string | null;
+  company_category: string | null;
   level: number;
   children: GraphNode[];
   childCount: number;
@@ -192,10 +196,25 @@ export function NetworkGraph({ userId, userName }: { userId: string; userName: s
     if (!res.ok) return [];
     const { children } = await res.json();
 
-    return (children ?? []).map((c: { id: string; first_name: string | null; last_name: string | null; childCount: number; activeRecos: number; completedRecos: number }) => ({
+    return (children ?? []).map((c: {
+      id: string;
+      first_name: string | null;
+      last_name: string | null;
+      city: string | null;
+      is_professional: boolean;
+      company_alias: string | null;
+      company_category: string | null;
+      childCount: number;
+      activeRecos: number;
+      completedRecos: number;
+    }) => ({
       id: c.id,
       first_name: c.first_name,
       last_name: c.last_name,
+      city: c.city,
+      is_professional: c.is_professional,
+      company_alias: c.company_alias,
+      company_category: c.company_category,
       level,
       children: [],
       childCount: c.childCount,
@@ -216,6 +235,10 @@ export function NetworkGraph({ userId, userName }: { userId: string; userName: s
         id: userId,
         first_name: userName.split(" ")[0] ?? "Moi",
         last_name: userName.split(" ").slice(1).join(" ") ?? "",
+        city: null,
+        is_professional: false,
+        company_alias: null,
+        company_category: null,
         level: 0,
         children,
         childCount: totalDirect ?? 0,
@@ -361,9 +384,20 @@ export function NetworkGraph({ userId, userName }: { userId: string; userName: s
               </div>
               <div>
                 <p className="font-semibold text-kiparlo-dark text-sm">
-                  {[selectedNode.first_name, selectedNode.last_name].filter(Boolean).join(" ")}
+                  {selectedNode.is_professional && selectedNode.company_alias
+                    ? selectedNode.company_alias
+                    : selectedNode.level === 1
+                    ? ([selectedNode.first_name, selectedNode.last_name].filter(Boolean).join(" ") || "Sans nom")
+                    : ([selectedNode.first_name, selectedNode.last_name]
+                        .filter(Boolean)
+                        .map((n) => `${n![0].toUpperCase()}.`)
+                        .join(" ") || "?")}
                 </p>
                 <p className="text-xs text-kiparlo-gray">
+                  {selectedNode.is_professional && selectedNode.company_category && (
+                    <span className="mr-2">{selectedNode.company_category}</span>
+                  )}
+                  {selectedNode.city && <span className="mr-2">{selectedNode.city}</span>}
                   Niveau {selectedNode.level} · {selectedNode.childCount} membre{selectedNode.childCount !== 1 ? "s" : ""}
                   {selectedNode.activeRecos > 0 && <span className="ml-2 text-kiparlo-orange font-medium">{selectedNode.activeRecos} en cours</span>}
                   {selectedNode.completedRecos > 0 && <span className="ml-2 text-green-600 font-medium">{selectedNode.completedRecos} terminee{selectedNode.completedRecos > 1 ? "s" : ""}</span>}
@@ -462,7 +496,16 @@ function NodeView({ node, onClick, selectedId }: {
           maxWidth: 70, fontSize: isRoot ? 11 : 9, fontWeight: isRoot ? 700 : 500,
           color: isRoot ? "#2D3436" : "#636E72",
         }}>
-          {isRoot ? "Vous" : (node.first_name ?? "")}
+          {isRoot
+            ? "Vous"
+            : node.is_professional && node.company_alias
+            ? node.company_alias
+            : node.level === 1
+            ? (node.first_name ?? "")
+            : [node.first_name, node.last_name]
+                .filter(Boolean)
+                .map((n) => `${n![0].toUpperCase()}.`)
+                .join("")}
         </span>
 
         {/* Expand badge */}

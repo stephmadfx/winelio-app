@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
   const { data: children } = await supabaseAdmin
     .from("profiles")
-    .select("id, first_name, last_name")
+    .select("id, first_name, last_name, city, is_professional, companies!owner_id(alias, category:categories(name))")
     .eq("sponsor_id", parentId);
 
   if (!children) {
@@ -56,10 +56,18 @@ export async function GET(request: Request) {
           .eq("status", "COMPLETED"),
       ]);
 
+      const rawCompany = Array.isArray(child.companies) ? child.companies[0] ?? null : (child.companies ?? null);
+      const rawCat = rawCompany ? (rawCompany as Record<string, unknown>).category : null;
+      const catName = Array.isArray(rawCat) ? (rawCat[0] as { name: string } | undefined)?.name ?? null : (rawCat as { name: string } | null)?.name ?? null;
+
       return {
         id: child.id,
         first_name: child.first_name,
         last_name: child.last_name,
+        city: child.city,
+        is_professional: (child as { is_professional?: boolean }).is_professional ?? false,
+        company_alias: rawCompany ? (rawCompany as { alias?: string | null }).alias ?? null : null,
+        company_category: catName,
         childCount: childCount ?? 0,
         activeRecos: activeRecos ?? 0,
         completedRecos: completedRecos ?? 0,
