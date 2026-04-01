@@ -5,3 +5,4 @@ node_modules
 certificates/
 tsconfig.tsbuildinfo
 .superpowers/
+.worktrees/
