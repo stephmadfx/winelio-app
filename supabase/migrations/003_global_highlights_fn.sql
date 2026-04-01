@@ -18,9 +18,15 @@ BEGIN
   SELECT jsonb_build_object(
     'kind',      'top_sponsor',
     'user',      COALESCE(
-                   p.first_name || ' ' ||
-                   LEFT(COALESCE(p.last_name, ''), 1) ||
-                   CASE WHEN p.last_name IS NOT NULL THEN '.' ELSE '' END,
+                   CASE
+                     WHEN p.first_name IS NOT NULL AND p.last_name IS NOT NULL
+                       THEN p.first_name || ' ' || LEFT(p.last_name, 1) || '.'
+                     WHEN p.first_name IS NOT NULL
+                       THEN p.first_name
+                     WHEN p.last_name IS NOT NULL
+                       THEN LEFT(p.last_name, 1) || '.'
+                     ELSE NULL
+                   END,
                    'Un membre'
                  ),
     'city',      p.city,
@@ -41,7 +47,6 @@ BEGIN
     'kind',      'top_reco',
     'amount',    r.amount,
     'city',      p.city,
-    'date',      r.created_at::text,
     'timestamp', r.created_at::text
   )
   INTO v_top_reco
@@ -57,9 +62,15 @@ BEGIN
   SELECT jsonb_build_object(
     'kind',      'big_commission',
     'user',      COALESCE(
-                   p.first_name || ' ' ||
-                   LEFT(COALESCE(p.last_name, ''), 1) ||
-                   CASE WHEN p.last_name IS NOT NULL THEN '.' ELSE '' END,
+                   CASE
+                     WHEN p.first_name IS NOT NULL AND p.last_name IS NOT NULL
+                       THEN p.first_name || ' ' || LEFT(p.last_name, 1) || '.'
+                     WHEN p.first_name IS NOT NULL
+                       THEN p.first_name
+                     WHEN p.last_name IS NOT NULL
+                       THEN LEFT(p.last_name, 1) || '.'
+                     ELSE NULL
+                   END,
                    'Un membre'
                  ),
     'city',      p.city,
