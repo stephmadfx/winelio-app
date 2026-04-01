@@ -6,7 +6,7 @@ export default async function AdminProfessionnels() {
     supabaseAdmin
       .from("companies")
       .select(
-        `id, name, legal_name, email, phone, website,
+        `id, name, legal_name, alias, email, phone, website,
          address, city, postal_code, country,
          latitude, longitude, siret, is_verified, created_at,
          owner:profiles!owner_id(first_name, last_name, email),
