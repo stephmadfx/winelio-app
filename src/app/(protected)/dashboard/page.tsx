@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { OnboardingModal } from "@/components/onboarding-modal";
 import { Card, CardContent } from "@/components/ui/card";
+import { NetworkFeed } from "@/components/network-feed";
+import { FeedEvent, formatUserName } from "@/lib/feed-utils";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -60,6 +62,8 @@ export default async function DashboardPage() {
   const needsOnboarding = !isSuperAdmin && (!profile?.first_name || !profile?.last_name);
 
   // Total network members across ALL levels (up to 5) recursively
+  // On collecte aussi les IDs pour le feed
+  const allNetworkIds: string[] = [];
   let networkCount = 0;
   let currentLevelIds = [user.id];
   for (let lvl = 1; lvl <= 5; lvl++) {
@@ -70,7 +74,142 @@ export default async function DashboardPage() {
       .in("sponsor_id", currentLevelIds);
     if (!lvlMembers || lvlMembers.length === 0) break;
     networkCount += lvlMembers.length;
+    allNetworkIds.push(...lvlMembers.map((m) => m.id));
     currentLevelIds = lvlMembers.map((m) => m.id);
+  }
+
+  // --- Feed réseau ---
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Highlights globaux via RPC
+  const { data: globalRaw } = await supabase.rpc("get_global_highlights");
+  const globalEvents: FeedEvent[] = ((globalRaw as FeedEvent[] | null) ?? []).map(
+    (e, i) => ({
+      ...e,
+      id: (e as { id?: string }).id ?? `global-${i}-${Date.now()}`,
+    })
+  );
+
+  // Événements personnels
+  const personalEvents: FeedEvent[] = [];
+
+  if (allNetworkIds.length > 0) {
+    const [
+      { data: newReferrals },
+      { data: validatedRecos },
+      { data: bigCommissions },
+      { data: referralSponsored },
+    ] = await Promise.all([
+      // Nouveaux filleuls directs
+      supabase
+        .from("profiles")
+        .select("id, first_name, last_name, city, created_at, sponsor_id")
+        .eq("sponsor_id", user.id)
+        .gte("created_at", sevenDaysAgo)
+        .order("created_at", { ascending: false })
+        .limit(5),
+
+      // Recos validées dans le réseau
+      supabase
+        .from("recommendations")
+        .select("id, referrer_id, amount, created_at")
+        .in("referrer_id", allNetworkIds)
+        .eq("status", "COMPLETED")
+        .gte("created_at", sevenDaysAgo)
+        .order("created_at", { ascending: false })
+        .limit(5),
+
+      // Commissions > 100€ dans le réseau
+      supabase
+        .from("commission_transactions")
+        .select("id, user_id, amount, created_at")
+        .in("user_id", allNetworkIds)
+        .gt("amount", 100)
+        .eq("status", "EARNED")
+        .gte("created_at", sevenDaysAgo)
+        .order("created_at", { ascending: false })
+        .limit(5),
+
+      // Filleuls qui ont eux-mêmes parrainé quelqu'un
+      supabase
+        .from("profiles")
+        .select("id, first_name, last_name, city, created_at, sponsor_id")
+        .in("sponsor_id", allNetworkIds)
+        .gte("created_at", sevenDaysAgo)
+        .order("created_at", { ascending: false })
+        .limit(5),
+    ]);
+
+    // Récupérer les profils des référents pour recos et commissions
+    const referrerIds = [
+      ...(validatedRecos?.map((r) => r.referrer_id) ?? []),
+      ...(bigCommissions?.map((c) => c.user_id) ?? []),
+      ...(referralSponsored?.map((p) => p.sponsor_id).filter(Boolean) ?? []),
+    ];
+    const uniqueReferrerIds = [...new Set(referrerIds)];
+    const profilesMap: Record<string, { first_name: string | null; last_name: string | null; city: string | null }> = {};
+
+    if (uniqueReferrerIds.length > 0) {
+      const { data: refProfiles } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, city")
+        .in("id", uniqueReferrerIds);
+      refProfiles?.forEach((p) => { profilesMap[p.id] = p; });
+    }
+
+    // Transformer en FeedEvent
+    newReferrals?.forEach((p) => {
+      personalEvents.push({
+        id: `nr-${p.id}`,
+        kind: "new_referral",
+        user: formatUserName(p.first_name, p.last_name),
+        city: p.city,
+        level: 1,
+        timestamp: p.created_at,
+      });
+    });
+
+    validatedRecos?.forEach((r) => {
+      const prof = profilesMap[r.referrer_id];
+      personalEvents.push({
+        id: `rv-${r.id}`,
+        kind: "reco_validated",
+        user: formatUserName(prof?.first_name ?? null, prof?.last_name ?? null),
+        city: prof?.city ?? null,
+        amount: r.amount ?? undefined,
+        timestamp: r.created_at,
+      });
+    });
+
+    bigCommissions?.forEach((c) => {
+      const prof = profilesMap[c.user_id];
+      personalEvents.push({
+        id: `cr-${c.id}`,
+        kind: "commission_received",
+        user: formatUserName(prof?.first_name ?? null, prof?.last_name ?? null),
+        city: prof?.city ?? null,
+        amount: c.amount,
+        timestamp: c.created_at,
+      });
+    });
+
+    referralSponsored?.forEach((p) => {
+      const sponsorProf = p.sponsor_id ? profilesMap[p.sponsor_id] : null;
+      if (sponsorProf) {
+        personalEvents.push({
+          id: `rs-${p.id}`,
+          kind: "referral_sponsored",
+          user: formatUserName(sponsorProf.first_name, sponsorProf.last_name),
+          city: sponsorProf.city,
+          timestamp: p.created_at,
+        });
+      }
+    });
+
+    // Trier par timestamp décroissant
+    personalEvents.sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
   }
 
   const totalEarned = wallet?.total_earned ?? 0;
@@ -152,6 +291,13 @@ export default async function DashboardPage() {
           icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
         />
       </div>
+
+      <NetworkFeed
+        initialGlobalEvents={globalEvents}
+        initialPersonalEvents={personalEvents}
+        networkIds={allNetworkIds}
+        userId={user.id}
+      />
     </div>
   );
 }
