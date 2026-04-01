@@ -15,9 +15,10 @@ interface Contact {
 
 interface Professional {
   id: string;
-  first_name: string;
-  last_name: string;
+  first_name: string | null;
+  last_name: string | null;
   company_name: string | null;
+  company_alias: string | null;
   category_name: string | null;
   city: string | null;
   latitude: number | null;
@@ -135,16 +136,9 @@ export default function NewRecommendationPage() {
   useEffect(() => {
     let query = supabase
       .from("profiles")
-      .select("id, first_name, last_name, city, latitude, longitude, company:companies(name, category:categories(name)), reviews!professional_id(rating)")
+      .select("id, first_name, last_name, city, latitude, longitude, company:companies(name, alias, category:categories(name)), reviews!professional_id(rating)")
       .eq("is_professional", true)
       .order("last_name");
-
-    if (proSearch.length >= 2) {
-      const sanitized = proSearch.replace(/[^a-zA-Z0-9À-ÿ\s\-']/g, "");
-      if (sanitized.length >= 2) {
-        query = query.or(`first_name.ilike.%${sanitized}%,last_name.ilike.%${sanitized}%`);
-      }
-    }
 
     query.then(({ data }) => {
       let results: Professional[] = (data ?? []).map((p) => {
@@ -165,6 +159,7 @@ export default function NewRecommendationPage() {
           first_name: p.first_name,
           last_name: p.last_name,
           company_name: company?.name ?? null,
+          company_alias: (company as { alias?: string | null } | null)?.alias ?? null,
           category_name: catName,
           city: p.city,
           latitude: p.latitude,
@@ -174,6 +169,21 @@ export default function NewRecommendationPage() {
           review_count: reviewCount,
         };
       });
+
+      // Filtre de recherche : alias direct (#...) OU nom entreprise OU nom professionnel
+      if (proSearch.length >= 2) {
+        const q = proSearch.toLowerCase();
+        results = results.filter((p) => {
+          if (proSearch.startsWith("#")) {
+            return (p.company_alias ?? "").toLowerCase().startsWith(q);
+          }
+          return (
+            (p.company_name ?? "").toLowerCase().includes(q) ||
+            (p.first_name ?? "").toLowerCase().includes(q) ||
+            (p.last_name ?? "").toLowerCase().includes(q)
+          );
+        });
+      }
 
       if (selectedCategory !== "all") {
         results = results.filter((p) => p.category_name === selectedCategory);
@@ -617,7 +627,7 @@ export default function NewRecommendationPage() {
           {/* Pro list */}
           <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
             {professionals.map((p) => {
-              const fullName = `${p.first_name} ${p.last_name}`;
+              const displayLabel = p.company_alias ?? `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim();
               return (
                 <button
                   key={p.id}
@@ -628,9 +638,9 @@ export default function NewRecommendationPage() {
                       : "border-transparent bg-white hover:border-kiparlo-orange/20 shadow-sm"
                   }`}
                 >
-                  <Initials name={fullName} size="sm" />
+                  <Initials name={displayLabel} size="sm" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-kiparlo-dark">{fullName}</p>
+                    <p className="font-semibold text-kiparlo-dark text-sm font-mono">{displayLabel}</p>
                     {p.company_name && (
                       <p className="text-xs text-kiparlo-gray truncate">{p.company_name}</p>
                     )}
