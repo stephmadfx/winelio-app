@@ -7,6 +7,10 @@ interface TreeNode {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  city: string | null;
+  is_professional: boolean;
+  company_alias: string | null;
+  company_category: string | null;
   referral_count: number;
   total_earned: number;
   children: TreeNode[];
@@ -38,7 +42,7 @@ export function NetworkTree({ userId }: { userId: string }) {
     async (parentId: string): Promise<TreeNode[]> => {
       const { data: children } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name")
+        .select("id, first_name, last_name, city, is_professional, companies!owner_id(alias, category:categories(name))")
         .eq("sponsor_id", parentId);
 
       if (!children || children.length === 0) return [];
@@ -60,10 +64,18 @@ export function NetworkTree({ userId }: { userId: string }) {
             0
           );
 
+          const rawCompany = Array.isArray(child.companies) ? child.companies[0] ?? null : (child.companies ?? null);
+          const rawCat = rawCompany ? (rawCompany as Record<string, unknown>).category : null;
+          const catName = Array.isArray(rawCat) ? (rawCat[0] as { name: string } | undefined)?.name ?? null : (rawCat as { name: string } | null)?.name ?? null;
+
           return {
             id: child.id,
             first_name: child.first_name,
             last_name: child.last_name,
+            city: child.city,
+            is_professional: (child as { is_professional?: boolean }).is_professional ?? false,
+            company_alias: rawCompany ? (rawCompany as { alias?: string | null }).alias ?? null : null,
+            company_category: catName,
             referral_count: count ?? 0,
             total_earned: totalEarned,
             children: [],
@@ -207,12 +219,21 @@ function TreeNodeRow({
   isLast: boolean;
 }) {
   const maxLevel = 5;
-  const fullName = [node.first_name, node.last_name].filter(Boolean).join(" ") || "Sans nom";
   const initials = [node.first_name, node.last_name]
     .filter(Boolean)
     .map((n) => n![0])
     .join("")
     .toUpperCase();
+  const isPro = node.is_professional && node.company_alias;
+
+  const displayName = isPro
+    ? node.company_alias!
+    : level === 1
+    ? ([node.first_name, node.last_name].filter(Boolean).join(" ") || "Sans nom")
+    : ([node.first_name, node.last_name]
+        .filter(Boolean)
+        .map((n) => `${n![0].toUpperCase()}.`)
+        .join(" ") || "?");
   const canExpand = level < maxLevel && node.referral_count > 0;
   const colors = getColors(level);
 
@@ -264,18 +285,24 @@ function TreeNodeRow({
           {/* Name + level badge */}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-kiparlo-dark text-sm truncate">
-                {fullName}
+              <span className={`font-semibold text-sm truncate ${isPro ? "font-mono text-kiparlo-orange" : "text-kiparlo-dark"}`}>
+                {displayName}
               </span>
               <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold text-white ${colors.badge} shrink-0`}>
                 N{level}
               </span>
             </div>
-            {node.referral_count > 0 && (
-              <p className="text-[11px] text-kiparlo-gray mt-0.5">
-                {node.referral_count} membre{node.referral_count > 1 ? "s" : ""} dans son reseau
-              </p>
-            )}
+            <p className="text-[11px] text-kiparlo-gray mt-0.5 truncate">
+              {[
+                isPro ? node.company_category : null,
+                node.city,
+                node.referral_count > 0
+                  ? `${node.referral_count} membre${node.referral_count > 1 ? "s" : ""}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
           </div>
         </div>
 
