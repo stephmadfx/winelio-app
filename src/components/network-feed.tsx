@@ -1,9 +1,11 @@
+// src/components/network-feed.tsx
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { FeedItem } from "@/components/feed-item"
-import { FeedEvent } from "@/lib/feed-utils"
+import { FeedEvent, formatUserName } from "@/lib/feed-utils"
+import { createClient } from "@/lib/supabase/client"
 
 interface NetworkFeedProps {
   initialGlobalEvents: FeedEvent[]
@@ -12,20 +14,25 @@ interface NetworkFeedProps {
   userId: string
 }
 
+// Génère un ID unique simple sans dépendance externe
+function uid(): string {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36)
+}
+
 export function NetworkFeed({
   initialGlobalEvents,
   initialPersonalEvents,
+  networkIds,
+  userId,
 }: NetworkFeedProps) {
   const [globalEvents, setGlobalEvents] = useState<FeedEvent[]>(initialGlobalEvents)
   const [personalEvents, setPersonalEvents] = useState<FeedEvent[]>(initialPersonalEvents)
-  // newIds tracks which events need the "isNew" animation
   const [newIds, setNewIds] = useState<Set<string>>(new Set())
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null)
 
-  // Fonction utilitaire pour ajouter un événement en tête (utilisée au step Realtime)
   const prependGlobal = (event: FeedEvent) => {
     setNewIds((prev) => new Set(prev).add(event.id))
     setGlobalEvents((prev) => [event, ...prev].slice(0, 20))
-    // Retirer le flag isNew après 600ms
     setTimeout(() => {
       setNewIds((prev) => {
         const next = new Set(prev)
@@ -47,9 +54,148 @@ export function NetworkFeed({
     }, 600)
   }
 
-  // prependGlobal et prependPersonal seront utilisés au Task 6
-  void prependGlobal
-  void prependPersonal
+  useEffect(() => {
+    const supabase = createClient()
+
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current)
+    }
+
+    const channel = supabase
+      .channel("network-feed-realtime")
+
+      // Commission EARNED > 100€
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "commission_transactions",
+          filter: "status=eq.EARNED",
+        },
+        async (payload) => {
+          const row = payload.new as {
+            id: string
+            user_id: string
+            amount: number
+            status: string
+            created_at: string
+          }
+          if (row.amount <= 100) return
+
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("first_name, last_name, city")
+            .eq("id", row.user_id)
+            .single()
+
+          const eventId = uid()
+
+          if (networkIds.includes(row.user_id)) {
+            prependPersonal({
+              id: eventId,
+              kind: "commission_received",
+              user: formatUserName(prof?.first_name ?? null, prof?.last_name ?? null),
+              city: prof?.city ?? null,
+              amount: row.amount,
+              timestamp: row.created_at,
+            })
+          } else {
+            prependGlobal({
+              id: eventId,
+              kind: "big_commission",
+              user: formatUserName(prof?.first_name ?? null, prof?.last_name ?? null),
+              city: prof?.city ?? null,
+              amount: row.amount,
+              timestamp: row.created_at,
+            })
+          }
+        }
+      )
+
+      // Reco COMPLETED
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "recommendations",
+          filter: "status=eq.COMPLETED",
+        },
+        async (payload) => {
+          const row = payload.new as {
+            id: string
+            referrer_id: string
+            amount: number | null
+            status: string
+            created_at: string
+          }
+
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("first_name, last_name, city")
+            .eq("id", row.referrer_id)
+            .single()
+
+          const eventId = uid()
+
+          if (networkIds.includes(row.referrer_id)) {
+            prependPersonal({
+              id: eventId,
+              kind: "reco_validated",
+              user: formatUserName(prof?.first_name ?? null, prof?.last_name ?? null),
+              city: prof?.city ?? null,
+              amount: row.amount ?? undefined,
+              timestamp: row.created_at,
+            })
+          } else if (row.amount && row.amount > 500) {
+            prependGlobal({
+              id: eventId,
+              kind: "top_reco",
+              amount: row.amount,
+              city: prof?.city ?? null,
+              timestamp: row.created_at,
+            })
+          }
+        }
+      )
+
+      // Nouveau filleul direct
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "profiles",
+          filter: `sponsor_id=eq.${userId}`,
+        },
+        (payload) => {
+          const row = payload.new as {
+            id: string
+            first_name: string | null
+            last_name: string | null
+            city: string | null
+            created_at: string
+          }
+          prependPersonal({
+            id: uid(),
+            kind: "new_referral",
+            user: formatUserName(row.first_name, row.last_name),
+            city: row.city,
+            level: 1,
+            timestamp: row.created_at,
+          })
+        }
+      )
+
+      .subscribe()
+
+    channelRef.current = channel
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Card className="!rounded-2xl mt-6">
@@ -65,7 +211,7 @@ export function NetworkFeed({
           </p>
           {globalEvents.length === 0 ? (
             <p className="text-sm text-kiparlo-gray py-4 text-center">
-              Pas encore d'activité aujourd'hui
+              Pas encore d&apos;activité aujourd&apos;hui
             </p>
           ) : (
             <div className="max-h-48 overflow-y-auto">
