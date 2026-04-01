@@ -14,7 +14,11 @@ interface Recommendation {
   amount: number | null;
   created_at: string;
   contact: { first_name: string; last_name: string } | null;
-  professional: { first_name: string; last_name: string } | null;
+  professional: {
+    first_name: string | null;
+    last_name: string | null;
+    companies: { alias: string | null; city: string | null; category: { name: string } | null } | null;
+  } | null;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -124,19 +128,32 @@ export default function RecommendationsPage() {
       const { data } = await supabase
         .from("recommendations")
         .select(
-          "id, status, amount, created_at, contact:contacts(first_name, last_name), professional:profiles!recommendations_professional_id_fkey(first_name, last_name)"
+          `id, status, amount, created_at,
+ contact:contacts(first_name, last_name),
+ professional:profiles!recommendations_professional_id_fkey(
+   first_name, last_name,
+   companies!owner_id(alias, city, category:categories(name))
+ )`
         )
         .eq(column, userId!)
         .order("created_at", { ascending: false });
 
       setAllRecommendations(
-        (data ?? []).map((r) => ({
-          ...r,
-          contact: Array.isArray(r.contact) ? r.contact[0] ?? null : r.contact,
-          professional: Array.isArray(r.professional)
-            ? r.professional[0] ?? null
-            : r.professional,
-        })) as Recommendation[]
+        (data ?? []).map((r) => {
+          const pro = Array.isArray(r.professional) ? r.professional[0] ?? null : r.professional;
+          const rawCompany = pro ? (Array.isArray(pro.companies) ? pro.companies[0] ?? null : pro.companies) : null;
+          const rawCat = rawCompany?.category;
+          const companyNormalized = rawCompany ? {
+            alias: rawCompany.alias ?? null,
+            city: rawCompany.city ?? null,
+            category: Array.isArray(rawCat) ? (rawCat[0] ?? null) : (rawCat ?? null),
+          } : null;
+          return {
+            ...r,
+            contact: Array.isArray(r.contact) ? r.contact[0] ?? null : r.contact,
+            professional: pro ? { ...pro, companies: companyNormalized } : null,
+          };
+        }) as Recommendation[]
       );
       setLoading(false);
     }
@@ -297,9 +314,11 @@ export default function RecommendationsPage() {
             const contactName = rec.contact
               ? [rec.contact.first_name, rec.contact.last_name].filter(Boolean).join(" ") || "Contact inconnu"
               : "Contact inconnu";
-            const proName = rec.professional
-              ? [rec.professional.first_name, rec.professional.last_name].filter(Boolean).join(" ") || "Professionnel inconnu"
-              : "Professionnel inconnu";
+            const proAlias = rec.professional?.companies?.alias;
+            const proCategory = rec.professional?.companies?.category?.name;
+            const proCity = rec.professional?.companies?.city;
+            const proDisplay = proAlias ?? "Professionnel inconnu";
+            const proSub = [proCategory, proCity].filter(Boolean).join(" · ");
 
             return (
               <Link
@@ -320,7 +339,8 @@ export default function RecommendationsPage() {
                         <p className="font-bold text-kiparlo-dark dark:text-foreground truncate leading-tight">{contactName}</p>
                         <div className="mt-1 flex items-center gap-1.5 text-sm text-kiparlo-gray dark:text-muted-foreground">
                           <span className="text-kiparlo-gray/40">{tab === "sent" ? "→" : "←"}</span>
-                          <span className="truncate">{proName}</span>
+                          <span className="truncate font-mono font-semibold text-kiparlo-orange">{proDisplay}</span>
+                          {proSub && <span className="text-[10px] text-kiparlo-gray/70 ml-1">{proSub}</span>}
                         </div>
                         <p className="mt-1.5 text-xs text-kiparlo-gray/50">
                           {new Date(rec.created_at).toLocaleDateString("fr-FR", {
