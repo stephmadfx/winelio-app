@@ -218,14 +218,21 @@ export function NetworkFeed({
               Pas encore d&apos;activité aujourd&apos;hui
             </p>
           ) : (
-            <div className="max-h-48 overflow-y-auto">
-              {globalEvents.map((event) => (
-                <FeedItem
-                  key={event.id}
-                  event={event}
-                  isNew={newIds.has(event.id)}
-                />
-              ))}
+            <div className="h-48 overflow-hidden feed-ticker-wrap">
+              <div
+                className="feed-ticker-inner"
+                style={{
+                  animation: `feed-scroll-up ${Math.max(globalEvents.length * 4, 8)}s linear infinite`,
+                }}
+              >
+                {[...globalEvents, ...globalEvents].map((event, i) => (
+                  <FeedItem
+                    key={`${event.id}-${i}`}
+                    event={event}
+                    isNew={i < globalEvents.length && newIds.has(event.id)}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -242,14 +249,21 @@ export function NetworkFeed({
               Aucune activité récente dans ton réseau
             </p>
           ) : (
-            <div className="max-h-48 overflow-y-auto">
-              {personalEvents.map((event) => (
-                <FeedItem
-                  key={event.id}
-                  event={event}
-                  isNew={newIds.has(event.id)}
-                />
-              ))}
+            <div className="h-48 overflow-hidden feed-ticker-wrap">
+              <div
+                className="feed-ticker-inner"
+                style={{
+                  animation: `feed-scroll-up ${Math.max(personalEvents.length * 4, 8)}s linear infinite`,
+                }}
+              >
+                {[...personalEvents, ...personalEvents].map((event, i) => (
+                  <FeedItem
+                    key={`${event.id}-${i}`}
+                    event={event}
+                    isNew={i < personalEvents.length && newIds.has(event.id)}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </div>

@@ -42,6 +42,16 @@ input, textarea, select {
   }
 }
 
+/* Vertical ticker animation for network feed */
+@keyframes feed-scroll-up {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-50%); }
+}
+
+.feed-ticker-wrap:hover .feed-ticker-inner {
+  animation-play-state: paused;
+}
+
 /* Hide scrollbar for horizontal filter pills */
 .scrollbar-none {
   -ms-overflow-style: none;
