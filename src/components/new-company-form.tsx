@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { geocodeAddress } from "@/lib/geocode";
+import { generateUniqueAlias } from "@/lib/generate-alias";
 import { useRouter } from "next/navigation";
 
 interface Category {
@@ -51,6 +52,8 @@ export function NewCompanyForm({
     setError(null);
     const supabase = createClient();
 
+    const alias = await generateUniqueAlias(supabase);
+
     const { error: insertError } = await supabase.from("companies").insert({
       name: form.name,
       legal_name: form.legal_name || null,
@@ -63,6 +66,7 @@ export function NewCompanyForm({
       siret: form.siret || null,
       category_id: form.category_id || null,
       owner_id: userId,
+      alias,
     });
 
     if (insertError) {
