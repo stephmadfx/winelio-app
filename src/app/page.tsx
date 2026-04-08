@@ -1,20 +1,17 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-winelio-dark flex flex-col items-center justify-center px-4">
       <div className="text-center max-w-2xl">
-        {/* Logo text */}
-        <h1 className="text-6xl md:text-8xl font-extrabold tracking-tight mb-4">
-          <span className="text-white">BUZ</span>
-          <span className="bg-gradient-to-r from-winelio-orange to-winelio-amber bg-clip-text text-transparent">
-            RE
-          </span>
-          <span className="text-white">CO</span>
-        </h1>
+        {/* Logo */}
+        <div className="flex justify-center mb-6">
+          <Image src="/logo-on-dark.png" alt="Winelio" width={320} height={88} priority className="h-20 w-auto" />
+        </div>
 
         <p className="text-winelio-gray text-lg md:text-xl tracking-[0.3em] uppercase mb-12">
-          Recommandez. Gagnez.
+          Recommandez. Connectez. Gagnez.
         </p>
 
         <p className="text-gray-400 text-lg mb-10 leading-relaxed">

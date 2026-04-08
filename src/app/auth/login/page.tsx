@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -254,11 +255,9 @@ function LoginForm() {
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4" style={{ paddingBottom: kbPadding }}>
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-extrabold tracking-tight mb-2">
-              <span className="text-white">BUZ</span>
-              <span className="bg-gradient-to-r from-winelio-orange to-winelio-amber bg-clip-text text-transparent">RE</span>
-              <span className="text-white">CO</span>
-            </h1>
+            <div className="flex justify-center mb-4">
+              <Image src="/logo-on-dark.png" alt="Winelio" width={180} height={50} priority className="h-12 w-auto" />
+            </div>
             <div className="mt-4 flex items-center justify-center w-14 h-14 rounded-full bg-winelio-orange/20 mx-auto mb-3">
               <svg className="w-7 h-7 text-winelio-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -329,13 +328,9 @@ function LoginForm() {
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4" style={{ paddingBottom: kbPadding }}>
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-extrabold tracking-tight mb-2">
-              <span className="text-white">BUZ</span>
-              <span className="bg-gradient-to-r from-winelio-orange to-winelio-amber bg-clip-text text-transparent">
-                RE
-              </span>
-              <span className="text-white">CO</span>
-            </h1>
+            <div className="flex justify-center mb-4">
+              <Image src="/logo-on-dark.png" alt="Winelio" width={180} height={50} priority className="h-12 w-auto" />
+            </div>
             <p className="text-winelio-gray text-sm tracking-widest uppercase">
               {isRegister ? "Créer un compte" : "Se connecter"}
             </p>

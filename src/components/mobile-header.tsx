@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
@@ -52,13 +53,7 @@ export function MobileHeader({ userEmail, isSuperAdmin }: { userEmail: string; i
       <header className="fixed top-0 left-0 right-0 z-50 bg-winelio-dark border-b border-white/10 lg:hidden">
         <div className="flex items-center justify-between px-4 h-14">
           <Link href="/dashboard">
-            <h1 className="text-xl font-extrabold tracking-tight">
-              <span className="text-white">BUZ</span>
-              <span className="bg-gradient-to-r from-winelio-orange to-winelio-amber bg-clip-text text-transparent">
-                RE
-              </span>
-              <span className="text-white">CO</span>
-            </h1>
+            <Image src="/logo-on-dark.png" alt="Winelio" width={130} height={36} className="h-9 w-auto" />
           </Link>
 
           <button

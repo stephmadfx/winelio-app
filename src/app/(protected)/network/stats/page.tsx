@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -88,13 +89,7 @@ export default async function NetworkStatsPage() {
       <header className="bg-winelio-dark text-white">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/dashboard">
-            <h1 className="text-2xl font-extrabold tracking-tight">
-              <span className="text-white">BUZ</span>
-              <span className="bg-gradient-to-r from-winelio-orange to-winelio-amber bg-clip-text text-transparent">
-                RE
-              </span>
-              <span className="text-white">CO</span>
-            </h1>
+            <Image src="/logo-on-dark.png" alt="Winelio" width={130} height={36} className="h-9 w-auto" />
           </Link>
           <nav className="flex items-center gap-4">
             <Link

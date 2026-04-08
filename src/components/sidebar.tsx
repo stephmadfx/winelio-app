@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignOutButton } from "./sign-out-button";
@@ -50,13 +51,14 @@ export function Sidebar({ userEmail, isSuperAdmin }: { userEmail: string; isSupe
       {/* Logo */}
       <div className="px-6 py-6 border-b border-white/10">
         <Link href="/dashboard">
-          <h1 className="text-2xl font-extrabold tracking-tight">
-            <span className="text-white">BUZ</span>
-            <span className="bg-gradient-to-r from-winelio-orange to-winelio-amber bg-clip-text text-transparent">
-              RE
-            </span>
-            <span className="text-white">CO</span>
-          </h1>
+          <Image
+            src="/logo-on-dark.png"
+            alt="Winelio"
+            width={160}
+            height={44}
+            priority
+            className="h-11 w-auto"
+          />
         </Link>
       </div>
 
