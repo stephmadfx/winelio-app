@@ -54,7 +54,10 @@ export async function POST(req: Request) {
 
     // 5. Follow the action_link server-side (no redirect) to get session tokens
     // GoTrue verifies the token and returns a redirect with tokens in the Location header
-    const verifyResp = await fetch(actionLink, {
+    // Replace the external URL (API_EXTERNAL_URL may be misconfigured) with the actual SUPABASE_URL
+    const supabaseBaseUrl = (process.env.SUPABASE_URL || "https://supabase.aide-multimedia.fr").replace(/\/$/, "");
+    const internalActionLink = actionLink.replace(/^https?:\/\/[^/]+/, supabaseBaseUrl);
+    const verifyResp = await fetch(internalActionLink, {
       redirect: "manual",
       headers: { "User-Agent": "WinelioServer/1.0" },
     });
