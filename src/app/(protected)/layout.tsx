@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 import { MobileHeader } from "@/components/mobile-header";
 import { AppBackground } from "@/components/AppBackground";
+import { ProfileIncompleteModal } from "@/components/profile-incomplete-modal";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
@@ -35,26 +36,38 @@ export default async function ProtectedLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("first_name")
+    .select("first_name, last_name, phone, postal_code, city, address")
     .eq("id", user.id)
     .single();
+
+  const isProfileComplete = !!(
+    profile?.first_name?.trim() &&
+    profile?.last_name?.trim() &&
+    profile?.phone?.trim() &&
+    profile?.postal_code?.trim() &&
+    profile?.city?.trim() &&
+    profile?.address?.trim()
+  );
 
   return (
     <div className={`relative min-h-dvh bg-winelio-light dark:bg-slate-900 transition-colors duration-200 ${DEMO_MODE ? "pt-6" : ""}`}>
       <AppBackground />
       <DemoBanner />
 
+      {/* Modal profil incomplet */}
+      {!isProfileComplete && <ProfileIncompleteModal />}
+
       {/* Desktop: sidebar */}
       <div className="hidden lg:block">
-        <Sidebar userEmail={user.email ?? ""} isSuperAdmin={isSuperAdmin} />
+        <Sidebar userEmail={user.email ?? ""} isSuperAdmin={isSuperAdmin} demoBanner={DEMO_MODE} />
       </div>
 
       {/* Mobile: header + bottom nav */}
-      <MobileHeader userEmail={user.email ?? ""} firstName={profile?.first_name ?? undefined} isSuperAdmin={isSuperAdmin} />
+      <MobileHeader userEmail={user.email ?? ""} firstName={profile?.first_name ?? undefined} isSuperAdmin={isSuperAdmin} demoBanner={DEMO_MODE} />
       <MobileNav />
 
       {/* Main content: adaptatif mobile/desktop */}
-      <main className="relative z-10 pt-16 pb-24 px-4 lg:pt-0 lg:pb-0 lg:ml-64 lg:px-8 lg:py-8">
+      <main className={`relative z-10 pb-24 px-4 lg:pb-0 lg:ml-64 lg:px-8 lg:py-8 ${DEMO_MODE ? "pt-22 lg:pt-6" : "pt-16 lg:pt-0"}`}>
         {children}
       </main>
     </div>

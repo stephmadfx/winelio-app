@@ -7,27 +7,23 @@ interface WinelioLogoProps {
   variant?: WinelioLogoVariant;
   height?: number;
   className?: string;
+  gradientId?: string;
 }
 
 // height = hauteur souhaitée du logo en px
 // Le W cursif a un viewBox de 216×202 → ratio 1.069
-export function WinelioLogo({ variant = "color", height = 44, className }: WinelioLogoProps) {
+export function WinelioLogo({ variant = "color", height = 44, className, gradientId }: WinelioLogoProps) {
   const wH = Math.round(height * 1.1);   // hauteur du W légèrement plus grand
   const wW = Math.round(wH * (216 / 202));
   const gap = Math.round(height * 0.04);
   const mb  = Math.round(height * -0.08); // décalage bas pour aligner les baseline
-
-  const wFill =
-    variant === "white"
-      ? "#ffffff"
-      : "url(#wGrad)";
 
   const textColor =
     variant === "white"   ? "#ffffff"
     : variant === "on-dark" ? "#ffffff"
     : "#3D4A52";
 
-  const gradId = `wGrad-${variant}`;
+  const gradId = gradientId ?? `wGrad-${variant}`;
 
   return (
     <span

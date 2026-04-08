@@ -43,16 +43,16 @@ const navItems = [
   },
 ];
 
-export function Sidebar({ userEmail, isSuperAdmin }: { userEmail: string; isSuperAdmin?: boolean }) {
+export function Sidebar({ userEmail, isSuperAdmin, demoBanner = false }: { userEmail: string; isSuperAdmin?: boolean; demoBanner?: boolean }) {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-[#eff1f2] border-r border-black/5 flex flex-col">
+    <aside className={`fixed left-0 w-64 bg-[#eff1f2] border-r border-black/5 flex flex-col ${demoBanner ? "top-6 h-[calc(100vh-1.5rem)]" : "top-0 h-screen"}`}>
 
       {/* Logo */}
       <div className="px-5 py-6 border-b border-black/5">
         <Link href="/dashboard" aria-label="Winelio — Accueil">
-          <WinelioLogo variant="color" height={36} />
+          <WinelioLogo variant="color" height={36} gradientId="wGrad-sidebar" />
         </Link>
         <p className="text-winelio-orange text-xs font-semibold mt-1 pl-0.5">Espace Membre</p>
       </div>
