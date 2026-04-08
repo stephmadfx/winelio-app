@@ -66,13 +66,11 @@ function buildEmailHtml(code: string): string {
                 <tr>
                   <td align="center" style="padding-top:32px;">
 
-                    <!-- Icône animée -->
+                    <!-- Icône -->
                     <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 20px;">
                       <tr>
-                        <td width="52" height="52" style="text-align:center;vertical-align:middle;">
-                          <img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/key-animated.gif"
-                               alt="🔑" width="52" height="52"
-                               style="display:block;border:0;border-radius:13px;" />
+                        <td width="52" height="52" style="background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:13px;text-align:center;vertical-align:middle;">
+                          <span style="font-size:24px;line-height:52px;">🔑</span>
                         </td>
                       </tr>
                     </table>
