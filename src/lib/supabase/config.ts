@@ -1,5 +1,9 @@
-export const SUPABASE_URL =
-  (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\s/g, "");
+// Côté serveur (Docker) : réseau interne. Côté navigateur : sous-domaine public.
+export const SUPABASE_URL = (
+  process.env.SUPABASE_URL ||
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  ""
+).replace(/\s/g, "");
 
 export const SUPABASE_ANON_KEY =
   (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "").replace(/\s/g, "");
