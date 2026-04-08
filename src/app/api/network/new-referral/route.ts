@@ -51,15 +51,22 @@ function buildReferralEmail(
 
           <!-- Carte blanche -->
           <tr>
-            <td style="background:#ffffff;border-radius:0 0 16px 16px;padding:40px 48px 36px;">
+            <td style="background:#ffffff;border-radius:0 0 16px 16px;padding:20px 48px 36px;">
 
               <!-- Logo -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td align="center" style="padding-bottom:24px;">
+                  <td style="padding-bottom:2px;">
                     <img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-color.png"
-                         alt="Winelio" width="160" height="44"
-                         style="display:block;margin:0 auto;border:0;max-width:160px;" />
+                         alt="Winelio" width="464"
+                         style="display:block;border:0;width:100%;max-width:464px;" />
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding-bottom:20px;">
+                    <span style="font-size:11px;color:#FF6B35;font-weight:600;letter-spacing:1px;">
+                      Recommandez. Connectez. Gagnez.
+                    </span>
                   </td>
                 </tr>
                 <!-- Séparateur sous logo -->

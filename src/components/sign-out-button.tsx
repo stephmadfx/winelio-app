@@ -3,7 +3,13 @@
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
-export function SignOutButton({ iconOnly = false }: { iconOnly?: boolean }) {
+export function SignOutButton({
+  iconOnly = false,
+  variant = "dark",
+}: {
+  iconOnly?: boolean;
+  variant?: "dark" | "light";
+}) {
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -12,11 +18,16 @@ export function SignOutButton({ iconOnly = false }: { iconOnly?: boolean }) {
     router.push("/");
   };
 
+  const styles =
+    variant === "light"
+      ? `${iconOnly ? "p-2" : "px-3 py-2"} text-sm text-winelio-gray hover:text-winelio-dark border border-black/10 rounded-xl hover:bg-black/5 transition-colors`
+      : `${iconOnly ? "p-2" : "px-4 py-2"} text-sm text-gray-400 hover:text-white border border-white/20 rounded-lg hover:border-white/40 transition-colors`;
+
   return (
     <button
       onClick={handleSignOut}
       aria-label={iconOnly ? "Déconnexion" : undefined}
-      className={`${iconOnly ? "p-2" : "px-4 py-2"} text-sm text-gray-400 hover:text-white border border-white/20 rounded-lg hover:border-white/40 transition-colors`}
+      className={styles}
     >
       {!iconOnly && <span>Déconnexion</span>}
       {iconOnly && (

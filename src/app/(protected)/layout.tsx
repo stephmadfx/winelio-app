@@ -33,6 +33,12 @@ export default async function ProtectedLayout({
 
   const isSuperAdmin = user.app_metadata?.role === "super_admin";
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("first_name")
+    .eq("id", user.id)
+    .single();
+
   return (
     <div className={`relative min-h-dvh bg-winelio-light dark:bg-slate-900 transition-colors duration-200 ${DEMO_MODE ? "pt-6" : ""}`}>
       <AppBackground />
@@ -44,11 +50,11 @@ export default async function ProtectedLayout({
       </div>
 
       {/* Mobile: header + bottom nav */}
-      <MobileHeader userEmail={user.email ?? ""} isSuperAdmin={isSuperAdmin} />
+      <MobileHeader userEmail={user.email ?? ""} firstName={profile?.first_name ?? undefined} isSuperAdmin={isSuperAdmin} />
       <MobileNav />
 
       {/* Main content: adaptatif mobile/desktop */}
-      <main className="relative z-10 pt-14 pb-20 px-4 lg:pt-0 lg:pb-0 lg:ml-64 lg:px-8 lg:py-8">
+      <main className="relative z-10 pt-16 pb-24 px-4 lg:pt-0 lg:pb-0 lg:ml-64 lg:px-8 lg:py-8">
         {children}
       </main>
     </div>

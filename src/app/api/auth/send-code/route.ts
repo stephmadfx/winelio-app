@@ -38,16 +38,26 @@ function buildEmailHtml(code: string): string {
 
           <!-- Carte principale -->
           <tr>
-            <td style="background:#ffffff;border-radius:0 0 16px 16px;padding:40px 48px 36px;">
+            <td style="background:#ffffff;border-radius:0 0 16px 16px;padding:20px 48px 36px;">
 
               <!-- Logo -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td align="center" style="padding-bottom:28px;border-bottom:1px solid #F0F2F4;">
+                  <td style="padding-bottom:2px;">
                     <img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-color.png"
-                         alt="Winelio" width="160" height="44"
-                         style="display:block;margin:0 auto;border:0;max-width:160px;" />
+                         alt="Winelio" width="424"
+                         style="display:block;border:0;width:100%;max-width:424px;" />
                   </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding-bottom:20px;">
+                    <span style="font-size:11px;color:#FF6B35;font-weight:600;letter-spacing:1px;">
+                      Recommandez. Connectez. Gagnez.
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="border-bottom:1px solid #F0F2F4;font-size:0;line-height:0;padding-bottom:8px;">&nbsp;</td>
                 </tr>
               </table>
 
@@ -56,11 +66,13 @@ function buildEmailHtml(code: string): string {
                 <tr>
                   <td align="center" style="padding-top:32px;">
 
-                    <!-- Icône -->
+                    <!-- Icône animée -->
                     <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 20px;">
                       <tr>
-                        <td width="52" height="52" style="background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:13px;text-align:center;vertical-align:middle;">
-                          <span style="font-size:24px;line-height:52px;">🔑</span>
+                        <td width="52" height="52" style="text-align:center;vertical-align:middle;">
+                          <img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/key-animated.gif"
+                               alt="🔑" width="52" height="52"
+                               style="display:block;border:0;border-radius:13px;" />
                         </td>
                       </tr>
                     </table>
@@ -77,7 +89,7 @@ function buildEmailHtml(code: string): string {
                     <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
                       <tr>
                         <td style="background:#FFF5F0;border:2px solid #FF6B35;border-radius:14px;padding:20px 44px;text-align:center;">
-                          <span style="font-size:44px;font-weight:800;letter-spacing:12px;color:#2D3436;font-family:'Courier New',Courier,monospace;display:block;">
+                          <span style="font-size:44px;font-weight:800;letter-spacing:12px;color:#2D3436;font-family:'Courier New',Courier,monospace;display:block;user-select:all;-webkit-user-select:all;">
                             ${code}
                           </span>
                         </td>

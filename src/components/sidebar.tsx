@@ -47,30 +47,38 @@ export function Sidebar({ userEmail, isSuperAdmin }: { userEmail: string; isSupe
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-winelio-dark text-white flex flex-col">
+    <aside className="fixed left-0 top-0 h-screen w-64 bg-[#eff1f2] border-r border-black/5 flex flex-col">
+
       {/* Logo */}
-      <div className="px-6 py-6 border-b border-white/10">
+      <div className="px-5 py-6 border-b border-black/5">
         <Link href="/dashboard" aria-label="Winelio — Accueil">
-          <WinelioLogo variant="on-dark" height={38} />
+          <WinelioLogo variant="color" height={36} />
         </Link>
+        <p className="text-winelio-orange text-xs font-semibold mt-1 pl-0.5">Espace Membre</p>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 isActive
-                  ? "bg-gradient-to-r from-winelio-orange to-winelio-amber text-white"
-                  : "text-gray-400 hover:text-white hover:bg-white/5"
+                  ? "bg-white text-winelio-orange shadow-sm shadow-black/5"
+                  : "text-winelio-gray hover:bg-white/60 hover:text-winelio-dark"
               }`}
             >
-              <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
+              <svg
+                className={`w-5 h-5 shrink-0 ${isActive ? "text-winelio-orange" : "text-winelio-gray"}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={isActive ? 2 : 1.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
               </svg>
               {item.label}
             </Link>
@@ -80,19 +88,19 @@ export function Sidebar({ userEmail, isSuperAdmin }: { userEmail: string; isSupe
         {/* Super Admin */}
         {isSuperAdmin && (
           <>
-            <div className="pt-3 pb-1 px-3">
-              <div className="border-t border-white/10" />
+            <div className="pt-3 pb-1 px-2">
+              <div className="border-t border-black/8" />
             </div>
             <Link
               href="/gestion-reseau"
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 pathname.startsWith("/gestion-reseau")
-                  ? "bg-gradient-to-r from-winelio-orange to-winelio-amber text-white"
-                  : "text-winelio-orange/70 hover:text-winelio-orange hover:bg-winelio-orange/10"
+                  ? "bg-white text-winelio-orange shadow-sm shadow-black/5"
+                  : "text-winelio-orange/70 hover:bg-white/60 hover:text-winelio-orange"
               }`}
             >
-              <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
               Super Admin
             </Link>
@@ -100,10 +108,10 @@ export function Sidebar({ userEmail, isSuperAdmin }: { userEmail: string; isSupe
         )}
       </nav>
 
-      {/* User section */}
-      <div className="px-4 py-4 border-t border-white/10 space-y-3">
-        <p className="text-xs text-gray-400 truncate px-3">{userEmail}</p>
-        <SignOutButton />
+      {/* Bas : email + déconnexion */}
+      <div className="px-3 py-4 border-t border-black/5 space-y-2">
+        <p className="text-xs text-winelio-gray/60 truncate px-3">{userEmail}</p>
+        <SignOutButton variant="light" />
       </div>
     </aside>
   );
