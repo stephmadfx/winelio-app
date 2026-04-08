@@ -50,7 +50,7 @@ export function StepTimeline({ steps, currentStepOrder }: StepTimelineProps) {
                   isCompleted
                     ? "border-green-500 bg-green-500 text-white shadow-sm shadow-green-500/30"
                     : isCurrent
-                      ? "border-kiparlo-orange bg-kiparlo-orange text-white shadow-md shadow-kiparlo-orange/30"
+                      ? "border-winelio-orange bg-winelio-orange text-white shadow-md shadow-winelio-orange/30"
                       : "border-gray-200 bg-white text-gray-300"
                 }`}
               >
@@ -60,7 +60,7 @@ export function StepTimeline({ steps, currentStepOrder }: StepTimelineProps) {
                   </svg>
                 ) : isCurrent ? (
                   <>
-                    <span className="absolute inset-0 rounded-full animate-ping bg-kiparlo-orange/30" />
+                    <span className="absolute inset-0 rounded-full animate-ping bg-winelio-orange/30" />
                     {icon ?? <span className="text-xs font-bold">{step.step_order}</span>}
                   </>
                 ) : (
@@ -89,7 +89,7 @@ export function StepTimeline({ steps, currentStepOrder }: StepTimelineProps) {
                   isCompleted
                     ? "bg-green-50/60 ring-1 ring-green-100"
                     : isCurrent
-                      ? "bg-kiparlo-orange/5 ring-1 ring-kiparlo-orange/20"
+                      ? "bg-winelio-orange/5 ring-1 ring-winelio-orange/20"
                       : "bg-gray-50/50"
                 }`}
               >
@@ -100,7 +100,7 @@ export function StepTimeline({ steps, currentStepOrder }: StepTimelineProps) {
                         isCompleted
                           ? "text-green-700"
                           : isCurrent
-                            ? "text-kiparlo-dark"
+                            ? "text-winelio-dark"
                             : "text-gray-400"
                       }`}
                     >
@@ -114,8 +114,8 @@ export function StepTimeline({ steps, currentStepOrder }: StepTimelineProps) {
                   </div>
 
                   {isCurrent && (
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-kiparlo-orange/15 px-2 py-0.5 text-xs font-semibold text-kiparlo-orange">
-                      <span className="h-1.5 w-1.5 rounded-full bg-kiparlo-orange" />
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-winelio-orange/15 px-2 py-0.5 text-xs font-semibold text-winelio-orange">
+                      <span className="h-1.5 w-1.5 rounded-full bg-winelio-orange" />
                       En cours
                     </span>
                   )}
@@ -165,14 +165,14 @@ export function StepTimeline({ steps, currentStepOrder }: StepTimelineProps) {
 
       {/* Overall progress summary */}
       {steps.length > 0 && (
-        <div className="mt-4 flex items-center gap-3 rounded-xl bg-kiparlo-light px-4 py-3">
+        <div className="mt-4 flex items-center gap-3 rounded-xl bg-winelio-light px-4 py-3">
           <div className="flex-1 h-1.5 rounded-full bg-gray-200 overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-kiparlo-orange to-green-500 transition-all duration-700"
+              className="h-full rounded-full bg-gradient-to-r from-winelio-orange to-green-500 transition-all duration-700"
               style={{ width: `${Math.round((completedCount / steps.length) * 100)}%` }}
             />
           </div>
-          <span className="text-xs font-bold text-kiparlo-dark tabular-nums shrink-0">
+          <span className="text-xs font-bold text-winelio-dark tabular-nums shrink-0">
             {completedCount}/{steps.length}
           </span>
         </div>

@@ -107,7 +107,7 @@ async function main() {
     for (let i = 0; i < count; i++) {
       const firstName = random(PRENOMS);
       const lastName = random(NOMS);
-      const email = `kiparlo.test.${Date.now()}.${Math.random().toString(36).slice(2,6)}@example.com`;
+      const email = `winelio.test.${Date.now()}.${Math.random().toString(36).slice(2,6)}@example.com`;
       const sponsorId = random(previousLevel);
 
       // Créer l'utilisateur auth
@@ -163,7 +163,7 @@ async function main() {
   for (let i = 0; i < 10; i++) {
     const firstName = random(PRENOMS);
     const lastName = random(NOMS);
-    const email = `pro.kiparlo.${Date.now()}.${Math.random().toString(36).slice(2,5)}@example.com`;
+    const email = `pro.winelio.${Date.now()}.${Math.random().toString(36).slice(2,5)}@example.com`;
 
     const { data: { user: proUser }, error: proAuthErr } = await supabase.auth.admin.createUser({
       email,

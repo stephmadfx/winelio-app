@@ -1,5 +1,5 @@
 /**
- * Supprime tous les comptes @demo-kiparlo.fr
+ * Supprime tous les comptes @demo-winelio.fr
  *
  * Usage:
  *   node scripts/delete-demo-accounts.mjs
@@ -24,7 +24,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function main() {
-  console.log(`🗑️  Suppression des comptes @demo-kiparlo.fr ${DRY_RUN ? "(DRY-RUN)" : "(LIVE)"}\n`);
+  console.log(`🗑️  Suppression des comptes @demo-winelio.fr ${DRY_RUN ? "(DRY-RUN)" : "(LIVE)"}\n`);
 
   // 1. Récupère tous les IDs des comptes demo
   let allIds = [];
@@ -35,7 +35,7 @@ async function main() {
     const { data, error } = await supabase
       .from("profiles")
       .select("id, email, first_name, is_professional")
-      .like("email", "%demo-kiparlo%")
+      .like("email", "%demo-winelio%")
       .range(page * pageSize, (page + 1) * pageSize - 1);
 
     if (error) { console.error("Erreur fetch:", error.message); break; }

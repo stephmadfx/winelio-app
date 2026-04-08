@@ -121,7 +121,7 @@ export async function generateUniqueAlias(supabase: SupabaseClient): Promise<str
 - [ ] **Step 2 : Vérifier la compilation TypeScript**
 
 ```bash
-cd /Users/steph/PROJETS/BUZRECO/buzreco
+cd /Users/steph/PROJETS/WINELIO/winelio
 npx tsc --noEmit 2>&1 | grep "generate-alias"
 ```
 
@@ -345,7 +345,7 @@ main().catch(console.error);
 - [ ] **Step 2 : Exécuter le backfill**
 
 ```bash
-cd /Users/steph/PROJETS/BUZRECO/buzreco
+cd /Users/steph/PROJETS/WINELIO/winelio
 npx tsx scripts/backfill-aliases.ts
 ```
 
@@ -488,8 +488,8 @@ Localiser l'affichage du nom du professionnel (ligne ~323) :
 Remplacer par :
 
 ```tsx
-<span className="truncate font-mono font-semibold text-kiparlo-orange">{proDisplay}</span>
-{proSub && <span className="text-[10px] text-kiparlo-gray/70 ml-1">{proSub}</span>}
+<span className="truncate font-mono font-semibold text-winelio-orange">{proDisplay}</span>
+{proSub && <span className="text-[10px] text-winelio-gray/70 ml-1">{proSub}</span>}
 ```
 
 - [ ] **Step 6 : Vérifier la compilation**
@@ -626,12 +626,12 @@ Puis localiser l'endroit où `fullName` (ou le nom de l'entreprise) est affiché
 
 Avant (utilisation de `fullName` ou `p.company_name`) :
 ```tsx
-<p className="font-semibold text-kiparlo-dark text-sm">{fullName}</p>
+<p className="font-semibold text-winelio-dark text-sm">{fullName}</p>
 ```
 
 Après :
 ```tsx
-<p className="font-semibold text-kiparlo-dark text-sm font-mono">{displayLabel}</p>
+<p className="font-semibold text-winelio-dark text-sm font-mono">{displayLabel}</p>
 ```
 
 - [ ] **Step 6 : Vérifier la compilation**
@@ -725,7 +725,7 @@ const displaySub = isPro
 
 Localiser :
 ```tsx
-<p className="font-semibold text-kiparlo-dark text-sm truncate">{fullName}</p>
+<p className="font-semibold text-winelio-dark text-sm truncate">{fullName}</p>
 <p className="text-xs text-muted-foreground truncate">
   {ref.city && <span className="mr-1">{ref.city} ·</span>}
   {new Date(ref.created_at)...}
@@ -734,7 +734,7 @@ Localiser :
 
 Remplacer par :
 ```tsx
-<p className={`font-semibold text-sm truncate ${isPro ? "font-mono text-kiparlo-orange" : "text-kiparlo-dark"}`}>
+<p className={`font-semibold text-sm truncate ${isPro ? "font-mono text-winelio-orange" : "text-winelio-dark"}`}>
   {displayName}
 </p>
 <p className="text-xs text-muted-foreground truncate">
@@ -855,14 +855,14 @@ const displayName = isPro
 
 Localiser :
 ```tsx
-<span className="font-semibold text-kiparlo-dark text-sm truncate">
+<span className="font-semibold text-winelio-dark text-sm truncate">
   {displayName}
 </span>
 ```
 
 Remplacer par :
 ```tsx
-<span className={`font-semibold text-sm truncate ${isPro ? "font-mono text-kiparlo-orange" : "text-kiparlo-dark"}`}>
+<span className={`font-semibold text-sm truncate ${isPro ? "font-mono text-winelio-orange" : "text-winelio-dark"}`}>
   {displayName}
 </span>
 ```
@@ -870,7 +870,7 @@ Remplacer par :
 Mettre à jour le sous-texte (city + referral_count) pour inclure la catégorie si pro :
 
 ```tsx
-<p className="text-[11px] text-kiparlo-gray mt-0.5 truncate">
+<p className="text-[11px] text-winelio-gray mt-0.5 truncate">
   {[
     isPro ? node.company_category : null,
     node.city,
@@ -1080,7 +1080,7 @@ Remplacer par :
 Localiser le bloc `selectedNode && selectedNode.id !== userId` qui affiche les détails. Mettre à jour le nom affiché :
 
 ```tsx
-<p className="font-semibold text-kiparlo-dark text-sm">
+<p className="font-semibold text-winelio-dark text-sm">
   {selectedNode.is_professional && selectedNode.company_alias
     ? selectedNode.company_alias
     : selectedNode.level === 1
@@ -1090,13 +1090,13 @@ Localiser le bloc `selectedNode && selectedNode.id !== userId` qui affiche les d
         .map((n) => `${n![0].toUpperCase()}.`)
         .join(" ") || "?")}
 </p>
-<p className="text-xs text-kiparlo-gray">
+<p className="text-xs text-winelio-gray">
   {selectedNode.is_professional && selectedNode.company_category && (
     <span className="mr-2">{selectedNode.company_category}</span>
   )}
   {selectedNode.city && <span className="mr-2">{selectedNode.city}</span>}
   Niveau {selectedNode.level} · {selectedNode.childCount} membre{selectedNode.childCount !== 1 ? "s" : ""}
-  {selectedNode.activeRecos > 0 && <span className="ml-2 text-kiparlo-orange font-medium">{selectedNode.activeRecos} en cours</span>}
+  {selectedNode.activeRecos > 0 && <span className="ml-2 text-winelio-orange font-medium">{selectedNode.activeRecos} en cours</span>}
   {selectedNode.completedRecos > 0 && <span className="ml-2 text-green-600 font-medium">{selectedNode.completedRecos} terminee{selectedNode.completedRecos > 1 ? "s" : ""}</span>}
 </p>
 ```
@@ -1162,7 +1162,7 @@ Dans `ProfessionnelsTable.tsx`, localiser l'endroit où `c.name` (nom de l'entre
 <div>
   <p className="font-semibold text-white text-sm">{c.name}</p>
   {c.alias && (
-    <p className="text-xs font-mono text-kiparlo-orange mt-0.5">{c.alias}</p>
+    <p className="text-xs font-mono text-winelio-orange mt-0.5">{c.alias}</p>
   )}
 </div>
 ```
@@ -1216,7 +1216,7 @@ Remplacer par :
 ```tsx
 <p className="text-white">{company.legal_name || company.name || "—"}</p>
 {company.alias && (
-  <p className="text-xs font-mono text-kiparlo-orange mt-0.5">{company.alias}</p>
+  <p className="text-xs font-mono text-winelio-orange mt-0.5">{company.alias}</p>
 )}
 ```
 
@@ -1242,7 +1242,7 @@ git commit -m "feat: afficher alias dans fiche utilisateur admin"
 - [ ] **Step 1 : Build complet**
 
 ```bash
-cd /Users/steph/PROJETS/BUZRECO/buzreco
+cd /Users/steph/PROJETS/WINELIO/winelio
 npm run build 2>&1 | tail -20
 ```
 
@@ -1258,7 +1258,7 @@ Si des erreurs apparaissent, les corriger avant de continuer. Erreurs TypeScript
 
 ```bash
 git push origin main
-pkill -f "next dev" ; sleep 1 ; cd /Users/steph/PROJETS/BUZRECO/buzreco && npm run dev &
+pkill -f "next dev" ; sleep 1 ; cd /Users/steph/PROJETS/WINELIO/winelio && npm run dev &
 ```
 
 - [ ] **Step 4 : Vérification manuelle**

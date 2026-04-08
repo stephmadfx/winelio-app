@@ -287,15 +287,15 @@ export function FeedItem({ event, isNew = false }: FeedItemProps) {
     >
       <span className="text-lg shrink-0 mt-0.5">{feedEventIcon(event.kind)}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-kiparlo-dark leading-snug">
+        <p className="text-sm text-winelio-dark leading-snug">
           {feedEventLabel(event)}
         </p>
-        <p className="text-xs text-kiparlo-gray mt-0.5">
+        <p className="text-xs text-winelio-gray mt-0.5">
           {formatRelativeTime(event.timestamp)}
         </p>
       </div>
       {isAmountEvent && amount != null && (
-        <span className="shrink-0 text-xs font-semibold text-kiparlo-orange bg-kiparlo-orange/10 px-2 py-0.5 rounded-full">
+        <span className="shrink-0 text-xs font-semibold text-winelio-orange bg-winelio-orange/10 px-2 py-0.5 rounded-full">
           {amount.toFixed(0)}€
         </span>
       )}
@@ -378,17 +378,17 @@ export function NetworkFeed({
   return (
     <Card className="!rounded-2xl mt-6">
       <CardContent className="p-6">
-        <h3 className="text-lg font-bold text-kiparlo-dark mb-4">
+        <h3 className="text-lg font-bold text-winelio-dark mb-4">
           🔥 Actualités réseau
         </h3>
 
         {/* Section globale */}
         <div className="mb-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-kiparlo-gray mb-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-winelio-gray mb-2">
             🌍 Highlights plateforme
           </p>
           {globalEvents.length === 0 ? (
-            <p className="text-sm text-kiparlo-gray py-4 text-center">
+            <p className="text-sm text-winelio-gray py-4 text-center">
               Pas encore d'activité aujourd'hui
             </p>
           ) : (
@@ -408,11 +408,11 @@ export function NetworkFeed({
 
         {/* Section réseau personnel */}
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-kiparlo-gray mb-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-winelio-gray mb-2">
             👤 Mon réseau
           </p>
           {personalEvents.length === 0 ? (
-            <p className="text-sm text-kiparlo-gray py-4 text-center">
+            <p className="text-sm text-winelio-gray py-4 text-center">
               Aucune activité récente dans ton réseau
             </p>
           ) : (

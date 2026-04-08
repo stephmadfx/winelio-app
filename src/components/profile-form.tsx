@@ -121,7 +121,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
 
       {/* Sponsor code (read-only) */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-kiparlo-dark mb-4">
+        <h3 className="text-lg font-semibold text-winelio-dark mb-4">
           Votre code parrain
         </h3>
         <div className="flex items-center gap-3">
@@ -129,11 +129,11 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             type="text"
             readOnly
             value={profile.sponsor_code ?? ""}
-            className="flex-1 min-w-0 px-4 py-2.5 bg-kiparlo-light border border-gray-200 rounded-xl text-kiparlo-dark font-mono text-lg tracking-wider"
+            className="flex-1 min-w-0 px-4 py-2.5 bg-winelio-light border border-gray-200 rounded-xl text-winelio-dark font-mono text-lg tracking-wider"
           />
           <button
             onClick={copyCode}
-            className="px-4 py-2.5 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-medium rounded-xl hover:opacity-90 transition-opacity"
+            className="px-4 py-2.5 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-medium rounded-xl hover:opacity-90 transition-opacity"
           >
             {copied ? "Copié !" : "Copier"}
           </button>
@@ -143,7 +143,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       {/* Sponsor input (if not already sponsored) */}
       {!profile.sponsor_id && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-kiparlo-dark mb-4">
+          <h3 className="text-lg font-semibold text-winelio-dark mb-4">
             Entrer un code parrain
           </h3>
           <div className="flex items-center gap-3">
@@ -152,12 +152,12 @@ export function ProfileForm({ profile }: { profile: Profile }) {
               value={sponsorInput}
               onChange={(e) => setSponsorInput(e.target.value)}
               placeholder="Code parrain"
-              className="flex-1 min-w-0 px-4 py-2.5 border border-gray-200 rounded-xl text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/50 focus:border-kiparlo-orange"
+              className="flex-1 min-w-0 px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
             />
             <button
               onClick={handleSponsor}
               disabled={saving}
-              className="px-4 py-2.5 border-2 border-kiparlo-orange text-kiparlo-orange font-medium rounded-xl hover:bg-kiparlo-orange hover:text-white transition-colors disabled:opacity-50"
+              className="px-4 py-2.5 border-2 border-winelio-orange text-winelio-orange font-medium rounded-xl hover:bg-winelio-orange hover:text-white transition-colors disabled:opacity-50"
             >
               Valider
             </button>
@@ -167,7 +167,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
 
       {/* Profile form */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-kiparlo-dark mb-6">
+        <h3 className="text-lg font-semibold text-winelio-dark mb-6">
           Informations personnelles
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -187,7 +187,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             aria-checked={form.is_professional}
             onClick={() => setForm((prev) => ({ ...prev, is_professional: !prev.is_professional }))}
             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-              form.is_professional ? "bg-kiparlo-orange" : "bg-gray-300"
+              form.is_professional ? "bg-winelio-orange" : "bg-gray-300"
             }`}
           >
             <span
@@ -196,7 +196,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
               }`}
             />
           </button>
-          <span className="text-sm font-medium text-kiparlo-dark">
+          <span className="text-sm font-medium text-winelio-dark">
             Compte professionnel
           </span>
         </div>
@@ -205,7 +205,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-3 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="px-6 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {saving ? "Sauvegarde..." : "Sauvegarder"}
           </button>
@@ -228,7 +228,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-kiparlo-gray mb-1">
+      <label className="block text-sm font-medium text-winelio-gray mb-1">
         {label}
       </label>
       <input
@@ -236,7 +236,7 @@ function Field({
         name={name}
         value={value}
         onChange={onChange}
-        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/50 focus:border-kiparlo-orange"
+        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
       />
     </div>
   );

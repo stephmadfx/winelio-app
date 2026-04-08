@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Winelio — Workflow Recommandation</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #F8F9FA;
+      color: #2D3436;
+      padding: 40px 24px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #2D3436;
+    }
+    .subtitle {
+      text-align: center;
+      color: #636E72;
+      margin-bottom: 40px;
+      font-size: 15px;
+    }
+    .flow {
+      max-width: 680px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* Phase header */
+    .phase-header {
+      width: 100%;
+      border-radius: 12px 12px 0 0;
+      padding: 14px 24px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: white;
+    }
+    .phase-header.orange { background: #FF6B35; }
+    .phase-header.dark   { background: #2D3436; }
+
+    .phase-body {
+      width: 100%;
+      background: white;
+      border: 1.5px solid #E0E0E0;
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    /* Step card */
+    .step {
+      border: 1.5px solid #E8E8E8;
+      border-radius: 10px;
+      background: white;
+      padding: 16px 20px;
+      position: relative;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .step + .step { margin-top: 0; }
+
+    .step-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .step-body {
+      font-size: 14px;
+      color: #636E72;
+      line-height: 1.5;
+    }
+
+    /* Actor badge */
+    .actor {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+    .actor.win    { background: #EBF5FB; color: #2980B9; border: 1px solid #AED6F1; }
+    .actor.winpro { background: #EAFAF1; color: #1E8449; border: 1px solid #A9DFBF; }
+    .actor.both   { background: #FEF9E7; color: #B7770D; border: 1px solid #F9E79F; }
+    .actor.siege  { background: #F4ECF7; color: #7D3C98; border: 1px solid #D7BDE2; }
+
+    /* Tip bubble */
+    .tip {
+      margin-top: 10px;
+      background: #FFF8F0;
+      border-left: 3px solid #F7931E;
+      border-radius: 0 6px 6px 0;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #7D4E00;
+    }
+    .tip::before { content: "💡 "; }
+
+    /* Warning banner */
+    .warning {
+      background: #FFF3CD;
+      border: 1px solid #FFD966;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 13px;
+      color: #7D6000;
+      margin-bottom: 20px;
+    }
+    .warning::before { content: "⚠️  "; }
+
+    /* Branch choices */
+    .branches {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .branch {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: #F8F9FA;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+    }
+    .branch-btn {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+      min-width: 90px;
+      text-align: center;
+    }
+    .btn-green  { background: #D5F5E3; color: #1E8449; border: 1px solid #A9DFBF; }
+    .btn-red    { background: #FDEDEC; color: #922B21; border: 1px solid #F5B7B1; }
+    .btn-amber  { background: #FEF9E7; color: #B7770D; border: 1px solid #F9E79F; }
+
+    .branch-text { color: #636E72; line-height: 1.4; padding-top: 2px; }
+
+    /* Arrow connector */
+    .arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 36px;
+      color: #B0B0B0;
+      font-size: 22px;
+      line-height: 36px;
+      user-select: none;
+    }
+    .arrow.phase-gap {
+      height: 40px;
+      font-size: 26px;
+    }
+
+    /* Notification tag */
+    .notif {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 12px;
+      background: #EBF5FB;
+      color: #2874A6;
+      border-radius: 6px;
+      padding: 4px 10px;
+    }
+    .notif::before { content: "📩 "; }
+
+    /* Final card */
+    .final {
+      background: linear-gradient(135deg, #FFF8E1 0%, #FFF3CD 100%);
+      border: 2px solid #F7931E;
+      border-radius: 10px;
+      padding: 16px 20px;
+      box-shadow: 0 4px 12px rgba(247,147,30,0.15);
+    }
+    .final .step-title { color: #B35C00; }
+
+    /* Legend */
+    .legend {
+      max-width: 680px;
+      margin: 28px auto 0;
+      background: white;
+      border: 1.5px solid #E0E0E0;
+      border-radius: 10px;
+      padding: 16px 24px;
+    }
+    .legend h3 {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #636E72;
+      margin-bottom: 12px;
+    }
+    .legend-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Winelio</h1>
+  <p class="subtitle">Parcours complet d'une recommandation</p>
+
+  <div class="flow">
+
+    <!-- ═══ PHASE 1 ═══ -->
+    <div style="width:100%">
+      <div class="phase-header orange">Phase 1 — Recommandation</div>
+      <div class="phase-body">
+
+        <!-- Étape 1 -->
+        <div class="step">
+          <span class="actor win">WIN</span>
+          <div class="step-title">Étape 1 — WIN soumet une recommandation</div>
+          <div class="step-body">WIN fait une recommandation à un Pro pour une connaissance.<br>Le Pro reçoit uniquement la <strong>description du besoin</strong> — pas les coordonnées.</div>
+          <div class="tip">Plus la demande est complète, plus le Pro répondra vite</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Étape 2 -->
+        <div class="step">
+          <span class="actor winpro">WINPRO</span>
+          <div class="step-title">Étape 2 — WINPRO reçoit la recommandation</div>
+          <div class="step-body">WINPRO choisit parmi 3 actions :</div>
+          <div class="branches">
+            <div class="branch">
+              <span class="branch-btn btn-green">✅ Accepter</span>
+              <span class="branch-text">WINPRO reçoit les coordonnées de l'ami → <strong>continue vers Phase 2</strong></span>
+            </div>
+            <div class="branch">
+              <span class="branch-btn btn-red">❌ Refuser</span>
+              <span class="branch-text">WIN est notifié du refus → <strong>fin de la recommandation</strong></span>
+            </div>
+            <div class="branch">
+              <span class="branch-btn btn-amber">🔁 Transférer</span>
+              <span class="branch-text">Invite un autre Pro (gagne 1% de commission) → boucle vers l'étape 2</span>
+            </div>
+          </div>
+          <div class="notif">WIN est informé de l'état : acceptée / refusée / transférée</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="arrow phase-gap">↓</div>
+
+    <!-- ═══ PHASE 2 ═══ -->
+    <div style="width:100%">
+      <div class="phase-header dark">Phase 2 — Suivi de la recommandation</div>
+      <div class="phase-body">
+
+        <div class="warning">La recommandation peut s'arrêter à tout moment — WIN est informé avec une explication</div>
+
+        <!-- Suivi 1 -->
+        <div class="step">
+          <span class="actor winpro">WINPRO</span>
+          <div class="step-title">Suivi 1 — Prise de contact</div>
+          <div class="step-body">WINPRO confirme qu'il a contacté l'ami.</div>
+          <div class="notif">WIN est informé</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Suivi 2 -->
+        <div class="step">
+          <span class="actor winpro">WINPRO</span>
+          <div class="step-title">Suivi 2 — Rendez-vous pris</div>
+          <div class="step-body">WINPRO confirme le rendez-vous.</div>
+          <div class="notif">WIN est informé</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Suivi 3 -->
+        <div class="step">
+          <span class="actor both">WINPRO + Ami</span>
+          <div class="step-title">Suivi 3 — Devis accepté</div>
+          <div class="step-body">WINPRO et l'ami valident le deal. WINPRO notifie le <strong>montant du devis</strong>.</div>
+          <div class="notif">WIN est informé du montant</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Suivi 4 -->
+        <div class="step">
+          <span class="actor winpro">WINPRO</span>
+          <div class="step-title">Suivi 4 — Prestation achevée</div>
+          <div class="step-body">WINPRO confirme la fin de la prestation.</div>
+          <div class="notif">WIN est informé</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Suivi 5 -->
+        <div class="step">
+          <span class="actor win">WIN</span>
+          <div class="step-title">Suivi 5 — Avis de l'ami</div>
+          <div class="step-body">WIN demande à son ami un retour sur la prestation.</div>
+          <div class="notif">WIN reçoit l'avis et peut noter WINPRO ⭐</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Suivi 6 — Final -->
+        <div class="final">
+          <span class="actor siege">Siège Winelio</span>
+          <div class="step-title">🏆 Suivi 6 — Facture acquittée</div>
+          <div class="step-body">WINPRO informe que sa facture est payée.<br><strong>Le siège Winelio envoie le lien de facturation.</strong></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <h3>Légende</h3>
+    <div class="legend-items">
+      <div class="legend-item">
+        <span class="actor win" style="margin:0">WIN</span>
+        <span>Utilisateur standard — apporteur d'affaires / parrain</span>
+      </div>
+      <div class="legend-item">
+        <span class="actor winpro" style="margin:0">WINPRO</span>
+        <span>Professionnel — reçoit et gère les recommandations</span>
+      </div>
+      <div class="legend-item">
+        <span class="actor both" style="margin:0">Ami</span>
+        <span>Contact de WIN — prospect / client final</span>
+      </div>
+      <div class="legend-item">
+        <span class="actor siege" style="margin:0">Siège</span>
+        <span>Plateforme Winelio — émet les liens de facturation</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

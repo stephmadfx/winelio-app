@@ -1,7 +1,7 @@
 /**
  * Scraping d'emails pour les professionnels déjà importés dans la DB
  *
- * Cible les pros dont l'email se termine par @kiparlo-pro.fr (email fictif)
+ * Cible les pros dont l'email se termine par @winelio-pro.fr (email fictif)
  * et qui ont un site web dans leur entreprise. Scrape le site et met à jour
  * l'email dans Supabase Auth + profiles si un vrai email est trouvé.
  *
@@ -133,7 +133,7 @@ async function scrapeEmail(websiteUrl) {
 // ─── Récupère les pros avec email fictif + site web ───────────────────────────
 
 async function loadTargetPros() {
-  // Pagine sur tous les users auth pour trouver ceux avec @kiparlo-pro.fr
+  // Pagine sur tous les users auth pour trouver ceux avec @winelio-pro.fr
   const allFakeUsers = [];
   let page = 1;
   const perPage = 1000;
@@ -144,7 +144,7 @@ async function loadTargetPros() {
     const { users } = data;
     if (!users?.length) break;
 
-    const fake = users.filter((u) => u.email?.endsWith("@kiparlo-pro.fr"));
+    const fake = users.filter((u) => u.email?.endsWith("@winelio-pro.fr"));
     allFakeUsers.push(...fake);
 
     if (users.length < perPage) break;

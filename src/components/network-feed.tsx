@@ -204,17 +204,17 @@ export function NetworkFeed({
   return (
     <Card className="!rounded-2xl mt-6">
       <CardContent className="p-6">
-        <h3 className="text-lg font-bold text-kiparlo-dark mb-4">
+        <h3 className="text-lg font-bold text-winelio-dark mb-4">
           🔥 Actualités réseau
         </h3>
 
         {/* Section globale */}
         <div className="mb-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-kiparlo-gray mb-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-winelio-gray mb-2">
             🌍 Highlights plateforme
           </p>
           {globalEvents.length === 0 ? (
-            <p className="text-sm text-kiparlo-gray py-4 text-center">
+            <p className="text-sm text-winelio-gray py-4 text-center">
               Pas encore d&apos;activité aujourd&apos;hui
             </p>
           ) : (
@@ -241,11 +241,11 @@ export function NetworkFeed({
 
         {/* Section réseau personnel */}
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-kiparlo-gray mb-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-winelio-gray mb-2">
             👤 Mon réseau
           </p>
           {personalEvents.length === 0 ? (
-            <p className="text-sm text-kiparlo-gray py-4 text-center">
+            <p className="text-sm text-winelio-gray py-4 text-center">
               Aucune activité récente dans ton réseau
             </p>
           ) : (

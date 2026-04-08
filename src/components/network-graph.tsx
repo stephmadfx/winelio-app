@@ -318,49 +318,49 @@ export function NetworkGraph({ userId, userName }: { userId: string; userName: s
             {["Vous", "N1", "N2", "N3", "N4", "N5"].map((label, i) => (
               <div key={i} className="flex items-center gap-1">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: LEVEL_COLORS[i] }} />
-                <span className="text-[10px] text-kiparlo-gray font-medium">{label}</span>
+                <span className="text-[10px] text-winelio-gray font-medium">{label}</span>
               </div>
             ))}
             <div className="h-3 w-px bg-gray-200 mx-1" />
             <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-full border-2 border-kiparlo-orange" style={{ animation: "kiparlo-ping 2s infinite" }} />
-              <span className="text-[10px] text-kiparlo-gray font-medium">En cours</span>
+              <div className="w-3 h-3 rounded-full border-2 border-winelio-orange" style={{ animation: "winelio-ping 2s infinite" }} />
+              <span className="text-[10px] text-winelio-gray font-medium">En cours</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-full bg-green-500" style={{ animation: "kiparlo-glow 2s infinite" }} />
-              <span className="text-[10px] text-kiparlo-gray font-medium">Payee</span>
+              <div className="w-3 h-3 rounded-full bg-green-500" style={{ animation: "winelio-glow 2s infinite" }} />
+              <span className="text-[10px] text-winelio-gray font-medium">Payee</span>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <button onClick={zoomIn} className="w-8 h-8 rounded-lg bg-kiparlo-light flex items-center justify-center text-kiparlo-dark hover:bg-gray-200 active:scale-95 text-lg font-bold">+</button>
-            <button onClick={zoomOut} className="w-8 h-8 rounded-lg bg-kiparlo-light flex items-center justify-center text-kiparlo-dark hover:bg-gray-200 active:scale-95 text-lg font-bold">−</button>
-            <button onClick={resetView} className="h-8 px-2.5 rounded-lg bg-kiparlo-light flex items-center justify-center text-kiparlo-gray hover:bg-gray-200 active:scale-95">
+            <button onClick={zoomIn} className="w-8 h-8 rounded-lg bg-winelio-light flex items-center justify-center text-winelio-dark hover:bg-gray-200 active:scale-95 text-lg font-bold">+</button>
+            <button onClick={zoomOut} className="w-8 h-8 rounded-lg bg-winelio-light flex items-center justify-center text-winelio-dark hover:bg-gray-200 active:scale-95 text-lg font-bold">−</button>
+            <button onClick={resetView} className="h-8 px-2.5 rounded-lg bg-winelio-light flex items-center justify-center text-winelio-gray hover:bg-gray-200 active:scale-95">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
-            <span className="text-[10px] text-kiparlo-gray font-mono ml-1 w-8 text-center">
+            <span className="text-[10px] text-winelio-gray font-mono ml-1 w-8 text-center">
               {Math.round(dragState.current.scale * 100)}%
             </span>
           </div>
         </div>
       )}
 
-      <p className="text-[10px] text-kiparlo-gray/60 text-center mb-2 sm:hidden">
+      <p className="text-[10px] text-winelio-gray/60 text-center mb-2 sm:hidden">
         Pincez pour zoomer · Glissez pour deplacer
       </p>
 
       {/* Viewport - ALWAYS rendered so ref is stable for useEffect */}
       <div
         ref={viewportRef}
-        className="relative rounded-xl border border-gray-100 bg-gradient-to-b from-white to-kiparlo-light/30 select-none"
+        className="relative rounded-xl border border-gray-100 bg-gradient-to-b from-white to-winelio-light/30 select-none"
         style={{ height: "min(65vh, 550px)", cursor: loading ? "default" : "grab", touchAction: "none", overflow: "hidden" }}
       >
         {loading ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-            <div className="w-10 h-10 border-4 border-kiparlo-orange border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-kiparlo-gray">Construction de l&apos;arbre...</p>
+            <div className="w-10 h-10 border-4 border-winelio-orange border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-winelio-gray">Construction de l&apos;arbre...</p>
           </div>
         ) : tree ? (
           <div
@@ -383,7 +383,7 @@ export function NetworkGraph({ userId, userName }: { userId: string; userName: s
                 {[selectedNode.first_name, selectedNode.last_name].filter(Boolean).map(n => n![0]).join("").toUpperCase()}
               </div>
               <div>
-                <p className="font-semibold text-kiparlo-dark text-sm">
+                <p className="font-semibold text-winelio-dark text-sm">
                   {selectedNode.is_professional && selectedNode.company_alias
                     ? selectedNode.company_alias
                     : selectedNode.level === 1
@@ -393,13 +393,13 @@ export function NetworkGraph({ userId, userName }: { userId: string; userName: s
                         .map((n) => `${n![0].toUpperCase()}.`)
                         .join(" ") || "?")}
                 </p>
-                <p className="text-xs text-kiparlo-gray">
+                <p className="text-xs text-winelio-gray">
                   {selectedNode.is_professional && selectedNode.company_category && (
                     <span className="mr-2">{selectedNode.company_category}</span>
                   )}
                   {selectedNode.city && <span className="mr-2">{selectedNode.city}</span>}
                   Niveau {selectedNode.level} · {selectedNode.childCount} membre{selectedNode.childCount !== 1 ? "s" : ""}
-                  {selectedNode.activeRecos > 0 && <span className="ml-2 text-kiparlo-orange font-medium">{selectedNode.activeRecos} en cours</span>}
+                  {selectedNode.activeRecos > 0 && <span className="ml-2 text-winelio-orange font-medium">{selectedNode.activeRecos} en cours</span>}
                   {selectedNode.completedRecos > 0 && <span className="ml-2 text-green-600 font-medium">{selectedNode.completedRecos} terminee{selectedNode.completedRecos > 1 ? "s" : ""}</span>}
                 </p>
               </div>
@@ -452,7 +452,7 @@ function NodeView({ node, onClick, selectedId }: {
           <div className="absolute rounded-full" style={{
             border: "3px solid #FF6B35",
             width: size + 14, height: size + 14, top: -7, left: "50%",
-            animation: "kiparlo-ping 2s ease-in-out infinite",
+            animation: "winelio-ping 2s ease-in-out infinite",
             zIndex: 0,
           }} />
         )}
@@ -462,7 +462,7 @@ function NodeView({ node, onClick, selectedId }: {
           backgroundColor: color, width: size, height: size,
           fontSize: isRoot ? 16 : node.level <= 2 ? 13 : 11,
           outline: isSelected ? `3px solid ${color}` : undefined, outlineOffset: 3,
-          animation: hasCompleted ? "kiparlo-glow 2.5s ease-in-out infinite" : undefined,
+          animation: hasCompleted ? "winelio-glow 2.5s ease-in-out infinite" : undefined,
           zIndex: 1,
         }}>
           <svg className="absolute inset-0 w-full h-full opacity-15" viewBox="0 0 24 24" fill="currentColor">
@@ -483,7 +483,7 @@ function NodeView({ node, onClick, selectedId }: {
 
           {/* Active reco count */}
           {hasActive && (
-            <div className="absolute flex items-center justify-center bg-kiparlo-orange rounded-full border-2 border-white shadow animate-bounce" style={{
+            <div className="absolute flex items-center justify-center bg-winelio-orange rounded-full border-2 border-white shadow animate-bounce" style={{
               width: size * 0.38, height: size * 0.38, top: -4, right: -4, zIndex: 2, animationDuration: "2s",
             }}>
               <span className="text-white font-bold" style={{ fontSize: size * 0.19 }}>{node.activeRecos}</span>

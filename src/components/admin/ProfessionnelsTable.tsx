@@ -167,7 +167,7 @@ export function ProfessionnelsTable({
             <button
               onClick={geocodeCity}
               disabled={!cityInput.trim() || isGeocoding}
-              className="px-3 py-2 bg-kiparlo-orange/90 hover:bg-kiparlo-orange text-white text-sm rounded-xl disabled:opacity-40 transition-colors whitespace-nowrap"
+              className="px-3 py-2 bg-winelio-orange/90 hover:bg-winelio-orange text-white text-sm rounded-xl disabled:opacity-40 transition-colors whitespace-nowrap"
             >
               {isGeocoding ? "..." : "Chercher"}
             </button>
@@ -179,11 +179,11 @@ export function ProfessionnelsTable({
           </div>
           {geocoded && (
             <div className="flex items-center gap-3">
-              <span className="text-xs text-kiparlo-orange">{geocoded.label}</span>
+              <span className="text-xs text-winelio-orange">{geocoded.label}</span>
               <input
                 type="range" min={10} max={200} step={10} value={radius}
                 onChange={(e) => handleFilterChange(() => setRadius(Number(e.target.value)))}
-                className="w-32 accent-kiparlo-orange"
+                className="w-32 accent-winelio-orange"
               />
               <span className="text-xs text-gray-400 w-16">{radius} km</span>
             </div>
@@ -229,7 +229,7 @@ export function ProfessionnelsTable({
                       <div>
                         <p className="font-semibold text-white text-sm">{c.name}</p>
                         {c.alias && (
-                          <p className="text-xs font-mono text-kiparlo-orange mt-0.5">{c.alias}</p>
+                          <p className="text-xs font-mono text-winelio-orange mt-0.5">{c.alias}</p>
                         )}
                       </div>
                       {c.legal_name && c.legal_name !== c.name && (
@@ -244,7 +244,7 @@ export function ProfessionnelsTable({
                         <a
                           href={c.website.startsWith("http") ? c.website : `https://${c.website}`}
                           target="_blank" rel="noopener noreferrer"
-                          className="text-xs text-kiparlo-orange/60 hover:text-kiparlo-orange truncate block max-w-[200px]"
+                          className="text-xs text-winelio-orange/60 hover:text-winelio-orange truncate block max-w-[200px]"
                         >
                           {c.website.replace(/^https?:\/\//, "")}
                         </a>
@@ -311,7 +311,7 @@ export function ProfessionnelsTable({
                   <div className="min-w-0">
                     <p className="text-white font-medium truncate">{c.name}</p>
                     {c.alias && (
-                      <p className="text-xs font-mono text-kiparlo-orange mt-0.5">{c.alias}</p>
+                      <p className="text-xs font-mono text-winelio-orange mt-0.5">{c.alias}</p>
                     )}
                     {c.legal_name && c.legal_name !== c.name && (
                       <p className="text-gray-500 text-xs">{c.legal_name}</p>
@@ -369,7 +369,7 @@ export function ProfessionnelsTable({
                   {geocoded && c._distance != null && (
                     <div>
                       <p className="text-gray-600 uppercase text-[10px] tracking-wide">Distance</p>
-                      <p className="text-kiparlo-orange">{c._distance.toFixed(0)} km</p>
+                      <p className="text-winelio-orange">{c._distance.toFixed(0)} km</p>
                     </div>
                   )}
                 </div>
@@ -378,7 +378,7 @@ export function ProfessionnelsTable({
                   <a
                     href={c.website.startsWith("http") ? c.website : `https://${c.website}`}
                     target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-kiparlo-orange/70 hover:text-kiparlo-orange truncate block"
+                    className="text-xs text-winelio-orange/70 hover:text-winelio-orange truncate block"
                   >
                     {c.website.replace(/^https?:\/\//, "")}
                   </a>
@@ -397,7 +397,7 @@ export function ProfessionnelsTable({
               key={p}
               onClick={() => setPage(p)}
               className={`px-3 py-1 rounded text-xs transition-colors ${
-                p === page ? "bg-kiparlo-orange text-white" : "bg-white/5 text-gray-400 hover:text-white"
+                p === page ? "bg-winelio-orange text-white" : "bg-white/5 text-gray-400 hover:text-white"
               }`}
             >
               {p}

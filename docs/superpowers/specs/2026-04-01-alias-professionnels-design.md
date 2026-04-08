@@ -6,7 +6,7 @@
 
 ## Contexte
 
-Les entreprises professionnelles sur Kiparlo sont actuellement identifiées par leur vrai nom (`companies.name`). Pour des raisons de confidentialité et de neutralité dans le réseau MLM, les utilisateurs lambda ne doivent pas voir le nom réel des entreprises — uniquement un alias opaque et unique.
+Les entreprises professionnelles sur Winelio sont actuellement identifiées par leur vrai nom (`companies.name`). Pour des raisons de confidentialité et de neutralité dans le réseau MLM, les utilisateurs lambda ne doivent pas voir le nom réel des entreprises — uniquement un alias opaque et unique.
 
 ---
 

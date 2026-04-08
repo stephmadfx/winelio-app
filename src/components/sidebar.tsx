@@ -46,13 +46,13 @@ export function Sidebar({ userEmail, isSuperAdmin }: { userEmail: string; isSupe
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-kiparlo-dark text-white flex flex-col">
+    <aside className="fixed left-0 top-0 h-screen w-64 bg-winelio-dark text-white flex flex-col">
       {/* Logo */}
       <div className="px-6 py-6 border-b border-white/10">
         <Link href="/dashboard">
           <h1 className="text-2xl font-extrabold tracking-tight">
             <span className="text-white">BUZ</span>
-            <span className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-winelio-orange to-winelio-amber bg-clip-text text-transparent">
               RE
             </span>
             <span className="text-white">CO</span>
@@ -70,7 +70,7 @@ export function Sidebar({ userEmail, isSuperAdmin }: { userEmail: string; isSupe
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white"
+                  ? "bg-gradient-to-r from-winelio-orange to-winelio-amber text-white"
                   : "text-gray-400 hover:text-white hover:bg-white/5"
               }`}
             >
@@ -92,8 +92,8 @@ export function Sidebar({ userEmail, isSuperAdmin }: { userEmail: string; isSupe
               href="/gestion-reseau"
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 pathname.startsWith("/gestion-reseau")
-                  ? "bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white"
-                  : "text-kiparlo-orange/70 hover:text-kiparlo-orange hover:bg-kiparlo-orange/10"
+                  ? "bg-gradient-to-r from-winelio-orange to-winelio-amber text-white"
+                  : "text-winelio-orange/70 hover:text-winelio-orange hover:bg-winelio-orange/10"
               }`}
             >
               <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

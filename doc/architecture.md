@@ -1,4 +1,4 @@
-# Architecture Relationnelle - Kiparlo
+# Architecture Relationnelle - Winelio
 
 > Plateforme de recommandations professionnelles avec reseau de parrainage multi-niveaux.
 > Stack : Next.js 15 + Supabase (self-hosted Coolify) + Tailwind CSS 4
@@ -146,7 +146,7 @@
     └── Édition : nom, téléphone, adresse, code parrain
 
 [UTILITY] Globals
-├── globals.css                  Thème Kiparlo (orange, amber, dark, gray, light)
+├── globals.css                  Thème Winelio (orange, amber, dark, gray, light)
 ├── next.config.ts               Headers sécurité (HSTS, CSP, X-Frame-Options)
 └── middleware.ts                 Auth routing + protection routes
 ```

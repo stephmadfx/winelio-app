@@ -62,7 +62,7 @@ export default async function AdminRetraits() {
                 <div key={w.id} className="bg-card rounded-xl border border-border p-4">
                   <div className="flex items-start gap-4">
                     {/* Avatar initiales */}
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-kiparlo-orange to-kiparlo-amber flex items-center justify-center text-white text-sm font-bold shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center text-white text-sm font-bold shrink-0">
                       {(user?.first_name?.[0] ?? user?.email?.[0] ?? "?").toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">

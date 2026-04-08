@@ -40,7 +40,7 @@ export function CopyButton({ code }: { code: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity cursor-pointer"
+      className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity cursor-pointer"
     >
       {status === "copied" ? (
         <>
@@ -103,13 +103,13 @@ export function EmailInviteButton({ code }: { code: string }) {
 
   const referralUrl = typeof window !== "undefined"
     ? `${window.location.origin}/auth/login?mode=register&ref=${code}`
-    : `https://buzreco.fr/auth/login?mode=register&ref=${code}`;
+    : `https://winelio.fr/auth/login?mode=register&ref=${code}`;
 
   return (
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 px-5 py-3 border-2 border-kiparlo-orange text-kiparlo-orange font-semibold rounded-xl hover:bg-kiparlo-orange hover:text-white transition-colors cursor-pointer"
+        className="inline-flex items-center gap-2 px-5 py-3 border-2 border-winelio-orange text-winelio-orange font-semibold rounded-xl hover:bg-winelio-orange hover:text-white transition-colors cursor-pointer"
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -120,7 +120,7 @@ export function EmailInviteButton({ code }: { code: string }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="p-0 overflow-hidden rounded-2xl">
           {/* Header gradient */}
-          <div className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber p-6 text-white">
+          <div className="bg-gradient-to-r from-winelio-orange to-winelio-amber p-6 text-white">
             <div className="flex items-center gap-3 mb-1">
               <span className="text-3xl">🤝</span>
               <div>
@@ -146,14 +146,14 @@ export function EmailInviteButton({ code }: { code: string }) {
             {/* Email destinataire */}
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-slate-700">
-                Email du destinataire <span className="text-kiparlo-orange">*</span>
+                Email du destinataire <span className="text-winelio-orange">*</span>
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="exemple@email.com"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-kiparlo-orange focus:ring-2 focus:ring-kiparlo-orange/20 transition-all"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-winelio-orange focus:ring-2 focus:ring-winelio-orange/20 transition-all"
                 onKeyDown={e => e.key === "Enter" && handleSend()}
               />
             </div>
@@ -166,9 +166,9 @@ export function EmailInviteButton({ code }: { code: string }) {
               <textarea
                 value={message}
                 onChange={e => setMessage(e.target.value)}
-                placeholder="Bonjour ! Je pense que Buzreco peut vraiment t'aider à développer ton activité…"
+                placeholder="Bonjour ! Je pense que Winelio peut vraiment t'aider à développer ton activité…"
                 rows={3}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-kiparlo-orange focus:ring-2 focus:ring-kiparlo-orange/20 transition-all resize-none"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-winelio-orange focus:ring-2 focus:ring-winelio-orange/20 transition-all resize-none"
               />
             </div>
 
@@ -177,7 +177,7 @@ export function EmailInviteButton({ code }: { code: string }) {
               onClick={handleSend}
               disabled={!email || status === "sending" || status === "sent"}
               className="w-full py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer
-                bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white hover:opacity-90 active:scale-[0.98]"
+                bg-gradient-to-r from-winelio-orange to-winelio-amber text-white hover:opacity-90 active:scale-[0.98]"
             >
               {status === "sending" && (
                 <span className="flex items-center justify-center gap-2">
@@ -219,7 +219,7 @@ export function ShareButton({ code }: { code: string }) {
 
   const referralUrl = typeof window !== "undefined"
     ? `${window.location.origin}/auth/login?mode=register&ref=${code}`
-    : `https://buzreco.fr/auth/login?mode=register&ref=${code}`;
+    : `https://winelio.fr/auth/login?mode=register&ref=${code}`;
 
   const handleCopyLink = async () => {
     try {
@@ -240,8 +240,8 @@ export function ShareButton({ code }: { code: string }) {
   const handleNativeShare = async () => {
     if (navigator.share) {
       await navigator.share({
-        title: "Rejoins Buzreco",
-        text: "Rejoins Buzreco avec mon lien de parrainage !",
+        title: "Rejoins Winelio",
+        text: "Rejoins Winelio avec mon lien de parrainage !",
         url: referralUrl,
       });
     }
@@ -251,7 +251,7 @@ export function ShareButton({ code }: { code: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 px-5 py-3 border-2 border-kiparlo-orange text-kiparlo-orange font-semibold rounded-xl hover:bg-kiparlo-orange hover:text-white transition-colors cursor-pointer"
+        className="inline-flex items-center gap-2 px-5 py-3 border-2 border-winelio-orange text-winelio-orange font-semibold rounded-xl hover:bg-winelio-orange hover:text-white transition-colors cursor-pointer"
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -262,7 +262,7 @@ export function ShareButton({ code }: { code: string }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="p-0 overflow-hidden rounded-2xl">
           {/* Header */}
-          <div className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber px-6 pt-6 pb-5 text-white text-center">
+          <div className="bg-gradient-to-r from-winelio-orange to-winelio-amber px-6 pt-6 pb-5 text-white text-center">
             <DialogHeader>
               <DialogTitle className="text-white text-lg font-bold">
                 Partagez votre lien
@@ -287,7 +287,7 @@ export function ShareButton({ code }: { code: string }) {
                 />
               </div>
               {/* Badge code parrain */}
-              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-md whitespace-nowrap tracking-wider">
+              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-md whitespace-nowrap tracking-wider">
                 {code.toUpperCase()}
               </div>
             </div>
@@ -297,7 +297,7 @@ export function ShareButton({ code }: { code: string }) {
               <span className="flex-1 text-xs text-slate-500 truncate">{referralUrl}</span>
               <button
                 onClick={handleCopyLink}
-                className="shrink-0 text-kiparlo-orange hover:text-kiparlo-amber transition-colors cursor-pointer"
+                className="shrink-0 text-winelio-orange hover:text-winelio-amber transition-colors cursor-pointer"
                 title="Copier le lien"
               >
                 {copied ? (
@@ -316,7 +316,7 @@ export function ShareButton({ code }: { code: string }) {
             {typeof navigator !== "undefined" && "share" in navigator && (
               <button
                 onClick={handleNativeShare}
-                className="w-full py-3 rounded-xl border-2 border-kiparlo-orange text-kiparlo-orange font-semibold text-sm flex items-center justify-center gap-2 hover:bg-kiparlo-orange hover:text-white transition-colors cursor-pointer"
+                className="w-full py-3 rounded-xl border-2 border-winelio-orange text-winelio-orange font-semibold text-sm flex items-center justify-center gap-2 hover:bg-winelio-orange hover:text-white transition-colors cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />

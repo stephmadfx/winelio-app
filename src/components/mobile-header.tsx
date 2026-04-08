@@ -49,12 +49,12 @@ export function MobileHeader({ userEmail, isSuperAdmin }: { userEmail: string; i
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 bg-kiparlo-dark border-b border-white/10 lg:hidden">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-winelio-dark border-b border-white/10 lg:hidden">
         <div className="flex items-center justify-between px-4 h-14">
           <Link href="/dashboard">
             <h1 className="text-xl font-extrabold tracking-tight">
               <span className="text-white">BUZ</span>
-              <span className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-winelio-orange to-winelio-amber bg-clip-text text-transparent">
                 RE
               </span>
               <span className="text-white">CO</span>
@@ -98,7 +98,7 @@ export function MobileHeader({ userEmail, isSuperAdmin }: { userEmail: string; i
             className="fixed inset-0 z-40 bg-black/50 lg:hidden"
             onClick={() => setMenuOpen(false)}
           />
-          <div className="fixed top-14 right-0 left-0 z-50 bg-kiparlo-dark border-b border-white/10 lg:hidden">
+          <div className="fixed top-14 right-0 left-0 z-50 bg-winelio-dark border-b border-white/10 lg:hidden">
             <div className="px-4 py-3 space-y-1">
               {moreItems.map((item) => {
                 const isActive =
@@ -111,7 +111,7 @@ export function MobileHeader({ userEmail, isSuperAdmin }: { userEmail: string; i
                     onClick={() => setMenuOpen(false)}
                     className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors ${
                       isActive
-                        ? "bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white"
+                        ? "bg-gradient-to-r from-winelio-orange to-winelio-amber text-white"
                         : "text-gray-400 active:text-white active:bg-white/5"
                     }`}
                   >
@@ -137,7 +137,7 @@ export function MobileHeader({ userEmail, isSuperAdmin }: { userEmail: string; i
                 <Link
                   href="/gestion-reseau"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-kiparlo-orange/80 active:bg-kiparlo-orange/10 transition-colors"
+                  className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-winelio-orange/80 active:bg-winelio-orange/10 transition-colors"
                 >
                   <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />

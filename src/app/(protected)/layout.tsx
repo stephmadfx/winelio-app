@@ -34,7 +34,7 @@ export default async function ProtectedLayout({
   const isSuperAdmin = user.app_metadata?.role === "super_admin";
 
   return (
-    <div className={`relative min-h-dvh bg-kiparlo-light dark:bg-slate-900 transition-colors duration-200 ${DEMO_MODE ? "pt-6" : ""}`}>
+    <div className={`relative min-h-dvh bg-winelio-light dark:bg-slate-900 transition-colors duration-200 ${DEMO_MODE ? "pt-6" : ""}`}>
       <AppBackground />
       <DemoBanner />
 

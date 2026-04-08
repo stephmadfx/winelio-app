@@ -1,4 +1,4 @@
-# Schema Base de Donnees - Kiparlo
+# Schema Base de Donnees - Winelio
 
 > Supabase PostgreSQL (self-hosted via Coolify)
 > Toutes les tables utilisent Row Level Security (RLS)

@@ -75,22 +75,22 @@ export default async function NetworkStatsPage() {
   };
 
   const levelBarColors: Record<number, string> = {
-    1: "from-kiparlo-orange to-kiparlo-amber",
-    2: "from-kiparlo-amber to-yellow-400",
+    1: "from-winelio-orange to-winelio-amber",
+    2: "from-winelio-amber to-yellow-400",
     3: "from-yellow-400 to-yellow-300",
     4: "from-emerald-500 to-emerald-400",
     5: "from-blue-500 to-blue-400",
   };
 
   return (
-    <div className="min-h-screen bg-kiparlo-light">
+    <div className="min-h-screen bg-winelio-light">
       {/* Header */}
-      <header className="bg-kiparlo-dark text-white">
+      <header className="bg-winelio-dark text-white">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/dashboard">
             <h1 className="text-2xl font-extrabold tracking-tight">
               <span className="text-white">BUZ</span>
-              <span className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-winelio-orange to-winelio-amber bg-clip-text text-transparent">
                 RE
               </span>
               <span className="text-white">CO</span>
@@ -99,7 +99,7 @@ export default async function NetworkStatsPage() {
           <nav className="flex items-center gap-4">
             <Link
               href="/network"
-              className="text-sm text-kiparlo-orange hover:text-kiparlo-amber transition-colors font-medium"
+              className="text-sm text-winelio-orange hover:text-winelio-amber transition-colors font-medium"
             >
               Retour au reseau
             </Link>
@@ -108,10 +108,10 @@ export default async function NetworkStatsPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-kiparlo-dark mb-2">
+        <h2 className="text-2xl font-bold text-winelio-dark mb-2">
           Statistiques reseau detaillees
         </h2>
-        <p className="text-kiparlo-gray mb-8">
+        <p className="text-winelio-gray mb-8">
           Vue complete de vos commissions par niveau de parrainage.
         </p>
 
@@ -119,16 +119,16 @@ export default async function NetworkStatsPage() {
         <Card className="!rounded-2xl mb-8"><CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-kiparlo-gray font-medium">
+              <p className="text-sm text-winelio-gray font-medium">
                 Total commissions reseau
               </p>
-              <p className="text-3xl font-bold bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent">
+              <p className="text-3xl font-bold bg-gradient-to-r from-winelio-orange to-winelio-amber bg-clip-text text-transparent">
                 {totalAllLevels.toFixed(2)} EUR
               </p>
             </div>
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-r from-winelio-orange/10 to-winelio-amber/10 flex items-center justify-center">
               <svg
-                className="w-7 h-7 text-kiparlo-orange"
+                className="w-7 h-7 text-winelio-orange"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -146,23 +146,23 @@ export default async function NetworkStatsPage() {
 
         {/* Table by level */}
         <Card className="!rounded-2xl mb-8"><CardContent className="p-6">
-          <h3 className="text-lg font-semibold text-kiparlo-dark mb-6">
+          <h3 className="text-lg font-semibold text-winelio-dark mb-6">
             Commissions par niveau
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left text-sm font-medium text-kiparlo-gray py-3 pr-4">
+                  <th className="text-left text-sm font-medium text-winelio-gray py-3 pr-4">
                     Niveau
                   </th>
-                  <th className="text-center text-sm font-medium text-kiparlo-gray py-3 px-4">
+                  <th className="text-center text-sm font-medium text-winelio-gray py-3 px-4">
                     Transactions
                   </th>
-                  <th className="text-right text-sm font-medium text-kiparlo-gray py-3 px-4">
+                  <th className="text-right text-sm font-medium text-winelio-gray py-3 px-4">
                     Total commissions
                   </th>
-                  <th className="text-right text-sm font-medium text-kiparlo-gray py-3 pl-4">
+                  <th className="text-right text-sm font-medium text-winelio-gray py-3 pl-4">
                     Part
                   </th>
                 </tr>
@@ -180,23 +180,23 @@ export default async function NetworkStatsPage() {
                         >
                           {stat.level}
                         </span>
-                        <span className="font-medium text-kiparlo-dark text-sm">
+                        <span className="font-medium text-winelio-dark text-sm">
                           {levelLabels[stat.level]}
                         </span>
                       </div>
                     </td>
                     <td className="py-4 px-4 text-center">
-                      <span className="font-semibold text-kiparlo-dark">
+                      <span className="font-semibold text-winelio-dark">
                         {stat.members}
                       </span>
                     </td>
                     <td className="py-4 px-4 text-right">
-                      <span className="font-bold text-kiparlo-orange">
+                      <span className="font-bold text-winelio-orange">
                         {stat.total.toFixed(2)} EUR
                       </span>
                     </td>
                     <td className="py-4 pl-4 text-right">
-                      <span className="text-sm text-kiparlo-gray">
+                      <span className="text-sm text-winelio-gray">
                         {totalAllLevels > 0
                           ? ((stat.total / totalAllLevels) * 100).toFixed(1)
                           : "0.0"}
@@ -208,14 +208,14 @@ export default async function NetworkStatsPage() {
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-border">
-                  <td className="py-4 pr-4 font-bold text-kiparlo-dark">Total</td>
-                  <td className="py-4 px-4 text-center font-bold text-kiparlo-dark">
+                  <td className="py-4 pr-4 font-bold text-winelio-dark">Total</td>
+                  <td className="py-4 px-4 text-center font-bold text-winelio-dark">
                     {levelStats.reduce((sum, s) => sum + s.members, 0)}
                   </td>
-                  <td className="py-4 px-4 text-right font-bold text-kiparlo-orange">
+                  <td className="py-4 px-4 text-right font-bold text-winelio-orange">
                     {totalAllLevels.toFixed(2)} EUR
                   </td>
-                  <td className="py-4 pl-4 text-right font-bold text-kiparlo-dark">
+                  <td className="py-4 pl-4 text-right font-bold text-winelio-dark">
                     100%
                   </td>
                 </tr>
@@ -226,7 +226,7 @@ export default async function NetworkStatsPage() {
 
         {/* CSS Bar chart */}
         <Card className="!rounded-2xl mb-8"><CardContent className="p-6">
-          <h3 className="text-lg font-semibold text-kiparlo-dark mb-6">
+          <h3 className="text-lg font-semibold text-winelio-dark mb-6">
             Graphique des commissions par niveau
           </h3>
           <div className="space-y-4">
@@ -246,7 +246,7 @@ export default async function NetworkStatsPage() {
                       style={{ width: `${pct}%`, minWidth: stat.total > 0 ? "2rem" : "0" }}
                     />
                     {stat.total > 0 && (
-                      <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-kiparlo-dark">
+                      <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-winelio-dark">
                         {stat.total.toFixed(2)} EUR
                       </span>
                     )}
@@ -264,15 +264,15 @@ export default async function NetworkStatsPage() {
 
         {/* Commission history */}
         <Card className="!rounded-2xl"><CardContent className="p-6">
-          <h3 className="text-lg font-semibold text-kiparlo-dark mb-6">
+          <h3 className="text-lg font-semibold text-winelio-dark mb-6">
             Historique des commissions reseau
           </h3>
 
           {allCommissions.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10 flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-winelio-orange/10 to-winelio-amber/10 flex items-center justify-center">
                 <svg
-                  className="w-8 h-8 text-kiparlo-orange"
+                  className="w-8 h-8 text-winelio-orange"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -303,7 +303,7 @@ export default async function NetworkStatsPage() {
                       {c.level}
                     </span>
                     <div>
-                      <p className="font-medium text-kiparlo-dark text-sm">
+                      <p className="font-medium text-winelio-dark text-sm">
                         {c.description ?? `Commission niveau ${c.level}`}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -317,7 +317,7 @@ export default async function NetworkStatsPage() {
                       </p>
                     </div>
                   </div>
-                  <span className="font-bold text-kiparlo-orange text-sm">
+                  <span className="font-bold text-winelio-orange text-sm">
                     +{c.amount.toFixed(2)} EUR
                   </span>
                 </div>

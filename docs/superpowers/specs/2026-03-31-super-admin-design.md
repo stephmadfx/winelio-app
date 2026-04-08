@@ -1,4 +1,4 @@
-# Super Admin Kiparlo — Design Spec
+# Super Admin Winelio — Design Spec
 
 **Date :** 2026-03-31
 **Statut :** Approuvé
@@ -7,7 +7,7 @@
 
 ## Contexte
 
-Interface super admin pour Kiparlo, accessible à un nombre restreint de personnes. Elle offre une vue globale du réseau MLM, des recommandations et des transactions, avec capacité d'intervention sur les éléments critiques.
+Interface super admin pour Winelio, accessible à un nombre restreint de personnes. Elle offre une vue globale du réseau MLM, des recommandations et des transactions, avec capacité d'intervention sur les éléments critiques.
 
 ---
 
@@ -74,7 +74,7 @@ src/
 
 - Sidebar gauche : icônes de navigation vers les 5 sections, sans texte (compact)
 - Topbar : titre de la section courante + email de l'admin connecté
-- Thème sombre, couleurs Kiparlo orange/amber
+- Thème sombre, couleurs Winelio orange/amber
 
 **Sections de navigation (ordre sidebar) :**
 1. ⊞ Dashboard (`/gestion-reseau`)

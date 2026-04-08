@@ -144,7 +144,7 @@ async function loadTargets() {
   while (true) {
     const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
     if (error || !data?.users?.length) break;
-    allFakeUsers.push(...data.users.filter((u) => u.email?.endsWith("@kiparlo-pro.fr")));
+    allFakeUsers.push(...data.users.filter((u) => u.email?.endsWith("@winelio-pro.fr")));
     if (data.users.length < 1000) break;
     page++;
   }

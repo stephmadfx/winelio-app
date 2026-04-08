@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://buzreco.fr";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.fr";
 
 // ─── Email HTML ───────────────────────────────────────────────────────────────
 
@@ -76,7 +76,7 @@ function buildReferralEmail(
               <div style="background:#f8f9fa;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
                 <p style="margin:0;color:#2D3436;font-size:15px;line-height:1.6;">
                   <strong style="color:${levelColor};">${newMemberName}</strong>
-                  vient de rejoindre Buzreco en tant que ${levelLabel} dans votre réseau.
+                  vient de rejoindre Winelio en tant que ${levelLabel} dans votre réseau.
                 </p>
                 ${level === 1 ? `
                 <p style="margin:12px 0 0;color:#636E72;font-size:13px;">
@@ -109,7 +109,7 @@ function buildReferralEmail(
           <tr>
             <td style="padding-top:24px;text-align:center;">
               <p style="color:#adb5bd;font-size:12px;margin:0;">
-                © Buzreco · <a href="${SITE_URL}" style="color:#FF6B35;text-decoration:none;">buzreco.fr</a>
+                © Winelio · <a href="${SITE_URL}" style="color:#FF6B35;text-decoration:none;">winelio.fr</a>
               </p>
             </td>
           </tr>
@@ -165,8 +165,8 @@ export async function POST(req: Request) {
       const { data: authData } = await supabaseAdmin.auth.admin.getUserById(sponsorId);
       const sponsorEmail = authData?.user?.email;
 
-      // Skip les emails fictifs Buzreco
-      if (!sponsorEmail || sponsorEmail.endsWith("@kiparlo-pro.fr")) {
+      // Skip les emails fictifs Winelio
+      if (!sponsorEmail || sponsorEmail.endsWith("@winelio-pro.fr")) {
         currentId = sponsorId;
         continue;
       }
@@ -184,11 +184,11 @@ export async function POST(req: Request) {
     await Promise.allSettled(
       notifications.map(({ email, firstName, level }) =>
         transporter.sendMail({
-          from: `"Buzreco" <${process.env.SMTP_USER || "contact@aide-multimedia.fr"}>`,
+          from: `"Winelio" <${process.env.SMTP_USER || "contact@aide-multimedia.fr"}>`,
           to: email,
           subject: level === 1
-            ? `🎉 ${newMemberName} a rejoint votre réseau Buzreco !`
-            : `🌱 Nouveau membre niveau ${level} dans votre réseau Buzreco`,
+            ? `🎉 ${newMemberName} a rejoint votre réseau Winelio !`
+            : `🌱 Nouveau membre niveau ${level} dans votre réseau Winelio`,
           html: buildReferralEmail(firstName, newMemberName, level),
         })
       )

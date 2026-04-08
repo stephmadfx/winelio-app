@@ -107,7 +107,7 @@ export default async function AdminUserDetail({
                 <p className="text-gray-500 text-xs mb-0.5">Raison sociale</p>
                 <p className="text-white">{company.legal_name || company.name || "—"}</p>
                 {company.alias && (
-                  <p className="text-xs font-mono text-kiparlo-orange mt-0.5">{company.alias}</p>
+                  <p className="text-xs font-mono text-winelio-orange mt-0.5">{company.alias}</p>
                 )}
               </div>
               <div>
@@ -144,7 +144,7 @@ export default async function AdminUserDetail({
                 <div className="col-span-2">
                   <p className="text-gray-500 text-xs mb-0.5">Site web</p>
                   <a href={company.website} target="_blank" rel="noopener noreferrer"
-                     className="text-kiparlo-orange text-xs hover:underline truncate block">
+                     className="text-winelio-orange text-xs hover:underline truncate block">
                     {company.website}
                   </a>
                 </div>
@@ -161,7 +161,7 @@ export default async function AdminUserDetail({
                     href={`https://www.societe.com/cgi-bin/search?champs=${company.siret}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-gray-500 hover:text-kiparlo-orange transition-colors"
+                    className="text-xs text-gray-500 hover:text-winelio-orange transition-colors"
                   >
                     Vérifier sur societe.com →
                   </a>
@@ -268,7 +268,7 @@ export default async function AdminUserDetail({
           </div>
           <button
             type="submit"
-            className="text-sm bg-kiparlo-orange/20 text-kiparlo-orange hover:bg-kiparlo-orange/30 px-4 py-1.5 rounded-lg transition-colors"
+            className="text-sm bg-winelio-orange/20 text-winelio-orange hover:bg-winelio-orange/30 px-4 py-1.5 rounded-lg transition-colors"
           >
             + Appliquer commission
           </button>

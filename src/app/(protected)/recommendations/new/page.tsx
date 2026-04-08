@@ -42,7 +42,7 @@ function Initials({ name, size = "md" }: { name: string; size?: "sm" | "md" }) {
     : name.slice(0, 2);
   const cls = size === "sm" ? "w-9 h-9 text-xs" : "w-11 h-11 text-sm";
   return (
-    <div className={`${cls} rounded-full bg-gradient-to-br from-kiparlo-orange to-kiparlo-amber flex items-center justify-center shrink-0`}>
+    <div className={`${cls} rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center shrink-0`}>
       <span className="font-bold text-white uppercase">{init}</span>
     </div>
   );
@@ -280,7 +280,7 @@ export default function NewRecommendationPage() {
     `w-full rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-colors ${
       hasError
         ? "border-red-400 focus:border-red-400 focus:ring-red-100"
-        : "border-kiparlo-gray/20 focus:border-kiparlo-orange focus:ring-kiparlo-orange/15"
+        : "border-winelio-gray/20 focus:border-winelio-orange focus:ring-winelio-orange/15"
     }`;
 
   return (
@@ -290,15 +290,15 @@ export default function NewRecommendationPage() {
       <div className="mb-8">
         <button
           onClick={() => router.push("/recommendations")}
-          className="mb-4 inline-flex items-center gap-1.5 text-sm text-kiparlo-gray hover:text-kiparlo-dark transition-colors cursor-pointer"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-winelio-gray hover:text-winelio-dark transition-colors cursor-pointer"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
           Retour
         </button>
-        <h1 className="text-2xl font-bold text-kiparlo-dark tracking-tight">Nouvelle recommandation</h1>
-        <p className="mt-1 text-sm text-kiparlo-gray">Mettez en relation un contact avec un professionnel de confiance</p>
+        <h1 className="text-2xl font-bold text-winelio-dark tracking-tight">Nouvelle recommandation</h1>
+        <p className="mt-1 text-sm text-winelio-gray">Mettez en relation un contact avec un professionnel de confiance</p>
       </div>
 
       {/* ── Progress steps ── */}
@@ -312,8 +312,8 @@ export default function NewRecommendationPage() {
                     s.number < step
                       ? "bg-green-500 text-white"
                       : s.number === step
-                        ? "bg-kiparlo-orange text-white shadow-md shadow-kiparlo-orange/30"
-                        : "bg-kiparlo-light text-kiparlo-gray/50 border border-kiparlo-gray/15"
+                        ? "bg-winelio-orange text-white shadow-md shadow-winelio-orange/30"
+                        : "bg-winelio-light text-winelio-gray/50 border border-winelio-gray/15"
                   }`}
                 >
                   {s.number < step ? (
@@ -324,12 +324,12 @@ export default function NewRecommendationPage() {
                     s.number
                   )}
                 </div>
-                <span className={`text-xs font-medium ${s.number === step ? "text-kiparlo-dark" : "text-kiparlo-gray/50"}`}>
+                <span className={`text-xs font-medium ${s.number === step ? "text-winelio-dark" : "text-winelio-gray/50"}`}>
                   {s.label}
                 </span>
               </div>
               {idx < STEPS_META.length - 1 && (
-                <div className={`flex-1 h-0.5 mb-5 mx-1 rounded-full transition-colors ${s.number < step ? "bg-green-400" : "bg-kiparlo-gray/15"}`} />
+                <div className={`flex-1 h-0.5 mb-5 mx-1 rounded-full transition-colors ${s.number < step ? "bg-green-400" : "bg-winelio-gray/15"}`} />
               )}
             </div>
           ))}
@@ -350,8 +350,8 @@ export default function NewRecommendationPage() {
       {step === 1 && (
         <div>
           <div className="mb-6">
-            <h2 className="text-lg font-bold text-kiparlo-dark">Qui a besoin d&apos;un professionnel ?</h2>
-            <p className="mt-1 text-sm text-kiparlo-gray">
+            <h2 className="text-lg font-bold text-winelio-dark">Qui a besoin d&apos;un professionnel ?</h2>
+            <p className="mt-1 text-sm text-winelio-gray">
               La personne que vous souhaitez mettre en relation — un ami, un voisin, un collègue...
             </p>
           </div>
@@ -360,7 +360,7 @@ export default function NewRecommendationPage() {
             <div className="space-y-3">
               {contacts.length > 0 && (
                 <>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-kiparlo-gray/60">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-winelio-gray/60">
                     Contacts existants
                   </p>
                   {contacts.map((c) => (
@@ -369,17 +369,17 @@ export default function NewRecommendationPage() {
                       onClick={() => setSelectedContactId(c.id)}
                       className={`w-full flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition-all cursor-pointer ${
                         selectedContactId === c.id
-                          ? "border-kiparlo-orange bg-kiparlo-orange/5 shadow-sm shadow-kiparlo-orange/10"
-                          : "border-transparent bg-white hover:border-kiparlo-orange/20 shadow-sm"
+                          ? "border-winelio-orange bg-winelio-orange/5 shadow-sm shadow-winelio-orange/10"
+                          : "border-transparent bg-white hover:border-winelio-orange/20 shadow-sm"
                       }`}
                     >
                       <Initials name={`${c.first_name} ${c.last_name}`} />
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-kiparlo-dark">{c.first_name} {c.last_name}</p>
-                        <p className="text-sm text-kiparlo-gray truncate">{c.email}</p>
+                        <p className="font-semibold text-winelio-dark">{c.first_name} {c.last_name}</p>
+                        <p className="text-sm text-winelio-gray truncate">{c.email}</p>
                       </div>
                       {selectedContactId === c.id && (
-                        <div className="w-5 h-5 rounded-full bg-kiparlo-orange flex items-center justify-center shrink-0">
+                        <div className="w-5 h-5 rounded-full bg-winelio-orange flex items-center justify-center shrink-0">
                           <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
@@ -389,17 +389,17 @@ export default function NewRecommendationPage() {
                   ))}
                   <div className="relative my-4">
                     <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-kiparlo-gray/10" />
+                      <div className="w-full border-t border-winelio-gray/10" />
                     </div>
                     <div className="relative flex justify-center">
-                      <span className="bg-kiparlo-light px-3 text-xs text-kiparlo-gray">ou</span>
+                      <span className="bg-winelio-light px-3 text-xs text-winelio-gray">ou</span>
                     </div>
                   </div>
                 </>
               )}
               <button
                 onClick={() => { setCreateContact(true); setSelectedContactId(null); }}
-                className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-kiparlo-orange/40 px-5 py-4 text-sm font-semibold text-kiparlo-orange hover:border-kiparlo-orange hover:bg-kiparlo-orange/5 transition-all cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-winelio-orange/40 px-5 py-4 text-sm font-semibold text-winelio-orange hover:border-winelio-orange hover:bg-winelio-orange/5 transition-all cursor-pointer"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -408,16 +408,16 @@ export default function NewRecommendationPage() {
               </button>
             </div>
           ) : (
-            <div className="rounded-2xl border border-kiparlo-gray/10 bg-white p-6 shadow-sm space-y-4">
+            <div className="rounded-2xl border border-winelio-gray/10 bg-white p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
-                <p className="font-semibold text-kiparlo-dark">Nouveau contact</p>
+                <p className="font-semibold text-winelio-dark">Nouveau contact</p>
                 <button
                   onClick={() => {
                     setCreateContact(false);
                     setContactErrors({});
                     setContactForm({ first_name: "", last_name: "", email: "", phone: "", country_code: "+33" });
                   }}
-                  className="text-xs text-kiparlo-gray hover:text-kiparlo-dark transition-colors cursor-pointer"
+                  className="text-xs text-winelio-gray hover:text-winelio-dark transition-colors cursor-pointer"
                 >
                   Annuler
                 </button>
@@ -425,8 +425,8 @@ export default function NewRecommendationPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-kiparlo-dark">
-                    Prénom <span className="text-kiparlo-orange">*</span>
+                  <label className="mb-1.5 block text-sm font-medium text-winelio-dark">
+                    Prénom <span className="text-winelio-orange">*</span>
                   </label>
                   <input
                     type="text"
@@ -441,8 +441,8 @@ export default function NewRecommendationPage() {
                   {contactErrors.first_name && <p className="mt-1 text-xs text-red-500">{contactErrors.first_name}</p>}
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-kiparlo-dark">
-                    Nom <span className="text-kiparlo-orange">*</span>
+                  <label className="mb-1.5 block text-sm font-medium text-winelio-dark">
+                    Nom <span className="text-winelio-orange">*</span>
                   </label>
                   <input
                     type="text"
@@ -459,8 +459,8 @@ export default function NewRecommendationPage() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-kiparlo-dark">
-                  Email <span className="text-kiparlo-orange">*</span>
+                <label className="mb-1.5 block text-sm font-medium text-winelio-dark">
+                  Email <span className="text-winelio-orange">*</span>
                 </label>
                 <input
                   type="email"
@@ -476,14 +476,14 @@ export default function NewRecommendationPage() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-kiparlo-dark">
-                  Téléphone <span className="text-kiparlo-orange">*</span>
+                <label className="mb-1.5 block text-sm font-medium text-winelio-dark">
+                  Téléphone <span className="text-winelio-orange">*</span>
                 </label>
                 <div className="flex gap-2">
                   <select
                     value={contactForm.country_code}
                     onChange={(e) => setContactForm({ ...contactForm, country_code: e.target.value })}
-                    className="rounded-xl border border-kiparlo-gray/20 px-2 py-3 text-sm bg-white focus:border-kiparlo-orange focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/15 w-24 shrink-0 cursor-pointer"
+                    className="rounded-xl border border-winelio-gray/20 px-2 py-3 text-sm bg-white focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15 w-24 shrink-0 cursor-pointer"
                   >
                     <option value="+33">FR +33</option>
                     <option value="+32">BE +32</option>
@@ -526,9 +526,9 @@ export default function NewRecommendationPage() {
       {step === 2 && (
         <div>
           <div className="mb-6">
-            <h2 className="text-lg font-bold text-kiparlo-dark">Quel professionnel recommandez-vous ?</h2>
-            <p className="mt-1 text-sm text-kiparlo-gray">
-              Choisissez un professionnel Buzreco — si le deal aboutit, vous touchez une commission.
+            <h2 className="text-lg font-bold text-winelio-dark">Quel professionnel recommandez-vous ?</h2>
+            <p className="mt-1 text-sm text-winelio-gray">
+              Choisissez un professionnel Winelio — si le deal aboutit, vous touchez une commission.
             </p>
           </div>
 
@@ -536,7 +536,7 @@ export default function NewRecommendationPage() {
           {geoStatus === "idle" && (
             <button
               onClick={requestGeo}
-              className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-kiparlo-orange/40 px-4 py-3.5 text-sm font-semibold text-kiparlo-orange hover:border-kiparlo-orange hover:bg-kiparlo-orange/5 transition-all cursor-pointer"
+              className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-winelio-orange/40 px-4 py-3.5 text-sm font-semibold text-winelio-orange hover:border-winelio-orange hover:bg-winelio-orange/5 transition-all cursor-pointer"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -546,8 +546,8 @@ export default function NewRecommendationPage() {
             </button>
           )}
           {geoStatus === "loading" && (
-            <div className="mb-4 flex items-center justify-center gap-2 rounded-2xl bg-kiparlo-orange/8 px-4 py-3.5 text-sm font-medium text-kiparlo-orange">
-              <div className="w-4 h-4 border-2 border-kiparlo-orange border-t-transparent rounded-full animate-spin" />
+            <div className="mb-4 flex items-center justify-center gap-2 rounded-2xl bg-winelio-orange/8 px-4 py-3.5 text-sm font-medium text-winelio-orange">
+              <div className="w-4 h-4 border-2 border-winelio-orange border-t-transparent rounded-full animate-spin" />
               Localisation en cours...
             </div>
           )}
@@ -595,7 +595,7 @@ export default function NewRecommendationPage() {
           {/* Search + Category */}
           <div className="mb-4 flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
-              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-kiparlo-gray/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-winelio-gray/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
@@ -603,13 +603,13 @@ export default function NewRecommendationPage() {
                 placeholder="Rechercher par nom..."
                 value={proSearch}
                 onChange={(e) => setProSearch(e.target.value)}
-                className="w-full rounded-xl border border-kiparlo-gray/20 pl-10 pr-4 py-3 text-sm focus:border-kiparlo-orange focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/15"
+                className="w-full rounded-xl border border-winelio-gray/20 pl-10 pr-4 py-3 text-sm focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15"
               />
             </div>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="rounded-xl border border-kiparlo-gray/20 px-4 py-3 text-sm text-kiparlo-dark focus:border-kiparlo-orange focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/15 bg-white cursor-pointer"
+              className="rounded-xl border border-winelio-gray/20 px-4 py-3 text-sm text-winelio-dark focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15 bg-white cursor-pointer"
             >
               <option value="all">Toutes les catégories</option>
               {categories.map((cat) => (
@@ -618,7 +618,7 @@ export default function NewRecommendationPage() {
             </select>
           </div>
 
-          <p className="mb-3 text-xs text-kiparlo-gray/70">
+          <p className="mb-3 text-xs text-winelio-gray/70">
             {professionals.length} professionnel{professionals.length !== 1 ? "s" : ""} trouvé{professionals.length !== 1 ? "s" : ""}
             {selectedCategory !== "all" && ` · ${selectedCategory}`}
             {geoStatus === "granted" && radius < 99999 && ` · ${radius} km`}
@@ -634,15 +634,15 @@ export default function NewRecommendationPage() {
                   onClick={() => setSelectedProId(p.id)}
                   className={`w-full flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all cursor-pointer ${
                     selectedProId === p.id
-                      ? "border-kiparlo-orange bg-kiparlo-orange/5 shadow-sm shadow-kiparlo-orange/10"
-                      : "border-transparent bg-white hover:border-kiparlo-orange/20 shadow-sm"
+                      ? "border-winelio-orange bg-winelio-orange/5 shadow-sm shadow-winelio-orange/10"
+                      : "border-transparent bg-white hover:border-winelio-orange/20 shadow-sm"
                   }`}
                 >
                   <Initials name={displayLabel} size="sm" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-kiparlo-dark text-sm font-mono">{displayLabel}</p>
+                    <p className="font-semibold text-winelio-dark text-sm font-mono">{displayLabel}</p>
                     {p.company_name && (
-                      <p className="text-xs text-kiparlo-gray truncate">{p.company_name}</p>
+                      <p className="text-xs text-winelio-gray truncate">{p.company_name}</p>
                     )}
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       {p.avg_rating !== null && (
@@ -652,27 +652,27 @@ export default function NewRecommendationPage() {
                               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                             </svg>
                           ))}
-                          <span className="text-kiparlo-gray ml-0.5 text-xs">({p.review_count})</span>
+                          <span className="text-winelio-gray ml-0.5 text-xs">({p.review_count})</span>
                         </span>
                       )}
                       {p.category_name && (
-                        <span className="text-xs bg-kiparlo-orange/10 text-kiparlo-orange px-2 py-0.5 rounded-full font-medium">
+                        <span className="text-xs bg-winelio-orange/10 text-winelio-orange px-2 py-0.5 rounded-full font-medium">
                           {p.category_name}
                         </span>
                       )}
                       {p.city && (
-                        <span className="text-xs text-kiparlo-gray/70">{p.city}</span>
+                        <span className="text-xs text-winelio-gray/70">{p.city}</span>
                       )}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     {p.distance !== null && (
-                      <span className="text-xs font-bold text-kiparlo-orange bg-kiparlo-orange/10 px-2.5 py-1 rounded-full">
+                      <span className="text-xs font-bold text-winelio-orange bg-winelio-orange/10 px-2.5 py-1 rounded-full">
                         {p.distance < 1 ? `${Math.round(p.distance * 1000)} m` : `${Math.round(p.distance)} km`}
                       </span>
                     )}
                     {selectedProId === p.id && (
-                      <div className="w-5 h-5 rounded-full bg-kiparlo-orange flex items-center justify-center">
+                      <div className="w-5 h-5 rounded-full bg-winelio-orange flex items-center justify-center">
                         <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
@@ -683,15 +683,15 @@ export default function NewRecommendationPage() {
               );
             })}
             {professionals.length === 0 && (
-              <div className="rounded-2xl border border-kiparlo-gray/10 bg-white py-12 text-center">
-                <p className="text-sm font-medium text-kiparlo-dark">Aucun résultat</p>
-                <p className="mt-1 text-xs text-kiparlo-gray">
+              <div className="rounded-2xl border border-winelio-gray/10 bg-white py-12 text-center">
+                <p className="text-sm font-medium text-winelio-dark">Aucun résultat</p>
+                <p className="mt-1 text-xs text-winelio-gray">
                   {geoStatus === "granted" && radius < 99999 ? `Aucun pro dans un rayon de ${radius} km.` : "Modifiez votre recherche."}
                 </p>
                 {geoStatus === "granted" && radius < 99999 && (
                   <button
                     onClick={() => setRadius(99999)}
-                    className="mt-3 text-sm font-medium text-kiparlo-orange hover:underline cursor-pointer"
+                    className="mt-3 text-sm font-medium text-winelio-orange hover:underline cursor-pointer"
                   >
                     Élargir à toute la France
                   </button>
@@ -706,36 +706,36 @@ export default function NewRecommendationPage() {
       {step === 3 && (
         <div>
           <div className="mb-6">
-            <h2 className="text-lg font-bold text-kiparlo-dark">Décrivez le besoin</h2>
-            <p className="mt-1 text-sm text-kiparlo-gray">
+            <h2 className="text-lg font-bold text-winelio-dark">Décrivez le besoin</h2>
+            <p className="mt-1 text-sm text-winelio-gray">
               Donnez un contexte au professionnel pour qu&apos;il prépare sa prise de contact.
             </p>
           </div>
 
           <div className="space-y-5">
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-kiparlo-dark">
-                Description du projet <span className="text-kiparlo-orange">*</span>
+              <label className="mb-1.5 block text-sm font-semibold text-winelio-dark">
+                Description du projet <span className="text-winelio-orange">*</span>
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={5}
-                className="w-full rounded-2xl border border-kiparlo-gray/20 px-4 py-3 text-sm focus:border-kiparlo-orange focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/15 resize-none transition-colors"
+                className="w-full rounded-2xl border border-winelio-gray/20 px-4 py-3 text-sm focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15 resize-none transition-colors"
                 placeholder="Ex : Mon ami Pierre cherche un plombier pour une fuite dans sa salle de bain. Il est disponible en semaine..."
               />
-              <p className="mt-1.5 text-xs text-kiparlo-gray/60 text-right">{description.length} caractères</p>
+              <p className="mt-1.5 text-xs text-winelio-gray/60 text-right">{description.length} caractères</p>
             </div>
 
             <div>
-              <label className="mb-3 block text-sm font-semibold text-kiparlo-dark">
+              <label className="mb-3 block text-sm font-semibold text-winelio-dark">
                 Niveau d&apos;urgence
               </label>
               <div className="grid grid-cols-3 gap-3">
                 {(
                   [
                     { value: "urgent", label: "Urgent", icon: "M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z", active: "border-red-400 bg-red-50 text-red-700" },
-                    { value: "normal", label: "Normal", icon: "M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z", active: "border-kiparlo-orange bg-kiparlo-orange/8 text-kiparlo-orange" },
+                    { value: "normal", label: "Normal", icon: "M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z", active: "border-winelio-orange bg-winelio-orange/8 text-winelio-orange" },
                     { value: "flexible", label: "Flexible", icon: "M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5", active: "border-green-500 bg-green-50 text-green-700" },
                   ] as const
                 ).map((u) => (
@@ -745,7 +745,7 @@ export default function NewRecommendationPage() {
                     className={`flex flex-col items-center gap-2 rounded-2xl border-2 px-3 py-4 text-sm font-semibold transition-all cursor-pointer ${
                       urgency === u.value
                         ? u.active
-                        : "border-kiparlo-gray/15 bg-white text-kiparlo-gray hover:border-kiparlo-gray/30"
+                        : "border-winelio-gray/15 bg-white text-winelio-gray hover:border-winelio-gray/30"
                     }`}
                   >
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -765,7 +765,7 @@ export default function NewRecommendationPage() {
         {step > 1 ? (
           <button
             onClick={() => setStep(step - 1)}
-            className="inline-flex items-center gap-2 rounded-xl border border-kiparlo-gray/20 px-5 py-2.5 text-sm font-semibold text-kiparlo-gray hover:border-kiparlo-gray/40 hover:text-kiparlo-dark transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-xl border border-winelio-gray/20 px-5 py-2.5 text-sm font-semibold text-winelio-gray hover:border-winelio-gray/40 hover:text-winelio-dark transition-colors cursor-pointer"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -780,7 +780,7 @@ export default function NewRecommendationPage() {
           <button
             onClick={handleNext}
             disabled={!canProceed()}
-            className="inline-flex items-center gap-2 rounded-xl bg-kiparlo-orange px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-kiparlo-orange/25 transition-all hover:bg-kiparlo-amber hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-xl bg-winelio-orange px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-winelio-orange/25 transition-all hover:bg-winelio-amber hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none cursor-pointer"
           >
             Suivant
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -791,7 +791,7 @@ export default function NewRecommendationPage() {
           <button
             onClick={handleSubmit}
             disabled={!canProceed() || submitting}
-            className="inline-flex items-center gap-2 rounded-xl bg-kiparlo-orange px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-kiparlo-orange/25 transition-all hover:bg-kiparlo-amber hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-xl bg-winelio-orange px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-winelio-orange/25 transition-all hover:bg-winelio-amber hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none cursor-pointer"
           >
             {submitting ? (
               <>

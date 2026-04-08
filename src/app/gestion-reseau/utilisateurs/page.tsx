@@ -39,11 +39,11 @@ export default async function AdminUtilisateurs({
             name="search"
             defaultValue={params.search}
             placeholder="Rechercher par nom…"
-            className="bg-muted border border-border rounded-l-xl px-4 py-2 text-sm text-foreground placeholder-muted-foreground w-56 focus:outline-none focus:border-kiparlo-orange/50"
+            className="bg-muted border border-border rounded-l-xl px-4 py-2 text-sm text-foreground placeholder-muted-foreground w-56 focus:outline-none focus:border-winelio-orange/50"
           />
           <button
             type="submit"
-            className="bg-kiparlo-orange hover:bg-kiparlo-amber text-white text-sm font-medium px-4 py-2 rounded-r-xl transition-colors"
+            className="bg-winelio-orange hover:bg-winelio-amber text-white text-sm font-medium px-4 py-2 rounded-r-xl transition-colors"
           >
             Chercher
           </button>
@@ -72,7 +72,7 @@ export default async function AdminUtilisateurs({
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${
-                        user.is_professional ? "bg-blue-500/80" : "bg-kiparlo-orange/80"
+                        user.is_professional ? "bg-blue-500/80" : "bg-winelio-orange/80"
                       }`}>
                         {initials}
                       </div>
@@ -114,7 +114,7 @@ export default async function AdminUtilisateurs({
                   <td className="px-4 py-3 text-right">
                     <Link
                       href={`/gestion-reseau/utilisateurs/${user.id}`}
-                      className="text-xs font-medium text-kiparlo-orange hover:text-kiparlo-amber transition-colors"
+                      className="text-xs font-medium text-winelio-orange hover:text-winelio-amber transition-colors"
                     >
                       Fiche →
                     </Link>
@@ -135,10 +135,10 @@ export default async function AdminUtilisateurs({
             <Link
               key={user.id}
               href={`/gestion-reseau/utilisateurs/${user.id}`}
-              className="flex items-center gap-3 bg-card rounded-xl border border-border px-4 py-3 hover:border-kiparlo-orange/30 transition-colors"
+              className="flex items-center gap-3 bg-card rounded-xl border border-border px-4 py-3 hover:border-winelio-orange/30 transition-colors"
             >
               <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${
-                user.is_professional ? "bg-blue-500/80" : "bg-kiparlo-orange/80"
+                user.is_professional ? "bg-blue-500/80" : "bg-winelio-orange/80"
               }`}>
                 {initials}
               </div>
@@ -167,7 +167,7 @@ export default async function AdminUtilisateurs({
               key={p}
               href={`/gestion-reseau/utilisateurs?page=${p}${params.search ? `&search=${params.search}` : ""}`}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                p === page ? "bg-kiparlo-orange text-white" : "bg-muted text-muted-foreground hover:text-foreground"
+                p === page ? "bg-winelio-orange text-white" : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
               {p}

@@ -1,4 +1,4 @@
-# Super Admin Kiparlo — Implementation Plan
+# Super Admin Winelio — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -328,10 +328,10 @@ export function AdminSidebar({ userEmail }: { userEmail: string }) {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-16 bg-kiparlo-dark text-white flex flex-col items-center py-4 z-50">
+    <aside className="fixed left-0 top-0 h-screen w-16 bg-winelio-dark text-white flex flex-col items-center py-4 z-50">
       {/* Logo compact */}
       <Link href="/gestion-reseau" className="mb-6">
-        <span className="text-xs font-extrabold tracking-tight text-kiparlo-orange">KP</span>
+        <span className="text-xs font-extrabold tracking-tight text-winelio-orange">KP</span>
       </Link>
 
       {/* Navigation icônes */}
@@ -348,7 +348,7 @@ export function AdminSidebar({ userEmail }: { userEmail: string }) {
               title={item.label}
               className={`flex items-center justify-center w-full aspect-square rounded-xl transition-colors ${
                 isActive
-                  ? "bg-gradient-to-br from-kiparlo-orange to-kiparlo-amber text-white"
+                  ? "bg-gradient-to-br from-winelio-orange to-winelio-amber text-white"
                   : "text-gray-400 hover:text-white hover:bg-white/10"
               }`}
             >
@@ -399,11 +399,11 @@ export default async function AdminLayout({
       <div className="ml-16 flex flex-col min-h-dvh">
         {/* Topbar */}
         <header className="h-12 bg-gray-900 border-b border-white/5 flex items-center px-6 gap-3">
-          <span className="text-xs font-semibold uppercase tracking-widest text-kiparlo-orange">
+          <span className="text-xs font-semibold uppercase tracking-widest text-winelio-orange">
             Super Admin
           </span>
           <span className="text-gray-600">·</span>
-          <span className="text-sm text-gray-300">Kiparlo</span>
+          <span className="text-sm text-gray-300">Winelio</span>
           <span className="ml-auto text-xs text-gray-500">{user.email}</span>
         </header>
 
@@ -497,7 +497,7 @@ export default async function AdminDashboard() {
     {
       label: "Membres actifs",
       value: kpis.activeMembers.toLocaleString("fr-FR"),
-      color: "text-kiparlo-orange",
+      color: "text-winelio-orange",
       bg: "bg-orange-500/10",
     },
     {
@@ -509,7 +509,7 @@ export default async function AdminDashboard() {
     {
       label: "Recommandations en cours",
       value: kpis.ongoingRecos.toLocaleString("fr-FR"),
-      color: "text-kiparlo-amber",
+      color: "text-winelio-amber",
       bg: "bg-amber-500/10",
     },
     {
@@ -927,7 +927,7 @@ export default async function AdminRecommandations({
               href={`/gestion-reseau/recommandations${s ? `?status=${s}` : ""}`}
               className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                 (params.status ?? "") === s
-                  ? "bg-kiparlo-orange text-white"
+                  ? "bg-winelio-orange text-white"
                   : "bg-white/5 text-gray-400 hover:text-white"
               }`}
             >
@@ -979,7 +979,7 @@ export default async function AdminRecommandations({
                   <td className="px-4 py-3 text-right">
                     <Link
                       href={`/gestion-reseau/recommandations/${reco.id}`}
-                      className="text-kiparlo-orange text-xs hover:underline"
+                      className="text-winelio-orange text-xs hover:underline"
                     >
                       Détail →
                     </Link>
@@ -1000,7 +1000,7 @@ export default async function AdminRecommandations({
               href={`/gestion-reseau/recommandations?page=${p}${params.status ? `&status=${params.status}` : ""}`}
               className={`px-3 py-1 rounded text-xs ${
                 p === page
-                  ? "bg-kiparlo-orange text-white"
+                  ? "bg-winelio-orange text-white"
                   : "bg-white/5 text-gray-400 hover:text-white"
               }`}
             >
@@ -1134,7 +1134,7 @@ export default async function AdminRecoDetail({
                 >
                   <button
                     type="submit"
-                    className="text-xs bg-kiparlo-orange/20 text-kiparlo-orange hover:bg-kiparlo-orange/30 px-3 py-1.5 rounded-lg transition-colors"
+                    className="text-xs bg-winelio-orange/20 text-winelio-orange hover:bg-winelio-orange/30 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     Valider →
                   </button>
@@ -1448,7 +1448,7 @@ export default async function AdminUtilisateurs({
                 <td className="px-4 py-3 text-right">
                   <Link
                     href={`/gestion-reseau/utilisateurs/${user.id}`}
-                    className="text-kiparlo-orange text-xs hover:underline"
+                    className="text-winelio-orange text-xs hover:underline"
                   >
                     Fiche →
                   </Link>
@@ -1469,7 +1469,7 @@ export default async function AdminUtilisateurs({
               }`}
               className={`px-3 py-1 rounded text-xs ${
                 p === page
-                  ? "bg-kiparlo-orange text-white"
+                  ? "bg-winelio-orange text-white"
                   : "bg-white/5 text-gray-400 hover:text-white"
               }`}
             >
@@ -1667,7 +1667,7 @@ export default async function AdminUserDetail({
           </div>
           <button
             type="submit"
-            className="text-sm bg-kiparlo-orange/20 text-kiparlo-orange hover:bg-kiparlo-orange/30 px-4 py-1.5 rounded-lg transition-colors"
+            className="text-sm bg-winelio-orange/20 text-winelio-orange hover:bg-winelio-orange/30 px-4 py-1.5 rounded-lg transition-colors"
           >
             + Appliquer commission
           </button>

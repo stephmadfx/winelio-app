@@ -5,7 +5,7 @@ const TEMPLATE = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Votre code Buzreco</title>
+  <title>Votre code Winelio</title>
 </head>
 <body style="margin:0;padding:0;background-color:#0f1117;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;-webkit-font-smoothing:antialiased;">
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0f1117;">
@@ -42,7 +42,7 @@ const TEMPLATE = `<!DOCTYPE html>
               <!-- Title -->
               <h1 style="font-size:22px;font-weight:700;color:#f8fafc;margin:0 0 10px;">Votre code de connexion</h1>
               <p style="font-size:14px;color:#94a3b8;line-height:1.7;margin:0 0 36px;">
-                Utilisez ce code pour vous connecter à votre espace Buzreco.<br/>
+                Utilisez ce code pour vous connecter à votre espace Winelio.<br/>
                 Saisissez-le directement dans l'application.
               </p>
 
@@ -84,8 +84,8 @@ const TEMPLATE = `<!DOCTYPE html>
           <!-- Footer -->
           <tr>
             <td align="center" style="padding-top:28px;">
-              <p style="font-size:12px;color:#334155;margin:0 0 4px;">Cet email a été envoyé par Buzreco</p>
-              <p style="font-size:12px;color:#1e293b;margin:0;">© 2025 Buzreco. Tous droits réservés.</p>
+              <p style="font-size:12px;color:#334155;margin:0 0 4px;">Cet email a été envoyé par Winelio</p>
+              <p style="font-size:12px;color:#1e293b;margin:0;">© 2025 Winelio. Tous droits réservés.</p>
             </td>
           </tr>
 

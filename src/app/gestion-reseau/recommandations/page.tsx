@@ -65,7 +65,7 @@ export default async function AdminRecommandations({
           href="/gestion-reseau/recommandations"
           className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
             !params.status
-              ? "bg-kiparlo-orange text-white border-kiparlo-orange"
+              ? "bg-winelio-orange text-white border-winelio-orange"
               : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
           }`}
         >
@@ -78,7 +78,7 @@ export default async function AdminRecommandations({
             href={`/gestion-reseau/recommandations?status=${s}`}
             className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
               params.status === s
-                ? "bg-kiparlo-orange text-white border-kiparlo-orange"
+                ? "bg-winelio-orange text-white border-winelio-orange"
                 : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
             }`}
           >
@@ -152,7 +152,7 @@ export default async function AdminRecommandations({
                   <td className="px-4 py-3 text-right">
                     <Link
                       href={`/gestion-reseau/recommandations/${reco.id}`}
-                      className="text-xs font-medium text-kiparlo-orange hover:text-kiparlo-amber transition-colors"
+                      className="text-xs font-medium text-winelio-orange hover:text-winelio-amber transition-colors"
                     >
                       Détail →
                     </Link>
@@ -201,7 +201,7 @@ export default async function AdminRecommandations({
                       {Number(reco.amount).toLocaleString("fr-FR")} €
                     </span>
                   )}
-                  <Link href={`/gestion-reseau/recommandations/${reco.id}`} className="text-xs font-medium text-kiparlo-orange">
+                  <Link href={`/gestion-reseau/recommandations/${reco.id}`} className="text-xs font-medium text-winelio-orange">
                     Détail →
                   </Link>
                 </div>
@@ -219,7 +219,7 @@ export default async function AdminRecommandations({
               key={p}
               href={`/gestion-reseau/recommandations?page=${p}${params.status ? `&status=${params.status}` : ""}`}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                p === page ? "bg-kiparlo-orange text-white" : "bg-muted text-muted-foreground hover:text-foreground"
+                p === page ? "bg-winelio-orange text-white" : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
               {p}

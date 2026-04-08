@@ -49,8 +49,8 @@ const STATUS_CONFIG: Record<string, {
   ACCEPTED:         { pill: "bg-blue-50 text-blue-700 ring-blue-200",            dot: "bg-blue-400",        heroBg: "from-blue-600 to-blue-700",          heroText: "text-blue-100" },
   CONTACT_MADE:     { pill: "bg-indigo-50 text-indigo-700 ring-indigo-200",      dot: "bg-indigo-400",      heroBg: "from-indigo-600 to-indigo-700",      heroText: "text-indigo-100" },
   MEETING_SCHEDULED:{ pill: "bg-violet-50 text-violet-700 ring-violet-200",      dot: "bg-violet-400",      heroBg: "from-violet-600 to-violet-700",      heroText: "text-violet-100" },
-  QUOTE_SUBMITTED:  { pill: "bg-orange-50 text-kiparlo-orange ring-orange-200",  dot: "bg-kiparlo-orange",  heroBg: "from-kiparlo-orange to-kiparlo-amber",heroText: "text-orange-100" },
-  QUOTE_VALIDATED:  { pill: "bg-orange-50 text-kiparlo-orange ring-orange-300",  dot: "bg-kiparlo-amber",   heroBg: "from-kiparlo-orange to-kiparlo-amber",heroText: "text-orange-100" },
+  QUOTE_SUBMITTED:  { pill: "bg-orange-50 text-winelio-orange ring-orange-200",  dot: "bg-winelio-orange",  heroBg: "from-winelio-orange to-winelio-amber",heroText: "text-orange-100" },
+  QUOTE_VALIDATED:  { pill: "bg-orange-50 text-winelio-orange ring-orange-300",  dot: "bg-winelio-amber",   heroBg: "from-winelio-orange to-winelio-amber",heroText: "text-orange-100" },
   PAYMENT_RECEIVED: { pill: "bg-teal-50 text-teal-700 ring-teal-200",            dot: "bg-teal-500",        heroBg: "from-teal-600 to-teal-700",          heroText: "text-teal-100" },
   COMPLETED:        { pill: "bg-green-50 text-green-700 ring-green-200",         dot: "bg-green-500",       heroBg: "from-green-600 to-emerald-700",      heroText: "text-green-100" },
   REJECTED:         { pill: "bg-red-50 text-red-600 ring-red-200",               dot: "bg-red-400",         heroBg: "from-red-500 to-red-600",            heroText: "text-red-100" },
@@ -60,7 +60,7 @@ const STATUS_CONFIG: Record<string, {
 
 const URGENCY_CONFIG: Record<string, { label: string; icon: string; pill: string }> = {
   urgent:   { label: "Urgent",   icon: "🔴", pill: "bg-red-50 text-red-600 ring-red-200" },
-  high:     { label: "Élevée",   icon: "🟠", pill: "bg-orange-50 text-kiparlo-orange ring-orange-200" },
+  high:     { label: "Élevée",   icon: "🟠", pill: "bg-orange-50 text-winelio-orange ring-orange-200" },
   normal:   { label: "Normal",   icon: "🟡", pill: "bg-amber-50 text-amber-700 ring-amber-200" },
   low:      { label: "Faible",   icon: "🟢", pill: "bg-green-50 text-green-700 ring-green-200" },
   flexible: { label: "Flexible", icon: "🔵", pill: "bg-blue-50 text-blue-600 ring-blue-200" },
@@ -79,11 +79,11 @@ function Avatar({ name }: { name: string }) {
 function InfoBlock({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kiparlo-light text-kiparlo-gray">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-winelio-light text-winelio-gray">
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wider text-kiparlo-gray/50 mb-0.5">{label}</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-winelio-gray/50 mb-0.5">{label}</p>
         {children}
       </div>
     </div>
@@ -208,10 +208,10 @@ export default function RecommendationDetailPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <p className="text-lg font-bold text-kiparlo-dark">Recommandation introuvable</p>
+        <p className="text-lg font-bold text-winelio-dark">Recommandation introuvable</p>
         <button
           onClick={() => router.push("/recommendations")}
-          className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-kiparlo-orange hover:text-kiparlo-amber transition-colors cursor-pointer"
+          className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-winelio-orange hover:text-winelio-amber transition-colors cursor-pointer"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           Retour aux recommandations
@@ -234,7 +234,7 @@ export default function RecommendationDetailPage() {
       {/* ── Back ── */}
       <button
         onClick={() => router.push("/recommendations")}
-        className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-kiparlo-gray hover:text-kiparlo-dark transition-colors cursor-pointer"
+        className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-winelio-gray hover:text-winelio-dark transition-colors cursor-pointer"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -300,13 +300,13 @@ export default function RecommendationDetailPage() {
               label="Professionnel"
               icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>}
             >
-              <p className="font-bold text-kiparlo-dark text-sm">
+              <p className="font-bold text-winelio-dark text-sm">
                 {recommendation.professional
                   ? [recommendation.professional.first_name, recommendation.professional.last_name].filter(Boolean).join(" ") || "Inconnu"
                   : "Inconnu"}
               </p>
               {recommendation.professional?.company && (
-                <p className="text-xs text-kiparlo-gray mt-0.5">
+                <p className="text-xs text-winelio-gray mt-0.5">
                   {(recommendation.professional.company as { name: string }).name}
                 </p>
               )}
@@ -316,7 +316,7 @@ export default function RecommendationDetailPage() {
               label="Recommandé par"
               icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>}
             >
-              <p className="font-bold text-kiparlo-dark text-sm">
+              <p className="font-bold text-winelio-dark text-sm">
                 {recommendation.referrer
                   ? [recommendation.referrer.first_name, recommendation.referrer.last_name].filter(Boolean).join(" ") || "Inconnu"
                   : "Inconnu"}
@@ -335,16 +335,16 @@ export default function RecommendationDetailPage() {
             )}
 
             {recommendation.project_description && (
-              <div className={`${urgency ? "sm:col-span-2" : "col-span-full"} rounded-xl bg-kiparlo-light p-4`}>
-                <p className="text-xs font-semibold uppercase tracking-wider text-kiparlo-gray/50 mb-2">Description du projet</p>
-                <p className="text-sm text-kiparlo-dark leading-relaxed">{recommendation.project_description}</p>
+              <div className={`${urgency ? "sm:col-span-2" : "col-span-full"} rounded-xl bg-winelio-light p-4`}>
+                <p className="text-xs font-semibold uppercase tracking-wider text-winelio-gray/50 mb-2">Description du projet</p>
+                <p className="text-sm text-winelio-dark leading-relaxed">{recommendation.project_description}</p>
               </div>
             )}
           </div>
 
           {/* Amount card */}
           {recommendation.amount != null && (
-            <div className="mt-5 overflow-hidden rounded-2xl bg-gradient-to-r from-kiparlo-dark to-[#3d4042] p-5">
+            <div className="mt-5 overflow-hidden rounded-2xl bg-gradient-to-r from-winelio-dark to-[#3d4042] p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-white/40">Montant du deal</p>
@@ -353,8 +353,8 @@ export default function RecommendationDetailPage() {
                     <span className="ml-1 text-xl font-semibold text-white/50">€</span>
                   </p>
                 </div>
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-kiparlo-orange/20">
-                  <svg className="w-7 h-7 text-kiparlo-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-winelio-orange/20">
+                  <svg className="w-7 h-7 text-winelio-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -362,7 +362,7 @@ export default function RecommendationDetailPage() {
               {recommendation.amount > 0 && (
                 <div className="mt-3 flex items-center gap-2">
                   <div className="flex-1 h-1 rounded-full bg-white/10">
-                    <div className="h-full w-3/5 rounded-full bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber" />
+                    <div className="h-full w-3/5 rounded-full bg-gradient-to-r from-winelio-orange to-winelio-amber" />
                   </div>
                   <span className="text-xs text-white/40 font-medium">~{Math.round(recommendation.amount * 0.06).toLocaleString("fr-FR")} € commissions estimées</span>
                 </div>
@@ -373,15 +373,15 @@ export default function RecommendationDetailPage() {
       </div>
 
       {/* ── Timeline card ── */}
-      <div className="rounded-3xl border border-kiparlo-gray/8 bg-white shadow-sm overflow-hidden">
-        <div className="border-b border-kiparlo-gray/6 px-6 py-5 sm:px-8 flex items-center justify-between">
+      <div className="rounded-3xl border border-winelio-gray/8 bg-white shadow-sm overflow-hidden">
+        <div className="border-b border-winelio-gray/6 px-6 py-5 sm:px-8 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-kiparlo-dark">Suivi des étapes</h2>
-            <p className="mt-0.5 text-sm text-kiparlo-gray">Workflow de la recommandation</p>
+            <h2 className="text-lg font-bold text-winelio-dark">Suivi des étapes</h2>
+            <p className="mt-0.5 text-sm text-winelio-gray">Workflow de la recommandation</p>
           </div>
           {steps.length > 0 && (
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-kiparlo-orange/10">
-              <span className="text-sm font-black text-kiparlo-orange">{progressPct}%</span>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-winelio-orange/10">
+              <span className="text-sm font-black text-winelio-orange">{progressPct}%</span>
             </div>
           )}
         </div>
@@ -404,28 +404,28 @@ export default function RecommendationDetailPage() {
 
           {/* ── Complete step action ── */}
           {currentStep && canComplete() && (
-            <div className="mt-8 overflow-hidden rounded-2xl border border-kiparlo-orange/20 bg-gradient-to-br from-kiparlo-orange/8 via-kiparlo-amber/5 to-transparent">
+            <div className="mt-8 overflow-hidden rounded-2xl border border-winelio-orange/20 bg-gradient-to-br from-winelio-orange/8 via-winelio-amber/5 to-transparent">
               <div className="px-5 pt-5">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-kiparlo-orange/15 shrink-0">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-winelio-orange/15 shrink-0">
                     <span className="relative flex h-3.5 w-3.5">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-kiparlo-orange opacity-60" />
-                      <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-kiparlo-orange" />
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-winelio-orange opacity-60" />
+                      <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-winelio-orange" />
                     </span>
                   </div>
                   <div>
-                    <p className="font-bold text-kiparlo-dark text-sm">Étape à valider</p>
-                    <p className="text-xs text-kiparlo-gray">{currentStep.step?.name ?? `Étape ${currentStep.step?.order_index ?? 0}`}</p>
+                    <p className="font-bold text-winelio-dark text-sm">Étape à valider</p>
+                    <p className="text-xs text-winelio-gray">{currentStep.step?.name ?? `Étape ${currentStep.step?.order_index ?? 0}`}</p>
                   </div>
                 </div>
 
                 {(currentStep?.step?.order_index ?? 0) === 5 && (
                   <div className="mb-4">
-                    <label className="mb-2 block text-sm font-bold text-kiparlo-dark">
+                    <label className="mb-2 block text-sm font-bold text-winelio-dark">
                       Montant du devis (€)
                     </label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-kiparlo-gray">€</span>
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-winelio-gray">€</span>
                       <input
                         type="number"
                         value={quoteAmount}
@@ -433,7 +433,7 @@ export default function RecommendationDetailPage() {
                         placeholder="0,00"
                         min="0"
                         step="0.01"
-                        className="w-full rounded-xl border border-kiparlo-gray/20 bg-white pl-9 pr-4 py-3 text-sm font-semibold focus:border-kiparlo-orange focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/15 transition-all"
+                        className="w-full rounded-xl border border-winelio-gray/20 bg-white pl-9 pr-4 py-3 text-sm font-semibold focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15 transition-all"
                       />
                     </div>
                   </div>
@@ -444,7 +444,7 @@ export default function RecommendationDetailPage() {
                 <button
                   onClick={handleCompleteStep}
                   disabled={completing || ((currentStep?.step?.order_index ?? 0) === 5 && !quoteAmount)}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-kiparlo-orange px-5 py-3 text-sm font-bold text-white shadow-md shadow-kiparlo-orange/25 transition-all hover:bg-kiparlo-amber hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none cursor-pointer"
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-winelio-orange px-5 py-3 text-sm font-bold text-white shadow-md shadow-winelio-orange/25 transition-all hover:bg-winelio-amber hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none cursor-pointer"
                 >
                   {completing ? (
                     <>

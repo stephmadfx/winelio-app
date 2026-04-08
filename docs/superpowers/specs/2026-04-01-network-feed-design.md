@@ -7,7 +7,7 @@
 
 ## Objectif
 
-Ajouter un feed d'actualités réseau en bas du dashboard (sous les stats cards), affichant en temps réel les événements clés de la plateforme Buzreco et du réseau personnel de l'utilisateur.
+Ajouter un feed d'actualités réseau en bas du dashboard (sous les stats cards), affichant en temps réel les événements clés de la plateforme Winelio et du réseau personnel de l'utilisateur.
 
 ---
 

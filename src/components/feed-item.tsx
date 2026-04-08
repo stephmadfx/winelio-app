@@ -44,15 +44,15 @@ export function FeedItem({ event, isNew = false }: FeedItemProps) {
     >
       <span className="text-lg shrink-0 mt-0.5">{feedEventIcon(event.kind)}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-kiparlo-dark leading-snug">
+        <p className="text-sm text-winelio-dark leading-snug">
           {feedEventLabel(event)}
         </p>
-        <p className="text-xs text-kiparlo-gray mt-0.5">
+        <p className="text-xs text-winelio-gray mt-0.5">
           {formatRelativeTime(event.timestamp)}
         </p>
       </div>
       {isAmountEvent && amount != null && (
-        <span className="shrink-0 text-xs font-semibold text-kiparlo-orange bg-kiparlo-orange/10 px-2 py-0.5 rounded-full">
+        <span className="shrink-0 text-xs font-semibold text-winelio-orange bg-winelio-orange/10 px-2 py-0.5 rounded-full">
           {amount.toFixed(0)}€
         </span>
       )}

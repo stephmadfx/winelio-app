@@ -108,7 +108,7 @@ export function NewCompanyForm({
       )}
 
       <div className="bg-white rounded-2xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-kiparlo-dark mb-6">
+        <h3 className="text-lg font-semibold text-winelio-dark mb-6">
           Informations de l&apos;entreprise
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -124,14 +124,14 @@ export function NewCompanyForm({
 
           {/* Category select */}
           <div>
-            <label className="block text-sm font-medium text-kiparlo-gray mb-1">
+            <label className="block text-sm font-medium text-winelio-gray mb-1">
               Catégorie
             </label>
             <select
               name="category_id"
               value={form.category_id}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/50 focus:border-kiparlo-orange bg-white"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white"
             >
               <option value="">Sélectionner une catégorie</option>
               {categories.map((cat) => (
@@ -147,14 +147,14 @@ export function NewCompanyForm({
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-3 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="px-6 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {saving ? "Création..." : "Créer l'entreprise"}
           </button>
           <button
             type="button"
             onClick={() => router.push("/companies")}
-            className="px-6 py-3 border border-gray-200 text-kiparlo-gray font-medium rounded-xl hover:bg-gray-50 transition-colors"
+            className="px-6 py-3 border border-gray-200 text-winelio-gray font-medium rounded-xl hover:bg-gray-50 transition-colors"
           >
             Annuler
           </button>
@@ -179,7 +179,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-kiparlo-gray mb-1">
+      <label className="block text-sm font-medium text-winelio-gray mb-1">
         {label}
       </label>
       <input
@@ -187,7 +187,7 @@ function Field({
         name={name}
         value={value}
         onChange={onChange}
-        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/50 focus:border-kiparlo-orange"
+        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
       />
     </div>
   );

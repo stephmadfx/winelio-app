@@ -42,8 +42,8 @@ const STATUS_CONFIG: Record<string, {
   ACCEPTED:          { text: "text-blue-700",         dot: "bg-blue-400",       pill: "bg-blue-50 text-blue-700 ring-blue-200",           stripe: "bg-blue-400" },
   CONTACT_MADE:      { text: "text-indigo-700",       dot: "bg-indigo-400",     pill: "bg-indigo-50 text-indigo-700 ring-indigo-200",     stripe: "bg-indigo-400" },
   MEETING_SCHEDULED: { text: "text-violet-700",       dot: "bg-violet-400",     pill: "bg-violet-50 text-violet-700 ring-violet-200",     stripe: "bg-violet-400" },
-  QUOTE_SUBMITTED:   { text: "text-kiparlo-orange",   dot: "bg-kiparlo-orange", pill: "bg-orange-50 text-kiparlo-orange ring-orange-200", stripe: "bg-kiparlo-orange" },
-  QUOTE_VALIDATED:   { text: "text-kiparlo-orange",   dot: "bg-kiparlo-orange", pill: "bg-orange-50 text-kiparlo-orange ring-orange-300", stripe: "bg-kiparlo-amber" },
+  QUOTE_SUBMITTED:   { text: "text-winelio-orange",   dot: "bg-winelio-orange", pill: "bg-orange-50 text-winelio-orange ring-orange-200", stripe: "bg-winelio-orange" },
+  QUOTE_VALIDATED:   { text: "text-winelio-orange",   dot: "bg-winelio-orange", pill: "bg-orange-50 text-winelio-orange ring-orange-300", stripe: "bg-winelio-amber" },
   PAYMENT_RECEIVED:  { text: "text-teal-700",         dot: "bg-teal-500",       pill: "bg-teal-50 text-teal-700 ring-teal-200",           stripe: "bg-teal-500" },
   COMPLETED:         { text: "text-green-700",        dot: "bg-green-500",      pill: "bg-green-50 text-green-700 ring-green-200",        stripe: "bg-green-500" },
   REJECTED:          { text: "text-red-600",          dot: "bg-red-400",        pill: "bg-red-50 text-red-600 ring-red-200",              stripe: "bg-red-400" },
@@ -70,7 +70,7 @@ function Avatar({ name }: { name: string }) {
     ? `${parts[0][0]}${parts[parts.length - 1][0]}`
     : name.slice(0, 2);
   return (
-    <div className="w-11 h-11 text-sm rounded-xl bg-gradient-to-br from-kiparlo-orange to-kiparlo-amber flex items-center justify-center shrink-0 shadow-sm shadow-kiparlo-orange/20">
+    <div className="w-11 h-11 text-sm rounded-xl bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center shrink-0 shadow-sm shadow-winelio-orange/20">
       <span className="font-bold text-white uppercase">{init}</span>
     </div>
   );
@@ -95,9 +95,9 @@ const STATS_ICONS = {
 };
 
 const FILTERS: { value: Status; label: string; activeClass: string }[] = [
-  { value: "all",             label: "Toutes",     activeClass: "bg-kiparlo-dark text-white shadow-sm shadow-kiparlo-dark/20" },
+  { value: "all",             label: "Toutes",     activeClass: "bg-winelio-dark text-white shadow-sm shadow-winelio-dark/20" },
   { value: "PENDING",         label: "En attente", activeClass: "bg-amber-500 text-white shadow-sm shadow-amber-500/20" },
-  { value: "QUOTE_VALIDATED", label: "Validées",   activeClass: "bg-kiparlo-orange text-white shadow-sm shadow-kiparlo-orange/20" },
+  { value: "QUOTE_VALIDATED", label: "Validées",   activeClass: "bg-winelio-orange text-white shadow-sm shadow-winelio-orange/20" },
   { value: "COMPLETED",       label: "Terminées",  activeClass: "bg-green-500 text-white shadow-sm shadow-green-500/20" },
   { value: "CANCELLED",       label: "Annulées",   activeClass: "bg-red-400 text-white shadow-sm shadow-red-400/20" },
 ];
@@ -181,26 +181,26 @@ export default function RecommendationsPage() {
     <div className="">
 
       {/* ── Hero Header ── */}
-      <div className="relative mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-kiparlo-dark via-[#3d4042] to-[#2D3436] px-6 py-7 sm:px-8">
-        <div className="pointer-events-none absolute -top-10 -right-10 h-48 w-48 rounded-full bg-kiparlo-orange/10 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-kiparlo-amber/10 blur-2xl" />
+      <div className="relative mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-winelio-dark via-[#3d4042] to-[#2D3436] px-6 py-7 sm:px-8">
+        <div className="pointer-events-none absolute -top-10 -right-10 h-48 w-48 rounded-full bg-winelio-orange/10 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-winelio-amber/10 blur-2xl" />
 
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="mb-1 flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-kiparlo-orange/20">
-                <svg className="h-4 w-4 text-kiparlo-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-winelio-orange/20">
+                <svg className="h-4 w-4 text-winelio-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
-              <span className="text-xs font-semibold uppercase tracking-widest text-kiparlo-orange/80">Mise en relation</span>
+              <span className="text-xs font-semibold uppercase tracking-widest text-winelio-orange/80">Mise en relation</span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Recommandations</h1>
             <p className="mt-1 text-sm text-white/50">Gérez vos mises en relation et suivez vos commissions</p>
           </div>
           <Link
             href="/recommendations/new"
-            className="group inline-flex items-center gap-2 rounded-xl bg-kiparlo-orange px-5 py-3 text-sm font-bold text-white shadow-lg shadow-kiparlo-orange/30 transition-all hover:bg-kiparlo-amber hover:shadow-kiparlo-amber/30 hover:-translate-y-0.5 cursor-pointer shrink-0"
+            className="group inline-flex items-center gap-2 rounded-xl bg-winelio-orange px-5 py-3 text-sm font-bold text-white shadow-lg shadow-winelio-orange/30 transition-all hover:bg-winelio-amber hover:shadow-winelio-amber/30 hover:-translate-y-0.5 cursor-pointer shrink-0"
           >
             <svg className="w-4 h-4 transition-transform group-hover:rotate-90 duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -230,15 +230,15 @@ export default function RecommendationsPage() {
       </div>
 
       {/* ── Tabs Envoyées / Reçues ── */}
-      <div className="mb-5 flex gap-1 rounded-2xl bg-kiparlo-light dark:bg-muted p-1.5">
+      <div className="mb-5 flex gap-1 rounded-2xl bg-winelio-light dark:bg-muted p-1.5">
         {(["sent", "received"] as const).map((t) => (
           <button
             key={t}
             onClick={() => { setTab(t); setStatusFilter("all"); }}
             className={`group relative flex-1 rounded-xl px-4 py-3 text-sm font-bold transition-all duration-200 cursor-pointer ${
               tab === t
-                ? "bg-white dark:bg-card text-kiparlo-dark dark:text-foreground shadow-sm"
-                : "text-kiparlo-gray dark:text-muted-foreground hover:text-kiparlo-dark dark:hover:text-foreground"
+                ? "bg-white dark:bg-card text-winelio-dark dark:text-foreground shadow-sm"
+                : "text-winelio-gray dark:text-muted-foreground hover:text-winelio-dark dark:hover:text-foreground"
             }`}
           >
             {t === "sent" ? (
@@ -269,7 +269,7 @@ export default function RecommendationsPage() {
             className={`rounded-full px-4 py-1.5 text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer ${
               statusFilter === f.value
                 ? f.activeClass
-                : "bg-white dark:bg-card border border-kiparlo-gray/12 dark:border-border text-kiparlo-gray dark:text-muted-foreground hover:border-kiparlo-gray/25 hover:text-kiparlo-dark dark:hover:text-foreground"
+                : "bg-white dark:bg-card border border-winelio-gray/12 dark:border-border text-winelio-gray dark:text-muted-foreground hover:border-winelio-gray/25 hover:text-winelio-dark dark:hover:text-foreground"
             }`}
           >
             {f.label}
@@ -283,13 +283,13 @@ export default function RecommendationsPage() {
       ) : visibleRecommendations.length === 0 ? (
         <Card className="py-20 text-center items-center justify-center">
           <CardContent className="flex flex-col items-center">
-            <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-kiparlo-light dark:bg-muted">
-              <svg className="h-10 w-10 text-kiparlo-gray/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
+            <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-winelio-light dark:bg-muted">
+              <svg className="h-10 w-10 text-winelio-gray/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
-            <p className="text-lg font-bold text-kiparlo-dark dark:text-foreground">Aucune recommandation</p>
-            <p className="mt-2 max-w-xs text-sm text-kiparlo-gray dark:text-muted-foreground">
+            <p className="text-lg font-bold text-winelio-dark dark:text-foreground">Aucune recommandation</p>
+            <p className="mt-2 max-w-xs text-sm text-winelio-gray dark:text-muted-foreground">
               {statusFilter !== "all"
                 ? "Aucune correspondance pour ce filtre. Essayez une autre catégorie."
                 : "Vous n'avez encore aucune recommandation. Commencez dès maintenant !"}
@@ -297,7 +297,7 @@ export default function RecommendationsPage() {
             {statusFilter === "all" && tab === "sent" && (
               <Link
                 href="/recommendations/new"
-                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-kiparlo-orange px-6 py-3 text-sm font-bold text-white shadow-md shadow-kiparlo-orange/25 hover:bg-kiparlo-amber transition-all hover:-translate-y-0.5 cursor-pointer"
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-winelio-orange px-6 py-3 text-sm font-bold text-white shadow-md shadow-winelio-orange/25 hover:bg-winelio-amber transition-all hover:-translate-y-0.5 cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -326,7 +326,7 @@ export default function RecommendationsPage() {
                 href={`/recommendations/${rec.id}`}
                 className="group block"
               >
-                <Card className="!rounded-2xl !gap-0 !py-0 overflow-hidden ring-1 ring-kiparlo-gray/8 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 hover:ring-kiparlo-gray/15 cursor-pointer">
+                <Card className="!rounded-2xl !gap-0 !py-0 overflow-hidden ring-1 ring-winelio-gray/8 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 hover:ring-winelio-gray/15 cursor-pointer">
                   <CardContent className="!px-0 flex items-stretch">
                     {/* Left status stripe */}
                     <div className={`w-1 shrink-0 ${cfg.stripe} rounded-l-2xl`} />
@@ -336,13 +336,13 @@ export default function RecommendationsPage() {
                       <Avatar name={contactName} />
 
                       <div className="min-w-0 flex-1">
-                        <p className="font-bold text-kiparlo-dark dark:text-foreground truncate leading-tight">{contactName}</p>
-                        <div className="mt-1 flex items-center gap-1.5 text-sm text-kiparlo-gray dark:text-muted-foreground">
-                          <span className="text-kiparlo-gray/40">{tab === "sent" ? "→" : "←"}</span>
-                          <span className="truncate font-mono font-semibold text-kiparlo-orange">{proDisplay}</span>
-                          {proSub && <span className="text-[10px] text-kiparlo-gray/70 ml-1">{proSub}</span>}
+                        <p className="font-bold text-winelio-dark dark:text-foreground truncate leading-tight">{contactName}</p>
+                        <div className="mt-1 flex items-center gap-1.5 text-sm text-winelio-gray dark:text-muted-foreground">
+                          <span className="text-winelio-gray/40">{tab === "sent" ? "→" : "←"}</span>
+                          <span className="truncate font-mono font-semibold text-winelio-orange">{proDisplay}</span>
+                          {proSub && <span className="text-[10px] text-winelio-gray/70 ml-1">{proSub}</span>}
                         </div>
-                        <p className="mt-1.5 text-xs text-kiparlo-gray/50">
+                        <p className="mt-1.5 text-xs text-winelio-gray/50">
                           {new Date(rec.created_at).toLocaleDateString("fr-FR", {
                             day: "numeric", month: "short", year: "numeric",
                           })}
@@ -351,8 +351,8 @@ export default function RecommendationsPage() {
 
                       <div className="flex flex-col items-end gap-2 shrink-0">
                         {rec.amount != null && (
-                          <span className="text-base font-black text-kiparlo-dark dark:text-foreground tabular-nums">
-                            {rec.amount.toLocaleString("fr-FR")}&thinsp;<span className="text-sm font-semibold text-kiparlo-gray">€</span>
+                          <span className="text-base font-black text-winelio-dark dark:text-foreground tabular-nums">
+                            {rec.amount.toLocaleString("fr-FR")}&thinsp;<span className="text-sm font-semibold text-winelio-gray">€</span>
                           </span>
                         )}
                         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${cfg.pill}`}>
@@ -361,7 +361,7 @@ export default function RecommendationsPage() {
                         </span>
                       </div>
 
-                      <svg className="w-4 h-4 text-kiparlo-gray/25 group-hover:text-kiparlo-orange/60 transition-colors duration-200 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <svg className="w-4 h-4 text-winelio-gray/25 group-hover:text-winelio-orange/60 transition-colors duration-200 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                       </svg>
                     </div>

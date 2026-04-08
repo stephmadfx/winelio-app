@@ -1,5 +1,5 @@
 -- ============================================================
--- Kiparlo - Schema initial pour Supabase.com
+-- Winelio - Schema initial pour Supabase.com
 -- Migration depuis self-hosted vers cloud
 -- ============================================================
 

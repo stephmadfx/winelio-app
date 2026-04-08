@@ -40,7 +40,7 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-kiparlo-dark border-t border-white/10 lg:hidden safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-winelio-dark border-t border-white/10 lg:hidden safe-area-bottom">
       <div className="flex items-center justify-around px-2 py-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
         {navItems.map((item) => {
           const isActive =
@@ -51,7 +51,7 @@ export function MobileNav() {
               href={item.href}
               className={`flex flex-col items-center justify-center min-w-[3rem] min-h-[3rem] px-1 py-1.5 rounded-xl transition-colors ${
                 isActive
-                  ? "text-kiparlo-orange"
+                  ? "text-winelio-orange"
                   : "text-gray-500 active:text-gray-300"
               }`}
             >

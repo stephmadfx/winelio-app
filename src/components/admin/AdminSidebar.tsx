@@ -36,10 +36,10 @@ export function AdminSidebar({ userEmail }: { userEmail: string }) {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-16 bg-kiparlo-dark text-white flex flex-col items-center py-4 z-50">
+    <aside className="fixed left-0 top-0 h-screen w-16 bg-winelio-dark text-white flex flex-col items-center py-4 z-50">
       {/* Logo compact */}
       <Link href="/gestion-reseau" className="mb-6">
-        <span className="text-xs font-extrabold tracking-tight text-kiparlo-orange">KP</span>
+        <span className="text-xs font-extrabold tracking-tight text-winelio-orange">KP</span>
       </Link>
 
       {/* Navigation icônes */}
@@ -56,7 +56,7 @@ export function AdminSidebar({ userEmail }: { userEmail: string }) {
               title={item.label}
               className={`flex items-center justify-center w-full aspect-square rounded-xl transition-colors ${
                 isActive
-                  ? "bg-gradient-to-br from-kiparlo-orange to-kiparlo-amber text-white"
+                  ? "bg-gradient-to-br from-winelio-orange to-winelio-amber text-white"
                   : "text-gray-400 hover:text-white hover:bg-white/10"
               }`}
             >

@@ -117,7 +117,7 @@ export default async function AdminRecoDetail({
                 >
                   <button
                     type="submit"
-                    className="text-xs bg-kiparlo-orange/20 text-kiparlo-orange hover:bg-kiparlo-orange/30 px-3 py-1.5 rounded-lg transition-colors"
+                    className="text-xs bg-winelio-orange/20 text-winelio-orange hover:bg-winelio-orange/30 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     Valider →
                   </button>

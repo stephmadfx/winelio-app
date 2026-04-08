@@ -20,8 +20,8 @@ interface TreeNode {
 
 const LEVEL_COLORS: Array<{ border: string; badge: string; bg: string; text: string }> = [
   { border: "border-l-gray-300", badge: "bg-gray-400", bg: "bg-gray-50", text: "text-gray-500" }, // 0 unused
-  { border: "border-l-kiparlo-orange", badge: "bg-kiparlo-orange", bg: "bg-kiparlo-orange/5", text: "text-kiparlo-orange" },
-  { border: "border-l-kiparlo-amber", badge: "bg-kiparlo-amber", bg: "bg-kiparlo-amber/5", text: "text-kiparlo-amber" },
+  { border: "border-l-winelio-orange", badge: "bg-winelio-orange", bg: "bg-winelio-orange/5", text: "text-winelio-orange" },
+  { border: "border-l-winelio-amber", badge: "bg-winelio-amber", bg: "bg-winelio-amber/5", text: "text-winelio-amber" },
   { border: "border-l-yellow-400", badge: "bg-yellow-400", bg: "bg-yellow-50", text: "text-yellow-600" },
   { border: "border-l-emerald-400", badge: "bg-emerald-400", bg: "bg-emerald-50", text: "text-emerald-600" },
   { border: "border-l-blue-400", badge: "bg-blue-400", bg: "bg-blue-50", text: "text-blue-600" },
@@ -153,15 +153,15 @@ export function NetworkTree({ userId }: { userId: string }) {
   if (loading) {
     return (
       <div className="py-8 flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-3 border-kiparlo-orange border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-kiparlo-gray">Chargement du reseau...</p>
+        <div className="w-8 h-8 border-3 border-winelio-orange border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-winelio-gray">Chargement du reseau...</p>
       </div>
     );
   }
 
   if (roots.length === 0) {
     return (
-      <p className="text-center text-kiparlo-gray py-8">
+      <p className="text-center text-winelio-gray py-8">
         Aucun membre dans votre reseau.
       </p>
     );
@@ -170,14 +170,14 @@ export function NetworkTree({ userId }: { userId: string }) {
   return (
     <div>
       {/* Network summary bar */}
-      <div className="flex items-center gap-4 mb-4 p-3 rounded-xl bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10">
+      <div className="flex items-center gap-4 mb-4 p-3 rounded-xl bg-gradient-to-r from-winelio-orange/10 to-winelio-amber/10">
         <div className="flex items-center gap-2">
-          <svg className="w-5 h-5 text-kiparlo-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <svg className="w-5 h-5 text-winelio-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          <span className="text-sm font-semibold text-kiparlo-dark">{roots.length} filleuls directs</span>
+          <span className="text-sm font-semibold text-winelio-dark">{roots.length} filleuls directs</span>
         </div>
-        <div className="h-4 w-px bg-kiparlo-orange/20" />
+        <div className="h-4 w-px bg-winelio-orange/20" />
         <div className="flex gap-3">
           {[1, 2, 3, 4, 5].map((l) => (
             <span key={l} className={`inline-flex items-center gap-1 text-[10px] font-bold ${getColors(l).text}`}>
@@ -278,21 +278,21 @@ function TreeNodeRow({
           )}
 
           {/* Avatar */}
-          <div className={`w-9 h-9 rounded-full bg-gradient-to-br from-kiparlo-orange to-kiparlo-amber flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm`}>
+          <div className={`w-9 h-9 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm`}>
             {initials || "?"}
           </div>
 
           {/* Name + level badge */}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className={`font-semibold text-sm truncate ${isPro ? "font-mono text-kiparlo-orange" : "text-kiparlo-dark"}`}>
+              <span className={`font-semibold text-sm truncate ${isPro ? "font-mono text-winelio-orange" : "text-winelio-dark"}`}>
                 {displayName}
               </span>
               <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold text-white ${colors.badge} shrink-0`}>
                 N{level}
               </span>
             </div>
-            <p className="text-[11px] text-kiparlo-gray mt-0.5 truncate">
+            <p className="text-[11px] text-winelio-gray mt-0.5 truncate">
               {[
                 isPro ? node.company_category : null,
                 node.city,
@@ -333,8 +333,8 @@ function TreeNodeRow({
       {/* Loading */}
       {node.expanded && !node.loaded && (
         <div className="ml-8 py-2 flex items-center gap-2">
-          <div className="w-4 h-4 border-2 border-kiparlo-orange border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs text-kiparlo-gray">Chargement...</span>
+          <div className="w-4 h-4 border-2 border-winelio-orange border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs text-winelio-gray">Chargement...</span>
         </div>
       )}
     </div>

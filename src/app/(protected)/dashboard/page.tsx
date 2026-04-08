@@ -226,16 +226,16 @@ export default async function DashboardPage() {
       {needsOnboarding && <OnboardingModal userId={user.id} />}
 
 
-      <h2 className="text-xl sm:text-2xl font-bold text-kiparlo-dark mb-6">
+      <h2 className="text-xl sm:text-2xl font-bold text-winelio-dark mb-6">
         Tableau de bord
       </h2>
 
       {/* Welcome card - en premier */}
       <Card className="!rounded-2xl text-center">
         <CardContent className="p-6 sm:p-12 flex flex-col items-center">
-          <div className="w-20 h-20 mb-6 rounded-full bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10 flex items-center justify-center">
+          <div className="w-20 h-20 mb-6 rounded-full bg-gradient-to-r from-winelio-orange/10 to-winelio-amber/10 flex items-center justify-center">
             <svg
-              className="w-10 h-10 text-kiparlo-orange"
+              className="w-10 h-10 text-winelio-orange"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -248,18 +248,18 @@ export default async function DashboardPage() {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-kiparlo-dark mb-2">
-            Bienvenue sur Buzreco !
+          <h3 className="text-xl font-semibold text-winelio-dark mb-2">
+            Bienvenue sur Winelio !
           </h3>
-          <p className="text-kiparlo-gray mb-6 max-w-md mx-auto">
+          <p className="text-winelio-gray mb-6 max-w-md mx-auto">
             Commencez par recommander un professionnel de confiance ou invitez
             des membres dans votre réseau.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="/recommendations/new" className="px-6 py-3 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity text-center">
+            <a href="/recommendations/new" className="px-6 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity text-center">
               Faire une recommandation
             </a>
-            <a href="/network" className="px-6 py-3 border-2 border-kiparlo-orange text-kiparlo-orange font-semibold rounded-xl hover:bg-kiparlo-orange hover:text-white transition-colors text-center">
+            <a href="/network" className="px-6 py-3 border-2 border-winelio-orange text-winelio-orange font-semibold rounded-xl hover:bg-winelio-orange hover:text-white transition-colors text-center">
               Inviter un membre
             </a>
           </div>
@@ -319,10 +319,10 @@ function StatCard({
     <Card className="!rounded-2xl">
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-sm font-medium text-kiparlo-gray">{title}</span>
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10 flex items-center justify-center">
+          <span className="text-sm font-medium text-winelio-gray">{title}</span>
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-winelio-orange/10 to-winelio-amber/10 flex items-center justify-center">
             <svg
-              className="w-5 h-5 text-kiparlo-orange"
+              className="w-5 h-5 text-winelio-orange"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -336,8 +336,8 @@ function StatCard({
             </svg>
           </div>
         </div>
-        <p className="text-2xl font-bold text-kiparlo-dark">{value}</p>
-        <p className="text-sm text-kiparlo-gray mt-1">{subtitle}</p>
+        <p className="text-2xl font-bold text-winelio-dark">{value}</p>
+        <p className="text-sm text-winelio-gray mt-1">{subtitle}</p>
       </CardContent>
     </Card>
   );

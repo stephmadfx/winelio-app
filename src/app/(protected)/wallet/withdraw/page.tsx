@@ -112,7 +112,7 @@ export default function WithdrawPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-8 h-8 border-2 border-kiparlo-orange border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-winelio-orange border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -126,7 +126,7 @@ export default function WithdrawPage() {
           className="w-9 h-9 rounded-xl bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
         >
           <svg
-            className="w-4 h-4 text-kiparlo-dark"
+            className="w-4 h-4 text-winelio-dark"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -140,12 +140,12 @@ export default function WithdrawPage() {
           </svg>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-kiparlo-dark">
+          <h1 className="text-2xl font-bold text-winelio-dark">
             Demander un retrait
           </h1>
-          <p className="text-kiparlo-gray text-sm mt-1">
+          <p className="text-winelio-gray text-sm mt-1">
             Solde disponible :{" "}
-            <span className="font-semibold text-kiparlo-orange">
+            <span className="font-semibold text-winelio-orange">
               {new Intl.NumberFormat("fr-FR", {
                 style: "currency",
                 currency: "EUR",
@@ -165,15 +165,15 @@ export default function WithdrawPage() {
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
                   isActive
-                    ? "bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white"
-                    : "bg-gray-100 text-kiparlo-gray"
+                    ? "bg-gradient-to-r from-winelio-orange to-winelio-amber text-white"
+                    : "bg-gray-100 text-winelio-gray"
                 }`}
               >
                 {i + 1}
               </div>
               <span
                 className={`text-xs font-medium hidden sm:block ${
-                  isActive ? "text-kiparlo-dark" : "text-kiparlo-gray"
+                  isActive ? "text-winelio-dark" : "text-winelio-gray"
                 }`}
               >
                 {label}
@@ -181,7 +181,7 @@ export default function WithdrawPage() {
               {i < 2 && (
                 <div
                   className={`flex-1 h-px ${
-                    i < stepIndex ? "bg-kiparlo-orange" : "bg-gray-200"
+                    i < stepIndex ? "bg-winelio-orange" : "bg-gray-200"
                   }`}
                 />
               )}
@@ -195,7 +195,7 @@ export default function WithdrawPage() {
         <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-6">
           {/* Amount */}
           <div>
-            <label className="block text-sm font-medium text-kiparlo-dark mb-2">
+            <label className="block text-sm font-medium text-winelio-dark mb-2">
               Montant du retrait
             </label>
             <div className="relative">
@@ -207,13 +207,13 @@ export default function WithdrawPage() {
                 max={Math.min(MAX_AMOUNT, available)}
                 step="0.01"
                 placeholder="0.00"
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 pr-14 text-lg font-semibold text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/30 focus:border-kiparlo-orange"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 pr-14 text-lg font-semibold text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/30 focus:border-winelio-orange"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-kiparlo-gray">
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-winelio-gray">
                 EUR
               </span>
             </div>
-            <p className="text-xs text-kiparlo-gray mt-1.5">
+            <p className="text-xs text-winelio-gray mt-1.5">
               Min. {MIN_AMOUNT} EUR - Max.{" "}
               {new Intl.NumberFormat("fr-FR", {
                 style: "currency",
@@ -224,7 +224,7 @@ export default function WithdrawPage() {
 
           {/* Payment Method */}
           <div>
-            <label className="block text-sm font-medium text-kiparlo-dark mb-2">
+            <label className="block text-sm font-medium text-winelio-dark mb-2">
               Methode de paiement
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -233,15 +233,15 @@ export default function WithdrawPage() {
                 onClick={() => setMethod("bank_transfer")}
                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-colors ${
                   method === "bank_transfer"
-                    ? "border-kiparlo-orange bg-kiparlo-orange/5"
+                    ? "border-winelio-orange bg-winelio-orange/5"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
               >
                 <svg
                   className={`w-6 h-6 ${
                     method === "bank_transfer"
-                      ? "text-kiparlo-orange"
-                      : "text-kiparlo-gray"
+                      ? "text-winelio-orange"
+                      : "text-winelio-gray"
                   }`}
                   fill="none"
                   viewBox="0 0 24 24"
@@ -257,8 +257,8 @@ export default function WithdrawPage() {
                 <span
                   className={`text-xs font-medium ${
                     method === "bank_transfer"
-                      ? "text-kiparlo-dark"
-                      : "text-kiparlo-gray"
+                      ? "text-winelio-dark"
+                      : "text-winelio-gray"
                   }`}
                 >
                   Virement bancaire
@@ -269,15 +269,15 @@ export default function WithdrawPage() {
                 onClick={() => setMethod("paypal")}
                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-colors ${
                   method === "paypal"
-                    ? "border-kiparlo-orange bg-kiparlo-orange/5"
+                    ? "border-winelio-orange bg-winelio-orange/5"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
               >
                 <svg
                   className={`w-6 h-6 ${
                     method === "paypal"
-                      ? "text-kiparlo-orange"
-                      : "text-kiparlo-gray"
+                      ? "text-winelio-orange"
+                      : "text-winelio-gray"
                   }`}
                   fill="none"
                   viewBox="0 0 24 24"
@@ -293,8 +293,8 @@ export default function WithdrawPage() {
                 <span
                   className={`text-xs font-medium ${
                     method === "paypal"
-                      ? "text-kiparlo-dark"
-                      : "text-kiparlo-gray"
+                      ? "text-winelio-dark"
+                      : "text-winelio-gray"
                   }`}
                 >
                   PayPal
@@ -305,7 +305,7 @@ export default function WithdrawPage() {
 
           {/* Payment Details */}
           <div>
-            <label className="block text-sm font-medium text-kiparlo-dark mb-2">
+            <label className="block text-sm font-medium text-winelio-dark mb-2">
               {method === "bank_transfer" ? "IBAN" : "Email PayPal"}
             </label>
             {method === "bank_transfer" ? (
@@ -314,7 +314,7 @@ export default function WithdrawPage() {
                 value={iban}
                 onChange={(e) => setIban(e.target.value.toUpperCase())}
                 placeholder="FR76 1234 5678 9012 3456 7890 123"
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-kiparlo-dark font-mono focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/30 focus:border-kiparlo-orange"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-winelio-dark font-mono focus:outline-none focus:ring-2 focus:ring-winelio-orange/30 focus:border-winelio-orange"
               />
             ) : (
               <input
@@ -322,7 +322,7 @@ export default function WithdrawPage() {
                 value={paypalEmail}
                 onChange={(e) => setPaypalEmail(e.target.value)}
                 placeholder="votre@email.com"
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/30 focus:border-kiparlo-orange"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/30 focus:border-winelio-orange"
               />
             )}
           </div>
@@ -335,7 +335,7 @@ export default function WithdrawPage() {
 
           <button
             onClick={handleContinue}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-medium text-sm hover:opacity-90 transition-opacity"
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-medium text-sm hover:opacity-90 transition-opacity"
           >
             Continuer
           </button>
@@ -345,14 +345,14 @@ export default function WithdrawPage() {
       {/* Confirm Step */}
       {step === "confirm" && (
         <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-6">
-          <h2 className="text-lg font-semibold text-kiparlo-dark">
+          <h2 className="text-lg font-semibold text-winelio-dark">
             Recapitulatif
           </h2>
 
           <div className="space-y-4">
             <div className="flex justify-between py-3 border-b border-gray-100">
-              <span className="text-sm text-kiparlo-gray">Montant</span>
-              <span className="text-sm font-semibold text-kiparlo-dark">
+              <span className="text-sm text-winelio-gray">Montant</span>
+              <span className="text-sm font-semibold text-winelio-dark">
                 {new Intl.NumberFormat("fr-FR", {
                   style: "currency",
                   currency: "EUR",
@@ -360,26 +360,26 @@ export default function WithdrawPage() {
               </span>
             </div>
             <div className="flex justify-between py-3 border-b border-gray-100">
-              <span className="text-sm text-kiparlo-gray">Methode</span>
-              <span className="text-sm font-semibold text-kiparlo-dark">
+              <span className="text-sm text-winelio-gray">Methode</span>
+              <span className="text-sm font-semibold text-winelio-dark">
                 {method === "bank_transfer"
                   ? "Virement bancaire"
                   : "PayPal"}
               </span>
             </div>
             <div className="flex justify-between py-3 border-b border-gray-100">
-              <span className="text-sm text-kiparlo-gray">
+              <span className="text-sm text-winelio-gray">
                 {method === "bank_transfer" ? "IBAN" : "Email PayPal"}
               </span>
-              <span className="text-sm font-semibold text-kiparlo-dark">
+              <span className="text-sm font-semibold text-winelio-dark">
                 {method === "bank_transfer" ? iban : paypalEmail}
               </span>
             </div>
             <div className="flex justify-between py-3">
-              <span className="text-sm text-kiparlo-gray">
+              <span className="text-sm text-winelio-gray">
                 Solde apres retrait
               </span>
-              <span className="text-sm font-semibold text-kiparlo-orange">
+              <span className="text-sm font-semibold text-winelio-orange">
                 {new Intl.NumberFormat("fr-FR", {
                   style: "currency",
                   currency: "EUR",
@@ -400,14 +400,14 @@ export default function WithdrawPage() {
                 setStep("form");
                 setError("");
               }}
-              className="flex-1 py-3 rounded-xl border border-gray-200 text-kiparlo-dark font-medium text-sm hover:bg-gray-50 transition-colors"
+              className="flex-1 py-3 rounded-xl border border-gray-200 text-winelio-dark font-medium text-sm hover:bg-gray-50 transition-colors"
             >
               Modifier
             </button>
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {submitting ? "Envoi..." : "Confirmer le retrait"}
             </button>
@@ -433,12 +433,12 @@ export default function WithdrawPage() {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-kiparlo-dark">
+          <h2 className="text-xl font-bold text-winelio-dark">
             Demande envoyee
           </h2>
-          <p className="text-sm text-kiparlo-gray max-w-sm mx-auto">
+          <p className="text-sm text-winelio-gray max-w-sm mx-auto">
             Votre demande de retrait de{" "}
-            <span className="font-semibold text-kiparlo-dark">
+            <span className="font-semibold text-winelio-dark">
               {new Intl.NumberFormat("fr-FR", {
                 style: "currency",
                 currency: "EUR",
@@ -449,7 +449,7 @@ export default function WithdrawPage() {
           </p>
           <button
             onClick={() => router.push("/wallet")}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-medium text-sm hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-medium text-sm hover:opacity-90 transition-opacity"
           >
             Retour au wallet
           </button>

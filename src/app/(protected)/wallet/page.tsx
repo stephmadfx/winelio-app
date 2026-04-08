@@ -93,14 +93,14 @@ export default async function WalletPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-kiparlo-dark">Wallet</h1>
-          <p className="text-kiparlo-gray text-sm mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-winelio-dark">Wallet</h1>
+          <p className="text-winelio-gray text-sm mt-1">
             Gerez vos gains et retraits
           </p>
         </div>
         <Link
           href="/wallet/withdraw"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-medium text-sm hover:opacity-90 transition-opacity"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-medium text-sm hover:opacity-90 transition-opacity"
         >
           <svg
             className="w-4 h-4"
@@ -147,12 +147,12 @@ export default async function WalletPage() {
       {/* Recent Transactions */}
       <Card className="!rounded-2xl !py-0 overflow-hidden">
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-kiparlo-dark">
+          <h2 className="text-lg font-semibold text-winelio-dark">
             Dernieres transactions
           </h2>
           <Link
             href="/wallet/history"
-            className="text-sm text-kiparlo-orange hover:underline font-medium"
+            className="text-sm text-winelio-orange hover:underline font-medium"
           >
             Voir tout
           </Link>
@@ -174,14 +174,14 @@ export default async function WalletPage() {
                     className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                       tx.type === "commission"
                         ? "bg-green-100 dark:bg-green-900/30"
-                        : "bg-kiparlo-orange/10"
+                        : "bg-winelio-orange/10"
                     }`}
                   >
                     <svg
                       className={`w-5 h-5 ${
                         tx.type === "commission"
                           ? "text-green-600"
-                          : "text-kiparlo-orange"
+                          : "text-winelio-orange"
                       }`}
                       fill="none"
                       viewBox="0 0 24 24"
@@ -201,7 +201,7 @@ export default async function WalletPage() {
                   </div>
 
                   <div>
-                    <p className="text-sm font-medium text-kiparlo-dark">
+                    <p className="text-sm font-medium text-winelio-dark">
                       {tx.type === "commission" ? "Commission" : "Retrait"}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -219,7 +219,7 @@ export default async function WalletPage() {
                     className={`text-sm font-semibold ${
                       tx.type === "commission"
                         ? "text-green-600"
-                        : "text-kiparlo-orange"
+                        : "text-winelio-orange"
                     }`}
                   >
                     {tx.type === "commission" ? "+" : "-"}

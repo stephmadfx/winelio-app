@@ -137,7 +137,7 @@ export default function WalletHistoryPage() {
           className="w-9 h-9 rounded-xl bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
         >
           <svg
-            className="w-4 h-4 text-kiparlo-dark"
+            className="w-4 h-4 text-winelio-dark"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -151,10 +151,10 @@ export default function WalletHistoryPage() {
           </svg>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-kiparlo-dark">
+          <h1 className="text-2xl font-bold text-winelio-dark">
             Historique des transactions
           </h1>
-          <p className="text-kiparlo-gray text-sm mt-1">
+          <p className="text-winelio-gray text-sm mt-1">
             Toutes vos commissions et retraits
           </p>
         </div>
@@ -173,7 +173,7 @@ export default function WalletHistoryPage() {
               onChange={(e) =>
                 setFilterType(e.target.value as "all" | "commission" | "withdrawal")
               }
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/30 focus:border-kiparlo-orange"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/30 focus:border-winelio-orange"
             >
               <option value="all">Tous</option>
               <option value="commission">Commissions</option>
@@ -187,7 +187,7 @@ export default function WalletHistoryPage() {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/30 focus:border-kiparlo-orange"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/30 focus:border-winelio-orange"
             >
               <option value="all">Tous</option>
               <option value="completed">Completee</option>
@@ -205,7 +205,7 @@ export default function WalletHistoryPage() {
               type="date"
               value={filterFrom}
               onChange={(e) => setFilterFrom(e.target.value)}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/30 focus:border-kiparlo-orange"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/30 focus:border-winelio-orange"
             />
           </div>
           <div>
@@ -216,7 +216,7 @@ export default function WalletHistoryPage() {
               type="date"
               value={filterTo}
               onChange={(e) => setFilterTo(e.target.value)}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/30 focus:border-kiparlo-orange"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/30 focus:border-winelio-orange"
             />
           </div>
         </div>
@@ -229,19 +229,19 @@ export default function WalletHistoryPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left">
-                <th className="px-6 py-3.5 text-xs font-semibold text-kiparlo-gray uppercase tracking-wider">
+                <th className="px-6 py-3.5 text-xs font-semibold text-winelio-gray uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-kiparlo-gray uppercase tracking-wider">
+                <th className="px-6 py-3.5 text-xs font-semibold text-winelio-gray uppercase tracking-wider">
                   Type
                 </th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-kiparlo-gray uppercase tracking-wider">
+                <th className="px-6 py-3.5 text-xs font-semibold text-winelio-gray uppercase tracking-wider">
                   Description
                 </th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-kiparlo-gray uppercase tracking-wider text-right">
+                <th className="px-6 py-3.5 text-xs font-semibold text-winelio-gray uppercase tracking-wider text-right">
                   Montant
                 </th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-kiparlo-gray uppercase tracking-wider text-center">
+                <th className="px-6 py-3.5 text-xs font-semibold text-winelio-gray uppercase tracking-wider text-center">
                   Statut
                 </th>
               </tr>
@@ -271,7 +271,7 @@ export default function WalletHistoryPage() {
                     key={`${tx.type}-${tx.id}`}
                     className="hover:bg-muted/50 transition-colors"
                   >
-                    <td className="px-6 py-4 text-kiparlo-dark whitespace-nowrap">
+                    <td className="px-6 py-4 text-winelio-dark whitespace-nowrap">
                       {new Date(tx.created_at).toLocaleDateString("fr-FR", {
                         day: "numeric",
                         month: "short",
@@ -283,20 +283,20 @@ export default function WalletHistoryPage() {
                         className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
                           tx.type === "commission"
                             ? "bg-green-100 text-green-700"
-                            : "bg-kiparlo-orange/10 text-kiparlo-orange"
+                            : "bg-winelio-orange/10 text-winelio-orange"
                         }`}
                       >
                         {tx.type === "commission" ? "Commission" : "Retrait"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-kiparlo-gray">
+                    <td className="px-6 py-4 text-winelio-gray">
                       {tx.description}
                     </td>
                     <td
                       className={`px-6 py-4 text-right font-semibold whitespace-nowrap ${
                         tx.type === "commission"
                           ? "text-green-600"
-                          : "text-kiparlo-orange"
+                          : "text-winelio-orange"
                       }`}
                     >
                       {tx.type === "commission" ? "+" : "-"}
@@ -328,7 +328,7 @@ export default function WalletHistoryPage() {
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={page === 0}
-              className="px-4 py-2 text-sm font-medium rounded-xl border border-border text-kiparlo-dark hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-sm font-medium rounded-xl border border-border text-winelio-dark hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Precedent
             </button>
@@ -338,7 +338,7 @@ export default function WalletHistoryPage() {
             <button
               onClick={() => setPage((p) => p + 1)}
               disabled={!hasMore}
-              className="px-4 py-2 text-sm font-medium rounded-xl border border-border text-kiparlo-dark hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-sm font-medium rounded-xl border border-border text-winelio-dark hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Suivant
             </button>

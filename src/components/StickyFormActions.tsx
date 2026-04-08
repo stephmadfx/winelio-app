@@ -55,8 +55,8 @@ export function StickyFormActions({
           fixed left-0 right-0 bottom-0 z-[60]
           flex items-center justify-between
           gap-3 px-4 py-3
-          bg-kiparlo-light/95 backdrop-blur-sm
-          border-t border-kiparlo-gray/15
+          bg-winelio-light/95 backdrop-blur-sm
+          border-t border-winelio-gray/15
           transition-[bottom] duration-75
           lg:hidden
         "

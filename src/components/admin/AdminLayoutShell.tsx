@@ -67,7 +67,7 @@ export function AdminLayoutShell({
       {/* Logo + toggle */}
       <div className={`flex items-center py-4 border-b border-border ${collapsed && !mobile ? "justify-center px-2" : "justify-between px-4"}`}>
         <Link href="/gestion-reseau" className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-extrabold tracking-tight text-kiparlo-orange shrink-0">BR</span>
+          <span className="text-sm font-extrabold tracking-tight text-winelio-orange shrink-0">BR</span>
           {(!collapsed || mobile) && (
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest truncate">
               Admin
@@ -107,7 +107,7 @@ export function AdminLayoutShell({
                 collapsed && !mobile ? "justify-center" : ""
               } ${
                 isActive
-                  ? "bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white"
+                  ? "bg-gradient-to-r from-winelio-orange to-winelio-amber text-white"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
@@ -175,11 +175,11 @@ export function AdminLayoutShell({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <span className="text-xs font-semibold uppercase tracking-widest text-kiparlo-orange">
+          <span className="text-xs font-semibold uppercase tracking-widest text-winelio-orange">
             Super Admin
           </span>
           <span className="text-muted-foreground">·</span>
-          <span className="text-sm text-foreground">Buzreco</span>
+          <span className="text-sm text-foreground">Winelio</span>
           <Link
             href="/dashboard"
             className="ml-auto flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors"

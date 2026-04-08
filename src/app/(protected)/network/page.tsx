@@ -98,8 +98,8 @@ export default async function NetworkPage() {
     <div>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-kiparlo-dark">Mon Réseau</h2>
-        <Link href="/network/stats" className="text-sm text-kiparlo-orange hover:text-kiparlo-amber transition-colors font-medium">
+        <h2 className="text-xl sm:text-2xl font-bold text-winelio-dark">Mon Réseau</h2>
+        <Link href="/network/stats" className="text-sm text-winelio-orange hover:text-winelio-amber transition-colors font-medium">
           Stats détaillées
         </Link>
       </div>
@@ -135,14 +135,14 @@ export default async function NetworkPage() {
           <Card key={s.title} className="!rounded-2xl">
             <CardContent className="p-4 sm:p-5">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium text-kiparlo-gray uppercase tracking-wider">{s.title}</span>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${s.accent ? "bg-kiparlo-orange/10" : "bg-muted"}`}>
-                  <svg className={`w-4 h-4 ${s.accent ? "text-kiparlo-orange" : "text-muted-foreground"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <span className="text-xs font-medium text-winelio-gray uppercase tracking-wider">{s.title}</span>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${s.accent ? "bg-winelio-orange/10" : "bg-muted"}`}>
+                  <svg className={`w-4 h-4 ${s.accent ? "text-winelio-orange" : "text-muted-foreground"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={s.icon} />
                   </svg>
                 </div>
               </div>
-              <p className={`text-xl font-extrabold tabular-nums ${s.accent ? "text-kiparlo-orange" : "text-kiparlo-dark"}`}>{s.value}</p>
+              <p className={`text-xl font-extrabold tabular-nums ${s.accent ? "text-winelio-orange" : "text-winelio-dark"}`}>{s.value}</p>
               <p className="text-xs text-muted-foreground mt-0.5 truncate">{s.sub}</p>
             </CardContent>
           </Card>
@@ -152,10 +152,10 @@ export default async function NetworkPage() {
       {/* Sponsor code */}
       <Card className="!rounded-2xl mb-6">
         <CardContent className="p-5 sm:p-6">
-          <h3 className="text-sm font-semibold text-kiparlo-gray uppercase tracking-wider mb-4">Mon code parrain</h3>
+          <h3 className="text-sm font-semibold text-winelio-gray uppercase tracking-wider mb-4">Mon code parrain</h3>
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="bg-kiparlo-light dark:bg-muted rounded-xl border-2 border-dashed border-kiparlo-orange px-8 py-3 text-center w-full sm:w-auto">
-              <span className="text-3xl font-extrabold tracking-[0.2em] bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber bg-clip-text text-transparent select-all">
+            <div className="bg-winelio-light dark:bg-muted rounded-xl border-2 border-dashed border-winelio-orange px-8 py-3 text-center w-full sm:w-auto">
+              <span className="text-3xl font-extrabold tracking-[0.2em] bg-gradient-to-r from-winelio-orange to-winelio-amber bg-clip-text text-transparent select-all">
                 {sponsorCode}
               </span>
             </div>
@@ -172,19 +172,19 @@ export default async function NetworkPage() {
       <Card className="!rounded-2xl mb-6">
         <CardContent className="p-5 sm:p-6">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-base font-semibold text-kiparlo-dark">
+            <h3 className="text-base font-semibold text-winelio-dark">
               Filleuls directs
               <span className="ml-2 text-sm font-normal text-muted-foreground">({totalReferrals ?? 0})</span>
             </h3>
-            <Link href="/network/stats" className="text-sm text-kiparlo-orange hover:text-kiparlo-amber transition-colors font-medium">
+            <Link href="/network/stats" className="text-sm text-winelio-orange hover:text-winelio-amber transition-colors font-medium">
               Voir tout
             </Link>
           </div>
 
           {referralsWithStats.length === 0 ? (
             <div className="text-center py-10">
-              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10 flex items-center justify-center">
-                <svg className="w-7 h-7 text-kiparlo-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-gradient-to-r from-winelio-orange/10 to-winelio-amber/10 flex items-center justify-center">
+                <svg className="w-7 h-7 text-winelio-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                 </svg>
               </div>
@@ -205,11 +205,11 @@ export default async function NetworkPage() {
                 return (
                   <div key={ref.id} className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber flex items-center justify-center text-white font-bold text-xs shrink-0">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-r from-winelio-orange to-winelio-amber flex items-center justify-center text-white font-bold text-xs shrink-0">
                         {initials}
                       </div>
                       <div className="min-w-0">
-                        <p className={`font-semibold text-sm truncate ${isPro ? "font-mono text-kiparlo-orange" : "text-kiparlo-dark"}`}>
+                        <p className={`font-semibold text-sm truncate ${isPro ? "font-mono text-winelio-orange" : "text-winelio-dark"}`}>
                           {displayName}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
@@ -222,11 +222,11 @@ export default async function NetworkPage() {
                     </div>
                     <div className="flex items-center gap-4 sm:gap-6 shrink-0 ml-2">
                       <div className="text-center">
-                        <p className="font-bold text-kiparlo-dark text-sm tabular-nums">{ref.sub_referrals}</p>
+                        <p className="font-bold text-winelio-dark text-sm tabular-nums">{ref.sub_referrals}</p>
                         <p className="text-[10px] text-muted-foreground">filleuls</p>
                       </div>
                       <div className="text-center">
-                        <p className="font-bold text-kiparlo-orange text-sm tabular-nums">{ref.total_commissions.toFixed(2)} €</p>
+                        <p className="font-bold text-winelio-orange text-sm tabular-nums">{ref.total_commissions.toFixed(2)} €</p>
                         <p className="text-[10px] text-muted-foreground">commissions</p>
                       </div>
                     </div>
@@ -241,7 +241,7 @@ export default async function NetworkPage() {
       {/* Graphe */}
       <Card className="!rounded-2xl mb-6">
         <CardContent className="p-4 sm:p-6">
-          <h3 className="text-base font-semibold text-kiparlo-dark mb-1">Vue graphique</h3>
+          <h3 className="text-base font-semibold text-winelio-dark mb-1">Vue graphique</h3>
           <p className="text-xs text-muted-foreground mb-4">Pincez pour zoomer · Glissez pour naviguer</p>
           <NetworkGraph
             userId={user.id}
@@ -253,7 +253,7 @@ export default async function NetworkPage() {
       {/* Arbre */}
       <Card className="!rounded-2xl">
         <CardContent className="p-4 sm:p-6">
-          <h3 className="text-base font-semibold text-kiparlo-dark mb-1">Liste détaillée</h3>
+          <h3 className="text-base font-semibold text-winelio-dark mb-1">Liste détaillée</h3>
           <p className="text-xs text-muted-foreground mb-4">Réseau complet sur 5 niveaux</p>
           <NetworkTree userId={user.id} />
         </CardContent>

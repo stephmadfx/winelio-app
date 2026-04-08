@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
 });
 
 function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
-  const dashboardUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://buzreco.fr";
+  const dashboardUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.fr";
   const networkUrl = `${dashboardUrl}/network`;
 
   return `<!DOCTYPE html>
@@ -21,7 +21,7 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bienvenue sur Buzreco !</title>
+  <title>Bienvenue sur Winelio !</title>
 </head>
 <body style="margin:0;padding:0;background:#f8f9fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8f9fa;">
@@ -49,7 +49,7 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
                 Bienvenue ${firstName} !
               </h1>
               <p style="color:rgba(255,255,255,0.9);font-size:16px;margin:0;line-height:1.7;">
-                Votre compte Buzreco est activé.<br/>
+                Votre compte Winelio est activé.<br/>
                 Vous faites maintenant partie du réseau.
               </p>
             </td>
@@ -63,7 +63,7 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
                 Recommandez et gagnez
               </h2>
               <p style="color:#636E72;font-size:15px;line-height:1.7;margin:0 0 28px;">
-                Buzreco vous permet de monétiser votre réseau de confiance.
+                Winelio vous permet de monétiser votre réseau de confiance.
                 Chaque recommandation validée vous rapporte une commission directe.
               </p>
 
@@ -131,7 +131,7 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
                     <div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#636E72;font-weight:600;margin-bottom:10px;">Votre code parrain</div>
                     <div style="font-size:32px;font-weight:900;letter-spacing:6px;color:#FF6B35;font-family:Courier New,monospace;">${sponsorCode}</div>
                     <div style="font-size:13px;color:#636E72;margin-top:8px;line-height:1.5;">
-                      Partagez ce code à vos proches pour les inviter sur Buzreco<br/>et commencer à gagner ensemble.
+                      Partagez ce code à vos proches pour les inviter sur Winelio<br/>et commencer à gagner ensemble.
                     </div>
                   </td>
                 </tr>
@@ -154,8 +154,8 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
           <!-- Footer -->
           <tr>
             <td align="center" style="padding-top:28px;">
-              <p style="font-size:12px;color:#B2BEC3;margin:0 0 4px;">Cet email a été envoyé par Buzreco</p>
-              <p style="font-size:12px;color:#DFE6E9;margin:0;">© ${new Date().getFullYear()} Buzreco. Tous droits réservés.</p>
+              <p style="font-size:12px;color:#B2BEC3;margin:0 0 4px;">Cet email a été envoyé par Winelio</p>
+              <p style="font-size:12px;color:#DFE6E9;margin:0;">© ${new Date().getFullYear()} Winelio. Tous droits réservés.</p>
             </td>
           </tr>
 
@@ -189,9 +189,9 @@ export async function POST() {
     const firstName = profile.first_name || profile.last_name || "Nouveau membre";
 
     await transporter.sendMail({
-      from: `"Buzreco" <${process.env.SMTP_USER || "contact@aide-multimedia.fr"}>`,
+      from: `"Winelio" <${process.env.SMTP_USER || "contact@aide-multimedia.fr"}>`,
       to: user.email!,
-      subject: `Bienvenue sur Buzreco, ${firstName} ! 🎉`,
+      subject: `Bienvenue sur Winelio, ${firstName} ! 🎉`,
       html: buildWelcomeEmail(firstName, profile.sponsor_code),
     });
 

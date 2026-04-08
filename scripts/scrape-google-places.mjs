@@ -1,8 +1,8 @@
 /**
- * Script de scraping Google Places API → Kiparlo DB
+ * Script de scraping Google Places API → Winelio DB
  *
  * Récupère de vrais professionnels depuis Google Maps et les importe
- * comme profils professionnels dans Kiparlo.
+ * comme profils professionnels dans Winelio.
  *
  * Usage:
  *   node scripts/scrape-google-places.mjs
@@ -31,7 +31,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-// ─── Catégories Kiparlo → mots-clés Google Places ─────────────────────────────
+// ─── Catégories Winelio → mots-clés Google Places ─────────────────────────────
 
 const CATEGORY_KEYWORDS = {
   plomberie:    { id: "2c02fde6-2efd-4c34-a361-93028b139d3c", queries: ["plombier", "chauffagiste"] },
@@ -328,7 +328,7 @@ async function importProfessional(place, categorySlug, categoryId) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log("🚀 Démarrage du scraping Google Places → Kiparlo");
+  console.log("🚀 Démarrage du scraping Google Places → Winelio");
   console.log(`   Mode: ${dryRun ? "DRY-RUN (aucune insertion)" : "LIVE"}`);
   console.log(`   Catégories: ${Object.keys(categoriesToProcess).join(", ")}`);
   console.log(`   Villes: ${citiesToProcess.join(", ")}`);

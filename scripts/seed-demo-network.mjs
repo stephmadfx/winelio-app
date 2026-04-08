@@ -52,7 +52,7 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 let counter = 0;
 function uniqueEmail() {
   counter++;
-  return `demo.member.${Date.now()}.${counter}@demo-kiparlo.fr`;
+  return `demo.member.${Date.now()}.${counter}@demo-winelio.fr`;
 }
 
 // ─── Crée un membre ───────────────────────────────────────────────────────────

@@ -22,12 +22,12 @@ export default async function CompaniesPage() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-kiparlo-dark">
+        <h2 className="text-xl sm:text-2xl font-bold text-winelio-dark">
           Mes entreprises
         </h2>
         <Link
           href="/companies/new"
-          className="px-5 py-2.5 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity text-center"
+          className="px-5 py-2.5 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity text-center"
         >
           Ajouter une entreprise
         </Link>
@@ -36,9 +36,9 @@ export default async function CompaniesPage() {
       {!companies || companies.length === 0 ? (
         <Card className="!rounded-2xl text-center">
           <CardContent className="p-6 sm:p-12 flex flex-col items-center">
-            <div className="w-16 h-16 mb-4 rounded-full bg-gradient-to-r from-kiparlo-orange/10 to-kiparlo-amber/10 flex items-center justify-center">
+            <div className="w-16 h-16 mb-4 rounded-full bg-gradient-to-r from-winelio-orange/10 to-winelio-amber/10 flex items-center justify-center">
               <svg
-                className="w-8 h-8 text-kiparlo-orange"
+                className="w-8 h-8 text-winelio-orange"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -51,7 +51,7 @@ export default async function CompaniesPage() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-kiparlo-dark mb-2">
+            <h3 className="text-lg font-semibold text-winelio-dark mb-2">
               Aucune entreprise
             </h3>
             <p className="text-muted-foreground mb-6">
@@ -59,7 +59,7 @@ export default async function CompaniesPage() {
             </p>
             <Link
               href="/companies/new"
-              className="inline-block px-6 py-3 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
+              className="inline-block px-6 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
             >
               Ajouter une entreprise
             </Link>
@@ -80,7 +80,7 @@ export default async function CompaniesPage() {
               <Card key={company.id} className="!rounded-2xl">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-kiparlo-dark">
+                    <h3 className="text-lg font-semibold text-winelio-dark">
                       {company.name}
                     </h3>
                     {company.is_verified ? (
@@ -94,7 +94,7 @@ export default async function CompaniesPage() {
                     )}
                   </div>
                   {categoryName && (
-                    <p className="text-sm text-kiparlo-orange font-medium mb-1">
+                    <p className="text-sm text-winelio-orange font-medium mb-1">
                       {categoryName}
                     </p>
                   )}

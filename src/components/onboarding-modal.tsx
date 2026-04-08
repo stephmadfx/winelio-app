@@ -41,13 +41,13 @@ export function OnboardingModal({ userId }: { userId: string }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber px-8 py-7">
+        <div className="bg-gradient-to-r from-winelio-orange to-winelio-amber px-8 py-7">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 mb-4">
             <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-black text-white">Bienvenue sur Buzreco !</h2>
+          <h2 className="text-2xl font-black text-white">Bienvenue sur Winelio !</h2>
           <p className="text-white/80 text-sm mt-1">Pour commencer, présentez-vous à votre réseau.</p>
         </div>
 
@@ -55,8 +55,8 @@ export function OnboardingModal({ userId }: { userId: string }) {
         <form onSubmit={handleSubmit} className="px-8 py-7 space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-kiparlo-dark mb-1.5">
-                Prénom <span className="text-kiparlo-orange">*</span>
+              <label className="block text-sm font-semibold text-winelio-dark mb-1.5">
+                Prénom <span className="text-winelio-orange">*</span>
               </label>
               <input
                 type="text"
@@ -65,12 +65,12 @@ export function OnboardingModal({ userId }: { userId: string }) {
                 placeholder="Jean"
                 required
                 autoFocus
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/50 focus:border-kiparlo-orange transition"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange transition"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-kiparlo-dark mb-1.5">
-                Nom <span className="text-kiparlo-orange">*</span>
+              <label className="block text-sm font-semibold text-winelio-dark mb-1.5">
+                Nom <span className="text-winelio-orange">*</span>
               </label>
               <input
                 type="text"
@@ -78,7 +78,7 @@ export function OnboardingModal({ userId }: { userId: string }) {
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Dupont"
                 required
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-kiparlo-dark focus:outline-none focus:ring-2 focus:ring-kiparlo-orange/50 focus:border-kiparlo-orange transition"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange transition"
               />
             </div>
           </div>
@@ -92,7 +92,7 @@ export function OnboardingModal({ userId }: { userId: string }) {
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-3.5 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3.5 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
               <span className="flex items-center justify-center gap-2">

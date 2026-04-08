@@ -181,7 +181,7 @@ export default async function AdminDashboard() {
     {
       label: "Membres actifs",
       value: kpis.activeMembers.toLocaleString("fr-FR"),
-      color: "text-kiparlo-orange",
+      color: "text-winelio-orange",
       bg: "bg-orange-500/10",
     },
     {
@@ -193,7 +193,7 @@ export default async function AdminDashboard() {
     {
       label: "Recommandations en cours",
       value: kpis.ongoingRecos.toLocaleString("fr-FR"),
-      color: "text-kiparlo-amber",
+      color: "text-winelio-amber",
       bg: "bg-amber-500/10",
     },
     {

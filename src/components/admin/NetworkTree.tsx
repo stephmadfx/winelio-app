@@ -720,7 +720,7 @@ export function NetworkTree({
             setSelectedId(null);
           }}
           placeholder="Rechercher par nom ou email…"
-          className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-600 w-80 focus:outline-none focus:border-kiparlo-orange/50"
+          className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-600 w-80 focus:outline-none focus:border-winelio-orange/50"
         />
         <div className="flex gap-3 text-xs text-gray-500">
           <span className="flex items-center gap-1.5">

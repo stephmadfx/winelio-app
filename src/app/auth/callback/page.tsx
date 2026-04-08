@@ -86,7 +86,7 @@ export default function AuthCallbackPage() {
     const isExpired = errorType === "expired";
 
     return (
-      <div className="min-h-dvh bg-kiparlo-dark flex items-center justify-center px-4">
+      <div className="min-h-dvh bg-winelio-dark flex items-center justify-center px-4">
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8 max-w-md w-full text-center">
           {/* Icon */}
           <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-red-500/10 flex items-center justify-center">
@@ -132,12 +132,12 @@ export default function AuthCallbackPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="votre@email.com"
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-kiparlo-orange focus:border-transparent transition"
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-winelio-orange focus:border-transparent transition"
               />
               <button
                 onClick={handleResend}
                 disabled={resendLoading || !email}
-                className="w-full py-3 bg-gradient-to-r from-kiparlo-orange to-kiparlo-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {resendLoading ? "Envoi en cours..." : "Recevoir un nouveau lien"}
               </button>
@@ -157,9 +157,9 @@ export default function AuthCallbackPage() {
 
   // Loading state
   return (
-    <div className="min-h-dvh bg-kiparlo-dark flex items-center justify-center">
+    <div className="min-h-dvh bg-winelio-dark flex items-center justify-center">
       <div className="text-center">
-        <div className="w-12 h-12 mx-auto mb-4 border-4 border-kiparlo-orange border-t-transparent rounded-full animate-spin" />
+        <div className="w-12 h-12 mx-auto mb-4 border-4 border-winelio-orange border-t-transparent rounded-full animate-spin" />
         <p className="text-gray-400">Connexion en cours...</p>
       </div>
     </div>

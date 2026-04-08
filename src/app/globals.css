@@ -5,11 +5,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-kiparlo-orange: #FF6B35;
-  --color-kiparlo-amber: #F7931E;
-  --color-kiparlo-dark: #2D3436;
-  --color-kiparlo-gray: #636E72;
-  --color-kiparlo-light: #F8F9FA;
+  --color-winelio-orange: #FF6B35;
+  --color-winelio-amber: #F7931E;
+  --color-winelio-dark: #2D3436;
+  --color-winelio-gray: #636E72;
+  --color-winelio-light: #F8F9FA;
 }
 
 /* Empêche le zoom automatique d'iOS Safari sur les champs de saisie.
@@ -19,7 +19,7 @@ input, textarea, select {
 }
 
 /* Pulsing ring animation for active recommendations on network graph nodes */
-@keyframes kiparlo-ping {
+@keyframes winelio-ping {
   0%, 100% {
     transform: translateX(-50%) scale(1);
     opacity: 0.8;
@@ -33,7 +33,7 @@ input, textarea, select {
 }
 
 /* Glow animation for completed recommendations */
-@keyframes kiparlo-glow {
+@keyframes winelio-glow {
   0%, 100% {
     box-shadow: 0 0 4px rgba(34, 197, 94, 0.5);
   }
@@ -188,8 +188,8 @@ input, textarea, select {
 /* ── Dark mode — override des patterns clair existants ──────────────────── */
 
 /* Textes */
-.dark .text-kiparlo-dark   { color: #f1f5f9; }
-.dark .text-kiparlo-gray   { color: #94a3b8; }
+.dark .text-winelio-dark   { color: #f1f5f9; }
+.dark .text-winelio-gray   { color: #94a3b8; }
 .dark .text-gray-500       { color: #94a3b8; }
 .dark .text-gray-600       { color: #64748b; }
 .dark .text-gray-700       { color: #94a3b8; }
@@ -197,7 +197,7 @@ input, textarea, select {
 .dark .text-gray-900       { color: #f1f5f9; }
 
 /* Fonds de page */
-.dark .bg-kiparlo-light    { background-color: #0f172a; }
+.dark .bg-winelio-light    { background-color: #0f172a; }
 
 /* Cartes blanches → fond dark */
 .dark .bg-white            { background-color: #1e293b; }

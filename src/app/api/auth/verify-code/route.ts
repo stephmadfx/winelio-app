@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     // GoTrue verifies the token and returns a redirect with tokens in the Location header
     const verifyResp = await fetch(actionLink, {
       redirect: "manual",
-      headers: { "User-Agent": "BuzrecoServer/1.0" },
+      headers: { "User-Agent": "WinelioServer/1.0" },
     });
 
     const location = verifyResp.headers.get("location") || "";

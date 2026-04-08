@@ -21,7 +21,7 @@ function buildEmailHtml(code: string): string {
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Votre code Buzreco</title>
+  <title>Votre code Winelio</title>
 </head>
 <body style="margin:0;padding:0;background:#0f1117;font-family:Arial,Helvetica,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -88,7 +88,7 @@ function buildEmailHtml(code: string): string {
           <!-- Footer -->
           <tr>
             <td align="center" style="padding-top:24px;font-size:12px;color:#334155;">
-              2025 Buzreco &middot; Tous droits reserves
+              2025 Winelio &middot; Tous droits reserves
             </td>
           </tr>
 
@@ -126,9 +126,9 @@ export async function POST(req: Request) {
 
     // Send custom email
     await transporter.sendMail({
-      from: `"${process.env.SMTP_SENDER_NAME || "Buzreco"}" <${process.env.SMTP_ADMIN_EMAIL || process.env.SMTP_USER || "contact@aide-multimedia.fr"}>`,
+      from: `"${process.env.SMTP_SENDER_NAME || "Winelio"}" <${process.env.SMTP_ADMIN_EMAIL || process.env.SMTP_USER || "contact@aide-multimedia.fr"}>`,
       to: email,
-      subject: "Votre code de connexion Buzreco",
+      subject: "Votre code de connexion Winelio",
       html: buildEmailHtml(code),
     });
 

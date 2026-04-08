@@ -1,7 +1,7 @@
-# Kiparlo / Buzreco - Instructions pour Claude Code
+# Winelio / Winelio - Instructions pour Claude Code
 
 ## Projet
-Buzreco (nom de marque) / Kiparlo (nom technique du repo) est une plateforme de recommandations professionnelles avec système MLM (réseau de parrainage à 5 niveaux). Migration depuis React Native + FastAPI vers Next.js + Supabase.
+Winelio (nom de marque) / Winelio (nom technique du repo) est une plateforme de recommandations professionnelles avec système MLM (réseau de parrainage à 5 niveaux). Migration depuis React Native + FastAPI vers Next.js + Supabase.
 
 ## Stack technique
 - **Frontend** : Next.js 15 (App Router, Server Components)
@@ -9,14 +9,15 @@ Buzreco (nom de marque) / Kiparlo (nom technique du repo) est une plateforme de 
 - **Auth** : Supabase Auth (Magic Link / OTP par email)
 - **Base de données** : PostgreSQL via Supabase (self-hosted)
 - **Déploiement** : Coolify sur VPS Hostinger (31.97.152.195)
-- **Repo** : https://github.com/stephmadfx/kiparlo.git
+- **Repo** : https://github.com/stephmadfx/winelio-app.git
+- **Branche de dev active** : `dev2` → déployée sur https://dev2.winelio.app
 
-## Couleurs Kiparlo
-- Orange : #FF6B35 (`kiparlo-orange`)
-- Amber : #F7931E (`kiparlo-amber`)
-- Dark : #2D3436 (`kiparlo-dark`)
-- Gray : #636E72 (`kiparlo-gray`)
-- Light : #F8F9FA (`kiparlo-light`)
+## Couleurs Winelio
+- Orange : #FF6B35 (`winelio-orange`)
+- Amber : #F7931E (`winelio-amber`)
+- Dark : #2D3436 (`winelio-dark`)
+- Gray : #636E72 (`winelio-gray`)
+- Light : #F8F9FA (`winelio-light`)
 
 ## Architecture des dossiers
 ```
@@ -153,7 +154,7 @@ Toutes les tables ont des politiques RLS actives. Les utilisateurs ne voient que
 - Port : **3001** (`http://localhost:3001`)
 - **Après chaque `git push`, relancer le serveur dev** :
   ```bash
-  pkill -f "next dev" ; sleep 1 ; cd /Users/steph/PROJETS/WINKO/kiparlo && npm run dev &
+  pkill -f "next dev" ; sleep 1 ; cd /Users/steph/PROJETS/WINELIO/winelio && npm run dev &
   ```
 - Vérifier que le serveur tourne bien avant de tester dans le navigateur.
 

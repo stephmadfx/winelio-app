@@ -59,7 +59,7 @@ function randomDate(daysAgoMax = 365) {
 let totalCreated = 0;
 
 async function createMember(firstName, lastName, sponsorId, level) {
-  const email = `demo.kiparlo.${Date.now()}.${Math.random().toString(36).slice(2, 7)}@kiparlo-demo.fr`;
+  const email = `demo.winelio.${Date.now()}.${Math.random().toString(36).slice(2, 7)}@winelio-demo.fr`;
   const sponsorCode = generateCode();
   const createdAt = randomDate(30 * (6 - level)); // plus récent = niveau plus profond
 
