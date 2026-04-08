@@ -717,7 +717,7 @@ export default function NewRecommendationPage() {
           {/* Pro list */}
           <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
             {professionals.map((p) => {
-              const displayLabel = p.company_alias ?? `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim();
+              const displayLabel = p.company_alias ?? (p.first_name ?? "Professionnel");
               return (
                 <button
                   key={p.id}
@@ -731,9 +731,6 @@ export default function NewRecommendationPage() {
                   <Initials name={displayLabel} size="sm" />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-winelio-dark text-sm font-mono">{displayLabel}</p>
-                    {p.company_name && (
-                      <p className="text-xs text-winelio-gray truncate">{p.company_name}</p>
-                    )}
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       {p.avg_rating !== null && (
                         <span className="inline-flex items-center gap-0.5 text-xs">
