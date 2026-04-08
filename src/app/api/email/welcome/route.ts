@@ -32,12 +32,9 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
           <!-- Logo -->
           <tr>
             <td align="center" style="padding-bottom:32px;">
-              <div style="font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;">
-                <span style="color:#FF6B35;">W</span><span style="color:#2D3436;">inelio</span>
-              </div>
-              <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#636E72;margin-top:6px;font-weight:500;">
-                Plateforme de recommandation
-              </div>
+              <img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-color.png"
+                   alt="Winelio" width="160" height="44"
+                   style="display:block;margin:0 auto;border:0;max-width:160px;" />
             </td>
           </tr>
 
