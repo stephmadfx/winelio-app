@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
+import { WinelioLogo } from "@/components/winelio-logo";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface LevelStat {
@@ -89,7 +89,7 @@ export default async function NetworkStatsPage() {
       <header className="bg-winelio-dark text-white">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/dashboard">
-            <Image src="/logo-on-dark.png" alt="Winelio" width={130} height={36} className="h-9 w-auto" />
+            <WinelioLogo variant="on-dark" height={30} />
           </Link>
           <nav className="flex items-center gap-4">
             <Link

@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { WinelioLogo } from "./winelio-logo";
 import { usePathname } from "next/navigation";
 import { SignOutButton } from "./sign-out-button";
 
@@ -50,15 +50,8 @@ export function Sidebar({ userEmail, isSuperAdmin }: { userEmail: string; isSupe
     <aside className="fixed left-0 top-0 h-screen w-64 bg-winelio-dark text-white flex flex-col">
       {/* Logo */}
       <div className="px-6 py-6 border-b border-white/10">
-        <Link href="/dashboard">
-          <Image
-            src="/logo-on-dark.png"
-            alt="Winelio"
-            width={160}
-            height={44}
-            priority
-            className="h-11 w-auto"
-          />
+        <Link href="/dashboard" aria-label="Winelio — Accueil">
+          <WinelioLogo variant="on-dark" height={38} />
         </Link>
       </div>
 

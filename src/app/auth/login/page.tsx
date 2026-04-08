@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { Suspense, useEffect, useState } from "react";
+import { WinelioLogo } from "@/components/winelio-logo";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { NetworkBackground } from "@/components/NetworkBackground";
@@ -256,7 +256,7 @@ function LoginForm() {
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <Image src="/logo-on-dark.png" alt="Winelio" width={180} height={50} priority className="h-12 w-auto" />
+              <WinelioLogo variant="on-dark" height={40} />
             </div>
             <div className="mt-4 flex items-center justify-center w-14 h-14 rounded-full bg-winelio-orange/20 mx-auto mb-3">
               <svg className="w-7 h-7 text-winelio-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -329,7 +329,7 @@ function LoginForm() {
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <Image src="/logo-on-dark.png" alt="Winelio" width={180} height={50} priority className="h-12 w-auto" />
+              <WinelioLogo variant="on-dark" height={40} />
             </div>
             <p className="text-winelio-gray text-sm tracking-widest uppercase">
               {isRegister ? "Créer un compte" : "Se connecter"}

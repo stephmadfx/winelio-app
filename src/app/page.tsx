@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { WinelioLogo } from "@/components/winelio-logo";
 
 export default function Home() {
   return (
@@ -7,7 +7,7 @@ export default function Home() {
       <div className="text-center max-w-2xl">
         {/* Logo */}
         <div className="flex justify-center mb-6">
-          <Image src="/logo-on-dark.png" alt="Winelio" width={320} height={88} priority className="h-20 w-auto" />
+          <WinelioLogo variant="on-dark" height={72} />
         </div>
 
         <p className="text-winelio-gray text-lg md:text-xl tracking-[0.3em] uppercase mb-12">

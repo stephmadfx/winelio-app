@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { WinelioLogo } from "./winelio-logo";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { SignOutButton } from "./sign-out-button";
@@ -52,8 +52,8 @@ export function MobileHeader({ userEmail, isSuperAdmin }: { userEmail: string; i
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-winelio-dark border-b border-white/10 lg:hidden">
         <div className="flex items-center justify-between px-4 h-14">
-          <Link href="/dashboard">
-            <Image src="/logo-on-dark.png" alt="Winelio" width={130} height={36} className="h-9 w-auto" />
+          <Link href="/dashboard" aria-label="Winelio — Accueil">
+            <WinelioLogo variant="on-dark" height={30} />
           </Link>
 
           <button

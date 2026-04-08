@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Montserrat, Geist } from "next/font/google";
+import { Montserrat, Geist, Poppins } from "next/font/google";
 import "./globals.css";
 import { KeyboardScrollProvider } from "@/components/KeyboardScrollProvider";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -10,6 +10,12 @@ const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 const montserrat = Montserrat({
   subsets: ["latin"],
   variable: "--font-montserrat",
+});
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["700"],
+  variable: "--font-poppins",
 });
 
 export const viewport: Viewport = {
@@ -30,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
+    <html lang="fr" className={cn("font-sans", geist.variable, poppins.variable)} suppressHydrationWarning>
       <body className={`${montserrat.variable} font-sans antialiased`}>
         <ThemeProvider>
           <KeyboardScrollProvider />
