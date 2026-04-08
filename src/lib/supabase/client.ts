@@ -3,13 +3,14 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config";
 
 export function createClient() {
   return createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    db: { schema: "winelio" },
     auth: {
       flowType: "pkce",
       persistSession: true,
       autoRefreshToken: true,
     },
     cookieOptions: {
-      lifetime: 60 * 60 * 24 * 365, // 1 an — évite la déconnexion à la fermeture du navigateur
+      lifetime: 60 * 60 * 24 * 365,
       sameSite: "lax",
     },
   });

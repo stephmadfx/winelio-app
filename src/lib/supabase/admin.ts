@@ -9,6 +9,7 @@ if (!serviceRoleKey) {
 }
 
 export const supabaseAdmin = createClient(SUPABASE_URL, serviceRoleKey, {
+  db: { schema: "winelio" },
   auth: {
     autoRefreshToken: false,
     persistSession: false,

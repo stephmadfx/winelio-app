@@ -9,6 +9,7 @@ export async function createClient() {
     SUPABASE_URL,
     SUPABASE_ANON_KEY,
     {
+      db: { schema: "winelio" },
       cookies: {
         getAll() {
           return cookieStore.getAll();
