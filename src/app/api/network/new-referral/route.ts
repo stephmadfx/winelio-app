@@ -29,84 +29,164 @@ function buildReferralEmail(
   const levelColor = level === 1 ? "#FF6B35" : "#F7931E";
   const emoji      = level === 1 ? "🎉" : "🌱";
 
+  const iconBg = level === 1 ? "#FFF5F0" : "#FFF8EE";
+
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nouveau membre dans votre réseau !</title>
 </head>
-<body style="margin:0;padding:0;background:#f8f9fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8f9fa;">
+<body style="margin:0;padding:0;background:#F0F2F4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F0F2F4;">
     <tr>
       <td align="center" style="padding:40px 20px;">
         <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
 
-          <!-- Logo -->
+          <!-- Barre accent top -->
           <tr>
-            <td align="center" style="padding-bottom:28px;">
-              <img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-color.png"
-                   alt="Winelio" width="160" height="44"
-                   style="display:block;margin:0 auto;border:0;max-width:160px;" />
-            </td>
+            <td style="background:linear-gradient(90deg,#FF6B35,#F7931E);height:4px;font-size:0;line-height:0;border-radius:4px 4px 0 0;">&nbsp;</td>
           </tr>
 
-          <!-- Card -->
+          <!-- Carte blanche -->
           <tr>
-            <td style="background:#ffffff;border-radius:16px;padding:40px 36px;box-shadow:0 2px 16px rgba(0,0,0,0.06);">
+            <td style="background:#ffffff;border-radius:0 0 16px 16px;padding:40px 48px 36px;">
 
-              <!-- Icône niveau -->
-              <div style="text-align:center;margin-bottom:24px;">
-                <div style="display:inline-block;width:64px;height:64px;border-radius:50%;background:${levelColor}1a;line-height:64px;font-size:32px;">
-                  ${emoji}
-                </div>
-              </div>
+              <!-- Logo -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding-bottom:24px;">
+                    <img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-color.png"
+                         alt="Winelio" width="160" height="44"
+                         style="display:block;margin:0 auto;border:0;max-width:160px;" />
+                  </td>
+                </tr>
+                <!-- Séparateur sous logo -->
+                <tr>
+                  <td style="border-bottom:1px solid #F0F2F4;font-size:0;line-height:0;padding-bottom:28px;">&nbsp;</td>
+                </tr>
+              </table>
 
-              <h1 style="color:#2D3436;font-size:22px;font-weight:700;margin:0 0 8px;text-align:center;">
-                Nouveau membre dans votre réseau !
-              </h1>
+              <!-- Spacer -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="height:28px;font-size:0;line-height:0;">&nbsp;</td></tr>
+              </table>
 
-              <p style="color:#636E72;font-size:15px;text-align:center;margin:0 0 28px;">
-                Bonjour ${recipientFirstName},
-              </p>
+              <!-- Icône emoji + titres -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" style="width:52px;height:52px;background:${iconBg};border-radius:13px;font-size:26px;line-height:52px;text-align:center;vertical-align:middle;">
+                          ${emoji}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr>
+                <tr>
+                  <td align="center">
+                    <h1 style="color:#2D3436;font-size:22px;font-weight:700;margin:0;line-height:1.3;">
+                      Nouveau membre dans votre réseau !
+                    </h1>
+                  </td>
+                </tr>
+                <tr><td style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>
+                <tr>
+                  <td align="center">
+                    <p style="color:#636E72;font-size:15px;margin:0;">
+                      Bonjour <strong style="color:#2D3436;">${recipientFirstName}</strong>,
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Spacer -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
+              </table>
 
               <!-- Bloc info -->
-              <div style="background:#f8f9fa;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
-                <p style="margin:0;color:#2D3436;font-size:15px;line-height:1.6;">
-                  <strong style="color:${levelColor};">${newMemberName}</strong>
-                  vient de rejoindre Winelio en tant que ${levelLabel} dans votre réseau.
-                </p>
-                ${level === 1 ? `
-                <p style="margin:12px 0 0;color:#636E72;font-size:13px;">
-                  En tant que parrain direct, vous bénéficierez d'une commission sur chaque recommandation validée de ce nouveau membre.
-                </p>` : `
-                <p style="margin:12px 0 0;color:#636E72;font-size:13px;">
-                  Votre réseau grandit ! Vous percevrez une commission sur les recommandations validées au niveau&nbsp;${level}.
-                </p>`}
-              </div>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background:#F8F9FA;border-radius:12px;padding:20px 24px;">
+                    <p style="margin:0;color:#2D3436;font-size:15px;line-height:1.6;">
+                      <strong style="color:${levelColor};">${newMemberName}</strong>
+                      vient de rejoindre Winelio en tant que ${levelLabel} dans votre réseau.
+                    </p>
+                    ${level === 1 ? `
+                    <p style="margin:12px 0 0;color:#636E72;font-size:13px;line-height:1.6;">
+                      En tant que parrain direct, vous bénéficierez d'une commission sur chaque recommandation validée de ce nouveau membre.
+                    </p>` : `
+                    <p style="margin:12px 0 0;color:#636E72;font-size:13px;line-height:1.6;">
+                      Votre réseau grandit ! Vous percevrez une commission sur les recommandations validées au niveau&nbsp;${level}.
+                    </p>`}
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Spacer -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="height:20px;font-size:0;line-height:0;">&nbsp;</td></tr>
+              </table>
 
               <!-- Badge niveau -->
-              <div style="text-align:center;margin-bottom:28px;">
-                <span style="display:inline-block;background:${levelColor};color:#ffffff;font-size:12px;font-weight:700;letter-spacing:1px;padding:6px 16px;border-radius:20px;text-transform:uppercase;">
-                  Niveau ${level}
-                </span>
-              </div>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="background:${levelColor};color:#ffffff;font-size:12px;font-weight:700;letter-spacing:1px;padding:6px 20px;border-radius:20px;text-transform:uppercase;text-align:center;">
+                          Niveau ${level}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
 
-              <!-- CTA -->
-              <div style="text-align:center;">
-                <a href="${SITE_URL}/network"
-                   style="display:inline-block;background:linear-gradient(135deg,#FF6B35,#F7931E);color:#ffffff;font-size:15px;font-weight:600;padding:14px 32px;border-radius:10px;text-decoration:none;">
-                  Voir mon réseau
-                </a>
-              </div>
+              <!-- Spacer -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="height:28px;font-size:0;line-height:0;">&nbsp;</td></tr>
+              </table>
+
+              <!-- Bouton CTA -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" style="background:linear-gradient(90deg,#FF6B35,#F7931E);border-radius:12px;">
+                          <a href="${SITE_URL}/network"
+                             style="display:inline-block;color:#ffffff;font-size:15px;font-weight:700;padding:15px 36px;border-radius:12px;text-decoration:none;">
+                            Voir mon réseau →
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Spacer bottom -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr>
+              </table>
 
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="padding-top:24px;text-align:center;">
-              <p style="color:#adb5bd;font-size:12px;margin:0;">
-                © Winelio · <a href="${SITE_URL}" style="color:#FF6B35;text-decoration:none;">winelio.fr</a>
+            <td align="center" style="padding-top:24px;">
+              <p style="color:#B2BAC0;font-size:12px;margin:0 0 4px;">
+                © 2026 Winelio · Plateforme de recommandation professionnelle
+              </p>
+              <p style="color:#FF6B35;font-size:11px;margin:0;">
+                Recommandez. Connectez. Gagnez.
               </p>
             </td>
           </tr>

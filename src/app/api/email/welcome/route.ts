@@ -23,126 +23,202 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bienvenue sur Winelio !</title>
 </head>
-<body style="margin:0;padding:0;background:#f8f9fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8f9fa;">
+<body style="margin:0;padding:0;background:#F0F2F4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F0F2F4;">
     <tr>
       <td align="center" style="padding:40px 20px;">
-        <table width="580" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;width:100%;">
+        <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
 
-          <!-- Logo -->
+          <!-- Barre accent top -->
           <tr>
-            <td align="center" style="padding-bottom:32px;">
-              <img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-color.png"
-                   alt="Winelio" width="160" height="44"
-                   style="display:block;margin:0 auto;border:0;max-width:160px;" />
-            </td>
+            <td style="background:linear-gradient(90deg,#FF6B35,#F7931E);height:4px;font-size:0;line-height:0;border-radius:4px 4px 0 0;">&nbsp;</td>
           </tr>
 
-          <!-- Hero card -->
+          <!-- Carte blanche -->
           <tr>
-            <td style="background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:20px;padding:48px 40px;text-align:center;">
-              <div style="font-size:48px;margin-bottom:16px;">🎉</div>
-              <h1 style="color:#ffffff;font-size:26px;font-weight:800;margin:0 0 12px;line-height:1.3;">
-                Bienvenue ${firstName} !
-              </h1>
-              <p style="color:rgba(255,255,255,0.9);font-size:16px;margin:0;line-height:1.7;">
-                Votre compte Winelio est activé.<br/>
-                Vous faites maintenant partie du réseau.
-              </p>
-            </td>
-          </tr>
+            <td style="background:#ffffff;border-radius:0 0 16px 16px;padding:40px 48px 36px;">
 
-          <!-- Main content -->
-          <tr>
-            <td style="background:#ffffff;border-radius:20px;padding:40px;margin-top:16px;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
-
-              <h2 style="color:#2D3436;font-size:20px;font-weight:700;margin:0 0 8px;">
-                Recommandez et gagnez
-              </h2>
-              <p style="color:#636E72;font-size:15px;line-height:1.7;margin:0 0 28px;">
-                Winelio vous permet de monétiser votre réseau de confiance.
-                Chaque recommandation validée vous rapporte une commission directe.
-              </p>
-
-              <!-- Revenue steps -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:32px;">
-
+              <!-- Logo -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="padding:14px 16px;background:#FFF8F5;border-radius:12px;margin-bottom:8px;border-left:3px solid #FF6B35;">
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td width="36" style="vertical-align:top;padding-top:2px;">
-                          <div style="width:32px;height:32px;background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:8px;text-align:center;line-height:32px;font-size:16px;">💸</div>
-                        </td>
-                        <td style="padding-left:12px;vertical-align:top;">
-                          <div style="font-weight:700;color:#2D3436;font-size:14px;margin-bottom:3px;">Recommandation directe</div>
-                          <div style="color:#636E72;font-size:13px;line-height:1.5;">Touchez <strong style="color:#FF6B35;">60% de la commission</strong> sur chaque mise en relation que vous faites aboutir.</div>
-                        </td>
-                      </tr>
-                    </table>
+                  <td align="center" style="padding-bottom:24px;">
+                    <img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-color.png"
+                         alt="Winelio" width="160" height="44"
+                         style="display:block;margin:0 auto;border:0;max-width:160px;" />
                   </td>
                 </tr>
-
-                <tr><td style="height:8px;"></td></tr>
-
+                <!-- Séparateur sous logo -->
                 <tr>
-                  <td style="padding:14px 16px;background:#F0FFF4;border-radius:12px;border-left:3px solid #48BB78;">
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td width="36" style="vertical-align:top;padding-top:2px;">
-                          <div style="width:32px;height:32px;background:linear-gradient(135deg,#48BB78,#38A169);border-radius:8px;text-align:center;line-height:32px;font-size:16px;">🌐</div>
-                        </td>
-                        <td style="padding-left:12px;vertical-align:top;">
-                          <div style="font-weight:700;color:#2D3436;font-size:14px;margin-bottom:3px;">Développez votre réseau</div>
-                          <div style="color:#636E72;font-size:13px;line-height:1.5;">Invitez des membres. À chaque recommandation de votre réseau, vous percevez <strong style="color:#48BB78;">une commission sur 5 niveaux</strong> — même en dormant.</div>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-
-                <tr><td style="height:8px;"></td></tr>
-
-                <tr>
-                  <td style="padding:14px 16px;background:#EBF8FF;border-radius:12px;border-left:3px solid #4299E1;">
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td width="36" style="vertical-align:top;padding-top:2px;">
-                          <div style="width:32px;height:32px;background:linear-gradient(135deg,#4299E1,#3182CE);border-radius:8px;text-align:center;line-height:32px;font-size:16px;">🏆</div>
-                        </td>
-                        <td style="padding-left:12px;vertical-align:top;">
-                          <div style="font-weight:700;color:#2D3436;font-size:14px;margin-bottom:3px;">Les plus actifs gagnent plus</div>
-                          <div style="color:#636E72;font-size:13px;line-height:1.5;">Plus votre réseau est grand et actif, plus vos revenus passifs augmentent. Les membres les plus engagés construisent une <strong style="color:#4299E1;">véritable source de revenus complémentaires</strong>.</div>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-
-              </table>
-
-              <!-- Sponsor code -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFF8F5;border:1.5px dashed #FF6B35;border-radius:14px;margin-bottom:32px;">
-                <tr>
-                  <td style="padding:20px 24px;text-align:center;">
-                    <div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#636E72;font-weight:600;margin-bottom:10px;">Votre code parrain</div>
-                    <div style="font-size:32px;font-weight:900;letter-spacing:6px;color:#FF6B35;font-family:Courier New,monospace;">${sponsorCode}</div>
-                    <div style="font-size:13px;color:#636E72;margin-top:8px;line-height:1.5;">
-                      Partagez ce code à vos proches pour les inviter sur Winelio<br/>et commencer à gagner ensemble.
-                    </div>
-                  </td>
+                  <td style="border-bottom:1px solid #F0F2F4;font-size:0;line-height:0;padding-bottom:28px;">&nbsp;</td>
                 </tr>
               </table>
 
-              <!-- CTA -->
+              <!-- Spacer -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="height:28px;font-size:0;line-height:0;">&nbsp;</td></tr>
+              </table>
+
+              <!-- Section hero dans la carte -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center">
-                    <a href="${networkUrl}" style="display:inline-block;background:linear-gradient(135deg,#FF6B35,#F7931E);color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:16px 40px;border-radius:12px;">
-                      Inviter mes premiers membres →
-                    </a>
+                    <!-- Icône 🎉 dans carré gradient -->
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" style="width:52px;height:52px;background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:13px;font-size:26px;line-height:52px;text-align:center;vertical-align:middle;">
+                          🎉
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
+                <tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr>
+                <tr>
+                  <td align="center">
+                    <h1 style="color:#2D3436;font-size:22px;font-weight:700;margin:0;line-height:1.3;">
+                      Bienvenue sur Winelio, ${firstName} !
+                    </h1>
+                  </td>
+                </tr>
+                <tr><td style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr>
+                <tr>
+                  <td align="center">
+                    <p style="color:#636E72;font-size:15px;margin:0;">
+                      Votre compte est activé. Vous faites partie du réseau.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Séparateur -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="height:28px;font-size:0;line-height:0;">&nbsp;</td></tr>
+                <tr><td style="border-bottom:1px solid #F0F2F4;font-size:0;line-height:0;">&nbsp;</td></tr>
+                <tr><td style="height:28px;font-size:0;line-height:0;">&nbsp;</td></tr>
+              </table>
+
+              <!-- 3 blocs avantages -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+
+                <!-- Avantage 1 -->
+                <tr>
+                  <td style="padding:14px 16px;background:#FFF5F0;border-radius:12px;border-left:3px solid #FF6B35;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td width="44" style="vertical-align:top;">
+                          <table cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td align="center" style="width:36px;height:36px;background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:8px;font-size:18px;line-height:36px;text-align:center;vertical-align:middle;">
+                                💸
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                        <td style="padding-left:12px;vertical-align:top;">
+                          <p style="font-weight:700;color:#2D3436;font-size:14px;margin:0 0 4px;">Recommandation directe</p>
+                          <p style="color:#636E72;font-size:13px;line-height:1.5;margin:0;">Touchez <strong style="color:#FF6B35;">60% de la commission</strong> sur chaque mise en relation aboutie.</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr><td style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>
+
+                <!-- Avantage 2 -->
+                <tr>
+                  <td style="padding:14px 16px;background:#FFF5F0;border-radius:12px;border-left:3px solid #F7931E;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td width="44" style="vertical-align:top;">
+                          <table cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td align="center" style="width:36px;height:36px;background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:8px;font-size:18px;line-height:36px;text-align:center;vertical-align:middle;">
+                                🌐
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                        <td style="padding-left:12px;vertical-align:top;">
+                          <p style="font-weight:700;color:#2D3436;font-size:14px;margin:0 0 4px;">Votre réseau sur 5 niveaux</p>
+                          <p style="color:#636E72;font-size:13px;line-height:1.5;margin:0;">Invitez des membres et percevez une commission sur leurs recommandations validées.</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr><td style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>
+
+                <!-- Avantage 3 -->
+                <tr>
+                  <td style="padding:14px 16px;background:#FFF5F0;border-radius:12px;border-left:3px solid #FF6B35;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td width="44" style="vertical-align:top;">
+                          <table cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td align="center" style="width:36px;height:36px;background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:8px;font-size:18px;line-height:36px;text-align:center;vertical-align:middle;">
+                                🏆
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                        <td style="padding-left:12px;vertical-align:top;">
+                          <p style="font-weight:700;color:#2D3436;font-size:14px;margin:0 0 4px;">Plus vous êtes actif, plus vous gagnez</p>
+                          <p style="color:#636E72;font-size:13px;line-height:1.5;margin:0;">Les membres engagés construisent une vraie source de revenus complémentaires.</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+              </table>
+
+              <!-- Spacer -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="height:28px;font-size:0;line-height:0;">&nbsp;</td></tr>
+              </table>
+
+              <!-- Bloc code parrain -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFF5F0;border:1.5px dashed #FF6B35;border-radius:12px;">
+                <tr>
+                  <td style="padding:24px;text-align:center;">
+                    <p style="margin:0 0 10px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#636E72;font-weight:600;">Votre code parrain</p>
+                    <p style="margin:0 0 10px;font-size:32px;font-weight:900;letter-spacing:6px;color:#FF6B35;font-family:'Courier New',Courier,monospace;">${sponsorCode}</p>
+                    <p style="margin:0;font-size:13px;color:#636E72;line-height:1.5;">
+                      Partagez ce code à vos proches pour les inviter sur Winelio<br/>et commencer à gagner ensemble.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Spacer -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="height:28px;font-size:0;line-height:0;">&nbsp;</td></tr>
+              </table>
+
+              <!-- Bouton CTA -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" style="background:linear-gradient(90deg,#FF6B35,#F7931E);border-radius:12px;">
+                          <a href="${networkUrl}"
+                             style="display:inline-block;color:#ffffff;font-size:16px;font-weight:700;padding:16px 40px;border-radius:12px;text-decoration:none;letter-spacing:0.5px;">
+                            Inviter mes premiers membres →
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Spacer bottom -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr>
               </table>
 
             </td>
@@ -150,9 +226,13 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
 
           <!-- Footer -->
           <tr>
-            <td align="center" style="padding-top:28px;">
-              <p style="font-size:12px;color:#B2BEC3;margin:0 0 4px;">Cet email a été envoyé par Winelio</p>
-              <p style="font-size:12px;color:#DFE6E9;margin:0;">© ${new Date().getFullYear()} Winelio. Tous droits réservés.</p>
+            <td align="center" style="padding-top:24px;">
+              <p style="color:#B2BAC0;font-size:12px;margin:0 0 4px;">
+                © 2026 Winelio · Plateforme de recommandation professionnelle
+              </p>
+              <p style="color:#FF6B35;font-size:11px;margin:0;">
+                Recommandez. Connectez. Gagnez.
+              </p>
             </td>
           </tr>
 
