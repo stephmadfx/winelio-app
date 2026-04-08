@@ -216,3 +216,35 @@ Fichiers de reference dans `/doc/` :
 ### shadcn/ui
 - Les composants générés par `npx shadcn@latest add` dans `src/components/ui/` doivent toujours être commités.
 - Ne pas oublier de commiter les nouveaux fichiers `ui/*.tsx` après installation.
+
+### Logo Winelio dans le code
+- **Dans l'app** (sidebar, header, pages) → utiliser `<WinelioLogo>` depuis `src/components/winelio-logo.tsx`
+  - Variantes : `color` (fond clair), `white` (tout blanc), `on-dark` (W gradient + inelio blanc, fond sombre)
+  - Ex: `<WinelioLogo variant="on-dark" height={38} />`
+- **Dans les emails HTML** → utiliser `<img>` avec les URLs R2 publiques :
+  - Fond clair : `https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-color.png`
+  - Fond sombre : `https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-on-dark.png`
+  - Toujours `width="160" height="44" style="display:block;margin:0 auto;border:0;max-width:160px;"`
+
+### Templates email — Charte visuelle obligatoire
+Tout nouvel email doit respecter cette structure :
+
+```
+fond outer #F0F2F4
+  └─ container 520px
+       ├─ barre accent 4px : linear-gradient(90deg,#FF6B35,#F7931E), border-radius 4px 4px 0 0
+       ├─ carte blanche border-radius 0 0 16px 16px, padding 40px 48px 36px
+       │    ├─ logo R2 (img centré, width=160, height=44) + séparateur #F0F2F4
+       │    └─ contenu spécifique
+       └─ footer : © 2026 Winelio (#B2BAC0) + tagline orange #FF6B35
+```
+
+**Règles techniques email :**
+- 100% `<table>/<tr>/<td>` — aucun `<div>` dans le corps
+- Pas de `margin-top`/`margin-bottom` sur `<td>` → utiliser des rangées spacer ou `padding`
+- Rangée spacer : `<tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>`
+- Icônes emoji : `<td width="52" height="52" style="background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:13px;text-align:center;vertical-align:middle;">`
+- Boutons CTA via table : `<table><tr><td><a style="display:inline-block;background:linear-gradient(135deg,#FF6B35,#F7931E);...">Texte →</a></td></tr></table>`
+- Blocs accent : fond `#FFF5F0`, bordure gauche `3px solid #FF6B35`
+
+Templates de référence : `src/app/api/auth/send-code/route.ts` (le plus complet)
