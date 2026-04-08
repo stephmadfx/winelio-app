@@ -21,63 +21,92 @@ function buildEmailHtml(code: string): string {
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Votre code Winelio</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Votre code de connexion Winelio</title>
 </head>
-<body style="margin:0;padding:0;background:#0f1117;font-family:Arial,Helvetica,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0">
-    <tr>
-      <td align="center" style="padding:40px 20px;">
-        <table width="520" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;">
+<body style="margin:0;padding:0;background:#F0F2F4;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
 
-          <!-- Logo -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F0F2F4;">
+    <tr>
+      <td align="center" style="padding:48px 20px 40px;">
+        <table width="520" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%;">
+
+          <!-- Barre accent top -->
           <tr>
-            <td align="center" style="padding-bottom:24px;">
-              <div style="font-size:30px;font-weight:800;line-height:1;letter-spacing:-1px;">
-                <span style="color:#FF6B35;">W</span><span style="color:#ffffff;">inelio</span>
-              </div>
-              <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#475569;margin-top:6px;">
-                Plateforme de recommandation
-              </div>
-            </td>
+            <td style="background:linear-gradient(90deg,#FF6B35,#F7931E);height:4px;border-radius:4px 4px 0 0;font-size:0;line-height:0;">&nbsp;</td>
           </tr>
 
-          <!-- Card -->
+          <!-- Carte principale -->
           <tr>
-            <td style="background:#1e2230;border:1px solid #2a3142;border-radius:16px;padding:40px 32px;text-align:center;">
+            <td style="background:#ffffff;border-radius:0 0 16px 16px;padding:40px 48px 36px;">
 
-              <!-- Title -->
-              <h1 style="color:#f8fafc;font-size:20px;font-weight:700;margin:0 0 8px;">
-                Votre code de connexion
-              </h1>
-              <p style="color:#94a3b8;font-size:14px;margin:0 0 32px;line-height:1.6;">
-                Saisissez ce code dans l'application pour vous connecter.
-              </p>
-
-              <!-- Code label -->
-              <p style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin:0 0 10px;">
-                Code a 6 chiffres
-              </p>
-
-              <!-- Code box -->
-              <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 14px;">
+              <!-- Logo -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="background:#161a26;border:2px solid #FF6B35;border-radius:12px;padding:18px 40px;text-align:center;">
-                    <span style="font-size:46px;font-weight:800;letter-spacing:14px;color:#ffffff;font-family:Courier New,Courier,monospace;">
-                      ${code}
+                  <td align="center" style="padding-bottom:28px;border-bottom:1px solid #F0F2F4;">
+                    <span style="font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;">
+                      <span style="color:#FF6B35;">W</span><span style="color:#2D3436;">inelio</span>
                     </span>
                   </td>
                 </tr>
               </table>
 
-              <p style="color:#64748b;font-size:12px;margin:0 0 28px;">
-                Ce code expire dans 24 heures.
-              </p>
-
-              <!-- Security note -->
-              <table cellpadding="0" cellspacing="0" border="0" width="100%">
+              <!-- Corps -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="background:#0d1117;border-radius:10px;padding:12px 16px;font-size:12px;color:#64748b;line-height:1.6;text-align:left;">
-                    Ce code est strictement personnel. Si vous n'avez pas fait cette demande, ignorez cet email.
+                  <td align="center" style="padding-top:32px;">
+
+                    <!-- Icône -->
+                    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 20px;">
+                      <tr>
+                        <td width="52" height="52" style="background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:13px;text-align:center;vertical-align:middle;">
+                          <span style="font-size:24px;line-height:52px;">🔑</span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Titre -->
+                    <h1 style="color:#2D3436;font-size:22px;font-weight:700;margin:0 0 10px;letter-spacing:-0.3px;">
+                      Votre code de connexion
+                    </h1>
+                    <p style="color:#636E72;font-size:15px;margin:0 0 36px;line-height:1.65;">
+                      Saisissez ce code dans l&apos;application pour accéder à votre compte Winelio.
+                    </p>
+
+                    <!-- Code -->
+                    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+                      <tr>
+                        <td style="background:#FFF5F0;border:2px solid #FF6B35;border-radius:14px;padding:20px 44px;text-align:center;">
+                          <span style="font-size:44px;font-weight:800;letter-spacing:12px;color:#2D3436;font-family:'Courier New',Courier,monospace;display:block;">
+                            ${code}
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Expiry -->
+                    <table cellpadding="0" cellspacing="0" border="0" style="margin:14px auto 0;">
+                      <tr>
+                        <td style="background:#F8F9FA;border-radius:20px;padding:6px 14px;">
+                          <span style="font-size:12px;color:#636E72;font-weight:500;">
+                            Expire dans <strong style="color:#2D3436;">24 heures</strong>
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Note sécurité -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:36px;">
+                <tr>
+                  <td style="background:#F8F9FA;border-left:3px solid #FF6B35;border-radius:0 8px 8px 0;padding:14px 16px;">
+                    <p style="color:#636E72;font-size:12px;margin:0;line-height:1.65;">
+                      Ce code est <strong style="color:#2D3436;">strictement personnel</strong> et à usage unique.<br>
+                      Si vous n&apos;avez pas fait cette demande, ignorez cet email — votre compte est en sécurité.
+                    </p>
                   </td>
                 </tr>
               </table>
@@ -87,8 +116,15 @@ function buildEmailHtml(code: string): string {
 
           <!-- Footer -->
           <tr>
-            <td align="center" style="padding-top:24px;font-size:12px;color:#334155;">
-              2025 Winelio &middot; Tous droits reserves
+            <td align="center" style="padding:24px 0 0;">
+              <p style="color:#B2BAC0;font-size:12px;margin:0 0 4px;">
+                © 2026 Winelio · Plateforme de recommandation professionnelle
+              </p>
+              <p style="margin:0;">
+                <span style="font-size:11px;color:#FF6B35;font-weight:600;letter-spacing:0.5px;">
+                  Recommandez. Connectez. Gagnez.
+                </span>
+              </p>
             </td>
           </tr>
 
@@ -96,6 +132,7 @@ function buildEmailHtml(code: string): string {
       </td>
     </tr>
   </table>
+
 </body>
 </html>`;
 }
