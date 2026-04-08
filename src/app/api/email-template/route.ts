@@ -19,7 +19,7 @@ const TEMPLATE = `<!DOCTYPE html>
           <tr>
             <td align="center" style="padding-bottom:28px;">
               <span style="font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;">
-                <span style="color:#ffffff;">BUZ</span><span style="color:#f97316;">RE</span><span style="color:#ffffff;">CO</span>
+                <span style="color:#FF6B35;">W</span><span style="color:#ffffff;">inelio</span>
               </span>
               <br/>
               <span style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#475569;font-weight:500;">Plateforme de recommandation</span>
@@ -33,7 +33,7 @@ const TEMPLATE = `<!DOCTYPE html>
               <!-- Icon -->
               <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 24px;">
                 <tr>
-                  <td style="width:64px;height:64px;background:linear-gradient(135deg,#f97316,#fbbf24);border-radius:16px;text-align:center;vertical-align:middle;">
+                  <td style="width:64px;height:64px;background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:16px;text-align:center;vertical-align:middle;">
                     <img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHg9IjUiIHk9IjIiIHdpZHRoPSIxNCIgaGVpZ2h0PSIyMCIgcng9IjIiIHJ5PSIyIi8+PGxpbmUgeDE9IjEyIiB5MT0iMTgiIHgyPSIxMi4wMSIgeTI9IjE4Ii8+PC9zdmc+" width="32" height="32" alt="" style="display:block;margin:16px auto;" />
                   </td>
                 </tr>

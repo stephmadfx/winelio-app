@@ -44,8 +44,8 @@ function buildReferralEmail(
           <!-- Logo -->
           <tr>
             <td align="center" style="padding-bottom:28px;">
-              <div style="font-size:28px;font-weight:900;letter-spacing:-1px;">
-                <span style="color:#2D3436;">BUZ</span><span style="color:#FF6B35;">RE</span><span style="color:#2D3436;">CO</span>
+              <div style="font-size:30px;font-weight:800;line-height:1;letter-spacing:-1px;">
+                <span style="color:#FF6B35;">W</span><span style="color:#2D3436;">inelio</span>
               </div>
               <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#636E72;margin-top:4px;">
                 Réseau de recommandation

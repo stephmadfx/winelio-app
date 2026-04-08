@@ -32,8 +32,8 @@ function buildEmailHtml(code: string): string {
           <!-- Logo -->
           <tr>
             <td align="center" style="padding-bottom:24px;">
-              <div style="font-size:28px;font-weight:800;line-height:1;">
-                <span style="color:#ffffff;">BUZ</span><span style="color:#f97316;">RE</span><span style="color:#ffffff;">CO</span>
+              <div style="font-size:30px;font-weight:800;line-height:1;letter-spacing:-1px;">
+                <span style="color:#FF6B35;">W</span><span style="color:#ffffff;">inelio</span>
               </div>
               <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#475569;margin-top:6px;">
                 Plateforme de recommandation
@@ -61,7 +61,7 @@ function buildEmailHtml(code: string): string {
               <!-- Code box -->
               <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 14px;">
                 <tr>
-                  <td style="background:#161a26;border:2px solid #f97316;border-radius:12px;padding:18px 40px;text-align:center;">
+                  <td style="background:#161a26;border:2px solid #FF6B35;border-radius:12px;padding:18px 40px;text-align:center;">
                     <span style="font-size:46px;font-weight:800;letter-spacing:14px;color:#ffffff;font-family:Courier New,Courier,monospace;">
                       ${code}
                     </span>

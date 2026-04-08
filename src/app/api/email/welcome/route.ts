@@ -32,8 +32,8 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
           <!-- Logo -->
           <tr>
             <td align="center" style="padding-bottom:32px;">
-              <div style="font-size:32px;font-weight:900;letter-spacing:-1px;line-height:1;">
-                <span style="color:#2D3436;">BUZ</span><span style="color:#FF6B35;">RE</span><span style="color:#2D3436;">CO</span>
+              <div style="font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;">
+                <span style="color:#FF6B35;">W</span><span style="color:#2D3436;">inelio</span>
               </div>
               <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#636E72;margin-top:6px;font-weight:500;">
                 Plateforme de recommandation
