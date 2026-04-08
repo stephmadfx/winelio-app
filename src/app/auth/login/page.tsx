@@ -168,6 +168,19 @@ function LoginForm() {
     setSponsorError("");
     const { createClient } = await import("@/lib/supabase/client");
     const supabase = createClient();
+
+    // Vérifier que le code n'appartient pas à un compte supprimé
+    const { data: deleted } = await supabase
+      .from("deleted_sponsor_codes")
+      .select("sponsor_code")
+      .eq("sponsor_code", trimmed)
+      .maybeSingle();
+    if (deleted) {
+      setSponsorChecking(false);
+      setSponsorError("Ce code parrain n'est plus disponible.");
+      return;
+    }
+
     const { data } = await supabase
       .from("profiles")
       .select("sponsor_code, first_name, last_name, email")

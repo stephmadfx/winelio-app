@@ -68,13 +68,24 @@ src/
 └── middleware.ts              # Protection des routes
 ```
 
-## Supabase Cloud
-- **URL** : https://dxnebmxtkvauergvrmod.supabase.co
-- **Dashboard** : https://supabase.com/dashboard/project/dxnebmxtkvauergvrmod
-- Utilisé en dev local ET en production (via `.env.local` et Coolify)
+## Supabase self-hosted (VPS)
+- **URL publique** : https://supabase.aide-multimedia.fr (frontend + dev local via tunnel SSH)
+- **URL interne Docker** : http://supabase-kong:8000 (utilisée côté serveur en production)
+- **Studio admin** : http://31.97.152.195:54323
+- **Container DB** : `supabase-db-ixlhs1fg5t2n8c4zsgvnys0r`
+- **Schéma** : `winelio` (toutes les tables applicatives)
+- **Accès direct DB** : `docker exec supabase-db-ixlhs1fg5t2n8c4zsgvnys0r psql -U supabase_admin -d postgres`
+
+### Appliquer une migration
+```bash
+sshpass -p '04660466aA@@@' scp supabase/migrations/XXX.sql root@31.97.152.195:/tmp/
+sshpass -p '04660466aA@@@' ssh root@31.97.152.195 \
+  "docker cp /tmp/XXX.sql supabase-db-ixlhs1fg5t2n8c4zsgvnys0r:/tmp/ && \
+   docker exec supabase-db-ixlhs1fg5t2n8c4zsgvnys0r psql -U supabase_admin -d postgres -f /tmp/XXX.sql"
+```
 
 ### Variables d'environnement (dans Coolify, PAS dans le code)
-- `NEXT_PUBLIC_SUPABASE_URL` — URL Supabase Cloud
+- `NEXT_PUBLIC_SUPABASE_URL` — https://supabase.aide-multimedia.fr
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Clé publique anon
 - `SUPABASE_SERVICE_ROLE_KEY` — Clé admin (server-side uniquement)
 - `NEXT_PUBLIC_DEMO_MODE` — `"true"` pour afficher le bandeau démo
@@ -101,6 +112,7 @@ Pour attribuer : `PUT /auth/v1/admin/users/{id}` avec `{"app_metadata": {"role":
 | withdrawals | Demandes de retrait |
 | devices | Tokens push notification |
 | audit_logs | Journal d'audit |
+| deleted_sponsor_codes | Codes parrain de comptes supprimés (jamais réutilisables) |
 
 ### Triggers Supabase
 - `on_auth_user_created` : auto-crée le profil + wallet summary à l'inscription

@@ -2,13 +2,60 @@
 
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const router = useRouter();
+
+  // État du dialog de suppression
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
+  const [confirmInput, setConfirmInput] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => setMounted(true), []);
+
+  const openDeleteDialog = () => {
+    setDeleteStep(1);
+    setConfirmInput("");
+    setDeleteError("");
+    setDeleteOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (confirmInput !== "SUPPRIMER") {
+      setDeleteError("Veuillez saisir exactement « SUPPRIMER » pour confirmer.");
+      return;
+    }
+    setDeleting(true);
+    setDeleteError("");
+
+    const res = await fetch("/api/account/delete", { method: "POST" });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setDeleteError(data.error || "Une erreur est survenue. Réessayez plus tard.");
+      setDeleting(false);
+      return;
+    }
+
+    // Déconnexion côté client puis redirection vers login
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.replace("/auth/login");
+  };
 
   return (
     <div>
@@ -37,7 +84,6 @@ export default function SettingsPage() {
                   : "border-gray-200 hover:border-gray-300"
               }`}
             >
-              {/* Aperçu mode clair */}
               <div className="w-full h-16 rounded-lg bg-white border border-gray-200 overflow-hidden shadow-sm">
                 <div className="h-4 bg-[#2D3436]" />
                 <div className="p-1.5 space-y-1">
@@ -68,7 +114,6 @@ export default function SettingsPage() {
                   : "border-gray-200 hover:border-gray-300"
               }`}
             >
-              {/* Aperçu mode sombre */}
               <div className="w-full h-16 rounded-lg bg-slate-900 border border-slate-700 overflow-hidden">
                 <div className="h-4 bg-[#2D3436]" />
                 <div className="p-1.5 space-y-1">
@@ -100,7 +145,7 @@ export default function SettingsPage() {
       </Card>
 
       {/* Infos app */}
-      <Card className="!rounded-2xl">
+      <Card className="!rounded-2xl mb-4">
         <CardContent className="p-5 sm:p-6">
           <h3 className="text-base font-semibold text-winelio-dark mb-4 flex items-center gap-2">
             <svg className="w-5 h-5 text-winelio-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -120,6 +165,121 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Zone dangereuse */}
+      <Card className="!rounded-2xl border-red-200">
+        <CardContent className="p-5 sm:p-6">
+          <h3 className="text-base font-semibold text-red-600 mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            Zone dangereuse
+          </h3>
+          <p className="text-sm text-winelio-gray mb-4">
+            La suppression de votre compte est définitive et irréversible.
+          </p>
+          <button
+            onClick={openDeleteDialog}
+            className="w-full py-2.5 px-4 rounded-xl border-2 border-red-300 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors"
+          >
+            Supprimer mon compte
+          </button>
+        </CardContent>
+      </Card>
+
+      {/* Dialog de suppression */}
+      <Dialog open={deleteOpen} onOpenChange={(open) => { if (!deleting) setDeleteOpen(open); }}>
+        <DialogContent className="max-w-md mx-4 rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+              Supprimer mon compte
+            </DialogTitle>
+          </DialogHeader>
+
+          {deleteStep === 1 && (
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3 text-sm text-red-800">
+                <p className="font-semibold">Avant de continuer, lisez attentivement :</p>
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 shrink-0">•</span>
+                    <span>Cette action est <strong>définitive et irréversible</strong>. Votre compte sera supprimé immédiatement.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 shrink-0">•</span>
+                    <span>Si vous revenez un jour, vous <strong>ne retrouverez pas votre place actuelle</strong> dans le réseau. Vous devrez repartir de zéro avec un nouveau code parrain.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 shrink-0">•</span>
+                    <span>Votre code utilisateur actuel ne sera <strong>jamais réattribué</strong> à un autre compte.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 shrink-0">•</span>
+                    <span>Vos filleuls directs <strong>remontent automatiquement</strong> au niveau de votre parrain dans le réseau.</span>
+                  </li>
+                </ul>
+              </div>
+              <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-2">
+                <button
+                  onClick={() => setDeleteOpen(false)}
+                  className="flex-1 py-2.5 px-4 rounded-xl border-2 border-gray-200 text-winelio-gray text-sm font-medium hover:border-gray-300 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={() => setDeleteStep(2)}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+                >
+                  Je comprends, continuer
+                </button>
+              </DialogFooter>
+            </div>
+          )}
+
+          {deleteStep === 2 && (
+            <div className="space-y-4">
+              <p className="text-sm text-winelio-gray">
+                Pour confirmer la suppression définitive de votre compte, saisissez <strong className="text-winelio-dark">SUPPRIMER</strong> dans le champ ci-dessous :
+              </p>
+              <input
+                type="text"
+                value={confirmInput}
+                onChange={(e) => {
+                  setConfirmInput(e.target.value);
+                  setDeleteError("");
+                }}
+                placeholder="SUPPRIMER"
+                className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-red-400 outline-none text-sm font-mono tracking-widest text-center"
+                autoComplete="off"
+                autoCapitalize="characters"
+                disabled={deleting}
+              />
+              {deleteError && (
+                <p className="text-xs text-red-600 text-center">{deleteError}</p>
+              )}
+              <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-2">
+                <button
+                  onClick={() => { setDeleteStep(1); setConfirmInput(""); setDeleteError(""); }}
+                  disabled={deleting}
+                  className="flex-1 py-2.5 px-4 rounded-xl border-2 border-gray-200 text-winelio-gray text-sm font-medium hover:border-gray-300 transition-colors disabled:opacity-50"
+                >
+                  Retour
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting || confirmInput !== "SUPPRIMER"}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deleting ? "Suppression…" : "Supprimer définitivement"}
+                </button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

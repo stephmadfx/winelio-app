@@ -86,6 +86,12 @@ export default function NewRecommendationPage() {
   const [radius, setRadius] = useState<number>(25);
   const [sortBy, setSortBy] = useState<"distance" | "name">("name");
 
+  // Recherche par code postal
+  const [postalCode, setPostalCode] = useState("");
+  const [postalCommunes, setPostalCommunes] = useState<string[]>([]);
+  const [selectedCommune, setSelectedCommune] = useState<string | null>(null);
+  const [postalLoading, setPostalLoading] = useState(false);
+
   // Step 3 - Project
   const [description, setDescription] = useState("");
   const [urgency, setUrgency] = useState<Urgency>("normal");
@@ -196,9 +202,38 @@ export default function NewRecommendationPage() {
           return a.distance - b.distance;
         });
       }
+      if (selectedCommune) {
+        const commune = selectedCommune.toLowerCase();
+        results = results.filter((p) => (p.city ?? "").toLowerCase().includes(commune));
+      }
       setProfessionals(results);
     });
-  }, [proSearch, supabase, selectedCategory, userLocation, radius, sortBy]);
+  }, [proSearch, supabase, selectedCategory, userLocation, radius, sortBy, selectedCommune]);
+
+  useEffect(() => {
+    if (postalCode.length !== 5) {
+      setPostalCommunes([]);
+      setSelectedCommune(null);
+      return;
+    }
+    setPostalLoading(true);
+    fetch(`https://geo.api.gouv.fr/communes?codePostal=${postalCode}&fields=nom`)
+      .then((res) => res.json())
+      .then((data: { nom: string }[]) => {
+        const noms = data.map((c) => c.nom);
+        setPostalCommunes(noms);
+        if (noms.length === 1) setSelectedCommune(noms[0]);
+        else setSelectedCommune(null);
+      })
+      .catch(() => setPostalCommunes([]))
+      .finally(() => setPostalLoading(false));
+  }, [postalCode]);
+
+  const handleClearPostal = () => {
+    setPostalCode("");
+    setPostalCommunes([]);
+    setSelectedCommune(null);
+  };
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -592,6 +627,60 @@ export default function NewRecommendationPage() {
             </div>
           )}
 
+          {/* Recherche par code postal */}
+          <div className="mb-4">
+            <div className="flex gap-2">
+              <div className="relative flex-1 max-w-[160px]">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={5}
+                  placeholder="Code postal"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                  className="w-full rounded-xl border border-winelio-gray/20 px-4 py-3 text-sm focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15"
+                />
+                {postalLoading && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-winelio-orange border-t-transparent rounded-full animate-spin" />
+                )}
+              </div>
+
+              {postalCommunes.length > 0 && (
+                <>
+                  {postalCommunes.length === 1 ? (
+                    <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
+                      <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      {postalCommunes[0]}
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedCommune ?? ""}
+                      onChange={(e) => setSelectedCommune(e.target.value || null)}
+                      className="flex-1 rounded-xl border border-winelio-gray/20 px-4 py-3 text-sm text-winelio-dark focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15 bg-white cursor-pointer"
+                    >
+                      <option value="">Toutes les communes</option>
+                      {postalCommunes.map((nom) => (
+                        <option key={nom} value={nom}>{nom}</option>
+                      ))}
+                    </select>
+                  )}
+                  <button
+                    onClick={handleClearPostal}
+                    className="flex items-center justify-center w-10 rounded-xl border border-winelio-gray/20 text-winelio-gray hover:text-red-500 hover:border-red-200 transition-colors cursor-pointer"
+                    title="Effacer"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
           {/* Search + Category */}
           <div className="mb-4 flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
@@ -621,6 +710,7 @@ export default function NewRecommendationPage() {
           <p className="mb-3 text-xs text-winelio-gray/70">
             {professionals.length} professionnel{professionals.length !== 1 ? "s" : ""} trouvé{professionals.length !== 1 ? "s" : ""}
             {selectedCategory !== "all" && ` · ${selectedCategory}`}
+            {selectedCommune && ` · ${selectedCommune}`}
             {geoStatus === "granted" && radius < 99999 && ` · ${radius} km`}
           </p>
 

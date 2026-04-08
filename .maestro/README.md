@@ -1,6 +1,6 @@
-# Tests Maestro - Kiparlo
+# Tests Maestro - Winelio
 
-Tests E2E mobiles pour l'app web Next.js Kiparlo, via Maestro.
+Tests E2E mobiles pour l'app web Next.js Winelio, via Maestro.
 
 ## Prérequis
 
