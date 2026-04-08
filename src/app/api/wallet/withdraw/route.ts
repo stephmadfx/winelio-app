@@ -83,41 +83,32 @@ export async function POST(request: Request) {
       );
     }
 
-    // Insert withdrawal
     const paymentDetails =
       payment_method === "bank_transfer"
         ? { iban: (iban ?? "").replace(/\s/g, "").toUpperCase() }
         : { email: paypal_email.trim() };
 
-    const { error: insertError } = await supabase.from("withdrawals").insert({
-      user_id: user.id,
-      amount: parsedAmount,
-      payment_method,
-      payment_details: paymentDetails,
-      status: "pending",
+    // Opération atomique via RPC (insert + update dans une seule transaction)
+    const { data: rpcResult, error: rpcError } = await supabase.rpc("process_withdrawal", {
+      p_user_id: user.id,
+      p_amount: parsedAmount,
+      p_payment_method: payment_method,
+      p_payment_details: paymentDetails,
     });
 
-    if (insertError) {
-      return NextResponse.json(
-        { error: "Erreur lors de la création du retrait" },
-        { status: 500 }
-      );
+    if (rpcError) {
+      return NextResponse.json({ error: "Erreur lors du retrait" }, { status: 500 });
     }
 
-    // Update wallet (server-side calculation)
-    const { error: updateError } = await supabase
-      .from("user_wallet_summaries")
-      .update({
-        available: wallet.available - parsedAmount,
-        total_withdrawn: (wallet.total_withdrawn ?? 0) + parsedAmount,
-      })
-      .eq("user_id", user.id);
-
-    if (updateError) {
-      return NextResponse.json(
-        { error: "Erreur lors de la mise à jour du solde" },
-        { status: 500 }
-      );
+    const result = rpcResult as { error?: string; success?: boolean };
+    if (result?.error === "insufficient_balance") {
+      return NextResponse.json({ error: "Solde insuffisant" }, { status: 400 });
+    }
+    if (result?.error === "wallet_not_found") {
+      return NextResponse.json({ error: "Wallet introuvable" }, { status: 404 });
+    }
+    if (result?.error) {
+      return NextResponse.json({ error: "Erreur lors du retrait" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

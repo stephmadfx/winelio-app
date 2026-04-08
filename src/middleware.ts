@@ -2,9 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./lib/supabase/config";
 
-// Simple in-memory rate limiter (per IP, resets every window)
+// Rate limiter en mémoire (best-effort, par process).
+// LIMITATION : en environnement multi-worker (ex: PM2 cluster), chaque worker a son propre
+// compteur. Pour une protection stricte, remplacer par un compteur Redis/Upstash.
 const rateMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 60; // requests per window
+const RATE_LIMIT = 60; // requêtes max par fenêtre
 const RATE_WINDOW_MS = 60_000; // 1 minute
 
 function isRateLimited(ip: string): boolean {
@@ -17,21 +19,19 @@ function isRateLimited(ip: string): boolean {
   }
 
   entry.count++;
-  if (entry.count > RATE_LIMIT) {
-    return true;
-  }
-  return false;
+  return entry.count > RATE_LIMIT;
 }
 
-// Cleanup stale entries periodically (prevent memory leak)
+// Nettoyage périodique des entrées expirées
 if (typeof globalThis !== "undefined") {
-  const cleanup = () => {
+  const timer = setInterval(() => {
     const now = Date.now();
     for (const [key, val] of rateMap) {
       if (now > val.resetAt) rateMap.delete(key);
     }
-  };
-  setInterval(cleanup, 5 * 60_000);
+  }, 5 * 60_000);
+  // Permet au process de se terminer sans attendre l'intervalle
+  if (typeof timer === "object" && "unref" in timer) timer.unref();
 }
 
 export async function middleware(request: NextRequest) {
@@ -66,7 +66,8 @@ export async function middleware(request: NextRequest) {
           );
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options as Record<string, string>)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            supabaseResponse.cookies.set(name, value, (options ?? {}) as any)
           );
         },
       },

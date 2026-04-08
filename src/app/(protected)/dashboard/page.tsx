@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { OnboardingModal } from "@/components/onboarding-modal";
@@ -6,14 +7,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FeedEvent, formatUserName, formatRelativeTime } from "@/lib/feed-utils";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
+  if (!user) redirect("/auth/login");
 
-  if (!user) {
-    redirect("/auth/login");
-  }
+  const supabase = await createClient();
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -68,21 +65,13 @@ export default async function DashboardPage() {
   const isSuperAdmin = user.app_metadata?.role === "super_admin";
   const needsOnboarding = !isSuperAdmin && (!profile?.first_name || !profile?.last_name);
 
-  // Réseau MLM (5 niveaux)
-  const allNetworkIds: string[] = [];
-  let networkCount = 0;
-  let currentLevelIds = [user.id];
-  for (let lvl = 1; lvl <= 5; lvl++) {
-    if (currentLevelIds.length === 0) break;
-    const { data: lvlMembers } = await supabase
-      .from("profiles")
-      .select("id")
-      .in("sponsor_id", currentLevelIds);
-    if (!lvlMembers || lvlMembers.length === 0) break;
-    networkCount += lvlMembers.length;
-    allNetworkIds.push(...lvlMembers.map((m) => m.id));
-    currentLevelIds = lvlMembers.map((m) => m.id);
-  }
+  // Réseau MLM (5 niveaux) — une seule requête récursive via RPC
+  const { data: networkRows } = await supabase.rpc("get_network_ids", {
+    p_user_id: user.id,
+    p_max_depth: 5,
+  });
+  const allNetworkIds: string[] = (networkRows ?? []).map((r: { member_id: string }) => r.member_id);
+  const networkCount = allNetworkIds.length;
 
   // Filleuls directs pour l'arbre réseau desktop
   const { data: directReferrals } = await supabase

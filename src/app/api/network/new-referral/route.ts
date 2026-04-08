@@ -210,8 +210,15 @@ function buildReferralEmail(
 
 export async function POST(req: Request) {
   try {
-    const { newUserId } = await req.json();
-    if (!newUserId) return NextResponse.json({ error: "newUserId manquant" }, { status: 400 });
+    // Utilise l'ID de session (vérifié par le middleware Supabase) — ignore newUserId du body
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    const newUserId = user.id;
+
+    // Consomme le body sans l'utiliser (pour ne pas bloquer le stream)
+    await req.json().catch(() => {});
 
     // Nom du nouveau filleul
     const { data: newProfile } = await supabaseAdmin
@@ -224,44 +231,45 @@ export async function POST(req: Request) {
       [newProfile?.first_name, newProfile?.last_name].filter(Boolean).join(" ") || "Un nouveau membre";
 
     // Remonte la chaîne de parrainage jusqu'à 5 niveaux
-    const notifications: Array<{ email: string; firstName: string; level: number }> = [];
+    // Étape 1 : collecter les IDs des sponsors (séquentiel car chaque niveau dépend du précédent)
+    const sponsorChain: Array<{ id: string; level: number }> = [];
     let currentId = newUserId;
 
     for (let level = 1; level <= 5; level++) {
       const { data: profile } = await supabaseAdmin
         .from("profiles")
-        .select("sponsor_id, first_name, last_name")
+        .select("sponsor_id")
         .eq("id", currentId)
         .single();
-
       if (!profile?.sponsor_id) break;
+      sponsorChain.push({ id: profile.sponsor_id, level });
+      currentId = profile.sponsor_id;
+    }
 
-      const sponsorId = profile.sponsor_id;
+    if (sponsorChain.length === 0) {
+      return NextResponse.json({ success: true, notified: 0 });
+    }
 
-      // Profil du sponsor
-      const { data: sponsorProfile } = await supabaseAdmin
-        .from("profiles")
-        .select("first_name, last_name")
-        .eq("id", sponsorId)
-        .single();
+    const sponsorIds = sponsorChain.map((s) => s.id);
 
-      // Email du sponsor (depuis auth)
-      const { data: authData } = await supabaseAdmin.auth.admin.getUserById(sponsorId);
-      const sponsorEmail = authData?.user?.email;
+    // Étape 2 : fetch profils + emails en parallèle
+    const [profilesResult, authResults] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id, first_name").in("id", sponsorIds),
+      Promise.all(sponsorIds.map((id) => supabaseAdmin.auth.admin.getUserById(id))),
+    ]);
 
-      // Skip les emails fictifs Winelio
-      if (!sponsorEmail || sponsorEmail.endsWith("@winelio-pro.fr")) {
-        currentId = sponsorId;
-        continue;
-      }
+    const profileMap = new Map(
+      (profilesResult.data ?? []).map((p) => [p.id, p.first_name as string | null])
+    );
+    const emailMap = new Map(
+      sponsorIds.map((id, i) => [id, authResults[i].data?.user?.email ?? null])
+    );
 
-      notifications.push({
-        email: sponsorEmail,
-        firstName: sponsorProfile?.first_name || "Membre",
-        level,
-      });
-
-      currentId = sponsorId;
+    const notifications: Array<{ email: string; firstName: string; level: number }> = [];
+    for (const { id, level } of sponsorChain) {
+      const email = emailMap.get(id);
+      if (!email || email.endsWith("@winelio-pro.fr")) continue;
+      notifications.push({ email, firstName: profileMap.get(id) || "Membre", level });
     }
 
     // Envoie les emails en parallèle

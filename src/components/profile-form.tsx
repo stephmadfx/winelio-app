@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { assignSponsor } from "@/app/(protected)/profile/actions";
 
 interface Profile {
   id: string;
@@ -29,7 +30,7 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
   const [showEmailTooltip, setShowEmailTooltip] = useState(false);
   const [sponsorInput, setSponsorInput] = useState("");
   const [saving, setSaving] = useState(false);
-  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -53,8 +54,8 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
         is_professional: data.is_professional,
       })
       .eq("id", profile.id);
-    setAutoSaveStatus(error ? "idle" : "saved");
-    setTimeout(() => setAutoSaveStatus("idle"), 2000);
+    setAutoSaveStatus(error ? "error" : "saved");
+    setTimeout(() => setAutoSaveStatus("idle"), 3000);
   };
 
   // Garde formRef à jour pour y accéder au unmount
@@ -107,30 +108,12 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
     if (!sponsorInput.trim()) return;
     setSaving(true);
     setMessage(null);
-    const supabase = createClient();
-
-    // Find the sponsor by their sponsor_code
-    const { data: sponsor } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("sponsor_code", sponsorInput.trim())
-      .single();
-
-    if (!sponsor) {
-      setMessage({ type: "error", text: "Code parrain invalide." });
-      setSaving(false);
-      return;
-    }
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({ sponsor_id: sponsor.id })
-      .eq("id", profile.id);
-
-    if (error) {
-      setMessage({ type: "error", text: "Erreur lors de l'ajout du parrain." });
+    const result = await assignSponsor(sponsorInput);
+    if (result.error) {
+      setMessage({ type: "error", text: result.error });
     } else {
       setMessage({ type: "success", text: "Parrain ajouté avec succès." });
+      setSponsorInput("");
     }
     setSaving(false);
   };
@@ -276,10 +259,13 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
             {saving ? "Sauvegarde..." : "Sauvegarder"}
           </button>
           {autoSaveStatus === "saving" && (
-            <span className="text-xs text-winelio-gray animate-pulse">Sauvegarde automatique...</span>
+            <span className="text-xs text-winelio-gray animate-pulse">Sauvegarde...</span>
           )}
           {autoSaveStatus === "saved" && (
             <span className="text-xs text-green-500 font-medium">✓ Sauvegardé</span>
+          )}
+          {autoSaveStatus === "error" && (
+            <span className="text-xs text-red-500 font-medium">⚠ Erreur de sauvegarde, réessayez</span>
           )}
         </div>
       </div>

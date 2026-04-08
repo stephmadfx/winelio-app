@@ -110,6 +110,17 @@ export async function POST(request: Request) {
 
     // If validation step (6), trigger commission creation server-side
     if (isValidationStep && rec.amount) {
+      // Garde idempotente : ne crée les commissions que si elles n'existent pas encore
+      const { count: existingCommissions } = await supabase
+        .from("commission_transactions")
+        .select("id", { count: "exact", head: true })
+        .eq("recommendation_id", rec.id);
+
+      if (existingCommissions && existingCommissions > 0) {
+        // Commissions déjà créées (appel dupliqué) — retourne succès sans rien faire
+        return NextResponse.json({ success: true });
+      }
+
       const { data: proProfile } = await supabase
         .from("profiles")
         .select("compensation_plan_id")
