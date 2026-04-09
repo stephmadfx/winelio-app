@@ -43,11 +43,12 @@ export function NetworkBackground() {
   return (
     <div
       aria-hidden="true"
-      className="absolute inset-0 overflow-hidden pointer-events-none z-0"
+      className="absolute left-0 right-0 bottom-0 overflow-hidden pointer-events-none z-0"
+      style={{ top: 20 }}
     >
       <svg
         viewBox="0 0 100 82"
-        preserveAspectRatio="xMidYMid meet"
+        preserveAspectRatio="xMidYMin meet"
         className="absolute inset-0 w-full h-full"
         style={{ opacity: 0.55 }}
       >
