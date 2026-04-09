@@ -86,11 +86,9 @@ function LoginForm() {
   }, [refCode]);
 
   // Appliquer le parrainage après connexion/inscription
-  // La route serveur gère : code parrain explicite OU auto-assignation fondateur
+  // Appelé systématiquement — la route serveur ignore si le parrain est déjà assigné
   const applyReferral = async () => {
     const storedRef = localStorage.getItem("winelio_ref");
-    // Pour une simple connexion sans code stocké, rien à faire
-    if (!storedRef && !isRegister) return;
 
     await fetch("/api/auth/assign-sponsor", {
       method: "POST",
