@@ -15,7 +15,7 @@ interface TNode { id: string; level: number; x: number; y: number; children: TNo
 interface TEdge { id: string; x1: number; y1: number; x2: number; y2: number; level: number; len: number }
 
 /* ── Config ── */
-const LEVEL_Y     = [4, 23, 42, 61, 80, 99, 118, 137];              // y par niveau (viewBox 0-145, espacement ~19)
+const LEVEL_Y     = [4, 42, 80, 118, 156, 194, 232, 270];           // y par niveau (viewBox 0-280, espacement ~38)
 const X_MIN       = 3;
 const X_MAX       = 97;
 const MAX_NODES   = [1, 5, 12, 20, 28, 34, 40, 46] as const;       // plafond par niveau
@@ -124,7 +124,7 @@ export function NetworkBackground() {
       <div style={{ position: "absolute", inset: 0, opacity: fading ? 0 : 1,
                     transition: `opacity ${FADE_MS}ms ease` }}>
         <svg
-          viewBox="0 0 100 145"
+          viewBox="0 0 100 280"
           preserveAspectRatio="xMidYMin meet"
           style={{ width: "100%", height: "100%", opacity: 0.5 }}
         >
