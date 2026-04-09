@@ -1,136 +1,202 @@
 "use client";
 
-// Arbre MLM animé en arrière-plan — pur SVG + CSS, aucun JS loop.
-// 14 nœuds sur 4 niveaux. Lignes qui se tracent, nœuds qui pulsent.
+/**
+ * Animation réseau MLM en arrière-plan.
+ * - Arbre aléatoire 4 niveaux, 2-5 branches par nœud
+ * - Lignes qui se tracent niveau par niveau
+ * - Nœuds pulsent + ripple
+ * - Se réinitialise avec un nouvel arbre aléatoire en boucle
+ */
 
-type Pt = { cx: number; cy: number };
+import { useEffect, useRef, useState } from "react";
 
-const NODES: Pt[] = [
-  { cx: 50, cy: 9  },  // 0 root
-  { cx: 29, cy: 27 },  // 1 L1
-  { cx: 71, cy: 27 },  // 2 L1
-  { cx: 14, cy: 47 },  // 3 L2
-  { cx: 38, cy: 46 },  // 4 L2
-  { cx: 62, cy: 46 },  // 5 L2
-  { cx: 86, cy: 47 },  // 6 L2
-  { cx: 6,  cy: 70 },  // 7 L3
-  { cx: 20, cy: 68 },  // 8 L3
-  { cx: 34, cy: 69 },  // 9 L3
-  { cx: 50, cy: 71 },  // 10 L3
-  { cx: 66, cy: 69 },  // 11 L3
-  { cx: 80, cy: 68 },  // 12 L3
-  { cx: 94, cy: 70 },  // 13 L3
-];
+/* ── Types ── */
+interface TNode { id: string; level: number; x: number; y: number; children: TNode[] }
+interface TEdge { id: string; x1: number; y1: number; x2: number; y2: number; level: number; len: number }
 
-const EDGES: [number, number][] = [
-  [0, 1], [0, 2],
-  [1, 3], [1, 4],
-  [2, 5], [2, 6],
-  [3, 7], [3, 8],
-  [4, 9], [4, 10],
-  [5, 10],[5, 11],
-  [6, 12],[6, 13],
-];
+/* ── Config ── */
+const LEVEL_Y     = [6, 27, 49, 71, 93];           // y par niveau dans le viewBox 0-100
+const X_MIN       = 3;
+const X_MAX       = 97;
+const MAX_NODES   = [1, 6, 14, 24, 36] as const;   // plafond par niveau
+const LVL_DELAY   = [0, 0.75, 1.55, 2.45, 3.4];   // délai d'apparition (s)
+const DRAW_DUR    = 1.2;                            // durée trace d'une ligne (s)
+const PAUSE_AFTER = 1800;                           // ms de pause avant fade-out
+const FADE_MS     = 700;                            // ms de fondu sortant
 
-function nodeR(i: number) {
-  if (i === 0) return 1.1;
-  if (i <= 2)  return 0.8;
-  if (i <= 6)  return 0.65;
-  return 0.5;
+function rnd(a: number, b: number) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+
+/* ── Génération ── */
+function buildTree() {
+  const counts = [0, 0, 0, 0, 0];
+
+  function make(level: number, id: string): TNode {
+    counts[level]++;
+    const children: TNode[] = [];
+    if (level < 4) {
+      const want =
+        level === 0 ? rnd(2, 5) :
+        level === 1 ? rnd(2, 4) :
+        level === 2 ? rnd(1, 3) :
+                      rnd(0, 2);
+      for (let i = 0; i < want; i++) {
+        if (counts[level + 1] < MAX_NODES[level + 1])
+          children.push(make(level + 1, `${id}${i}`));
+      }
+    }
+    return { id, level, x: 0, y: LEVEL_Y[level], children };
+  }
+
+  const root = make(0, "r");
+
+  /* Layout horizontal (répartition par feuilles) */
+  function leafCount(n: TNode): number {
+    return n.children.length ? n.children.reduce((s, c) => s + leafCount(c), 0) : 1;
+  }
+  function layout(n: TNode, l: number, r: number) {
+    n.x = (l + r) / 2;
+    if (!n.children.length) return;
+    const tot = leafCount(n);
+    let cur = l;
+    for (const c of n.children) {
+      const w = (leafCount(c) / tot) * (r - l);
+      layout(c, cur, cur + w);
+      cur += w;
+    }
+  }
+  layout(root, X_MIN, X_MAX);
+
+  /* Aplatissement en listes */
+  const nodes: TNode[] = [];
+  const edges: TEdge[] = [];
+  function flat(n: TNode) {
+    nodes.push(n);
+    for (const c of n.children) {
+      edges.push({ id: `${n.id}>${c.id}`, x1: n.x, y1: n.y, x2: c.x, y2: c.y,
+                   level: n.level, len: Math.hypot(c.x - n.x, c.y - n.y) });
+      flat(c);
+    }
+  }
+  flat(root);
+
+  const maxLevel   = nodes.reduce((m, n) => Math.max(m, n.level), 0);
+  const totalMs    = (LVL_DELAY[maxLevel] + DRAW_DUR + PAUSE_AFTER / 1000) * 1000;
+
+  return { nodes, edges, totalMs };
 }
 
+/* ── Composant ── */
 export function NetworkBackground() {
+  const [data,   setData]   = useState<ReturnType<typeof buildTree> | null>(null);
+  const [fading, setFading] = useState(false);
+  const [gen,    setGen]    = useState(0);   // force remount du <g> pour redémarrer les animations CSS
+  const timerRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  /* Init côté client uniquement */
+  useEffect(() => { setData(buildTree()); }, []);
+
+  /* Boucle : quand data change → arme les timers du cycle suivant */
+  useEffect(() => {
+    if (!data) return;
+    timerRef.current.forEach(clearTimeout);
+    timerRef.current = [
+      setTimeout(() => setFading(true), data.totalMs),
+      setTimeout(() => {
+        setFading(false);
+        setData(buildTree());
+        setGen(g => g + 1);
+      }, data.totalMs + FADE_MS),
+    ];
+    return () => timerRef.current.forEach(clearTimeout);
+  }, [data]);
+
+  if (!data) return null;
+
   return (
     <div
       aria-hidden="true"
       className="absolute left-0 right-0 bottom-0 overflow-hidden pointer-events-none z-0"
-      style={{ top: 20 }}
+      style={{ top: 55 }}
     >
-      <svg
-        viewBox="0 0 100 82"
-        preserveAspectRatio="xMidYMin meet"
-        className="absolute inset-0 w-full h-full"
-        style={{ opacity: 0.55 }}
-      >
-        <defs>
-          <linearGradient id="nlGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%"   stopColor="#FF6B35" />
-            <stop offset="100%" stopColor="#F7931E" />
-          </linearGradient>
-        </defs>
+      <div style={{ position: "absolute", inset: 0, opacity: fading ? 0 : 1,
+                    transition: `opacity ${FADE_MS}ms ease` }}>
+        <svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="xMidYMin meet"
+          style={{ width: "100%", height: "100%", opacity: 0.5 }}
+        >
+          <defs>
+            <linearGradient id="nlG" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%"   stopColor="#FF6B35" />
+              <stop offset="100%" stopColor="#F7931E" />
+            </linearGradient>
+          </defs>
 
-        {EDGES.map(([a, b], i) => {
-          const A = NODES[a], B = NODES[b];
-          const len = Math.hypot(B.cx - A.cx, B.cy - A.cy);
-          const delay = (0.3 + i * 0.13).toFixed(2);
-          return (
-            <line
-              key={"e" + i}
-              x1={A.cx} y1={A.cy} x2={B.cx} y2={B.cy}
-              stroke="url(#nlGrad)"
-              strokeWidth="0.22"
-              strokeOpacity="0.35"
-              strokeLinecap="round"
-              strokeDasharray={len}
-              strokeDashoffset={len}
-              style={{
-                animation: "nl-draw 1.6s " + delay + "s cubic-bezier(.4,0,.2,1) forwards",
-              }}
-            />
-          );
-        })}
+          {/* key=gen → React remonte le groupe → relance toutes les animations CSS */}
+          <g key={gen}>
 
-        {NODES.map((n, i) => {
-          const r   = nodeR(i);
-          const d1  = (0.15 + i * 0.1).toFixed(2);
-          const d2  = (0.75 + i * 0.1).toFixed(2);
-          const dur = (2.8 + (i % 4) * 0.5).toFixed(1);
-          return (
-            <g key={"n" + i}>
-              {i <= 6 && (
-                <circle
-                  cx={n.cx} cy={n.cy} r={r * 2.2}
-                  fill="none"
-                  stroke="#FF6B35"
-                  strokeWidth="0.18"
-                  style={{
-                    transformBox: "fill-box" as React.CSSProperties["transformBox"],
-                    transformOrigin: "center",
-                    animation: "nl-ripple " + dur + "s " + d2 + "s ease-out infinite",
-                  }}
-                />
-              )}
-              <circle
-                cx={n.cx} cy={n.cy} r={r}
-                fill="url(#nlGrad)"
-                fillOpacity={0}
+            {/* ── Lignes ── */}
+            {data.edges.map(e => (
+              <line
+                key={e.id}
+                x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
+                stroke="url(#nlG)"
+                strokeWidth="0.25"
+                strokeOpacity="0.38"
+                strokeLinecap="round"
+                strokeDasharray={e.len}
+                strokeDashoffset={e.len}
                 style={{
-                  animation:
-                    "nl-in .5s " + d1 + "s ease forwards, " +
-                    "nl-pulse " + dur + "s " + d2 + "s ease-in-out infinite",
+                  animation: `nl-draw ${DRAW_DUR}s ${LVL_DELAY[e.level].toFixed(2)}s cubic-bezier(.4,0,.2,1) forwards`,
                 }}
               />
-            </g>
-          );
-        })}
+            ))}
 
-        <style>{`
-          @keyframes nl-draw  { to { stroke-dashoffset: 0; } }
-          @keyframes nl-in    { to { fill-opacity: .45; } }
-          @keyframes nl-pulse {
-            0%,100% { fill-opacity: .3; }
-            50%     { fill-opacity: .6; }
-          }
-          @keyframes nl-ripple {
-            0%   { transform: scale(1);   stroke-opacity: .5; }
-            100% { transform: scale(3.5); stroke-opacity: 0; }
-          }
-          @media (prefers-reduced-motion: reduce) {
-            line, circle { animation: none !important; }
-            line { stroke-dashoffset: 0 !important; }
-          }
-        `}</style>
-      </svg>
+            {/* ── Nœuds ── */}
+            {data.nodes.map(n => {
+              const r   = n.level === 0 ? 1.3 : n.level === 1 ? 1.0 : n.level === 2 ? 0.75 : 0.55;
+              const dIn = (LVL_DELAY[n.level] + 0.1).toFixed(2);
+              const dPl = (LVL_DELAY[n.level] + 0.8).toFixed(2);
+              const dur = (2.6 + (n.level % 3) * 0.45).toFixed(1);
+              return (
+                <g key={n.id}>
+                  {n.level <= 2 && (
+                    <circle cx={n.x} cy={n.y} r={r * 2.4}
+                      fill="none" stroke="#FF6B35" strokeWidth="0.14"
+                      style={{
+                        transformBox:   "fill-box" as React.CSSProperties["transformBox"],
+                        transformOrigin: "center",
+                        animation: `nl-ripple ${dur}s ${dPl}s ease-out infinite`,
+                      }}
+                    />
+                  )}
+                  <circle cx={n.x} cy={n.y} r={r}
+                    fill="url(#nlG)" fillOpacity={0}
+                    style={{
+                      animation: `nl-in .5s ${dIn}s ease forwards, nl-pulse ${dur}s ${dPl}s ease-in-out infinite`,
+                    }}
+                  />
+                </g>
+              );
+            })}
+
+          </g>
+
+          <style>{`
+            @keyframes nl-draw  { to { stroke-dashoffset: 0 } }
+            @keyframes nl-in    { to { fill-opacity: .45 } }
+            @keyframes nl-pulse { 0%,100%{fill-opacity:.28} 50%{fill-opacity:.55} }
+            @keyframes nl-ripple {
+              0%  { transform:scale(1);   stroke-opacity:.45 }
+              100%{ transform:scale(4);   stroke-opacity:0   }
+            }
+            @media (prefers-reduced-motion:reduce) {
+              line,circle { animation:none !important }
+              line { stroke-dashoffset:0 !important }
+            }
+          `}</style>
+        </svg>
+      </div>
     </div>
   );
 }
