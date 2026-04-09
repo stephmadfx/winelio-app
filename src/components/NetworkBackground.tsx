@@ -2,8 +2,8 @@
 
 /**
  * Animation réseau MLM en arrière-plan.
- * - Arbre aléatoire 4 niveaux, 2-5 branches par nœud
- * - Lignes qui se tracent niveau par niveau
+ * - Arbre aléatoire 7 niveaux, 2-5 branches par nœud
+ * - Lignes qui se tracent niveau par niveau (animation lente)
  * - Nœuds pulsent + ripple
  * - Se réinitialise avec un nouvel arbre aléatoire en boucle
  */
@@ -15,30 +15,32 @@ interface TNode { id: string; level: number; x: number; y: number; children: TNo
 interface TEdge { id: string; x1: number; y1: number; x2: number; y2: number; level: number; len: number }
 
 /* ── Config ── */
-const LEVEL_Y     = [6, 27, 49, 71, 93];           // y par niveau dans le viewBox 0-100
+const LEVEL_Y     = [5, 19, 33, 47, 61, 75, 89];                    // y par niveau (viewBox 0-100)
 const X_MIN       = 3;
 const X_MAX       = 97;
-const MAX_NODES   = [1, 6, 14, 24, 36] as const;   // plafond par niveau
-const LVL_DELAY   = [0, 0.75, 1.55, 2.45, 3.4];   // délai d'apparition (s)
-const DRAW_DUR    = 1.2;                            // durée trace d'une ligne (s)
-const PAUSE_AFTER = 1800;                           // ms de pause avant fade-out
-const FADE_MS     = 700;                            // ms de fondu sortant
+const MAX_NODES   = [1, 5, 12, 20, 28, 34, 40] as const;            // plafond par niveau
+const LVL_DELAY   = [0, 1.5, 3.1, 4.8, 6.5, 8.2, 9.9];            // délai d'apparition (s)
+const DRAW_DUR    = 1.8;                                              // durée trace d'une ligne (s)
+const PAUSE_AFTER = 2500;                                             // ms de pause avant fade-out
+const FADE_MS     = 900;                                              // ms de fondu sortant
 
 function rnd(a: number, b: number) { return Math.floor(Math.random() * (b - a + 1)) + a; }
 
 /* ── Génération ── */
 function buildTree() {
-  const counts = [0, 0, 0, 0, 0];
+  const counts = [0, 0, 0, 0, 0, 0, 0];
 
   function make(level: number, id: string): TNode {
     counts[level]++;
     const children: TNode[] = [];
-    if (level < 4) {
+    if (level < 6) {
       const want =
         level === 0 ? rnd(2, 5) :
         level === 1 ? rnd(2, 4) :
         level === 2 ? rnd(1, 3) :
-                      rnd(0, 2);
+        level === 3 ? rnd(1, 2) :
+        level === 4 ? rnd(0, 2) :
+                      rnd(0, 1);
       for (let i = 0; i < want; i++) {
         if (counts[level + 1] < MAX_NODES[level + 1])
           children.push(make(level + 1, `${id}${i}`));
@@ -154,13 +156,13 @@ export function NetworkBackground() {
 
             {/* ── Nœuds ── */}
             {data.nodes.map(n => {
-              const r   = n.level === 0 ? 1.3 : n.level === 1 ? 1.0 : n.level === 2 ? 0.75 : 0.55;
+              const r   = [1.3, 1.0, 0.78, 0.62, 0.50, 0.40, 0.30][n.level] ?? 0.30;
               const dIn = (LVL_DELAY[n.level] + 0.1).toFixed(2);
               const dPl = (LVL_DELAY[n.level] + 0.8).toFixed(2);
               const dur = (2.6 + (n.level % 3) * 0.45).toFixed(1);
               return (
                 <g key={n.id}>
-                  {n.level <= 2 && (
+                  {n.level <= 3 && (
                     <circle cx={n.x} cy={n.y} r={r * 2.4}
                       fill="none" stroke="#FF6B35" strokeWidth="0.14"
                       style={{
