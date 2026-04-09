@@ -15,11 +15,11 @@ interface TNode { id: string; level: number; x: number; y: number; children: TNo
 interface TEdge { id: string; x1: number; y1: number; x2: number; y2: number; level: number; len: number }
 
 /* ── Config ── */
-const LEVEL_Y     = [5, 19, 33, 47, 61, 75, 89];                    // y par niveau (viewBox 0-100)
+const LEVEL_Y     = [4, 17, 29, 41, 53, 65, 77, 90];                // y par niveau (viewBox 0-100)
 const X_MIN       = 3;
 const X_MAX       = 97;
-const MAX_NODES   = [1, 5, 12, 20, 28, 34, 40] as const;            // plafond par niveau
-const LVL_DELAY   = [0, 1.5, 3.1, 4.8, 6.5, 8.2, 9.9];            // délai d'apparition (s)
+const MAX_NODES   = [1, 5, 12, 20, 28, 34, 40, 46] as const;       // plafond par niveau
+const LVL_DELAY   = [0, 1.5, 3.1, 4.8, 6.5, 8.2, 9.9, 11.6];     // délai d'apparition (s)
 const DRAW_DUR    = 1.8;                                              // durée trace d'une ligne (s)
 const PAUSE_AFTER = 2500;                                             // ms de pause avant fade-out
 const FADE_MS     = 900;                                              // ms de fondu sortant
@@ -28,18 +28,19 @@ function rnd(a: number, b: number) { return Math.floor(Math.random() * (b - a + 
 
 /* ── Génération ── */
 function buildTree() {
-  const counts = [0, 0, 0, 0, 0, 0, 0];
+  const counts = [0, 0, 0, 0, 0, 0, 0, 0];
 
   function make(level: number, id: string): TNode {
     counts[level]++;
     const children: TNode[] = [];
-    if (level < 6) {
+    if (level < 7) {
       const want =
         level === 0 ? rnd(2, 5) :
         level === 1 ? rnd(2, 4) :
         level === 2 ? rnd(1, 3) :
         level === 3 ? rnd(1, 2) :
         level === 4 ? rnd(0, 2) :
+        level === 5 ? rnd(0, 1) :
                       rnd(0, 1);
       for (let i = 0; i < want; i++) {
         if (counts[level + 1] < MAX_NODES[level + 1])
@@ -118,7 +119,7 @@ export function NetworkBackground() {
     <div
       aria-hidden="true"
       className="absolute left-0 right-0 bottom-0 overflow-hidden pointer-events-none z-0"
-      style={{ top: 55 }}
+      style={{ top: 75 }}
     >
       <div style={{ position: "absolute", inset: 0, opacity: fading ? 0 : 1,
                     transition: `opacity ${FADE_MS}ms ease` }}>
@@ -156,7 +157,7 @@ export function NetworkBackground() {
 
             {/* ── Nœuds ── */}
             {data.nodes.map(n => {
-              const r   = [1.3, 1.0, 0.78, 0.62, 0.50, 0.40, 0.30][n.level] ?? 0.30;
+              const r   = [1.3, 1.0, 0.78, 0.62, 0.50, 0.40, 0.30, 0.22][n.level] ?? 0.22;
               const dIn = (LVL_DELAY[n.level] + 0.1).toFixed(2);
               const dPl = (LVL_DELAY[n.level] + 0.8).toFixed(2);
               const dur = (2.6 + (n.level % 3) * 0.45).toFixed(1);
