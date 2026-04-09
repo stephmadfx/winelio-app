@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { assignSponsor } from "@/app/(protected)/profile/actions";
 
@@ -17,7 +18,14 @@ interface Profile {
   sponsor_id: string | null;
 }
 
+const REQUIRED_FIELDS = ["first_name", "last_name", "phone", "postal_code", "city", "address"] as const;
+
+function isComplete(data: Record<string, unknown>) {
+  return REQUIRED_FIELDS.every((f) => typeof data[f] === "string" && (data[f] as string).trim() !== "");
+}
+
 export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmail: string }) {
+  const router = useRouter();
   const [form, setForm] = useState({
     first_name: profile.first_name ?? "",
     last_name: profile.last_name ?? "",
@@ -35,7 +43,6 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
-  const isFirstRender = useRef(true);
   const formRef = useRef(form);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -54,11 +61,18 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
         is_professional: data.is_professional,
       })
       .eq("id", profile.id);
-    setAutoSaveStatus(error ? "error" : "saved");
+    if (!error) {
+      setAutoSaveStatus("saved");
+      // Si le profil est maintenant complet, rafraîchit le layout serveur
+      // pour que le modal disparaisse sans race condition
+      if (isComplete(data)) router.refresh();
+    } else {
+      setAutoSaveStatus("error");
+    }
     setTimeout(() => setAutoSaveStatus("idle"), 3000);
   };
 
-  // Garde formRef à jour pour y accéder au unmount
+  // Garde formRef toujours à jour
   useEffect(() => { formRef.current = form; }, [form]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,7 +85,6 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
 
   // Sauvegarde immédiate quand l'utilisateur quitte un champ
   const handleBlur = () => {
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
     saveToDb(formRef.current);
   };
 
@@ -92,8 +105,11 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
   };
 
   const selectCity = (city: string) => {
-    setForm((prev) => ({ ...prev, city }));
+    const updated = { ...formRef.current, city };
+    formRef.current = updated;
+    setForm(updated);
     setShowSuggestions(false);
+    saveToDb(updated); // Sauvegarde immédiate avec la ville sélectionnée
   };
 
   const handleSave = async () => {
