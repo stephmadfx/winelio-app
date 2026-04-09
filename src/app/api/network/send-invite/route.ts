@@ -309,12 +309,30 @@ export async function POST(req: Request) {
     }
 
     const senderName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Un membre Winelio";
+    const referralUrl = `${SITE_URL}/auth/login?mode=register&ref=${profile.sponsor_code}`;
+
+    // Version texte brut (obligatoire pour éviter les filtres spam)
+    const textBody = [
+      `${senderName} vous invite à rejoindre Winelio !`,
+      "",
+      personalMessage ? `Message : "${personalMessage}"` : null,
+      personalMessage ? "" : null,
+      "Winelio est la plateforme qui transforme vos recommandations en revenus.",
+      "",
+      `Votre code de parrainage : ${profile.sponsor_code.toUpperCase()}`,
+      "",
+      `Rejoindre Winelio : ${referralUrl}`,
+      "",
+      "---",
+      "© 2026 Winelio · Recommandez. Connectez. Gagnez.",
+    ].filter((l) => l !== null).join("\n");
 
     await transporter.sendMail({
       from: `"${senderName} via Winelio" <${process.env.SMTP_USER || "support@winelio.app"}>`,
       to,
       replyTo: user.email,
-      subject: `${senderName} vous invite à rejoindre Winelio 🤝`,
+      subject: `${senderName} vous invite a rejoindre Winelio`,
+      text: textBody,
       html: buildInviteEmail(senderName, to, profile.sponsor_code, personalMessage),
     });
 
