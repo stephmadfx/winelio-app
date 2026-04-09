@@ -14,19 +14,21 @@ type Transaction = {
 };
 
 const statusColors: Record<string, string> = {
-  completed: "bg-green-100 text-green-700",
-  pending: "bg-yellow-100 text-yellow-700",
-  processing: "bg-blue-100 text-blue-700",
-  failed: "bg-red-100 text-red-700",
-  cancelled: "bg-gray-100 text-gray-500",
+  EARNED:     "bg-green-100 text-green-700",
+  COMPLETED:  "bg-green-100 text-green-700",
+  PENDING:    "bg-yellow-100 text-yellow-700",
+  PROCESSING: "bg-blue-100 text-blue-700",
+  REJECTED:   "bg-red-100 text-red-700",
+  CANCELLED:  "bg-gray-100 text-gray-500",
 };
 
 const statusLabels: Record<string, string> = {
-  completed: "Completee",
-  pending: "En attente",
-  processing: "En cours",
-  failed: "Echouee",
-  cancelled: "Annulee",
+  EARNED:     "Reçue",
+  COMPLETED:  "Payé",
+  PENDING:    "En attente",
+  PROCESSING: "En cours",
+  REJECTED:   "Rejetée",
+  CANCELLED:  "Annulée",
 };
 
 export default async function WalletPage() {
@@ -93,7 +95,7 @@ export default async function WalletPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-winelio-dark">Wallet</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-winelio-dark">Portefeuille</h1>
           <p className="text-winelio-gray text-sm mt-1">
             Gerez vos gains et retraits
           </p>

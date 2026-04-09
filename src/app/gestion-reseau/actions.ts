@@ -76,7 +76,6 @@ async function createCommissionsForReco(reco: {
   const commissions: Array<{
     recommendation_id: string;
     user_id: string;
-    source_user_id: string;
     amount: number;
     type: string;
     level: number;
@@ -87,9 +86,8 @@ async function createCommissionsForReco(reco: {
   commissions.push({
     recommendation_id: reco.id,
     user_id: reco.referrer_id,
-    source_user_id: reco.referrer_id,
     amount: reco.amount * 0.6,
-    type: "referrer",
+    type: "recommendation",
     level: 0,
     status: "EARNED",
   });
@@ -108,9 +106,8 @@ async function createCommissionsForReco(reco: {
     commissions.push({
       recommendation_id: reco.id,
       user_id: profile.sponsor_id,
-      source_user_id: reco.referrer_id,
       amount: reco.amount * 0.04,
-      type: "mlm",
+      type: `referral_level_${level}`,
       level,
       status: "EARNED",
     });
@@ -168,7 +165,6 @@ export async function adjustCommission(
 
   await supabaseAdmin.from("commission_transactions").insert({
     user_id: userId,
-    source_user_id: userId,
     amount,
     type: "manual_adjustment",
     level: 0,
@@ -194,7 +190,7 @@ async function recalculateWallet(userId: string) {
     .from("withdrawals")
     .select("amount")
     .eq("user_id", userId)
-    .in("status", ["approved", "paid"]);
+    .in("status", ["PROCESSING", "COMPLETED"]);
 
   const totalWithdrawn = (withdrawn ?? []).reduce(
     (s, w) => s + (w.amount ?? 0),
@@ -270,7 +266,7 @@ export async function validateWithdrawal(withdrawalId: string, userId: string) {
 
   const { error: validateError } = await supabaseAdmin
     .from("withdrawals")
-    .update({ status: "approved" })
+    .update({ status: "PROCESSING" })
     .eq("id", withdrawalId);
 
   if (validateError) throw new Error(`Erreur validation retrait: ${validateError.message}`);
@@ -288,7 +284,7 @@ export async function rejectWithdrawal(
 
   const { error: rejectError } = await supabaseAdmin
     .from("withdrawals")
-    .update({ status: "rejected", rejection_reason: reason })
+    .update({ status: "REJECTED", rejection_reason: reason })
     .eq("id", withdrawalId);
 
   if (rejectError) throw new Error(`Erreur rejet retrait: ${rejectError.message}`);
@@ -303,7 +299,7 @@ export async function markWithdrawalPaid(withdrawalId: string, userId: string) {
 
   const { error: paidError } = await supabaseAdmin
     .from("withdrawals")
-    .update({ status: "paid" })
+    .update({ status: "COMPLETED" })
     .eq("id", withdrawalId);
 
   if (paidError) throw new Error(`Erreur marquage retrait payé: ${paidError.message}`);

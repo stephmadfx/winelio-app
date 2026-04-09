@@ -190,10 +190,12 @@ Décompressé dans `/Users/steph/PROJETS/WINKO/_old_app/` (frontend React Native
 
 ## Documentation Architecture
 
-Fichiers de reference dans `/doc/` :
-- `@doc/architecture.md` — Arbre relationnel complet (CORE/FEATURE/SUB/HOOK/UTILITY + verbes de relation)
-- `@doc/database.md` — Schema des tables Supabase/PostgreSQL avec relations et statuts
-- `@doc/api-routes.md` — Liste des endpoints API, methodes, validations et routes pages
+> Régénérée le 2026-04-09 par analyse froide des fichiers source.
+
+Fichiers de référence dans `/doc/` :
+- `@doc/architecture.md` — Arbre relationnel complet (CORE/FEATURE/SUB/HOOK/UTILITY + verbes de relation [UTILISE/DÉCLENCHE/DÉPEND DE/PERSISTE DANS])
+- `@doc/database.md` — Schéma complet des tables, colonnes, contraintes, triggers, RPC et migrations
+- `@doc/api-routes.md` — Tous les endpoints API (méthode, accès, body, logique), Server Actions et routes pages
 
 ## Règles
 

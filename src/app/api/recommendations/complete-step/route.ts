@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { calculateCommissions } from "@/lib/commission";
 
 export async function POST(request: Request) {
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
     // Fetch recommendation server-side
     const { data: rec } = await supabase
       .from("recommendations")
-      .select("id, status, amount, referrer_id, professional_id")
+      .select("id, status, amount, referrer_id, professional_id, compensation_plan_id")
       .eq("id", recommendation_id)
       .single();
 
@@ -121,38 +122,43 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true });
       }
 
-      const { data: proProfile } = await supabase
-        .from("profiles")
-        .select("compensation_plan_id")
-        .eq("id", rec.professional_id)
-        .single();
+      // Récupère le plan depuis la recommandation, ou le plan par défaut
+      let planId = rec.compensation_plan_id;
+      if (!planId) {
+        const { data: defaultPlan } = await supabaseAdmin
+          .from("compensation_plans")
+          .select("id")
+          .eq("is_default", true)
+          .eq("is_active", true)
+          .single();
+        planId = defaultPlan?.id ?? null;
+      }
 
-      if (proProfile?.compensation_plan_id) {
-        // Fetch plan
-        const { data: plan } = await supabase
+      if (planId) {
+        const { data: plan } = await supabaseAdmin
           .from("compensation_plans")
           .select("*")
-          .eq("id", proProfile.compensation_plan_id)
+          .eq("id", planId)
           .single();
 
         if (plan) {
           const { referrer_commission, level_commissions } =
             calculateCommissions(rec.amount, plan);
 
-          // Insert referrer commission
-          await supabase.from("commission_transactions").insert({
+          // Insert commission referrer (supabaseAdmin pour bypass RLS)
+          await supabaseAdmin.from("commission_transactions").insert({
             recommendation_id: rec.id,
             user_id: rec.referrer_id,
             amount: referrer_commission,
-            type: "referrer",
+            type: "recommendation",
             level: 0,
-            status: "pending",
+            status: "EARNED",
           });
 
           // Walk sponsor chain server-side
           let currentProfileId = rec.referrer_id;
           for (const lc of level_commissions) {
-            const { data: profile } = await supabase
+            const { data: profile } = await supabaseAdmin
               .from("profiles")
               .select("sponsor_id")
               .eq("id", currentProfileId)
@@ -160,13 +166,13 @@ export async function POST(request: Request) {
 
             if (!profile?.sponsor_id) break;
 
-            await supabase.from("commission_transactions").insert({
+            await supabaseAdmin.from("commission_transactions").insert({
               recommendation_id: rec.id,
               user_id: profile.sponsor_id,
               amount: lc.amount,
-              type: "sponsor",
+              type: `referral_level_${lc.level}`,
               level: lc.level,
-              status: "pending",
+              status: "EARNED",
             });
 
             currentProfileId = profile.sponsor_id;

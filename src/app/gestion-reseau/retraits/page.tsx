@@ -6,10 +6,10 @@ import {
 } from "../actions";
 
 const STATUS = {
-  approved: { label: "Approuvé",    color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
-  paid:     { label: "Payé",        color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
-  rejected: { label: "Rejeté",      color: "text-red-400 bg-red-400/10 border-red-400/20" },
-  PENDING:  { label: "En attente",  color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" },
+  PROCESSING: { label: "Approuvé",   color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
+  COMPLETED:  { label: "Payé",       color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
+  REJECTED:   { label: "Rejeté",     color: "text-red-400 bg-red-400/10 border-red-400/20" },
+  PENDING:    { label: "En attente", color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" },
 } as Record<string, { label: string; color: string }>;
 
 export default async function AdminRetraits() {
@@ -160,7 +160,7 @@ export default async function AdminRetraits() {
                     <span className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-md border ${st.color}`}>
                       {st.label}
                     </span>
-                    {w.status === "approved" && (
+                    {w.status === "PROCESSING" && (
                       <form
                         action={async (formData: FormData) => {
                           "use server";

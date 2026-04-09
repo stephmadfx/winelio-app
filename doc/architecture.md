@@ -1,216 +1,327 @@
-# Architecture Relationnelle - Winelio
+# Architecture Relationnelle — Winelio
 
-> Plateforme de recommandations professionnelles avec reseau de parrainage multi-niveaux.
-> Stack : Next.js 15 + Supabase (self-hosted Coolify) + Tailwind CSS 4
-
----
-
-## Arbre d'Architecture
-
-```
-[CORE] Supabase Config (lib/supabase/)
-├── config.ts                    Exporte SUPABASE_URL + ANON_KEY
-├── client.ts                    Client navigateur (PKCE flow)
-└── server.ts                    Client serveur (cookie-based SSR)
-
-[CORE] Auth System
-├── middleware.ts                 [DÉPEND DE] -> Supabase Server
-│   ├── [DÉCLENCHE] -> Redirect /auth/login (non-authentifié)
-│   └── [DÉCLENCHE] -> Redirect /dashboard (déjà authentifié)
-├── [FEATURE] Login Flow (auth/login/page.tsx) [CLIENT]
-│   ├── [UTILISE] -> Supabase Client
-│   ├── [DÉCLENCHE] -> signInWithOtp (Magic Link email)
-│   └── [DÉCLENCHE] -> Envoi email via GOTRUE_SMTP (Coolify)
-├── [SUB] Auth Callback Page (auth/callback/page.tsx) [CLIENT]
-│   ├── [UTILISE] -> Supabase Client
-│   ├── [DÉCLENCHE] -> exchangeCodeForSession (PKCE)
-│   └── [DÉCLENCHE] -> Redirect /dashboard
-└── [SUB] Auth Callback API (api/auth/callback/route.ts) [SERVER]
-    ├── [UTILISE] -> Supabase Server
-    ├── [DÉCLENCHE] -> exchangeCodeForSession
-    └── [DÉCLENCHE] -> Redirect sécurisé (anti open-redirect)
-
-[CORE] Layout & Navigation
-├── app/layout.tsx [SERVER]      Root layout (Montserrat font, metadata)
-├── (protected)/layout.tsx [SERVER]
-│   ├── [DÉPEND DE] -> Auth (getUser check)
-│   ├── [UTILISE] -> Sidebar (desktop lg:)
-│   ├── [UTILISE] -> MobileHeader (mobile <lg)
-│   └── [UTILISE] -> MobileNav (mobile <lg)
-├── [SUB] Sidebar (components/sidebar.tsx) [CLIENT]
-│   └── 6 nav items : Dashboard, Recos, Réseau, Wallet, Entreprises, Profil
-├── [SUB] MobileNav (components/mobile-nav.tsx) [CLIENT]
-│   └── Bottom tab : Accueil, Recos, Réseau, Wallet, Profil
-├── [SUB] MobileHeader (components/mobile-header.tsx) [CLIENT]
-│   └── Logo + hamburger menu (Entreprises, Déconnexion)
-└── [SUB] SignOutButton (components/sign-out-button.tsx) [CLIENT]
-    └── [DÉCLENCHE] -> supabase.auth.signOut()
-
-[FEATURE] Dashboard (dashboard/page.tsx) [SERVER]
-├── [DÉPEND DE] -> Auth
-├── [UTILISE] -> StatCard (locale)
-│   └── 4 cards : Recommandations, Gains, Réseau, Taux de succès
-└── Welcome Card avec CTA -> Recommandation + Invitation
-
-[FEATURE] Recommendations System
-├── Liste (recommendations/page.tsx) [CLIENT]
-│   ├── [DÉPEND DE] -> Auth
-│   ├── [PERSISTE DANS] -> recommendations (select, filter)
-│   ├── [PERSISTE DANS] -> contacts (join)
-│   ├── [PERSISTE DANS] -> profiles (join professional)
-│   └── Tabs: Envoyées / Reçues + Filtres statut
-├── Création (recommendations/new/page.tsx) [CLIENT]
-│   ├── [DÉPEND DE] -> Auth
-│   ├── [PERSISTE DANS] -> contacts (select + insert)
-│   ├── [PERSISTE DANS] -> profiles (select pro, ilike search)
-│   ├── [PERSISTE DANS] -> recommendations (insert)
-│   ├── [PERSISTE DANS] -> recommendation_steps (insert batch)
-│   ├── [PERSISTE DANS] -> steps (select templates)
-│   └── Multi-step : Contact -> Professionnel -> Description
-├── Détail (recommendations/[id]/page.tsx) [CLIENT]
-│   ├── [DÉPEND DE] -> Auth
-│   ├── [PERSISTE DANS] -> recommendations (select + update)
-│   ├── [PERSISTE DANS] -> recommendation_steps (select + update)
-│   ├── [UTILISE] -> StepTimeline (components/step-timeline.tsx)
-│   ├── [UTILISE] -> createCommissions (lib/commission.ts)
-│   └── [DÉCLENCHE] -> Création commissions à la completion
-└── [UTILITY] Commission Logic (lib/commission.ts)
-    ├── calculateCommissions() : Calcul 5 niveaux de commissions
-    ├── createCommissions() : Insert dans commission_transactions
-    ├── [PERSISTE DANS] -> commission_transactions (insert)
-    ├── [PERSISTE DANS] -> compensation_plans (select taux)
-    └── [PERSISTE DANS] -> profiles (select chaîne sponsors)
-
-[FEATURE] Wallet
-├── Vue principale (wallet/page.tsx) [SERVER]
-│   ├── [DÉPEND DE] -> Auth
-│   ├── [PERSISTE DANS] -> user_wallet_summaries (select)
-│   ├── [PERSISTE DANS] -> commission_transactions (select recent)
-│   ├── [PERSISTE DANS] -> withdrawals (select recent)
-│   └── [UTILISE] -> WalletCard (components/wallet-card.tsx)
-├── Retrait (wallet/withdraw/page.tsx) [CLIENT]
-│   ├── [DÉPEND DE] -> Auth
-│   ├── [DÉCLENCHE] -> POST /api/wallet/withdraw
-│   └── Multi-step : Montant -> Confirmation -> Succès
-├── [SUB] API Retrait (api/wallet/withdraw/route.ts) [SERVER]
-│   ├── [DÉPEND DE] -> Auth (getUser server-side)
-│   ├── Validation : montant, IBAN regex, email PayPal
-│   ├── [PERSISTE DANS] -> user_wallet_summaries (select + update)
-│   └── [PERSISTE DANS] -> withdrawals (insert)
-└── Historique (wallet/history/page.tsx) [CLIENT]
-    ├── [DÉPEND DE] -> Auth
-    ├── [PERSISTE DANS] -> commission_transactions (select paginated)
-    └── [PERSISTE DANS] -> withdrawals (select paginated)
-
-[FEATURE] Network / Parrainage
-├── Vue principale (network/page.tsx) [SERVER]
-│   ├── [DÉPEND DE] -> Auth
-│   ├── [PERSISTE DANS] -> profiles (select filleuls + stats)
-│   ├── [PERSISTE DANS] -> commission_transactions (select gains)
-│   ├── [PERSISTE DANS] -> user_wallet_summaries (select)
-│   ├── [UTILISE] -> NetworkTree (components/network-tree.tsx)
-│   ├── [UTILISE] -> CopyButton / ShareButton (locale)
-│   └── Sponsor code + Filleuls directs + Arbre réseau
-├── Stats détaillées (network/stats/page.tsx) [SERVER]
-│   ├── [DÉPEND DE] -> Auth
-│   ├── [PERSISTE DANS] -> profiles (select réseau)
-│   ├── [PERSISTE DANS] -> commission_transactions (select 5 niveaux)
-│   └── Bar chart commissions par niveau + historique
-└── [SUB] NetworkTree (components/network-tree.tsx) [CLIENT]
-    ├── [UTILISE] -> Supabase Client
-    ├── [PERSISTE DANS] -> profiles (select récursif par sponsor_id)
-    └── Arbre expandable multi-niveaux
-
-[FEATURE] Companies / Entreprises
-├── Liste (companies/page.tsx) [SERVER]
-│   ├── [DÉPEND DE] -> Auth
-│   ├── [PERSISTE DANS] -> companies (select + join categories)
-│   └── Grid cards avec statut vérification
-├── Création (companies/new/page.tsx) [SERVER]
-│   ├── [DÉPEND DE] -> Auth
-│   ├── [PERSISTE DANS] -> categories (select)
-│   └── [UTILISE] -> NewCompanyForm
-└── [SUB] NewCompanyForm (components/new-company-form.tsx) [CLIENT]
-    ├── [UTILISE] -> Supabase Client
-    ├── [PERSISTE DANS] -> companies (insert)
-    └── Formulaire : nom, SIRET, adresse, catégorie
-
-[FEATURE] Profile
-├── Page (profile/page.tsx) [SERVER]
-│   ├── [DÉPEND DE] -> Auth
-│   ├── [PERSISTE DANS] -> profiles (select)
-│   └── [UTILISE] -> ProfileForm
-└── [SUB] ProfileForm (components/profile-form.tsx) [CLIENT]
-    ├── [UTILISE] -> Supabase Client
-    ├── [PERSISTE DANS] -> profiles (update + select sponsor)
-    └── Édition : nom, téléphone, adresse, code parrain
-
-[UTILITY] Globals
-├── globals.css                  Thème Winelio (orange, amber, dark, gray, light)
-├── next.config.ts               Headers sécurité (HSTS, CSP, X-Frame-Options)
-└── middleware.ts                 Auth routing + protection routes
-```
+> Analyse froide des fichiers source. Généré le 2026-04-09.
+> Stack : Next.js 15 (App Router) · TypeScript · Supabase · Tailwind CSS v4
 
 ---
 
-## Flux Principaux
+## LÉGENDE
 
-### Flux d'Authentification
-```
-Utilisateur -> /auth/login [signInWithOtp]
-    -> Email envoyé (GOTRUE SMTP)
-    -> Clic lien -> Supabase /auth/v1/verify
-    -> Redirect -> /auth/callback [exchangeCodeForSession PKCE]
-    -> Session établie -> /dashboard
-```
+| Symbole | Signification |
+|---------|--------------|
+| `[CORE]` | Fondation : Auth, DB, Config |
+| `[FEATURE]` | Fonctionnalité principale visible utilisateur |
+| `[SUB]` | Sous-composant ou logique métier spécifique |
+| `[HOOK]` | Logique d'état ou effets |
+| `[UTILITY]` | Fonctions transversales, helpers |
+| `[UTILISE]` | Appel simple de fonction/composant |
+| `[DÉCLENCHE]` | Side-effect ou action asynchrone |
+| `[DÉPEND DE]` | Requis pour le fonctionnement |
+| `[PERSISTE DANS]` | Interaction avec la base de données |
 
-### Flux de Recommandation
-```
-Utilisateur -> /recommendations/new
-    Step 1: Sélection/création contact [PERSISTE -> contacts]
-    Step 2: Recherche professionnel [SELECT -> profiles WHERE is_professional]
-    Step 3: Description + urgence
-    -> [INSERT -> recommendations + recommendation_steps]
-    -> Professionnel complète les étapes [UPDATE -> recommendation_steps]
-    -> Deal conclu [UPDATE -> recommendations.deal_amount]
-    -> [DÉCLENCHE] createCommissions()
-        -> [INSERT -> commission_transactions] (5 niveaux)
-```
+---
 
-### Flux de Retrait
-```
-Utilisateur -> /wallet/withdraw (client)
-    Step 1: Montant + méthode (IBAN/PayPal)
-    Step 2: Confirmation
-    -> POST /api/wallet/withdraw (serveur)
-        -> Validation montant/IBAN/email
-        -> Vérification solde [SELECT -> user_wallet_summaries]
-        -> [INSERT -> withdrawals]
-        -> [UPDATE -> user_wallet_summaries]
-    Step 3: Succès
-```
+## ARBRE RELATIONNEL COMPLET
 
-### Flux Parrainage
 ```
-Utilisateur A partage son sponsor_code
-    -> Utilisateur B s'inscrit avec le code
-    -> profiles.sponsor_id = A.id
-    -> B fait une recommandation -> deal conclu
-    -> createCommissions() remonte la chaîne :
-        Niveau 1: A (sponsor direct)
-        Niveau 2: Sponsor de A
-        ... jusqu'au Niveau 5
+[CORE] Supabase Auth (OTP par email)
+├── [SUB] src/lib/supabase/config.ts
+│       Fournit URL + ANON_KEY (nettoyage espaces)
+├── [SUB] src/lib/supabase/client.ts
+│       Client browser (PKCE flow, createBrowserClient)
+├── [SUB] src/lib/supabase/server.ts
+│       Client SSR (createServerClient, cookies Next.js)
+├── [SUB] src/lib/supabase/admin.ts
+│       Client admin (SERVICE_ROLE_KEY, schéma winelio)
+├── [SUB] src/lib/supabase/get-user.ts
+│       [UTILISE] server.ts → getUser() avec cache React
+└── [SUB] src/middleware.ts
+        [DÉPEND DE] server.ts → vérifie session
+        [DÉCLENCHE] redirect /auth/login si non-authentifié
+        Rate-limit : 60 req/min par IP (Map en mémoire)
+        Role-based redirect : super_admin → /gestion-reseau
+
+[CORE] Next.js App Router (src/app/)
+│
+├── [FEATURE] Landing Page
+│   └── src/app/page.tsx
+│           [UTILISE] WinelioLogo, AppBackground, NetworkBackground
+│           [UTILISE] Link → /auth/login
+│
+├── [FEATURE] Authentification (Magic Link OTP)
+│   ├── src/app/auth/login/page.tsx
+│   │       [DÉCLENCHE] POST /api/auth/send-code (envoi OTP)
+│   │       [DÉCLENCHE] POST /api/auth/verify-code (validation)
+│   │       [UTILISE] sessionStorage (code parrain temporaire)
+│   │       [DÉPEND DE] searchParams.get('ref') → sponsor code
+│   │
+│   ├── src/app/auth/callback/page.tsx
+│   │       [DÉCLENCHE] échange token PKCE → session
+│   │       [DÉCLENCHE] redirect /dashboard
+│   │
+│   ├── src/app/api/auth/send-code/route.ts
+│   │       [PERSISTE DANS] otp_codes (INSERT/UPSERT)
+│   │       [DÉCLENCHE] SMTP nodemailer → email OTP
+│   │       [UTILISE] supabaseAdmin, html-escape
+│   │
+│   ├── src/app/api/auth/verify-code/route.ts
+│   │       [PERSISTE DANS] otp_codes (vérifie + supprime)
+│   │       [UTILISE] supabaseAdmin.auth.admin.generateLink()
+│   │       [DÉCLENCHE] assignSponsorIfNeeded(userId, sponsorCode)
+│   │       [DÉCLENCHE] cookies session HttpOnly
+│   │
+│   ├── src/app/api/auth/callback/route.ts
+│   │       PKCE code exchange → session
+│   │       [DÉCLENCHE] redirect /dashboard
+│   │
+│   ├── src/app/api/auth/assign-sponsor/route.ts
+│   │       [DÉCLENCHE] assignSponsorIfNeeded(userId, code)
+│   │
+│   └── src/app/api/auth/sign-out/route.ts
+│           [DÉCLENCHE] supabase.auth.signOut() + clear cookies
+│
+├── [CORE] Layout Protégé
+│   └── src/app/(protected)/layout.tsx
+│           [DÉPEND DE] getUser() → redirect si non-auth
+│           [UTILISE] Sidebar (desktop), MobileHeader, MobileNav
+│           [UTILISE] ProfileIncompleteModal (si profil incomplet)
+│           [UTILISE] DemoBanner (si NEXT_PUBLIC_DEMO_MODE=true)
+│           [UTILISE] AppBackground, KeyboardScrollProvider
+│           [PERSISTE DANS] profiles (lecture first_name, sponsor_code)
+│
+│   ├── [FEATURE] Dashboard
+│   │   └── src/app/(protected)/dashboard/page.tsx
+│   │           [UTILISE] server.ts → statistiques
+│   │           [UTILISE] AnimatedCounter, MonthlyBarChart
+│   │           [PERSISTE DANS] commission_transactions, recommendations
+│   │
+│   ├── [FEATURE] Profil Utilisateur
+│   │   ├── src/app/(protected)/profile/page.tsx
+│   │   │       [UTILISE] ProfileForm
+│   │   │       [UTILISE] ReferralButtons
+│   │   │       [PERSISTE DANS] profiles (lecture)
+│   │   │
+│   │   ├── src/app/(protected)/profile/actions.ts  [SERVER ACTION]
+│   │   │       updateProfile() [PERSISTE DANS] profiles
+│   │   │       assignSponsor() [PERSISTE DANS] profiles
+│   │   │       [DÉPEND DE] deleted_sponsor_codes (validation unicité)
+│   │   │
+│   │   └── src/components/profile-form.tsx
+│   │           [UTILISE] actions.ts → updateProfile()
+│   │           [UTILISE] StickyFormActions
+│   │
+│   ├── [FEATURE] Recommandations (Workflow 8 étapes)
+│   │   ├── src/app/(protected)/recommendations/page.tsx
+│   │   │       [PERSISTE DANS] recommendations, profiles
+│   │   │       Filtre : envoyées / reçues / toutes
+│   │   │
+│   │   ├── src/app/(protected)/recommendations/[id]/page.tsx
+│   │   │       [PERSISTE DANS] recommendations, recommendation_steps, steps
+│   │   │       [UTILISE] StepTimeline
+│   │   │       [DÉCLENCHE] POST /api/recommendations/complete-step
+│   │   │
+│   │   ├── src/app/(protected)/recommendations/new/page.tsx
+│   │   │       [PERSISTE DANS] recommendations (création)
+│   │   │       [PERSISTE DANS] contacts (création prospect)
+│   │   │       [UTILISE] compensation_plans, companies
+│   │   │
+│   │   └── src/app/api/recommendations/complete-step/route.ts
+│   │           [PERSISTE DANS] recommendation_steps (completed_at)
+│   │           [DÉCLENCHE] createCommissions() si step=6 (idempotent)
+│   │           [PERSISTE DANS] commission_transactions
+│   │           [PERSISTE DANS] user_wallet_summaries (recalcul)
+│   │
+│   ├── [FEATURE] Réseau MLM
+│   │   ├── src/app/(protected)/network/page.tsx
+│   │   │       [UTILISE] NetworkGraph (D3 force-directed)
+│   │   │       [UTILISE] NetworkFeed
+│   │   │       [PERSISTE DANS] profiles (sponsor_id chain)
+│   │   │
+│   │   ├── src/app/(protected)/network/stats/page.tsx
+│   │   │       [PERSISTE DANS] profiles (métriques réseau)
+│   │   │
+│   │   ├── src/app/api/network/children/route.ts
+│   │   │       [PERSISTE DANS] profiles (SELECT WHERE sponsor_id=X)
+│   │   │
+│   │   ├── src/app/api/network/send-invite/route.ts
+│   │   │       [DÉCLENCHE] SMTP → email invitation avec lien ref
+│   │   │
+│   │   ├── src/app/api/network/new-referral/route.ts
+│   │   │       [DÉCLENCHE] notifyNewReferral(userId)
+│   │   │       [UTILISE] lib/notify-new-referral.ts
+│   │   │
+│   │   └── src/app/api/network/assign-open-registration-sponsor/route.ts
+│   │           [DÉCLENCHE] RPC get_next_open_registration_sponsor()
+│   │           [PERSISTE DANS] profiles (sponsor_id assigné)
+│   │
+│   ├── [FEATURE] Wallet (Portefeuille)
+│   │   ├── src/app/(protected)/wallet/page.tsx
+│   │   │       [UTILISE] WalletCard
+│   │   │       [PERSISTE DANS] user_wallet_summaries, commission_transactions, withdrawals
+│   │   │
+│   │   ├── src/app/(protected)/wallet/history/page.tsx
+│   │   │       [PERSISTE DANS] commission_transactions, withdrawals
+│   │   │
+│   │   ├── src/app/(protected)/wallet/withdraw/page.tsx
+│   │   │       [DÉCLENCHE] POST /api/wallet/withdraw
+│   │   │       [PERSISTE DANS] user_wallet_summaries (lecture solde)
+│   │   │
+│   │   └── src/app/api/wallet/withdraw/route.ts
+│   │           [DÉPEND DE] session auth (userId)
+│   │           [DÉCLENCHE] RPC process_withdrawal() (transaction atomique)
+│   │           [PERSISTE DANS] withdrawals, user_wallet_summaries
+│   │
+│   ├── [FEATURE] Entreprises
+│   │   ├── src/app/(protected)/companies/page.tsx
+│   │   │       [PERSISTE DANS] companies (liste par owner_id)
+│   │   │
+│   │   ├── src/app/(protected)/companies/new/page.tsx
+│   │   │       [UTILISE] NewCompanyForm
+│   │   │       [PERSISTE DANS] companies
+│   │   │
+│   │   └── src/components/new-company-form.tsx
+│   │           [UTILISE] geocode.ts → API Adresse GouV
+│   │           [UTILISE] generateUniqueAlias()
+│   │           [PERSISTE DANS] companies, categories
+│   │
+│   └── [FEATURE] Paramètres
+│       └── src/app/(protected)/settings/page.tsx
+│               [UTILISE] ThemeProvider (light/dark)
+│
+├── [FEATURE] Administration (Super Admin)
+│   ├── src/app/gestion-reseau/layout.tsx
+│   │       [DÉPEND DE] getUser() + app_metadata.role === 'super_admin'
+│   │       [UTILISE] AdminLayoutShell
+│   │
+│   ├── src/app/gestion-reseau/page.tsx
+│   │       [UTILISE] DashboardCharts
+│   │       [PERSISTE DANS] profiles, recommendations, commission_transactions
+│   │
+│   ├── src/app/gestion-reseau/recommandations/page.tsx
+│   │       [PERSISTE DANS] recommendations, profiles
+│   │
+│   ├── src/app/gestion-reseau/recommandations/[id]/page.tsx
+│   │       [DÉCLENCHE] advanceRecommendationStep() [SERVER ACTION]
+│   │       [PERSISTE DANS] recommendations, recommendation_steps, commission_transactions
+│   │
+│   ├── src/app/gestion-reseau/utilisateurs/page.tsx
+│   │       [PERSISTE DANS] profiles, commission_transactions (agrégats)
+│   │
+│   ├── src/app/gestion-reseau/utilisateurs/[id]/page.tsx
+│   │       [DÉCLENCHE] adjustCommission(), suspendUser() [SERVER ACTIONS]
+│   │       [PERSISTE DANS] profiles, commission_transactions, withdrawals
+│   │
+│   ├── src/app/gestion-reseau/reseau/page.tsx
+│   │       [UTILISE] NetworkTreeWrapper (admin)
+│   │       [PERSISTE DANS] profiles (arbre complet)
+│   │
+│   ├── src/app/gestion-reseau/retraits/page.tsx
+│   │       [DÉCLENCHE] validateWithdrawal() [SERVER ACTION]
+│   │       [PERSISTE DANS] withdrawals, user_wallet_summaries
+│   │
+│   ├── src/app/gestion-reseau/professionnels/page.tsx
+│   │       [UTILISE] ProfessionnelsTable
+│   │       [PERSISTE DANS] profiles (is_professional=true)
+│   │
+│   └── src/app/gestion-reseau/actions.ts  [SERVER ACTIONS ADMIN]
+│           advanceRecommendationStep() → recommendation_steps, commission_transactions
+│           adjustCommission() → commission_transactions (manual_adjustment)
+│           suspendUser() → profiles (is_active=false)
+│           validateWithdrawal() → withdrawals (status=approved/paid/rejected)
+│
+└── [FEATURE] Suppression de Compte
+    └── src/app/api/account/delete/route.ts
+            [DÉCLENCHE] Réassignation enfants (sponsor_id → grand-parent)
+            [PERSISTE DANS] deleted_sponsor_codes (réservation code)
+            [DÉCLENCHE] supabaseAdmin.auth.admin.deleteUser()
+            [PERSISTE DANS] profiles (suppression cascade)
 ```
 
 ---
 
-## Matrice de Dépendances
+## COMPOSANTS TRANSVERSAUX
 
-| Module | Auth | Supabase | Profiles | Recommendations | Commissions | Wallet |
-|--------|------|----------|----------|-----------------|-------------|--------|
-| Dashboard | X | X | - | - | - | - |
-| Recommendations | X | X | X | X | X | - |
-| Network | X | X | X | - | X | X |
-| Wallet | X | X | - | - | X | X |
-| Companies | X | X | - | - | - | - |
-| Profile | X | X | X | - | - | - |
+```
+[CORE] Composants Layout
+├── src/components/sidebar.tsx [FEATURE]
+│       Nav desktop · [DÉPEND DE] session user (email, role)
+├── src/components/mobile-nav.tsx [FEATURE]
+│       Bottom nav mobile · icônes + active state
+├── src/components/mobile-header.tsx [FEATURE]
+│       Header mobile · burger menu + prénom user
+├── src/components/AppBackground.tsx [UTILITY]
+│       SVG animé fond dégradé
+└── src/components/NetworkBackground.tsx [UTILITY]
+        SVG réseau nodes (landing page)
+
+[CORE] Logique Métier
+├── src/lib/commission.ts [UTILITY]
+│       calculateCommissions() · createCommissions()
+│       Distribue : 60% referrer · 4%×5 niveaux · 14% plateforme · 1% Wins
+├── src/lib/assign-sponsor.ts [UTILITY]
+│       assignSponsorIfNeeded(userId, sponsorCode?)
+│       Fallback : round-robin is_founder=true via RPC
+├── src/lib/notify-new-referral.ts [UTILITY]
+│       Envoie email aux 5 niveaux de sponsors
+│       [UTILISE] nodemailer, supabaseAdmin
+├── src/lib/geocode.ts [UTILITY]
+│       API Adresse GouV (api-adresse.data.gouv.fr)
+│       Retourne lat/lon pour les entreprises
+├── src/lib/generate-alias.ts [UTILITY]
+│       Génère alias unique #XXXXXX (6 hex chars)
+│       [PERSISTE DANS] companies (vérif unicité)
+├── src/lib/feed-utils.ts [UTILITY]
+│       Types FeedEvent · formatUserName() · feedEventIcon()
+├── src/lib/company-display.ts [UTILITY]
+│       getCompanyDisplay() · affichage conditionnel user/admin
+├── src/lib/html-escape.ts [UTILITY]
+│       he(string) · protection XSS dans emails HTML
+├── src/lib/email-logo.ts [UTILITY]
+│       LOGO_IMG_HTML · <img> R2 inline pour emails
+└── src/lib/utils.ts [UTILITY]
+        cn() · clsx + tailwind-merge
+
+[HOOK] Hooks React
+└── src/hooks/useKeyboardScroll.ts [HOOK]
+        Navigation clavier ↑↓ · [UTILISE] KeyboardScrollProvider
+```
+
+---
+
+## FLUX CRITIQUES
+
+### Flux Auth (OTP → Session)
+```
+User (email) → /auth/login
+  → POST /api/auth/send-code
+      → otp_codes UPSERT + SMTP email
+  → POST /api/auth/verify-code
+      → otp_codes vérif + delete
+      → generateLink() → session tokens
+      → cookies HttpOnly
+      → assignSponsorIfNeeded()
+          → profiles.sponsor_id = sponsor trouvé
+          → OU : RPC get_next_open_registration_sponsor()
+  → redirect /dashboard
+```
+
+### Flux Commission (étape 6)
+```
+POST /api/recommendations/complete-step {step: 6}
+  → recommendation_steps.completed_at = NOW()
+  → createCommissions() [IDEMPOTENT]
+      → calcule montant depuis recommendation_steps.data (step devis)
+      → commission_transactions INSERT (60% referrer + 5×4% niveaux)
+      → user_wallet_summaries UPDATE (recalcul available)
+```
+
+### Flux Retrait
+```
+POST /api/wallet/withdraw {amount, method, details}
+  → vérif session + solde disponible
+  → RPC process_withdrawal() [TRANSACTION ATOMIQUE]
+      → withdrawals INSERT (pending)
+      → user_wallet_summaries.available -= amount
+  → Admin : gestion-reseau/retraits → validateWithdrawal()
+      → withdrawals.status = approved/paid/rejected
+```
