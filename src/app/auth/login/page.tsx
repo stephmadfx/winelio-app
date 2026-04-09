@@ -63,28 +63,6 @@ function LoginForm() {
     : step === "email"
       ? "Entrez votre adresse email, nous vous envoyons un code de connexion à 6 chiffres."
       : "Saisissez le code reçu par email pour ouvrir votre dashboard.";
-  const heroFeatures = [
-    {
-      title: "Design dashboard",
-      description: "Même logique de cartes, d'ombres douces et d'accents orange.",
-      icon: "M4 7h16M4 12h10M4 17h13",
-    },
-    {
-      title: "Connexion rapide",
-      description: "Un code unique par email, sans mot de passe à retenir.",
-      icon: "M12 4v16m8-8H4",
-    },
-    {
-      title: "Réseau privé",
-      description: "L'inscription reste obligatoire par code parrain validé.",
-      icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M15 7a3 3 0 11-6 0 3 3 0 016 0z",
-    },
-    {
-      title: "Mobile d'abord",
-      description: "La même hiérarchie visuelle reste lisible sur petit écran.",
-      icon: "M12 18h.01M8 4h8a2 2 0 012 2v12a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z",
-    },
-  ];
   const formIcon =
     step === "code"
       ? "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
@@ -261,47 +239,13 @@ function LoginForm() {
   };
 
   return (
-    <div className="relative z-10 flex min-h-dvh items-center justify-center px-4 py-6 sm:px-6 lg:px-8" style={{ paddingBottom: kbPadding }}>
-      <div className="grid w-full max-w-6xl gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
-        <section className="flex flex-col rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_80px_rgba(45,52,54,0.12)] backdrop-blur-xl sm:p-8 lg:p-10">
-          <div className="inline-flex w-fit items-center rounded-full bg-winelio-orange/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-winelio-orange">
-            Connexion sécurisée
-          </div>
+    <div className="relative z-10 flex min-h-dvh items-center justify-center px-4 py-8 sm:px-6" style={{ paddingBottom: kbPadding }}>
+      <div className="w-full max-w-md">
+        <div className="mb-8 flex justify-center">
+          <WinelioLogo variant="color" height={40} />
+        </div>
 
-          <div className="mt-5 flex items-center">
-            <WinelioLogo variant="color" height={42} />
-          </div>
-
-          <h1 className="mt-6 max-w-xl text-3xl font-semibold tracking-tight text-winelio-dark sm:text-4xl">
-            {isRegister ? "Rejoignez le réseau Winelio" : "Accédez à votre dashboard"}
-          </h1>
-          <p className="mt-4 max-w-xl text-sm leading-7 text-winelio-gray sm:text-base">
-            {subtitle}
-          </p>
-
-          <div className="mt-7 grid gap-3 sm:grid-cols-2">
-            {heroFeatures.map((feature) => (
-              <article key={feature.title} className="rounded-2xl border border-gray-100 bg-winelio-light/80 p-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-winelio-orange to-winelio-amber text-white shadow-sm shadow-winelio-orange/20">
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d={feature.icon} />
-                  </svg>
-                </div>
-                <h2 className="mt-4 text-sm font-semibold text-winelio-dark">{feature.title}</h2>
-                <p className="mt-2 text-sm leading-6 text-winelio-gray">{feature.description}</p>
-              </article>
-            ))}
-          </div>
-
-          <div className="mt-6 rounded-2xl border border-winelio-orange/10 bg-[linear-gradient(90deg,rgba(255,107,53,0.08),rgba(247,147,30,0.08))] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-winelio-gray">Réseau privé</p>
-            <p className="mt-2 text-sm leading-6 text-winelio-dark">
-              Winelio est un réseau fermé. L&apos;inscription est obligatoire par parrainage — chaque membre est parrainé par un membre existant.
-            </p>
-          </div>
-        </section>
-
-        <section className="flex flex-col rounded-[28px] bg-white p-5 shadow-[0_24px_80px_rgba(45,52,54,0.12)] ring-1 ring-black/5 sm:p-6 lg:p-8">
+        <section className="flex flex-col rounded-[28px] bg-white p-6 shadow-[0_24px_80px_rgba(45,52,54,0.12)] ring-1 ring-black/5 sm:p-8">
           <div className="h-1.5 rounded-full bg-gradient-to-r from-winelio-orange via-winelio-amber to-winelio-orange" />
 
           <div className="mt-6 flex items-start justify-between gap-4">
