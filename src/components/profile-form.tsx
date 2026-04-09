@@ -63,9 +63,10 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
       .eq("id", profile.id);
     if (!error) {
       setAutoSaveStatus("saved");
-      // Si le profil est maintenant complet, rafraîchit le layout serveur
-      // pour que le modal disparaisse sans race condition
-      if (isComplete(data)) router.refresh();
+      // Rafraîchit le layout serveur après chaque save :
+      // - profil complet → modal disparaît
+      // - champ supprimé → modal réapparaît
+      router.refresh();
     } else {
       setAutoSaveStatus("error");
     }
