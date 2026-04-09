@@ -1,14 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-
-// Le middleware tourne en Edge runtime (pas dans le réseau Docker interne).
-// Il doit toujours utiliser l'URL publique Supabase, jamais supabase-kong.
-const MIDDLEWARE_SUPABASE_URL = (
-  process.env.NEXT_PUBLIC_SUPABASE_URL || ""
-).replace(/\s/g, "");
-const MIDDLEWARE_SUPABASE_ANON_KEY = (
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-).replace(/\s/g, "");
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./lib/supabase/config";
 
 // Rate limiter en mémoire (best-effort, par process).
 // LIMITATION : en environnement multi-worker (ex: PM2 cluster), chaque worker a son propre
@@ -59,15 +51,9 @@ export async function middleware(request: NextRequest) {
 
   let supabaseResponse = NextResponse.next({ request });
 
-  // Si les variables d'env Supabase ne sont pas configurées, passer sans vérifier l'auth
-  if (!MIDDLEWARE_SUPABASE_URL || !MIDDLEWARE_SUPABASE_ANON_KEY) {
-    console.error("Middleware: NEXT_PUBLIC_SUPABASE_URL ou NEXT_PUBLIC_SUPABASE_ANON_KEY manquant");
-    return supabaseResponse;
-  }
-
   const supabase = createServerClient(
-    MIDDLEWARE_SUPABASE_URL,
-    MIDDLEWARE_SUPABASE_ANON_KEY,
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
