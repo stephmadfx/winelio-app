@@ -1,16 +1,19 @@
 import Link from "next/link";
 import { WinelioLogo } from "@/components/winelio-logo";
 import { AppBackground } from "@/components/AppBackground";
+import { NetworkBackground } from "@/components/NetworkBackground";
 
 export default function Home() {
   return (
     <div className="relative min-h-dvh overflow-hidden bg-winelio-light">
       <AppBackground />
+      <NetworkBackground />
       <main className="relative z-10 flex min-h-dvh items-center justify-center px-4">
         <div className="w-full max-w-xs text-center">
-          <WinelioLogo variant="color" height={44} />
+          <WinelioLogo variant="color" height={64} />
           <p className="mt-3 text-sm text-winelio-gray">
-            Recommandez. Connectez. Gagnez.
+            Recommandez. Connectez.{" "}
+            <span className="text-winelio-orange font-semibold">Gagnez.</span>
           </p>
           <div className="mt-8 flex flex-col gap-3">
             <Link
