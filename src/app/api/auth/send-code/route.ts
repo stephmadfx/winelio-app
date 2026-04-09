@@ -78,12 +78,12 @@ export async function POST(req: Request) {
     }
 
     const code = generateCode();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 min
 
-    // Store code in Supabase (upsert → replace existing code for same email)
+    // Store code in Supabase (upsert → replace existing code for same email, reset attempts)
     const { error: dbError } = await supabaseAdmin
       .from("otp_codes")
-      .upsert({ email, code, expires_at: expiresAt }, { onConflict: "email" });
+      .upsert({ email, code, expires_at: expiresAt, attempts: 0 }, { onConflict: "email" });
 
     if (dbError) {
       console.error("send-code DB error:", dbError?.code, dbError?.message);

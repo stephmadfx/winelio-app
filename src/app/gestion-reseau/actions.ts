@@ -161,48 +161,74 @@ export async function reactivateUser(userId: string) {
 
 // ─── Retraits ─────────────────────────────────────────────────────────────────
 
-export async function validateWithdrawal(withdrawalId: string, userId: string) {
+export async function validateWithdrawal(withdrawalId: string) {
   await assertSuperAdmin();
+
+  const { data: w } = await supabaseAdmin
+    .from("withdrawals")
+    .select("user_id, status")
+    .eq("id", withdrawalId)
+    .single();
+
+  if (!w) throw new Error("Retrait introuvable");
+  if (w.status !== WITHDRAWAL_STATUS.PENDING) throw new Error("Ce retrait n'est pas en attente");
 
   const { error } = await supabaseAdmin
     .from("withdrawals")
     .update({ status: WITHDRAWAL_STATUS.PROCESSING })
-    .eq("id", withdrawalId);
+    .eq("id", withdrawalId)
+    .eq("status", WITHDRAWAL_STATUS.PENDING);
 
   if (error) throw new Error(`Erreur validation retrait: ${error.message}`);
 
-  await recalculateWallet(userId);
+  await recalculateWallet(w.user_id);
   revalidatePath("/gestion-reseau/retraits");
 }
 
-export async function rejectWithdrawal(
-  withdrawalId: string,
-  userId: string,
-  reason: string
-) {
+export async function rejectWithdrawal(withdrawalId: string, reason: string) {
   await assertSuperAdmin();
+
+  const { data: w } = await supabaseAdmin
+    .from("withdrawals")
+    .select("user_id, status")
+    .eq("id", withdrawalId)
+    .single();
+
+  if (!w) throw new Error("Retrait introuvable");
+  if (w.status !== WITHDRAWAL_STATUS.PENDING) throw new Error("Ce retrait n'est pas en attente");
 
   const { error } = await supabaseAdmin
     .from("withdrawals")
     .update({ status: WITHDRAWAL_STATUS.REJECTED, rejection_reason: reason })
-    .eq("id", withdrawalId);
+    .eq("id", withdrawalId)
+    .eq("status", WITHDRAWAL_STATUS.PENDING);
 
   if (error) throw new Error(`Erreur rejet retrait: ${error.message}`);
 
-  await recalculateWallet(userId);
+  await recalculateWallet(w.user_id);
   revalidatePath("/gestion-reseau/retraits");
 }
 
-export async function markWithdrawalPaid(withdrawalId: string, userId: string) {
+export async function markWithdrawalPaid(withdrawalId: string) {
   await assertSuperAdmin();
+
+  const { data: w } = await supabaseAdmin
+    .from("withdrawals")
+    .select("user_id, status")
+    .eq("id", withdrawalId)
+    .single();
+
+  if (!w) throw new Error("Retrait introuvable");
+  if (w.status !== WITHDRAWAL_STATUS.PROCESSING) throw new Error("Ce retrait n'est pas en cours de traitement");
 
   const { error } = await supabaseAdmin
     .from("withdrawals")
     .update({ status: WITHDRAWAL_STATUS.COMPLETED })
-    .eq("id", withdrawalId);
+    .eq("id", withdrawalId)
+    .eq("status", WITHDRAWAL_STATUS.PROCESSING);
 
   if (error) throw new Error(`Erreur marquage retrait payé: ${error.message}`);
 
-  await recalculateWallet(userId);
+  await recalculateWallet(w.user_id);
   revalidatePath("/gestion-reseau/retraits");
 }

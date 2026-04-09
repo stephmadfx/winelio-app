@@ -13,16 +13,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
     }
 
-    // 1. Verify OTP code from our table
-    const { data: otp, error: otpError } = await supabaseAdmin
+    // 1. Verify OTP code from our table (with brute-force protection)
+    const { data: otp } = await supabaseAdmin
       .from("otp_codes")
-      .select("*")
+      .select("code, expires_at, attempts")
       .eq("email", email)
-      .eq("code", code)
-      .gt("expires_at", new Date().toISOString())
       .single();
 
-    if (otpError || !otp) {
+    // Incrémenter attempts avant de comparer (évite le timing oracle)
+    if (otp) {
+      await supabaseAdmin
+        .from("otp_codes")
+        .update({ attempts: (otp.attempts ?? 0) + 1 })
+        .eq("email", email);
+    }
+
+    const isExpired = !otp || otp.expires_at < new Date().toISOString();
+    const isBruteForced = (otp?.attempts ?? 0) >= 5;
+    const isInvalid = !otp || otp.code !== code;
+
+    if (isExpired || isBruteForced || isInvalid) {
+      // Supprimer le code si trop de tentatives ou expiré
+      if (otp && (isBruteForced || isExpired)) {
+        await supabaseAdmin.from("otp_codes").delete().eq("email", email);
+      }
       return NextResponse.json(
         { error: "Code invalide ou expiré." },
         { status: 400 }
@@ -39,9 +53,8 @@ export async function POST(req: Request) {
     });
 
     // 4. Generate admin magic link (does NOT send email)
-    // Use request origin so it works on any local port and in production
-    const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, "").split("/").slice(0, 3).join("/");
-    const siteUrl = origin || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    // Utiliser exclusivement NEXT_PUBLIC_APP_URL — ne jamais faire confiance au header Origin client (C-2 SSRF fix)
+    const siteUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3001").replace(/\/$/, "");
     const { data: linkData, error: linkError } =
       await supabaseAdmin.auth.admin.generateLink({
         type: "magiclink",
@@ -119,11 +132,10 @@ export async function POST(req: Request) {
       });
 
       // Assigner un parrain si nécessaire (auto-rotation fondateurs)
-      // Décode le JWT pour récupérer le user ID (sub claim)
       try {
-        const payload = JSON.parse(atob(accessToken.split(".")[1]));
-        if (payload.sub) {
-          await assignSponsorIfNeeded(payload.sub);
+        const { data: { user: sessionUser } } = await supabaseForSession.auth.getUser();
+        if (sessionUser?.id) {
+          await assignSponsorIfNeeded(sessionUser.id);
         }
       } catch (e) {
         console.error("assign-sponsor in verify-code error:", e);

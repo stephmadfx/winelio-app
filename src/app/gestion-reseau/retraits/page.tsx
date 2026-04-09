@@ -84,12 +84,11 @@ export default async function AdminRetraits() {
                     <form
                       action={async (formData: FormData) => {
                         "use server";
-                        await validateWithdrawal(formData.get("withdrawalId") as string, formData.get("userId") as string);
+                        await validateWithdrawal(formData.get("withdrawalId") as string);
                       }}
                       className="flex-1"
                     >
                       <input type="hidden" name="withdrawalId" value={w.id} />
-                      <input type="hidden" name="userId" value={user?.id ?? ""} />
                       <button
                         type="submit"
                         className="w-full text-sm font-medium bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/20 px-4 py-2 rounded-lg transition-colors"
@@ -102,14 +101,12 @@ export default async function AdminRetraits() {
                         "use server";
                         await rejectWithdrawal(
                           formData.get("withdrawalId") as string,
-                          formData.get("userId") as string,
                           (formData.get("reason") as string) || "Refusé par l'admin"
                         );
                       }}
                       className="flex gap-2 flex-1"
                     >
                       <input type="hidden" name="withdrawalId" value={w.id} />
-                      <input type="hidden" name="userId" value={user?.id ?? ""} />
                       <input
                         name="reason"
                         placeholder="Motif de rejet (optionnel)"
@@ -164,11 +161,10 @@ export default async function AdminRetraits() {
                       <form
                         action={async (formData: FormData) => {
                           "use server";
-                          await markWithdrawalPaid(formData.get("withdrawalId") as string, formData.get("userId") as string);
+                          await markWithdrawalPaid(formData.get("withdrawalId") as string);
                         }}
                       >
                         <input type="hidden" name="withdrawalId" value={w.id} />
-                        <input type="hidden" name="userId" value={user?.id ?? ""} />
                         <button
                           type="submit"
                           className="text-xs bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 border border-blue-500/20 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"

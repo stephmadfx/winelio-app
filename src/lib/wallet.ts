@@ -40,7 +40,7 @@ export async function recalculateWallet(userId: string): Promise<void> {
       total_earned: totalEarned,
       total_withdrawn: totalWithdrawn,
       pending_commissions: totalPending,
-      available: totalEarned - totalWithdrawn,
+      available: Math.max(0, totalEarned - totalWithdrawn),
     },
     { onConflict: "user_id" }
   );
