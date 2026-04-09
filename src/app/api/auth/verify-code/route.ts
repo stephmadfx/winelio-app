@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config";
 
 export async function POST(req: Request) {
   try {
@@ -90,13 +93,35 @@ export async function POST(req: Request) {
     }
 
     if (accessToken) {
-      return NextResponse.json({ access_token: accessToken, refresh_token: refreshToken });
+      // Définit la session via cookies HttpOnly côté serveur — le token n'est pas exposé au client
+      const response = NextResponse.json({ success: true });
+      const cookieStore = await cookies();
+      const supabaseForSession = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        db: { schema: "winelio" },
+        cookies: {
+          getAll() { return cookieStore.getAll(); },
+          setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, {
+                ...options as Parameters<typeof response.cookies.set>[2],
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "lax",
+              });
+            });
+          },
+        },
+      });
+      await supabaseForSession.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken || "",
+      });
+      return response;
     }
 
-    // Fallback: if GoTrue uses PKCE code flow, we can't extract tokens server-side
-    // Return the action_link so the client can try to follow it
-    console.warn("Could not extract tokens from GoTrue redirect, falling back to action_link");
-    return NextResponse.json({ action_link: actionLink });
+    // GoTrue uses PKCE code flow — tokens not extractable server-side
+    console.warn("Could not extract tokens from GoTrue redirect (PKCE flow)");
+    return NextResponse.json({ error: "Erreur de connexion, réessayez." }, { status: 500 });
 
   } catch (err) {
     console.error("verify-code error:", err);

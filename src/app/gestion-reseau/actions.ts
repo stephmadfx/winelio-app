@@ -127,11 +127,20 @@ async function createCommissionsForReco(reco: {
   }
 }
 
+const VALID_STATUSES = [
+  "PENDING", "ACCEPTED", "CONTACT_MADE", "MEETING_SCHEDULED",
+  "QUOTE_SUBMITTED", "QUOTE_VALIDATED", "PAYMENT_RECEIVED", "COMPLETED", "CANCELLED",
+] as const;
+
 export async function toggleRecommendationStatus(
   recommendationId: string,
   newStatus: string
 ) {
   await assertSuperAdmin();
+
+  if (!VALID_STATUSES.includes(newStatus as typeof VALID_STATUSES[number])) {
+    throw new Error(`Statut invalide: ${newStatus}`);
+  }
 
   await supabaseAdmin
     .from("recommendations")
@@ -144,12 +153,18 @@ export async function toggleRecommendationStatus(
 
 // ─── Commissions ──────────────────────────────────────────────────────────────
 
+const MAX_ADJUSTMENT = 10_000; // Plafond de sécurité (€)
+
 export async function adjustCommission(
   userId: string,
   amount: number,
   reason: string
 ) {
   await assertSuperAdmin();
+
+  if (typeof amount !== "number" || isNaN(amount) || Math.abs(amount) > MAX_ADJUSTMENT) {
+    throw new Error(`Montant invalide ou hors limite (max ±${MAX_ADJUSTMENT}€)`);
+  }
 
   await supabaseAdmin.from("commission_transactions").insert({
     user_id: userId,

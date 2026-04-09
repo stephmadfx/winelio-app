@@ -19,6 +19,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "parentId requis" }, { status: 400 });
   }
 
+  // Vérifie que parentId appartient bien au réseau de l'utilisateur connecté (anti-IDOR)
+  if (parentId !== user.id) {
+    const { data: networkIds } = await supabaseAdmin.rpc("get_network_ids", {
+      p_user_id: user.id,
+      p_max_depth: 5,
+    });
+    const validIds = new Set((networkIds ?? []).map((r: { id: string }) => r.id));
+    if (!validIds.has(parentId)) {
+      return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+    }
+  }
+
   const { data: children } = await supabaseAdmin
     .from("profiles")
     .select("id, first_name, last_name, city, is_professional, companies!owner_id(alias, category:categories(name))")

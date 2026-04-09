@@ -98,7 +98,7 @@ export async function GET() {
   return new NextResponse(TEMPLATE, {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "public, max-age=3600",
+      "Cache-Control": "no-store",
     },
   });
 }

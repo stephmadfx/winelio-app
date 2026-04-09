@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { assignSponsor } from "@/app/(protected)/profile/actions";
+import { assignSponsor, updateProfile } from "@/app/(protected)/profile/actions";
 
 interface Profile {
   id: string;
@@ -48,20 +47,8 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
 
   const saveToDb = async (data: typeof form) => {
     setAutoSaveStatus("saving");
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        first_name: data.first_name || null,
-        last_name: data.last_name || null,
-        phone: data.phone || null,
-        address: data.address || null,
-        city: data.city || null,
-        postal_code: data.postal_code || null,
-        is_professional: data.is_professional,
-      })
-      .eq("id", profile.id);
-    if (!error) {
+    const result = await updateProfile(data);
+    if (!result.error) {
       setAutoSaveStatus("saved");
       // Rafraîchit le layout serveur après chaque save :
       // - profil complet → modal disparaît

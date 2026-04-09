@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import nodemailer from "nodemailer";
+import { he } from "@/lib/html-escape";
 
 const transporter = nodemailer.createTransport({
   host:   process.env.SMTP_HOST  || "dahu.o2switch.net",
@@ -105,7 +106,7 @@ function buildReferralEmail(
                 <tr>
                   <td align="center">
                     <p style="color:#636E72;font-size:15px;margin:0;">
-                      Bonjour <strong style="color:#2D3436;">${recipientFirstName}</strong>,
+                      Bonjour <strong style="color:#2D3436;">${he(recipientFirstName)}</strong>,
                     </p>
                   </td>
                 </tr>
@@ -121,7 +122,7 @@ function buildReferralEmail(
                 <tr>
                   <td style="background:#F8F9FA;border-radius:12px;padding:20px 24px;">
                     <p style="margin:0;color:#2D3436;font-size:15px;line-height:1.6;">
-                      <strong style="color:${levelColor};">${newMemberName}</strong>
+                      <strong style="color:${levelColor};">${he(newMemberName)}</strong>
                       vient de rejoindre Winelio en tant que ${levelLabel} dans votre réseau.
                     </p>
                     ${level === 1 ? `

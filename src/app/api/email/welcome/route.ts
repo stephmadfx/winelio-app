@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import nodemailer from "nodemailer";
+import { he } from "@/lib/html-escape";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "dahu.o2switch.net",
@@ -83,7 +84,7 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
                 <tr>
                   <td align="center">
                     <h1 style="color:#2D3436;font-size:22px;font-weight:700;margin:0;line-height:1.3;">
-                      Bienvenue sur Winelio, ${firstName} !
+                      Bienvenue sur Winelio, ${he(firstName)} !
                     </h1>
                   </td>
                 </tr>
@@ -192,7 +193,7 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
                 <tr>
                   <td style="padding:24px;text-align:center;">
                     <p style="margin:0 0 10px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#636E72;font-weight:600;">Votre code parrain</p>
-                    <p style="margin:0 0 10px;font-size:32px;font-weight:900;letter-spacing:6px;color:#FF6B35;font-family:'Courier New',Courier,monospace;">${sponsorCode}</p>
+                    <p style="margin:0 0 10px;font-size:32px;font-weight:900;letter-spacing:6px;color:#FF6B35;font-family:'Courier New',Courier,monospace;">${he(sponsorCode)}</p>
                     <p style="margin:0;font-size:13px;color:#636E72;line-height:1.5;">
                       Partagez ce code à vos proches pour les inviter sur Winelio<br/>et commencer à gagner ensemble.
                     </p>

@@ -4,13 +4,14 @@ import { Suspense, useEffect, useState } from "react";
 import { WinelioLogo } from "@/components/winelio-logo";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { NetworkBackground } from "@/components/NetworkBackground";
+import { AppBackground } from "@/components/AppBackground";
+
 type SupabaseClient = ReturnType<typeof createClient>;
 
 export default function LoginPage() {
   return (
-    <div className="relative min-h-screen bg-winelio-dark overflow-hidden">
-      <NetworkBackground />
+    <div className="relative min-h-dvh overflow-hidden bg-winelio-light">
+      <AppBackground />
       <Suspense>
         <LoginForm />
       </Suspense>
@@ -23,11 +24,12 @@ function LoginForm() {
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"email" | "code">("email");
 
-  // Restaure le dernier email utilisé
+  // Restaure le dernier email utilisé (sessionStorage : effacé en fin de session)
   useEffect(() => {
-    const saved = localStorage.getItem("winelio_last_email");
+    const saved = sessionStorage.getItem("winelio_last_email");
     if (saved) setEmail(saved);
   }, []);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [sponsorName, setSponsorName] = useState<string | null>(null);
@@ -52,36 +54,62 @@ function LoginForm() {
       vv.removeEventListener("scroll", update);
     };
   }, []);
+
   const isRegister = searchParams.get("mode") === "register";
   const refCode = searchParams.get("ref");
+  const title = isRegister ? "Créer votre accès" : step === "email" ? "Recevoir un code" : "Vérifier le code";
+  const subtitle = isRegister
+    ? "Winelio reste un réseau fermé: l'inscription passe toujours par un parrain valide."
+    : step === "email"
+      ? "Entrez votre adresse email, nous vous envoyons un code de connexion à 6 chiffres."
+      : "Saisissez le code reçu par email pour ouvrir votre dashboard.";
+  const heroFeatures = [
+    {
+      title: "Design dashboard",
+      description: "Même logique de cartes, d'ombres douces et d'accents orange.",
+      icon: "M4 7h16M4 12h10M4 17h13",
+    },
+    {
+      title: "Connexion rapide",
+      description: "Un code unique par email, sans mot de passe à retenir.",
+      icon: "M12 4v16m8-8H4",
+    },
+    {
+      title: "Réseau privé",
+      description: "L'inscription reste obligatoire par code parrain validé.",
+      icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M15 7a3 3 0 11-6 0 3 3 0 016 0z",
+    },
+    {
+      title: "Mobile d'abord",
+      description: "La même hiérarchie visuelle reste lisible sur petit écran.",
+      icon: "M12 18h.01M8 4h8a2 2 0 012 2v12a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2z",
+    },
+  ];
+  const formIcon =
+    step === "code"
+      ? "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+      : "M12 4v16m8-8H4";
 
-  // Stocker le code de parrainage et récupérer le nom du parrain
+  // Stocker le code de parrainage et récupérer le nom du parrain depuis la DB
   useEffect(() => {
     if (!refCode) return;
     localStorage.setItem("winelio_ref", refCode);
 
-    // Nom déjà dans l'URL (passé par handleSponsorCodeSubmit) ?
-    const nameFromUrl = searchParams.get("sponsor_name");
-    if (nameFromUrl) {
-      setSponsorName(decodeURIComponent(nameFromUrl));
-      return;
-    }
-
-    // Fetch le nom du parrain (sans auth, profils publics)
+    // Toujours fetch depuis la DB (ne pas faire confiance au param URL sponsor_name)
     import("@/lib/supabase/client").then(({ createClient }) => {
       const supabase = createClient();
       supabase
         .from("profiles")
-        .select("first_name, last_name, email")
+        .select("first_name, last_name")
         .eq("sponsor_code", refCode)
         .single()
         .then(({ data }) => {
           if (!data) return;
           const name = [data.first_name, data.last_name].filter(Boolean).join(" ");
-          setSponsorName(name || data.email || null);
+          setSponsorName(name || null);
         });
     });
-  }, [refCode, searchParams]);
+  }, [refCode]);
 
   // Appliquer le parrainage après connexion réussie
   const applyReferral = async (supabase: SupabaseClient) => {
@@ -152,7 +180,7 @@ function LoginForm() {
       return;
     }
 
-    localStorage.setItem("winelio_last_email", email);
+    sessionStorage.setItem("winelio_last_email", email);
     setStep("code");
     setLoading(false);
   };
@@ -220,27 +248,12 @@ function LoginForm() {
       return;
     }
 
-    // Cas 1 : le serveur a extrait les tokens directement → setSession côté client
-    if (data.access_token) {
+    // Session définie côté serveur via cookies HttpOnly
+    if (data.success) {
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token || "",
-      });
-      if (sessionError) {
-        setError("Erreur lors de la connexion. Réessayez.");
-        setLoading(false);
-        return;
-      }
       await applyReferral(supabase);
       router.push("/dashboard");
-      return;
-    }
-
-    // Cas 2 : fallback → redirect vers action_link GoTrue
-    if (data.action_link) {
-      window.location.href = data.action_link;
       return;
     }
 
@@ -248,225 +261,256 @@ function LoginForm() {
     setLoading(false);
   };
 
-  // ─── UI : saisie email ────────────────────────────────────────────────────
-  // ─── Blocage inscription sans parrain ────────────────────────────────────
-  if (isRegister && !refCode) {
-    return (
-      <div className="relative z-10 min-h-screen flex items-center justify-center px-4" style={{ paddingBottom: kbPadding }}>
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <WinelioLogo variant="on-dark" height={40} />
+  return (
+    <div className="relative z-10 flex min-h-dvh items-center justify-center px-4 py-6 sm:px-6 lg:px-8" style={{ paddingBottom: kbPadding }}>
+      <div className="grid w-full max-w-6xl gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
+        <section className="flex flex-col rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_80px_rgba(45,52,54,0.12)] backdrop-blur-xl sm:p-8 lg:p-10">
+          <div className="inline-flex w-fit items-center rounded-full bg-winelio-orange/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-winelio-orange">
+            Connexion securisee
+          </div>
+
+          <div className="mt-5 flex items-center">
+            <WinelioLogo variant="color" height={42} />
+          </div>
+
+          <h1 className="mt-6 max-w-xl text-3xl font-semibold tracking-tight text-winelio-dark sm:text-4xl">
+            {isRegister ? "Rejoignez le reseau Winelio" : "Accedez a votre dashboard"}
+          </h1>
+          <p className="mt-4 max-w-xl text-sm leading-7 text-winelio-gray sm:text-base">
+            {subtitle}
+          </p>
+
+          <div className="mt-7 grid gap-3 sm:grid-cols-2">
+            {heroFeatures.map((feature) => (
+              <article key={feature.title} className="rounded-2xl border border-gray-100 bg-winelio-light/80 p-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-winelio-orange to-winelio-amber text-white shadow-sm shadow-winelio-orange/20">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d={feature.icon} />
+                  </svg>
+                </div>
+                <h2 className="mt-4 text-sm font-semibold text-winelio-dark">{feature.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-winelio-gray">{feature.description}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-winelio-orange/10 bg-[linear-gradient(90deg,rgba(255,107,53,0.08),rgba(247,147,30,0.08))] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-winelio-gray">Ce qui change</p>
+            <p className="mt-2 text-sm leading-6 text-winelio-dark">
+              Meme identite visuelle que le dashboard: fond clair, cartes blanches, accent orange et rythme plus lisible sur mobile.
+            </p>
+          </div>
+        </section>
+
+        <section className="flex flex-col rounded-[28px] bg-white p-5 shadow-[0_24px_80px_rgba(45,52,54,0.12)] ring-1 ring-black/5 sm:p-6 lg:p-8">
+          <div className="h-1.5 rounded-full bg-gradient-to-r from-winelio-orange via-winelio-amber to-winelio-orange" />
+
+          <div className="mt-6 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-winelio-gray">
+                {isRegister ? "Invitation requise" : step === "email" ? "Etape 1 sur 2" : "Etape 2 sur 2"}
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-winelio-dark">{title}</h2>
+              <p className="mt-2 text-sm leading-6 text-winelio-gray">{subtitle}</p>
             </div>
-            <div className="mt-4 flex items-center justify-center w-14 h-14 rounded-full bg-winelio-orange/20 mx-auto mb-3">
-              <svg className="w-7 h-7 text-winelio-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-winelio-orange/10 text-winelio-orange">
+              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d={formIcon} />
               </svg>
             </div>
-            <p className="text-white font-semibold text-lg">Inscription sur invitation</p>
-            <p className="text-winelio-gray text-sm mt-2">
-              Winelio est un réseau fermé. Pour créer un compte, vous devez disposer du code parrain d&apos;un membre du réseau.
-            </p>
           </div>
 
-          <form onSubmit={handleSponsorCodeSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="sponsor" className="block text-sm font-medium text-gray-300 mb-2">
-                Code parrain <span className="text-winelio-orange">*</span>
-              </label>
-              <input
-                id="sponsor"
-                type="text"
-                value={sponsorInput}
-                onChange={(e) => setSponsorInput(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))}
-                placeholder="ex : 4bd0e7"
-                required
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white font-mono text-lg tracking-widest placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-winelio-orange focus:border-transparent transition"
-              />
-            </div>
-
-            {sponsorError && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm">
-                {sponsorError}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={sponsorChecking}
-              className="w-full py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {sponsorChecking ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Vérification...
-                </span>
-              ) : (
-                "Valider le code parrain"
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => router.push("/auth/login")}
-              className="text-winelio-gray hover:text-winelio-orange text-sm transition-colors"
-            >
-              Déjà un compte ? Se connecter
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (step === "email") {
-    return (
-      <div className="relative z-10 min-h-screen flex items-center justify-center px-4" style={{ paddingBottom: kbPadding }}>
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <WinelioLogo variant="on-dark" height={40} />
-            </div>
-            <p className="text-winelio-gray text-sm tracking-widest uppercase">
-              {isRegister ? "Créer un compte" : "Se connecter"}
-            </p>
-            {refCode && isRegister && (
-              <p className="mt-3 text-sm text-winelio-orange font-medium">
-                🎁 Vous avez été invité{sponsorName ? ` par ${sponsorName}` : ""} — votre parrain sera automatiquement assigné.
+          {isRegister && refCode && (
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-winelio-gray">Parrain valide</p>
+              <p className="mt-1 text-sm text-winelio-dark">
+                {sponsorName ? (
+                  <>
+                    Compte de <span className="font-semibold">{sponsorName}</span>{" "}
+                    <span className="text-winelio-gray">({refCode})</span>
+                  </>
+                ) : (
+                  <>
+                    Code <span className="font-semibold">{refCode}</span>
+                  </>
+                )}
               </p>
-            )}
-          </div>
-
-          <form onSubmit={handleSendCode} className="space-y-5">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-300 mb-2"
-              >
-                Adresse email
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="votre@email.com"
-                required
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-winelio-orange focus:border-transparent transition"
-              />
-            </div>
-
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Envoi en cours...
-                </span>
-              ) : (
-                "Recevoir le code de connexion"
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() =>
-                router.push(
-                  isRegister ? "/auth/login" : "/auth/login?mode=register"
-                )
-              }
-              className="text-winelio-gray hover:text-winelio-orange text-sm transition-colors"
-            >
-              {isRegister
-                ? "Déjà un compte ? Se connecter"
-                : "Pas de compte ? Créer un compte"}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ─── UI : saisie code ─────────────────────────────────────────────────────
-  return (
-    <div className="relative z-10 min-h-screen flex items-center justify-center px-4" style={{ paddingBottom: kbPadding }}>
-      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-md w-full">
-        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-r from-winelio-orange to-winelio-amber flex items-center justify-center">
-          <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-          </svg>
-        </div>
-
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-white mb-2">Vérifiez votre email</h2>
-          <p className="text-gray-400 text-sm">
-            Un code à 6 chiffres a été envoyé à{" "}
-            <span className="text-winelio-orange font-medium">{email}</span>.
-          </p>
-        </div>
-
-        <form onSubmit={handleVerifyCode} className="space-y-5">
-          <input
-            id="code"
-            type="text"
-            inputMode="numeric"
-            pattern="\d{6}"
-            maxLength={6}
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            placeholder="123456"
-            required
-            autoFocus
-            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white text-center text-2xl tracking-widest placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-winelio-orange focus:border-transparent transition"
-          />
-
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm text-center">
-              {error}
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading || code.length !== 6}
-            className="w-full py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Connexion..." : "Se connecter"}
-          </button>
-        </form>
+          {isRegister && !refCode ? (
+            <>
+              <div className="mt-6 rounded-2xl border border-gray-100 bg-winelio-light/80 p-4">
+                <p className="text-sm font-medium text-winelio-dark">Inscription sur invitation</p>
+                <p className="mt-2 text-sm leading-6 text-winelio-gray">
+                  Winelio est un reseau ferme. Pour creer un compte, vous devez disposer du code parrain d&apos;un membre du reseau.
+                </p>
+              </div>
 
-        <div className="mt-6 text-center space-y-2">
-          <button
-            onClick={() => { setStep("email"); setCode(""); setError(""); }}
-            className="block w-full text-sm text-gray-500 hover:text-gray-300 transition-colors"
-          >
-            ← Utiliser une autre adresse email
-          </button>
-          <button
-            onClick={handleSendCode}
-            disabled={loading}
-            className="block w-full text-sm text-winelio-orange hover:underline transition-colors disabled:opacity-50"
-          >
-            Renvoyer le code
-          </button>
-        </div>
+              <form onSubmit={handleSponsorCodeSubmit} className="mt-6 space-y-5">
+                <div className="space-y-2">
+                  <label htmlFor="sponsor" className="text-sm font-medium text-winelio-dark">
+                    Code parrain <span className="text-winelio-orange">*</span>
+                  </label>
+                  <input
+                    id="sponsor"
+                    type="text"
+                    value={sponsorInput}
+                    onChange={(e) => setSponsorInput(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))}
+                    placeholder="ex : 4bd0e7"
+                    required
+                    className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 font-mono text-lg tracking-[0.2em] text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                  />
+                </div>
+
+                {sponsorError && (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-500">
+                    {sponsorError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={sponsorChecking}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {sponsorChecking ? (
+                    <>
+                      <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Verification...
+                    </>
+                  ) : (
+                    "Valider le code parrain"
+                  )}
+                </button>
+              </form>
+
+              <button
+                onClick={() => router.push("/auth/login")}
+                className="mt-5 text-left text-sm font-medium text-winelio-gray transition hover:text-winelio-orange"
+              >
+                Retour a la connexion
+              </button>
+            </>
+          ) : step === "email" ? (
+            <>
+              <form onSubmit={handleSendCode} className="mt-6 space-y-5">
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium text-winelio-dark">
+                    Adresse email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="vous@exemple.com"
+                    required
+                    className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                  />
+                </div>
+
+                {error && (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-500">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Envoi en cours...
+                    </>
+                  ) : (
+                    "Recevoir le code de connexion"
+                  )}
+                </button>
+              </form>
+
+              <button
+                onClick={() => router.push(isRegister ? "/auth/login" : "/auth/login?mode=register")}
+                className="mt-5 text-sm font-medium text-winelio-gray transition hover:text-winelio-orange"
+              >
+                {isRegister ? "Deja un compte ? Se connecter" : "Pas de compte ? Creer un compte"}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="mt-6 rounded-2xl border border-gray-100 bg-winelio-light/80 p-4">
+                <p className="text-sm font-medium text-winelio-dark">Verifiez votre email</p>
+                <p className="mt-2 text-sm leading-6 text-winelio-gray">
+                  Un code a 6 chiffres a ete envoye a <span className="font-semibold text-winelio-orange">{email}</span>.
+                </p>
+              </div>
+
+              <form onSubmit={handleVerifyCode} className="mt-6 space-y-5">
+                <div className="space-y-2">
+                  <label htmlFor="code" className="text-sm font-medium text-winelio-dark">
+                    Code a 6 chiffres
+                  </label>
+                  <input
+                    id="code"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="\d{6}"
+                    maxLength={6}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                    placeholder="123456"
+                    required
+                    autoFocus
+                    className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-center text-2xl tracking-[0.35em] text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                  />
+                </div>
+
+                {error && (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-500">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading || code.length !== 6}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loading ? "Connexion..." : "Se connecter"}
+                </button>
+              </form>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <button
+                  onClick={() => {
+                    setStep("email");
+                    setCode("");
+                    setError("");
+                  }}
+                  className="rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-sm font-medium text-winelio-gray transition hover:border-winelio-orange/30 hover:text-winelio-orange"
+                >
+                  Utiliser une autre adresse
+                </button>
+                <button
+                  onClick={handleSendCode}
+                  disabled={loading}
+                  className="rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-sm font-medium text-winelio-gray transition hover:border-winelio-orange/30 hover:text-winelio-orange disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Renvoyer le code
+                </button>
+              </div>
+            </>
+          )}
+        </section>
       </div>
     </div>
   );

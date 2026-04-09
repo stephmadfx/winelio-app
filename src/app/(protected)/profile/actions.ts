@@ -3,6 +3,67 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 
+const POSTAL_CODE_RE = /^\d{5}$/;
+const PHONE_RE = /^[+\d\s()\-]{6,20}$/;
+
+/**
+ * Mise à jour du profil avec validation server-side.
+ */
+export async function updateProfile(data: {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  postal_code?: string;
+  is_professional?: boolean;
+}): Promise<{ error?: string }> {
+  const user = await getUser();
+  if (!user) return { error: "Non authentifié" };
+
+  // Sanitize & validate
+  const patch: Record<string, string | boolean | null> = {};
+
+  if ("first_name" in data) {
+    const v = (data.first_name ?? "").trim().slice(0, 100);
+    patch.first_name = v || null;
+  }
+  if ("last_name" in data) {
+    const v = (data.last_name ?? "").trim().slice(0, 100);
+    patch.last_name = v || null;
+  }
+  if ("phone" in data) {
+    const v = (data.phone ?? "").trim().slice(0, 20);
+    if (v && !PHONE_RE.test(v)) return { error: "Numéro de téléphone invalide." };
+    patch.phone = v || null;
+  }
+  if ("postal_code" in data) {
+    const v = (data.postal_code ?? "").trim();
+    if (v && !POSTAL_CODE_RE.test(v)) return { error: "Code postal invalide (5 chiffres)." };
+    patch.postal_code = v || null;
+  }
+  if ("city" in data) {
+    const v = (data.city ?? "").trim().slice(0, 100);
+    patch.city = v || null;
+  }
+  if ("address" in data) {
+    const v = (data.address ?? "").trim().slice(0, 200);
+    patch.address = v || null;
+  }
+  if ("is_professional" in data) {
+    patch.is_professional = !!data.is_professional;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update(patch)
+    .eq("id", user.id);
+
+  if (error) return { error: "Erreur lors de la sauvegarde." };
+  return {};
+}
+
 /**
  * Assigne un parrain à l'utilisateur courant.
  * Règle MLM : impossible si un sponsor_id est déjà défini.

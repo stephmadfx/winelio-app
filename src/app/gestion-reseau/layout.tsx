@@ -12,6 +12,9 @@ export default async function AdminLayout({
 
   if (!user) redirect("/auth/login");
 
+  // Vérifie le rôle super_admin dans app_metadata (JWT)
+  if (user.app_metadata?.role !== "super_admin") redirect("/dashboard");
+
   return (
     <AdminLayoutShell userEmail={user.email ?? ""}>
       {children}

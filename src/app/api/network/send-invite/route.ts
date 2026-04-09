@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import nodemailer from "nodemailer";
+import { he } from "@/lib/html-escape";
 
 const transporter = nodemailer.createTransport({
   host:   process.env.SMTP_HOST   || "dahu.o2switch.net",
@@ -97,7 +98,7 @@ function buildInviteEmail(
                 <tr>
                   <td align="center">
                     <p style="color:#636E72;font-size:15px;margin:0;">
-                      <strong style="color:#2D3436;">${senderName}</strong> souhaite vous avoir dans son réseau
+                      <strong style="color:#2D3436;">${he(senderName)}</strong> souhaite vous avoir dans son réseau
                     </p>
                   </td>
                 </tr>
@@ -116,9 +117,9 @@ function buildInviteEmail(
                 <tr>
                   <td style="background:#FFF5F0;border-left:3px solid #FF6B35;border-radius:0 8px 8px 0;padding:16px 20px;">
                     <p style="margin:0;color:#2D3436;font-size:14px;font-style:italic;line-height:1.6;">
-                      "${personalMessage}"
+                      "${he(personalMessage)}"
                     </p>
-                    <p style="margin:8px 0 0;color:#636E72;font-size:12px;">— ${senderName}</p>
+                    <p style="margin:8px 0 0;color:#636E72;font-size:12px;">— ${he(senderName)}</p>
                   </td>
                 </tr>
                 <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
@@ -288,10 +289,13 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
 
-    const { to, personalMessage } = await req.json();
+    const { to, personalMessage: rawMessage } = await req.json();
     if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
       return NextResponse.json({ error: "Adresse email invalide" }, { status: 400 });
     }
+    const personalMessage = typeof rawMessage === "string"
+      ? rawMessage.slice(0, 500)
+      : undefined;
 
     // Récupère le profil de l'expéditeur
     const { data: profile } = await supabase
