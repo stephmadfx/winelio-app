@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import nodemailer from "nodemailer";
 import { he } from "@/lib/html-escape";
+import { LOGO_IMG_HTML } from "@/lib/email-logo";
 
 const transporter = nodemailer.createTransport({
   host:   process.env.SMTP_HOST   || "ssl0.ovh.net",
@@ -48,9 +49,7 @@ function buildInviteEmail(
               <!-- Logo -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td align="center" style="padding-bottom:6px;font-size:28px;font-weight:900;letter-spacing:-1px;">
-                    <span style="color:#FF6B35;">W</span><span style="color:#2D3436;">inelio</span>
-                  </td>
+                  <td align="center" style="padding-bottom:6px;">${LOGO_IMG_HTML}</td>
                 </tr>
                 <tr>
                   <td align="center" style="padding-bottom:20px;">
