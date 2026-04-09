@@ -223,8 +223,7 @@ function LoginForm() {
     localStorage.setItem("winelio_ref", trimmed);
     const name = [data.first_name, data.last_name].filter(Boolean).join(" ") || data.email || "";
     setSponsorName(name || null);
-    const nameParam = name ? `&sponsor_name=${encodeURIComponent(name)}` : "";
-    router.replace(`/auth/login?mode=register&ref=${trimmed}${nameParam}`);
+    router.replace(`/auth/login?mode=register&ref=${trimmed}`);
   };
 
   // Step 2: vérifier le code et créer la session
@@ -266,7 +265,7 @@ function LoginForm() {
       <div className="grid w-full max-w-6xl gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
         <section className="flex flex-col rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_80px_rgba(45,52,54,0.12)] backdrop-blur-xl sm:p-8 lg:p-10">
           <div className="inline-flex w-fit items-center rounded-full bg-winelio-orange/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-winelio-orange">
-            Connexion securisee
+            Connexion sécurisée
           </div>
 
           <div className="mt-5 flex items-center">
@@ -274,7 +273,7 @@ function LoginForm() {
           </div>
 
           <h1 className="mt-6 max-w-xl text-3xl font-semibold tracking-tight text-winelio-dark sm:text-4xl">
-            {isRegister ? "Rejoignez le reseau Winelio" : "Accedez a votre dashboard"}
+            {isRegister ? "Rejoignez le réseau Winelio" : "Accédez à votre dashboard"}
           </h1>
           <p className="mt-4 max-w-xl text-sm leading-7 text-winelio-gray sm:text-base">
             {subtitle}
@@ -295,9 +294,9 @@ function LoginForm() {
           </div>
 
           <div className="mt-6 rounded-2xl border border-winelio-orange/10 bg-[linear-gradient(90deg,rgba(255,107,53,0.08),rgba(247,147,30,0.08))] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-winelio-gray">Ce qui change</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-winelio-gray">Réseau privé</p>
             <p className="mt-2 text-sm leading-6 text-winelio-dark">
-              Meme identite visuelle que le dashboard: fond clair, cartes blanches, accent orange et rythme plus lisible sur mobile.
+              Winelio est un réseau fermé. L&apos;inscription est obligatoire par parrainage — chaque membre est parrainé par un membre existant.
             </p>
           </div>
         </section>
@@ -308,7 +307,7 @@ function LoginForm() {
           <div className="mt-6 flex items-start justify-between gap-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-winelio-gray">
-                {isRegister ? "Invitation requise" : step === "email" ? "Etape 1 sur 2" : "Etape 2 sur 2"}
+                {isRegister ? "Invitation requise" : step === "email" ? "Étape 1 sur 2" : "Étape 2 sur 2"}
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-winelio-dark">{title}</h2>
               <p className="mt-2 text-sm leading-6 text-winelio-gray">{subtitle}</p>
@@ -322,7 +321,7 @@ function LoginForm() {
 
           {isRegister && refCode && (
             <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-winelio-gray">Parrain valide</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-winelio-gray">Parrain validé</p>
               <p className="mt-1 text-sm text-winelio-dark">
                 {sponsorName ? (
                   <>
@@ -343,7 +342,7 @@ function LoginForm() {
               <div className="mt-6 rounded-2xl border border-gray-100 bg-winelio-light/80 p-4">
                 <p className="text-sm font-medium text-winelio-dark">Inscription sur invitation</p>
                 <p className="mt-2 text-sm leading-6 text-winelio-gray">
-                  Winelio est un reseau ferme. Pour creer un compte, vous devez disposer du code parrain d&apos;un membre du reseau.
+                  Winelio est un réseau fermé. Pour créer un compte, vous devez disposer du code parrain d&apos;un membre du réseau.
                 </p>
               </div>
 
@@ -380,7 +379,7 @@ function LoginForm() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
-                      Verification...
+                      Vérification...
                     </>
                   ) : (
                     "Valider le code parrain"
@@ -392,7 +391,7 @@ function LoginForm() {
                 onClick={() => router.push("/auth/login")}
                 className="mt-5 text-left text-sm font-medium text-winelio-gray transition hover:text-winelio-orange"
               >
-                Retour a la connexion
+                Retour à la connexion
               </button>
             </>
           ) : step === "email" ? (
@@ -442,22 +441,22 @@ function LoginForm() {
                 onClick={() => router.push(isRegister ? "/auth/login" : "/auth/login?mode=register")}
                 className="mt-5 text-sm font-medium text-winelio-gray transition hover:text-winelio-orange"
               >
-                {isRegister ? "Deja un compte ? Se connecter" : "Pas de compte ? Creer un compte"}
+                {isRegister ? "Déjà un compte ? Se connecter" : "Pas de compte ? Créer un compte"}
               </button>
             </>
           ) : (
             <>
               <div className="mt-6 rounded-2xl border border-gray-100 bg-winelio-light/80 p-4">
-                <p className="text-sm font-medium text-winelio-dark">Verifiez votre email</p>
+                <p className="text-sm font-medium text-winelio-dark">Vérifiez votre email</p>
                 <p className="mt-2 text-sm leading-6 text-winelio-gray">
-                  Un code a 6 chiffres a ete envoye a <span className="font-semibold text-winelio-orange">{email}</span>.
+                  Un code à 6 chiffres a été envoyé à <span className="font-semibold text-winelio-orange">{email}</span>.
                 </p>
               </div>
 
               <form onSubmit={handleVerifyCode} className="mt-6 space-y-5">
                 <div className="space-y-2">
                   <label htmlFor="code" className="text-sm font-medium text-winelio-dark">
-                    Code a 6 chiffres
+                    Code à 6 chiffres
                   </label>
                   <input
                     id="code"
