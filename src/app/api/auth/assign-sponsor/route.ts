@@ -1,16 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { notifyNewReferral } from "@/lib/notify-new-referral";
-import { SUPABASE_URL } from "@/lib/supabase/config";
-
-// Client sans override de schéma pour les RPC dans public
-const supabasePublic = createClient(
-  SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || "",
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
 
 export async function POST(req: NextRequest) {
   // Authentification via cookies httpOnly (session serveur)
@@ -46,12 +37,8 @@ export async function POST(req: NextRequest) {
       .single();
     sponsorId = sponsor?.id ?? null;
   } else {
-    // Auto-assignation via rotation des fondateurs (fonction dans public)
-    const { data, error } = await supabasePublic.rpc("get_next_open_registration_sponsor", {
-      p_exclude_user_id: user.id,
-    });
-    if (error) console.error("assign-sponsor RPC error:", error.message);
-    sponsorId = data as string | null;
+    // Auto-assignation : rotation round-robin sur les fondateurs
+    sponsorId = await getNextFounderSponsor(user.id);
   }
 
   if (!sponsorId) {
@@ -67,4 +54,36 @@ export async function POST(req: NextRequest) {
   notifyNewReferral(user.id).catch(() => {});
 
   return NextResponse.json({ success: true });
+}
+
+/**
+ * Rotation round-robin parmi les fondateurs (is_founder = true).
+ * Assigne au fondateur ayant le moins de filleuls directs.
+ * En cas d'égalité, prend le plus ancien (created_at ASC).
+ */
+async function getNextFounderSponsor(excludeUserId: string): Promise<string | null> {
+  // Récupère tous les fondateurs
+  const { data: founders } = await supabaseAdmin
+    .from("profiles")
+    .select("id")
+    .eq("is_founder", true)
+    .neq("id", excludeUserId)
+    .order("created_at", { ascending: true });
+
+  if (!founders || founders.length === 0) return null;
+
+  // Compte les filleuls directs de chaque fondateur
+  const counts = await Promise.all(
+    founders.map(async (f) => {
+      const { count } = await supabaseAdmin
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("sponsor_id", f.id);
+      return { id: f.id, count: count ?? 0 };
+    })
+  );
+
+  // Choisit le fondateur avec le moins de filleuls
+  counts.sort((a, b) => a.count - b.count);
+  return counts[0].id;
 }
