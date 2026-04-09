@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createServerClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { notifyNewReferral } from "@/lib/notify-new-referral";
+import { SUPABASE_URL } from "@/lib/supabase/config";
+
+// Client sans override de schéma pour les RPC dans public
+const supabasePublic = createClient(
+  SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
 
 export async function POST(req: NextRequest) {
   // Authentification via cookies httpOnly (session serveur)
-  const supabase = await createClient();
+  const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
@@ -37,10 +46,11 @@ export async function POST(req: NextRequest) {
       .single();
     sponsorId = sponsor?.id ?? null;
   } else {
-    // Auto-assignation via rotation des fondateurs
-    const { data } = await supabaseAdmin.rpc("get_next_open_registration_sponsor", {
+    // Auto-assignation via rotation des fondateurs (fonction dans public)
+    const { data, error } = await supabasePublic.rpc("get_next_open_registration_sponsor", {
       p_exclude_user_id: user.id,
     });
+    if (error) console.error("assign-sponsor RPC error:", error.message);
     sponsorId = data as string | null;
   }
 
