@@ -28,20 +28,23 @@ export default function WithdrawPage() {
 
   useEffect(() => {
     async function fetchBalance() {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
 
-      const { data } = await supabase
-        .from("user_wallet_summaries")
-        .select("available")
-        .eq("user_id", user.id)
-        .single();
+        const { data } = await supabase
+          .from("user_wallet_summaries")
+          .select("available")
+          .eq("user_id", user.id)
+          .single();
 
-      setAvailable(data?.available ?? 0);
-      setLoading(false);
+        setAvailable(data?.available ?? 0);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchBalance();
   }, []);
@@ -451,7 +454,7 @@ export default function WithdrawPage() {
             onClick={() => router.push("/wallet")}
             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-medium text-sm hover:opacity-90 transition-opacity"
           >
-            Retour au wallet
+            Retour au portefeuille
           </button>
         </div>
       )}

@@ -178,7 +178,7 @@ export default async function AdminUserDetail({
       {wallet && (
         <div className="bg-gray-900 rounded-xl border border-white/5 p-5 mb-4">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Wallet
+            Portefeuille
           </h2>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
