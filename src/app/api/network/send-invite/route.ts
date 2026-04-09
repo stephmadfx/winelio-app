@@ -48,10 +48,8 @@ function buildInviteEmail(
               <!-- Logo -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="padding-bottom:2px;">
-                    <img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-color.png"
-                         alt="Winelio" width="464"
-                         style="display:block;border:0;width:100%;max-width:464px;" />
+                  <td align="center" style="padding-bottom:6px;font-size:28px;font-weight:900;letter-spacing:-1px;">
+                    <span style="color:#FF6B35;">W</span><span style="color:#2D3436;">inelio</span>
                   </td>
                 </tr>
                 <tr>

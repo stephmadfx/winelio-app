@@ -41,9 +41,8 @@ function buildEmailHtml(code: string): string {
 <table width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;">
   <tr><td style="background:#FF6B35;height:4px;font-size:0;border-radius:4px 4px 0 0;">&nbsp;</td></tr>
   <tr><td style="background:#fff;border-radius:0 0 12px 12px;padding:32px 40px;">
-    <p style="text-align:center;margin:0 0 24px;">
-      <img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-color.png"
-           alt="Winelio" width="160" height="44" style="display:inline-block;border:0;" />
+    <p style="text-align:center;margin:0 0 24px;font-size:28px;font-weight:900;letter-spacing:-1px;">
+      <span style="color:#FF6B35;">W</span><span style="color:#2D3436;">inelio</span>
     </p>
     <h1 style="color:#2D3436;font-size:20px;text-align:center;margin:0 0 8px;">Votre code de connexion</h1>
     <p style="color:#636E72;font-size:14px;text-align:center;margin:0 0 28px;">
