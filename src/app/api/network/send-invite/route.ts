@@ -4,11 +4,11 @@ import nodemailer from "nodemailer";
 import { he } from "@/lib/html-escape";
 
 const transporter = nodemailer.createTransport({
-  host:   process.env.SMTP_HOST   || "dahu.o2switch.net",
+  host:   process.env.SMTP_HOST   || "ssl0.ovh.net",
   port:   Number(process.env.SMTP_PORT) || 587,
   secure: false,
   auth: {
-    user: process.env.SMTP_USER || "contact@aide-multimedia.fr",
+    user: process.env.SMTP_USER || "support@winelio.app",
     pass: process.env.SMTP_PASS || "",
   },
 });
@@ -311,7 +311,7 @@ export async function POST(req: Request) {
     const senderName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Un membre Winelio";
 
     await transporter.sendMail({
-      from: `"${senderName} via Winelio" <${process.env.SMTP_USER || "contact@aide-multimedia.fr"}>`,
+      from: `"${senderName} via Winelio" <${process.env.SMTP_USER || "support@winelio.app"}>`,
       to,
       replyTo: user.email,
       subject: `${senderName} vous invite à rejoindre Winelio 🤝`,

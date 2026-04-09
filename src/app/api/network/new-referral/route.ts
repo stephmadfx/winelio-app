@@ -4,11 +4,11 @@ import nodemailer from "nodemailer";
 import { he } from "@/lib/html-escape";
 
 const transporter = nodemailer.createTransport({
-  host:   process.env.SMTP_HOST  || "dahu.o2switch.net",
+  host:   process.env.SMTP_HOST  || "ssl0.ovh.net",
   port:   Number(process.env.SMTP_PORT) || 587,
   secure: false,
   auth: {
-    user: process.env.SMTP_USER || "contact@aide-multimedia.fr",
+    user: process.env.SMTP_USER || "support@winelio.app",
     pass: process.env.SMTP_PASS || "",
   },
 });
@@ -277,7 +277,7 @@ export async function POST(req: Request) {
     await Promise.allSettled(
       notifications.map(({ email, firstName, level }) =>
         transporter.sendMail({
-          from: `"Winelio" <${process.env.SMTP_USER || "contact@aide-multimedia.fr"}>`,
+          from: `"Winelio" <${process.env.SMTP_USER || "support@winelio.app"}>`,
           to: email,
           subject: level === 1
             ? `🎉 ${newMemberName} a rejoint votre réseau Winelio !`

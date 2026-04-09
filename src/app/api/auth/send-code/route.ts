@@ -4,14 +4,28 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "dahu.o2switch.net",
+  host: process.env.SMTP_HOST || "ssl0.ovh.net",
   port: Number(process.env.SMTP_PORT) || 587,
   secure: false,
+  connectionTimeout: 8000,
+  greetingTimeout: 8000,
+  socketTimeout: 8000,
   auth: {
-    user: process.env.SMTP_USER || "contact@aide-multimedia.fr",
+    user: process.env.SMTP_USER || "support@winelio.app",
     pass: process.env.SMTP_PASS || "",
   },
 });
+
+const SEND_MAIL_TIMEOUT_MS = 10000;
+
+async function sendMailWithTimeout(message: Parameters<typeof transporter.sendMail>[0]) {
+  return Promise.race([
+    transporter.sendMail(message),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("SMTP timeout")), SEND_MAIL_TIMEOUT_MS)
+    ),
+  ]);
+}
 
 function generateCode(): string {
   return randomInt(100000, 1000000).toString();
@@ -165,7 +179,7 @@ export async function POST(req: Request) {
       .upsert({ email, code, expires_at: expiresAt }, { onConflict: "email" });
 
     if (dbError) {
-      console.error("DB error:", dbError);
+      console.error("send-code DB error:", dbError?.code, dbError?.message);
       return NextResponse.json(
         { error: "Erreur serveur. Réessayez." },
         { status: 500 }
@@ -173,8 +187,8 @@ export async function POST(req: Request) {
     }
 
     // Send custom email
-    await transporter.sendMail({
-      from: `"${process.env.SMTP_SENDER_NAME || "Winelio"}" <${process.env.SMTP_ADMIN_EMAIL || process.env.SMTP_USER || "contact@aide-multimedia.fr"}>`,
+    await sendMailWithTimeout({
+      from: `"${process.env.SMTP_SENDER_NAME || "Winelio"}" <${process.env.SMTP_ADMIN_EMAIL || process.env.SMTP_USER || "support@winelio.app"}>`,
       to: email,
       subject: "Votre code de connexion Winelio",
       html: buildEmailHtml(code),
@@ -183,6 +197,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("send-code error:", err);
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+    return NextResponse.json({ error: "Envoi du code temporairement indisponible. Réessayez." }, { status: 504 });
   }
 }

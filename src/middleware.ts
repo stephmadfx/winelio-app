@@ -35,16 +35,15 @@ if (typeof globalThis !== "undefined") {
 }
 
 export async function middleware(request: NextRequest) {
-  // Rate limiting on API routes and auth
+  // Rate limiting on auth-sensitive API routes only.
+  // Never rate-limit the auth pages themselves, otherwise the login screen can
+  // return 429 instead of rendering the code-entry form.
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     request.headers.get("x-real-ip") ??
     "unknown";
 
-  if (
-    request.nextUrl.pathname.startsWith("/api/") ||
-    request.nextUrl.pathname.startsWith("/auth/")
-  ) {
+  if (request.nextUrl.pathname.startsWith("/api/")) {
     if (isRateLimited(ip)) {
       return new NextResponse("Too Many Requests", { status: 429 });
     }
