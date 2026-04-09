@@ -51,9 +51,8 @@ export default function SettingsPage() {
       return;
     }
 
-    // Déconnexion côté client puis redirection vers login
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    // Route serveur pour effacer les cookies httpOnly
+    await fetch("/api/auth/sign-out", { method: "POST" });
     router.replace("/auth/login");
   };
 

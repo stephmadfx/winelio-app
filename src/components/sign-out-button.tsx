@@ -1,6 +1,5 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 export function SignOutButton({
@@ -13,8 +12,8 @@ export function SignOutButton({
   const router = useRouter();
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    // Route serveur nécessaire pour effacer les cookies httpOnly
+    await fetch("/api/auth/sign-out", { method: "POST" });
     router.push("/");
   };
 
