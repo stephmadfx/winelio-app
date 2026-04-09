@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+
+<html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Winelio - Tableau de bord</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;family=Manrope:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "on-tertiary-fixed": "#454c4f",
+                "surface-container-low": "#eff1f2",
+                "surface-container-high": "#e0e3e4",
+                "on-error": "#ffefee",
+                "on-primary-container": "#451000",
+                "on-primary-fixed-variant": "#551600",
+                "on-tertiary-container": "#575f61",
+                "on-surface-variant": "#595c5d",
+                "inverse-primary": "#fe6a34",
+                "primary-fixed": "#ff7949",
+                "error": "#b31b25",
+                "tertiary": "#565d5f",
+                "on-secondary-container": "#6c3b00",
+                "surface-container": "#e6e8ea",
+                "inverse-surface": "#0c0f10",
+                "on-primary-fixed": "#000000",
+                "error-container": "#fb5151",
+                "outline": "#757778",
+                "primary-dim": "#922c00",
+                "on-surface": "#2c2f30",
+                "tertiary-fixed-dim": "#e2e9ec",
+                "surface-container-lowest": "#ffffff",
+                "surface-container-highest": "#dadddf",
+                "on-error-container": "#570008",
+                "on-secondary-fixed": "#512b00",
+                "surface": "#f5f6f7",
+                "secondary-container": "#ffc795",
+                "on-tertiary-fixed-variant": "#62696b",
+                "inverse-on-surface": "#9b9d9e",
+                "on-primary": "#ffefeb",
+                "on-secondary": "#fff0e6",
+                "surface-variant": "#dadddf",
+                "on-secondary-fixed-variant": "#794300",
+                "error-dim": "#9f0519",
+                "surface-bright": "#f5f6f7",
+                "tertiary-dim": "#4a5153",
+                "surface-dim": "#d1d5d7",
+                "on-tertiary": "#edf4f6",
+                "secondary": "#894d00",
+                "outline-variant": "#abadae",
+                "secondary-dim": "#784200",
+                "primary": "#a63300",
+                "secondary-fixed": "#ffc795",
+                "secondary-fixed-dim": "#ffb46d",
+                "on-background": "#2c2f30",
+                "surface-tint": "#a63300",
+                "primary-fixed-dim": "#f7652f",
+                "tertiary-container": "#f1f8fa",
+                "background": "#f5f6f7",
+                "primary-container": "#ff7949",
+                "tertiary-fixed": "#f1f8fa"
+        },
+        "borderRadius": {
+                "DEFAULT": "1rem",
+                "lg": "2rem",
+                "xl": "3rem",
+                "full": "9999px"
+        },
+        "fontFamily": {
+                "headline": [
+                        "Plus Jakarta Sans", "sans-serif"
+                ],
+                "body": [
+                        "Manrope", "sans-serif"
+                ],
+                "label": [
+                        "Manrope", "sans-serif"
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+    .ambient-shadow {
+        box-shadow: 0px 16px 32px rgba(166, 51, 0, 0.06);
+    }
+    .glass-effect {
+        background: rgba(245, 246, 247, 0.7);
+        backdrop-filter: blur(20px);
+    }
+</style>
+</head>
+<body class="bg-surface text-on-surface font-body antialiased selection:bg-primary-container selection:text-on-primary-container">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar (Shared Component) -->
+<div class="relative flex h-full w-[280px] flex-col bg-surface-container-low group/design-root overflow-y-auto shrink-0 border-r border-outline-variant/15">
+<div class="layout-container flex h-full grow flex-col px-4 py-6">
+<div class="flex flex-col gap-6 h-full justify-between">
+<div class="flex flex-col gap-8">
+<div class="flex items-center gap-3 px-2">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12 shadow-sm" data-alt="a glass of red wine catching warm golden hour light on a rustic wooden table" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA67t_jvrgpZncjoztIHFgTrJlIyUp5K40tOvakQ5PCzNHhmdRo79FjI5K0GiOBj8nvUBCzHi-LQChk0FGnwoOKA3knCes9FNwWAi2KT0qwhU1dwrYVjW_vDiu3IZRdNpZLGzR6dJD4Lk5bOYE-oe9VNP9RTgITGioZvHgi0JJ7cd_fwe9lYsGrdIAHeP29clSCHi-RVJWgZGCEJ25eSXPvaHUlK5b1uxHBp5ytAGayraskMlFBf6eON9ICRr4jFDoVhKAM1ETOtDc");'></div>
+<div class="flex flex-col">
+<h1 class="text-on-surface font-headline font-bold text-lg leading-tight tracking-tight">Winelio</h1>
+<p class="text-primary text-sm font-medium">Espace Membre</p>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-container-lowest text-primary shadow-sm transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-medium text-sm">Tableau de bord</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-lowest/50 text-on-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">redeem</span>
+<span class="font-medium text-sm">Recommandations</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-lowest/50 text-on-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-medium text-sm">Réseau</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-lowest/50 text-on-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="font-medium text-sm">Gains</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-lowest/50 text-on-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-medium text-sm">Paramètres</span>
+</a>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-lowest/50 text-on-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-medium text-sm">Déconnexion</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto bg-surface flex flex-col">
+<div class="max-w-[1200px] w-full mx-auto p-8 flex flex-col gap-8">
+<!-- Header -->
+<header class="flex flex-wrap items-center justify-between gap-4">
+<div class="flex flex-col gap-1">
+<h2 class="text-on-surface font-headline font-extrabold text-3xl tracking-tight">Tableau de bord</h2>
+<p class="text-on-surface-variant text-base font-medium">12 Octobre 2023</p>
+</div>
+<button class="flex items-center gap-2 px-6 py-3 rounded-md bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold text-sm shadow-md hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>Nouvelle recommandation</span>
+</button>
+</header>
+<!-- KPIs -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- KPI 1 -->
+<div class="bg-surface-container-lowest rounded-DEFAULT p-6 ambient-shadow flex flex-col gap-3 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 text-primary group-hover:scale-110 transition-transform duration-500">
+<span class="material-symbols-outlined text-[80px]">redeem</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">recommend</span>
+<h3 class="font-medium text-sm">Recommandations</h3>
+</div>
+<div class="flex items-baseline gap-3 mt-1">
+<p class="font-headline font-bold text-4xl text-on-surface">3</p>
+<div class="flex items-center text-primary text-sm font-bold bg-primary-container/20 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+<span>+2</span>
+</div>
+</div>
+</div>
+<!-- KPI 2 -->
+<div class="bg-surface-container-lowest rounded-DEFAULT p-6 ambient-shadow flex flex-col gap-3 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 text-secondary group-hover:scale-110 transition-transform duration-500">
+<span class="material-symbols-outlined text-[80px]">euro_symbol</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+<h3 class="font-medium text-sm">Gains totaux</h3>
+</div>
+<div class="flex flex-col mt-1">
+<p class="font-headline font-bold text-4xl text-on-surface">247,50 €</p>
+<p class="text-sm text-secondary font-medium mt-1">dont 18 € ce mois</p>
+</div>
+</div>
+<!-- KPI 3 -->
+<div class="bg-surface-container-lowest rounded-DEFAULT p-6 ambient-shadow flex flex-col gap-3 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 text-tertiary group-hover:scale-110 transition-transform duration-500">
+<span class="material-symbols-outlined text-[80px]">group</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">hub</span>
+<h3 class="font-medium text-sm">Membres réseau</h3>
+</div>
+<div class="flex items-baseline gap-3 mt-1">
+<p class="font-headline font-bold text-4xl text-on-surface">12</p>
+<div class="flex items-center text-tertiary text-sm font-bold bg-tertiary-container px-2 py-0.5 rounded-full">
+<span>+2 nouveaux</span>
+</div>
+</div>
+</div>
+<!-- KPI 4 -->
+<div class="bg-surface-container-lowest rounded-DEFAULT p-6 ambient-shadow flex flex-col gap-3 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 text-primary-fixed group-hover:scale-110 transition-transform duration-500">
+<span class="material-symbols-outlined text-[80px]">trending_up</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">analytics</span>
+<h3 class="font-medium text-sm">Taux de succès</h3>
+</div>
+<div class="flex items-center justify-between mt-1">
+<p class="font-headline font-bold text-4xl text-on-surface">75%</p>
+<!-- Fake sparkline -->
+<div class="w-16 h-8 flex items-end gap-1">
+<div class="w-full bg-primary/20 rounded-t-sm" style="height: 40%"></div>
+<div class="w-full bg-primary/40 rounded-t-sm" style="height: 60%"></div>
+<div class="w-full bg-primary/60 rounded-t-sm" style="height: 50%"></div>
+<div class="w-full bg-primary/80 rounded-t-sm" style="height: 90%"></div>
+<div class="w-full bg-primary rounded-t-sm" style="height: 75%"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Content Grid 60/40 -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12">
+<!-- Left Column (60%) -->
+<div class="lg:col-span-7 flex flex-col gap-8">
+<!-- Recommandations récentes -->
+<div class="bg-surface-container-lowest rounded-xl rounded-tl-xl rounded-tr-DEFAULT rounded-br-DEFAULT rounded-bl-DEFAULT p-6 ambient-shadow">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline font-bold text-xl text-on-surface">Recommandations récentes</h3>
+<button class="text-primary font-bold text-sm hover:underline">Voir tout</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant/15 text-on-surface-variant text-sm font-medium">
+<th class="pb-3 font-medium">Client</th>
+<th class="pb-3 font-medium">Date</th>
+<th class="pb-3 font-medium text-right">Montant</th>
+<th class="pb-3 font-medium text-center">Statut</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-outline-variant/15 group hover:bg-surface-container-low/50 transition-colors">
+<td class="py-4">
+<p class="font-bold text-on-surface">Jean Dupont</p>
+<p class="text-xs text-on-surface-variant">jean.d@email.com</p>
+</td>
+<td class="py-4 text-sm text-on-surface-variant">10 Oct 2023</td>
+<td class="py-4 text-sm font-bold text-on-surface text-right">150 €</td>
+<td class="py-4 text-center">
+<span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold bg-secondary-container/30 text-secondary-dim">En cours</span>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/15 group hover:bg-surface-container-low/50 transition-colors">
+<td class="py-4">
+<p class="font-bold text-on-surface">Marie Curie</p>
+<p class="text-xs text-on-surface-variant">marie.c@email.com</p>
+</td>
+<td class="py-4 text-sm text-on-surface-variant">05 Oct 2023</td>
+<td class="py-4 text-sm font-bold text-on-surface text-right">300 €</td>
+<td class="py-4 text-center">
+<span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold bg-tertiary-container text-tertiary">Validé</span>
+</td>
+</tr>
+<tr class="group hover:bg-surface-container-low/50 transition-colors">
+<td class="py-4">
+<p class="font-bold text-on-surface">Paul Bismuth</p>
+<p class="text-xs text-on-surface-variant">paul.b@email.com</p>
+</td>
+<td class="py-4 text-sm text-on-surface-variant">28 Sep 2023</td>
+<td class="py-4 text-sm font-bold text-on-surface text-right">85 €</td>
+<td class="py-4 text-center">
+<span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold bg-error-container/20 text-error-dim">Refusé</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Performance mensuelle -->
+<div class="bg-surface-container-lowest rounded-xl rounded-tl-xl rounded-tr-DEFAULT rounded-br-DEFAULT rounded-bl-DEFAULT p-6 ambient-shadow">
+<h3 class="font-headline font-bold text-xl text-on-surface mb-6">Performance mensuelle</h3>
+<div class="h-48 flex items-end justify-between gap-2 px-2">
+<!-- Bar Chart Mockup -->
+<div class="w-full flex flex-col items-center gap-2 group">
+<div class="w-full bg-surface-container rounded-t-sm h-full flex items-end justify-center relative overflow-hidden">
+<div class="w-full bg-surface-variant absolute bottom-0 rounded-t-sm transition-all duration-300 group-hover:bg-primary/20" style="height: 30%"></div>
+</div>
+<span class="text-xs text-on-surface-variant font-medium">Jui</span>
+</div>
+<div class="w-full flex flex-col items-center gap-2 group">
+<div class="w-full bg-surface-container rounded-t-sm h-full flex items-end justify-center relative overflow-hidden">
+<div class="w-full bg-surface-variant absolute bottom-0 rounded-t-sm transition-all duration-300 group-hover:bg-primary/20" style="height: 45%"></div>
+</div>
+<span class="text-xs text-on-surface-variant font-medium">Aoû</span>
+</div>
+<div class="w-full flex flex-col items-center gap-2 group">
+<div class="w-full bg-surface-container rounded-t-sm h-full flex items-end justify-center relative overflow-hidden">
+<div class="w-full bg-surface-variant absolute bottom-0 rounded-t-sm transition-all duration-300 group-hover:bg-primary/20" style="height: 60%"></div>
+</div>
+<span class="text-xs text-on-surface-variant font-medium">Sep</span>
+</div>
+<div class="w-full flex flex-col items-center gap-2 group">
+<div class="w-full bg-surface-container rounded-t-sm h-full flex items-end justify-center relative overflow-hidden">
+<div class="w-full bg-gradient-to-t from-primary to-primary-container absolute bottom-0 rounded-t-sm shadow-[0_0_15px_rgba(166,51,0,0.3)]" style="height: 85%"></div>
+</div>
+<span class="text-xs font-bold text-primary">Oct</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column (40%) -->
+<div class="lg:col-span-5 flex flex-col gap-8">
+<!-- Wallet rapide -->
+<div class="bg-gradient-to-br from-primary to-primary-dim rounded-xl p-6 shadow-lg text-on-primary relative overflow-hidden">
+<!-- Decorative bg -->
+<div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+<div class="absolute -left-10 -bottom-10 w-32 h-32 bg-black/10 rounded-full blur-xl"></div>
+<div class="relative z-10 flex flex-col gap-6">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[24px]">account_balance_wallet</span>
+<h3 class="font-headline font-bold text-lg">Mon Portefeuille</h3>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<p class="text-on-primary/80 text-sm font-medium">Solde disponible</p>
+<p class="font-headline font-extrabold text-4xl">450,00 €</p>
+<p class="text-sm font-medium bg-on-primary/20 self-start px-2 py-1 rounded-md mt-2 flex items-center gap-1 backdrop-blur-sm">
+<span class="material-symbols-outlined text-[16px]">stars</span>
+                                    2 450 Wins
+                                </p>
+</div>
+<button class="w-full py-3 bg-surface-container-lowest text-primary font-bold text-sm rounded-md shadow-sm hover:bg-surface-container-low transition-colors mt-2">
+                                Retirer mes gains
+                            </button>
+</div>
+</div>
+<!-- Votre réseau -->
+<div class="bg-surface-container-lowest rounded-xl p-6 ambient-shadow">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline font-bold text-xl text-on-surface">Votre réseau</h3>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">open_in_new</span>
+</button>
+</div>
+<!-- Simplified Network Tree -->
+<div class="flex flex-col items-center gap-4 relative">
+<!-- Me -->
+<div class="flex flex-col items-center gap-2 z-10">
+<div class="size-14 rounded-full border-2 border-primary p-0.5 bg-surface-container-lowest">
+<img alt="Profile" class="w-full h-full rounded-full object-cover" data-alt="a glass of red wine catching warm golden hour light on a rustic wooden table" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqdhUAawtjoBUqpk8mIBlm78i1vY5a54HU_oWDMCJjrtRS5rbSp_iduGA0IYsYnXAnyxESOEbBnmWpnp0-NGm14orZRZGEoQRzUyT_Fl9Pc-28XkmSaiAm1mnxzG1wHS3QzxxuoUd6TcvGwa1RDa9ZAyRGD4OrAxvTF-4AqKIsFn6U4HelQ0ZLEMQ91IdXfxK37APOlbBOgVJMBDj6dw_ikwIGGsA7lxUO8OzOD8tQ9Wzh5g00Eq845teXDRl4hAkkK-9OlZjeQCo"/>
+</div>
+<span class="text-xs font-bold text-on-surface">Vous</span>
+</div>
+<!-- Connectors -->
+<div class="absolute top-14 w-full h-10 border-t-2 border-l-2 border-r-2 border-outline-variant/30 rounded-t-xl w-3/4 -z-0"></div>
+<div class="absolute top-14 w-[2px] h-4 bg-outline-variant/30 -z-0"></div>
+<!-- Level 1 -->
+<div class="flex w-full justify-around pt-2 z-10">
+<div class="flex flex-col items-center gap-2">
+<div class="size-10 rounded-full border-2 border-secondary p-0.5 bg-surface-container-lowest">
+<img alt="Node" class="w-full h-full rounded-full object-cover" data-alt="portrait of a smiling man in a smart casual shirt with warm natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9VvZXUr-b5T3CIajEHt1HD2EbjzzRqCE3qj_UBf2yQvMpRxjJRQKjmngSzX4b7Z_W0Z6iMsfAxDmmlazr1NX9OEt3UDwVMRxj0fCHLMg98vXTfC_k_LP1uq0pV4thAXQdmJs5eiQxokICpsjGvB2reZMVJqvmAm859iBUdRZNs9Rty-bHf7bqcNujl7EQwOLoPj0SdOiQMAs-kzJiqH5GAQU-nwHvHc6-B9fR1630Nhwe_Yx8Gh7EZ6MaiaRHI8SL2TecwZOn9OA"/>
+</div>
+<span class="text-xs font-medium text-on-surface-variant">Marc</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="size-10 rounded-full border-2 border-secondary p-0.5 bg-surface-container-lowest relative">
+<img alt="Node" class="w-full h-full rounded-full object-cover" data-alt="portrait of a confident woman with short hair against a soft blurred background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxzN6HgPlJKb4QlJc6fGy47MBrFixOjMTRJFb_lENbDPLk8RuLnzbC6zi6KDKfKWNHVK5lIojMSJ-NnL8v1TlF8IvBObSyzf4mduCocsEGDq57oof2YUkiwENk3leg4E9qj3XZ58ZOrjGB_aeq13W6eJMBNvfnLGlnf6ZIQvuHeYePqDz8hNb5erEyfpivG1OuuYzqassD0MjhOQ_gQYYktpDv5Evo2CNpAOfL4WJnoBYNJEZ9cEB6d-A6YKOScj9ht1Fy-GJRkMI"/>
+<div class="absolute -top-1 -right-1 size-4 bg-primary rounded-full border-2 border-surface-container-lowest"></div>
+</div>
+<span class="text-xs font-medium text-on-surface-variant">Sophie</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="size-10 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant border-2 border-dashed border-outline-variant/50">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</div>
+<span class="text-xs font-medium text-on-surface-variant">Inviter</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Activité récente -->
+<div class="bg-surface-container-lowest rounded-xl p-6 ambient-shadow">
+<h3 class="font-headline font-bold text-xl text-on-surface mb-6">Activité</h3>
+<div class="flex flex-col gap-4 relative">
+<!-- Vertical Line -->
+<div class="absolute left-[19px] top-4 bottom-4 w-[2px] bg-surface-container-high"></div>
+<!-- Item 1 -->
+<div class="flex gap-4 relative z-10">
+<div class="size-10 rounded-full bg-primary-container/20 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">task_alt</span>
+</div>
+<div class="flex flex-col pt-1">
+<p class="text-sm font-bold text-on-surface">Recommandation validée</p>
+<p class="text-xs text-on-surface-variant mt-0.5">La recommandation pour Marie C. a été finalisée. <span class="font-bold text-primary">+45€</span></p>
+<span class="text-xs text-on-surface-variant/70 mt-1">Il y a 2h</span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex gap-4 relative z-10">
+<div class="size-10 rounded-full bg-tertiary-container text-tertiary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">person_add</span>
+</div>
+<div class="flex flex-col pt-1">
+<p class="text-sm font-bold text-on-surface">Nouveau membre</p>
+<p class="text-xs text-on-surface-variant mt-0.5">Sophie a rejoint votre réseau via votre lien.</p>
+<span class="text-xs text-on-surface-variant/70 mt-1">Hier</span>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="flex gap-4 relative z-10">
+<div class="size-10 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">mail</span>
+</div>
+<div class="flex flex-col pt-1">
+<p class="text-sm font-bold text-on-surface">Invitation envoyée</p>
+<p class="text-xs text-on-surface-variant mt-0.5">Vous avez invité Lucas M. à découvrir Winelio.</p>
+<span class="text-xs text-on-surface-variant/70 mt-1">Il y a 2 jours</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+</body></html>

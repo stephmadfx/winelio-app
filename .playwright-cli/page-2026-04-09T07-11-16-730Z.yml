@@ -1,0 +1,17 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic:
+      - img
+    - main [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Connexion
+          - heading "Recevoir un code" [level=1] [ref=e7]
+          - paragraph [ref=e8]: Saisissez votre adresse email pour recevoir un code de connexion.
+        - generic [ref=e9]:
+          - generic [ref=e10]:
+            - text: Adresse email
+            - textbox "Adresse email" [ref=e11]:
+              - /placeholder: vous@exemple.com
+          - button "Se connecter" [ref=e12]
+  - alert [ref=e13]

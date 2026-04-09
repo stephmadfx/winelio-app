@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Winelio — Modèle économique Stripe Connect</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #F0F2F4;
+    color: #2D3436;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto 20px;
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+  }
+
+  .accent-bar { height: 6px; background: linear-gradient(90deg, #FF6B35, #F7931E); }
+
+  .page-header {
+    padding: 36px 48px 24px;
+    border-bottom: 1px solid #F0F2F4;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo-text { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo-text span { color: #FF6B35; }
+  .page-tag {
+    font-size: 11px; font-weight: 600; color: #FF6B35;
+    background: #FFF5F0; padding: 4px 12px; border-radius: 20px;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+
+  .page-body { padding: 36px 48px 60px; }
+
+  h1 { font-size: 28px; font-weight: 800; line-height: 1.2; letter-spacing: -0.5px; margin-bottom: 8px; }
+  h1 span { color: #FF6B35; }
+  h2 { font-size: 16px; font-weight: 700; margin-bottom: 14px; color: #2D3436; }
+  .subtitle { font-size: 13px; color: #636E72; margin-bottom: 28px; }
+
+  .card { background: #F8F9FA; border-radius: 14px; padding: 20px 24px; margin-bottom: 16px; }
+  .card-orange { background: linear-gradient(135deg, #FF6B35, #F7931E); }
+  .card-dark { background: #2D3436; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+
+  .stat-box { background: #F8F9FA; border-radius: 12px; padding: 18px 20px; text-align: center; }
+  .stat-box .label { font-size: 11px; color: #636E72; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .stat-box .value { font-size: 26px; font-weight: 800; color: #FF6B35; line-height: 1; }
+  .stat-box .desc { font-size: 11px; color: #636E72; margin-top: 4px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
+  th { background: #2D3436; color: white; padding: 10px 14px; text-align: left; font-weight: 600; font-size: 12px; }
+  th:first-child { border-radius: 8px 0 0 0; }
+  th:last-child { border-radius: 0 8px 0 0; }
+  td { padding: 10px 14px; border-bottom: 1px solid #F0F2F4; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: #F8F9FA; }
+  .row-orange td { background: #FFF5F0 !important; color: #FF6B35; font-weight: 700; }
+  .row-green td { background: #F0FFF4 !important; color: #1a7a3a; font-weight: 700; }
+  .row-dark td { background: #2D3436 !important; color: white; font-weight: 700; }
+
+  /* FLOW HORIZONTAL */
+  .flow { display: flex; align-items: stretch; gap: 0; margin: 24px 0; }
+  .flow-step {
+    flex: 1; text-align: center; padding: 16px 10px;
+    background: #F8F9FA; border-radius: 10px;
+  }
+  .flow-step .step-icon { font-size: 20px; margin-bottom: 6px; }
+  .flow-step .step-label { font-size: 10px; color: #636E72; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .flow-step .step-value { font-size: 17px; font-weight: 800; color: #2D3436; }
+  .flow-step .step-sub { font-size: 10px; color: #636E72; margin-top: 3px; }
+  .flow-arrow { display: flex; align-items: center; padding: 0 6px; font-size: 18px; color: #FF6B35; font-weight: bold; }
+  .flow-step.f-orange { background: linear-gradient(135deg, #FF6B35, #F7931E); }
+  .flow-step.f-orange .step-label, .flow-step.f-orange .step-sub { color: rgba(255,255,255,0.75); }
+  .flow-step.f-orange .step-value { color: white; }
+  .flow-step.f-green { background: #F0FFF4; }
+  .flow-step.f-green .step-value { color: #1a7a3a; }
+
+  /* SANKEY-STYLE RÉPARTITION */
+  .split-box {
+    background: #F8F9FA; border-radius: 14px; padding: 20px 24px; margin-bottom: 16px;
+  }
+  .split-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .split-label { font-size: 12px; color: #636E72; width: 180px; flex-shrink: 0; }
+  .split-bar-wrap { flex: 1; background: #EBEBEB; border-radius: 6px; height: 24px; overflow: hidden; }
+  .split-bar { height: 100%; border-radius: 6px; display: flex; align-items: center; padding: 0 10px; }
+  .split-bar span { font-size: 11px; font-weight: 700; color: white; }
+  .split-amount { font-size: 13px; font-weight: 700; width: 56px; text-align: right; flex-shrink: 0; }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-orange { background: #FFF5F0; color: #FF6B35; }
+  .badge-green { background: #F0FFF4; color: #1a7a3a; }
+
+  /* COVER */
+  .cover-body {
+    padding: 60px 48px; min-height: 250mm;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .cover-eyebrow { font-size: 12px; font-weight: 600; color: #FF6B35; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+  .cover-title { font-size: 40px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; margin-bottom: 16px; }
+  .cover-title span { color: #FF6B35; }
+  .cover-desc { font-size: 15px; color: #636E72; line-height: 1.6; max-width: 440px; margin-bottom: 48px; }
+  .cover-meta { display: flex; gap: 28px; flex-wrap: wrap; }
+  .cover-meta-item .meta-label { font-size: 11px; color: #636E72; margin-bottom: 2px; }
+  .cover-meta-item .meta-value { font-size: 14px; font-weight: 700; color: #2D3436; }
+  .cover-deco {
+    position: absolute; right: 0; top: 0; bottom: 0; width: 200px;
+    background: linear-gradient(180deg, #FF6B35 0%, #F7931E 100%); opacity: 0.06;
+  }
+
+  /* RECAP TABLE — page 4 */
+  .recap-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; border-radius: 10px; margin-bottom: 8px;
+    font-size: 14px;
+  }
+  .recap-row.r-client { background: #F8F9FA; }
+  .recap-row.r-pro { background: #F0FFF4; }
+  .recap-row.r-mlm { background: #FFF5F0; }
+  .recap-row.r-winelio { background: linear-gradient(135deg,#FF6B35,#F7931E); color: white; }
+  .recap-row.r-stripe { background: #F8F9FA; }
+  .recap-row.r-total { background: #2D3436; color: white; }
+  .recap-name { font-weight: 600; }
+  .recap-amount { font-size: 18px; font-weight: 800; }
+
+  .page-footer {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 14px 48px; display: flex; align-items: center;
+    justify-content: space-between; border-top: 1px solid #F0F2F4;
+    font-size: 10px; color: #B2BAC0;
+  }
+
+  @media print {
+    body { background: white; }
+    .page { margin: 0; box-shadow: none; page-break-after: always; }
+    .page:last-child { page-break-after: auto; }
+  }
+  @page { size: A4; margin: 0; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     PAGE 1 — COUVERTURE
+══════════════════════════════════════════ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="cover-deco"></div>
+  <div class="page-header">
+    <div class="logo-text">Wine<span>lio</span></div>
+    <div class="page-tag">Usage interne — Confidentiel</div>
+  </div>
+  <div class="cover-body">
+    <div class="cover-eyebrow">Nouveau modèle économique 2025</div>
+    <div class="cover-title">Paiement intégré<br>via <span>Stripe Connect</span></div>
+    <div class="cover-desc">
+      Analyse du flux de paiement, répartition des commissions et rentabilité
+      de la plateforme. Le professionnel envoie un devis TTC — le client paie
+      ce montant exact — Winelio redistribue automatiquement.
+      <br><br>
+      Tous les montants sont exprimés en <strong>TTC</strong>.
+    </div>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <div class="meta-label">Exemple de référence</div>
+        <div class="meta-value">Devis 1 000 € TTC</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="meta-label">Commission Winelio</div>
+        <div class="meta-value">10% du devis TTC</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="meta-label">Part referrer</div>
+        <div class="meta-value">40% de la commission</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="meta-label">Le pro reçoit</div>
+        <div class="meta-value">Devis − 10%</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="meta-label">Date</div>
+        <div class="meta-value">Avril 2025</div>
+      </div>
+    </div>
+  </div>
+  <div class="page-footer">
+    <span>Winelio — Modèle économique</span>
+    <span>1 / 4</span>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     PAGE 2 — FLUX DE PAIEMENT
+══════════════════════════════════════════ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="page-header">
+    <div class="logo-text">Wine<span>lio</span></div>
+    <div class="page-tag">Flux de paiement</div>
+  </div>
+  <div class="page-body">
+    <h1>Comment fonctionne<br>le <span>flux de paiement</span> ?</h1>
+    <p class="subtitle">Le professionnel envoie un devis à 1 000 € TTC. Le client paie exactement ce montant.</p>
+
+    <!-- FLUX -->
+    <div class="flow">
+      <div class="flow-step">
+        <div class="step-icon">👤</div>
+        <div class="step-label">Professionnel</div>
+        <div class="step-value">Devis 1 000 €</div>
+        <div class="step-sub">montant TTC</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step f-orange">
+        <div class="step-icon" style="color:white">💳</div>
+        <div class="step-label">Client paie</div>
+        <div class="step-value">1 000 €</div>
+        <div class="step-sub">via Winelio</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step f-orange">
+        <div class="step-icon" style="color:white">⚡</div>
+        <div class="step-label">Winelio répartit</div>
+        <div class="step-value">automatique</div>
+        <div class="step-sub">en temps réel</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step f-green">
+        <div class="step-icon">🏦</div>
+        <div class="step-label">Pro reçoit</div>
+        <div class="step-value" style="color:#1a7a3a">900 €</div>
+        <div class="step-sub">sur son compte</div>
+      </div>
+    </div>
+
+    <!-- RÈGLE CLÉ -->
+    <div class="card card-dark" style="margin-bottom:20px; padding:18px 24px;">
+      <p style="font-size:14px; color:white; line-height:1.7;">
+        <strong style="color:#F7931E;">Règle simple pour le professionnel :</strong><br>
+        Il établit son devis au montant souhaité en TTC.
+        Il reçoit ce montant <strong style="color:white">moins 10%</strong> sur son compte bancaire.
+        Les frais Stripe sont absorbés par Winelio — <strong style="color:white">le pro n'a rien d'autre à déduire.</strong>
+      </p>
+    </div>
+
+    <!-- TABLEAU -->
+    <h2>Décomposition du paiement</h2>
+    <table>
+      <tr>
+        <th>Poste</th>
+        <th>Calcul</th>
+        <th style="text-align:right">Montant</th>
+        <th>Qui</th>
+      </tr>
+      <tr>
+        <td>Client paie</td>
+        <td>Montant du devis</td>
+        <td style="text-align:right"><strong>1 000,00 €</strong></td>
+        <td>Client → Winelio</td>
+      </tr>
+      <tr class="row-green">
+        <td><strong>Pro reçoit</strong></td>
+        <td>Devis − 10%</td>
+        <td style="text-align:right"><strong>900,00 €</strong></td>
+        <td><strong>Winelio → Pro</strong></td>
+      </tr>
+      <tr class="row-orange">
+        <td><strong>Commission Winelio</strong></td>
+        <td>10% × 1 000 €</td>
+        <td style="text-align:right"><strong>100,00 €</strong></td>
+        <td><strong>Winelio distribue</strong></td>
+      </tr>
+      <tr>
+        <td style="padding-left:28px; color:#636E72">dont frais Stripe</td>
+        <td style="color:#636E72">1,5% × 1 000 + 0,25 €</td>
+        <td style="text-align:right; color:#C62828">− 15,25 €</td>
+        <td style="color:#636E72">Stripe (à la charge de Winelio)</td>
+      </tr>
+      <tr>
+        <td style="padding-left:28px; color:#636E72">dont réseau MLM</td>
+        <td style="color:#636E72">62% de la commission</td>
+        <td style="text-align:right; color:#636E72">− 62,00 €</td>
+        <td style="color:#636E72">Referrer + 5 niveaux + divers</td>
+      </tr>
+      <tr class="row-dark">
+        <td><strong>Winelio net réel</strong></td>
+        <td>100 − 15,25 − 62</td>
+        <td style="text-align:right"><strong>22,75 €</strong></td>
+        <td><strong>Winelio conserve</strong></td>
+      </tr>
+    </table>
+  </div>
+  <div class="page-footer">
+    <span>Winelio — Modèle économique</span>
+    <span>2 / 4</span>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     PAGE 3 — RÉPARTITION DE LA COMMISSION
+══════════════════════════════════════════ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="page-header">
+    <div class="logo-text">Wine<span>lio</span></div>
+    <div class="page-tag">Répartition de la commission</div>
+  </div>
+  <div class="page-body">
+    <h1>À qui va la <span>commission</span> des 100 € ?</h1>
+    <p class="subtitle">Les 10% prélevés (100 €) sont répartis automatiquement entre tous les acteurs du réseau.</p>
+
+    <!-- BARRES -->
+    <div class="split-box">
+      <div class="split-row">
+        <div class="split-label">Referrer</div>
+        <div class="split-bar-wrap">
+          <div class="split-bar" style="width:40%; background:linear-gradient(90deg,#FF6B35,#F7931E)">
+            <span>40%</span>
+          </div>
+        </div>
+        <div class="split-amount" style="color:#FF6B35">40 €</div>
+      </div>
+      <div class="split-row">
+        <div class="split-label">Sponsor niveau 1</div>
+        <div class="split-bar-wrap">
+          <div class="split-bar" style="width:4%; background:#636E72; min-width:36px">
+            <span>4%</span>
+          </div>
+        </div>
+        <div class="split-amount">4 €</div>
+      </div>
+      <div class="split-row">
+        <div class="split-label">Sponsor niveau 2</div>
+        <div class="split-bar-wrap">
+          <div class="split-bar" style="width:4%; background:#636E72; min-width:36px">
+            <span>4%</span>
+          </div>
+        </div>
+        <div class="split-amount">4 €</div>
+      </div>
+      <div class="split-row">
+        <div class="split-label">Sponsor niveau 3</div>
+        <div class="split-bar-wrap">
+          <div class="split-bar" style="width:4%; background:#636E72; min-width:36px">
+            <span>4%</span>
+          </div>
+        </div>
+        <div class="split-amount">4 €</div>
+      </div>
+      <div class="split-row">
+        <div class="split-label">Sponsor niveau 4</div>
+        <div class="split-bar-wrap">
+          <div class="split-bar" style="width:4%; background:#636E72; min-width:36px">
+            <span>4%</span>
+          </div>
+        </div>
+        <div class="split-amount">4 €</div>
+      </div>
+      <div class="split-row">
+        <div class="split-label">Sponsor niveau 5</div>
+        <div class="split-bar-wrap">
+          <div class="split-bar" style="width:4%; background:#636E72; min-width:36px">
+            <span>4%</span>
+          </div>
+        </div>
+        <div class="split-amount">4 €</div>
+      </div>
+      <div class="split-row">
+        <div class="split-label">Affiliation + Wins</div>
+        <div class="split-bar-wrap">
+          <div class="split-bar" style="width:2%; background:#B2BAC0; min-width:36px">
+            <span>2%</span>
+          </div>
+        </div>
+        <div class="split-amount" style="color:#B2BAC0">2 €</div>
+      </div>
+      <div class="split-row">
+        <div class="split-label" style="color:#2D3436; font-weight:700">Winelio (plateforme)</div>
+        <div class="split-bar-wrap">
+          <div class="split-bar" style="width:38%; background:#2D3436">
+            <span>38%</span>
+          </div>
+        </div>
+        <div class="split-amount" style="color:#2D3436">38 €</div>
+      </div>
+    </div>
+
+    <!-- TABLEAU DÉTAIL -->
+    <table>
+      <tr>
+        <th>Destinataire</th>
+        <th style="text-align:center">%</th>
+        <th style="text-align:right">Reçoit</th>
+        <th>Rôle</th>
+      </tr>
+      <tr>
+        <td><strong>Referrer</strong></td>
+        <td style="text-align:center"><span class="badge badge-orange">40%</span></td>
+        <td style="text-align:right"><strong>40,00 €</strong></td>
+        <td>Celui qui a fait la recommandation</td>
+      </tr>
+      <tr>
+        <td>Sponsors niveaux 1 à 5</td>
+        <td style="text-align:center">4% × 5</td>
+        <td style="text-align:right">20,00 €</td>
+        <td>Le réseau MLM remontant</td>
+      </tr>
+      <tr>
+        <td>Affiliation + Cashback Wins</td>
+        <td style="text-align:center">2%</td>
+        <td style="text-align:right">2,00 €</td>
+        <td>Sponsor du pro + monnaie interne</td>
+      </tr>
+      <tr class="row-dark">
+        <td><strong>Winelio brut</strong></td>
+        <td style="text-align:center"><strong>38%</strong></td>
+        <td style="text-align:right"><strong>38,00 €</strong></td>
+        <td><strong>Avant déduction Stripe</strong></td>
+      </tr>
+      <tr>
+        <td style="padding-left:28px; color:#636E72">− Frais Stripe</td>
+        <td style="text-align:center; color:#C62828">—</td>
+        <td style="text-align:right; color:#C62828">− 15,25 €</td>
+        <td style="color:#636E72">1,5% × 1 000 + 0,25 €</td>
+      </tr>
+      <tr class="row-orange">
+        <td><strong>Winelio net réel</strong></td>
+        <td style="text-align:center">—</td>
+        <td style="text-align:right"><strong>22,75 €</strong></td>
+        <td><strong>Ce que Winelio conserve</strong></td>
+      </tr>
+    </table>
+  </div>
+  <div class="page-footer">
+    <span>Winelio — Modèle économique</span>
+    <span>3 / 4</span>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     PAGE 4 — RÉCAP & PROJECTIONS
+══════════════════════════════════════════ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="page-header">
+    <div class="logo-text">Wine<span>lio</span></div>
+    <div class="page-tag">Récapitulatif & Projections</div>
+  </div>
+  <div class="page-body">
+    <h1>En résumé — <span>1 devis de 1 000 € TTC</span></h1>
+    <p class="subtitle">Où va chaque euro payé par le client ?</p>
+
+    <!-- RECAP VISUEL -->
+    <div class="recap-row r-client">
+      <span class="recap-name">💳 Client paie</span>
+      <span class="recap-amount">1 000,00 €</span>
+    </div>
+    <div class="recap-row r-green" style="background:#F0FFF4;">
+      <span class="recap-name" style="color:#1a7a3a">🏦 Professionnel reçoit</span>
+      <span class="recap-amount" style="color:#1a7a3a">900,00 €</span>
+    </div>
+    <div style="padding-left:20px; margin-bottom:8px;">
+      <div class="recap-row r-mlm" style="margin-bottom:6px;">
+        <span class="recap-name" style="font-size:13px">🤝 Referrer reçoit</span>
+        <span class="recap-amount" style="font-size:15px">40,00 €</span>
+      </div>
+      <div class="recap-row" style="background:#FFF5F0; margin-bottom:6px; padding:10px 20px; border-radius:10px;">
+        <span style="font-size:13px; font-weight:600; color:#636E72">🌐 Réseau MLM (niveaux 1-5 + divers)</span>
+        <span style="font-size:15px; font-weight:800; color:#636E72">22,00 €</span>
+      </div>
+      <div class="recap-row r-winelio" style="margin-bottom:6px;">
+        <span class="recap-name">⚡ Winelio net</span>
+        <span class="recap-amount">22,75 €</span>
+      </div>
+      <div class="recap-row r-stripe" style="margin-bottom:0;">
+        <span class="recap-name" style="color:#636E72; font-size:13px">🔧 Frais Stripe (à la charge de Winelio)</span>
+        <span class="recap-amount" style="font-size:15px; color:#C62828">15,25 €</span>
+      </div>
+    </div>
+    <div class="recap-row r-total">
+      <span class="recap-name">✓ Total</span>
+      <span class="recap-amount">1 000,00 €</span>
+    </div>
+
+    <!-- PROJECTIONS -->
+    <h2 style="margin-top:24px;">Projections mensuelles — Winelio net (22,75 € / transaction)</h2>
+    <table>
+      <tr>
+        <th>Volume mensuel</th>
+        <th style="text-align:right">Transactions</th>
+        <th style="text-align:right">CA TTC généré</th>
+        <th style="text-align:right">Winelio net / mois</th>
+      </tr>
+      <tr>
+        <td>Démarrage</td>
+        <td style="text-align:right">10</td>
+        <td style="text-align:right">10 000 €</td>
+        <td style="text-align:right">227 €</td>
+      </tr>
+      <tr>
+        <td>Phase de croissance</td>
+        <td style="text-align:right">50</td>
+        <td style="text-align:right">50 000 €</td>
+        <td style="text-align:right">1 137 €</td>
+      </tr>
+      <tr>
+        <td>Maturité</td>
+        <td style="text-align:right">100</td>
+        <td style="text-align:right">100 000 €</td>
+        <td style="text-align:right">2 275 €</td>
+      </tr>
+      <tr class="row-orange">
+        <td><strong>Objectif an 1</strong></td>
+        <td style="text-align:right"><strong>200</strong></td>
+        <td style="text-align:right"><strong>200 000 €</strong></td>
+        <td style="text-align:right"><strong>4 550 €</strong></td>
+      </tr>
+      <tr>
+        <td>Objectif an 2</td>
+        <td style="text-align:right">500</td>
+        <td style="text-align:right">500 000 €</td>
+        <td style="text-align:right">11 375 €</td>
+      </tr>
+    </table>
+
+    <div class="card" style="background:#FFF5F0; border:1px solid #FFD5C2; margin-top:4px;">
+      <p style="font-size:12px; color:#636E72; line-height:1.7;">
+        <strong style="color:#FF6B35;">Note :</strong> à partir de 200+ transactions/mois, Stripe peut proposer un tarif négocié
+        (~0,8% + 0,25 €) qui ferait passer le net Winelio de <strong>22,75 €</strong> à <strong>~30 € par transaction</strong>.
+        Sur 200 transactions, cela représente +1 450 €/mois supplémentaires pour Winelio.
+      </p>
+    </div>
+  </div>
+  <div class="page-footer">
+    <span>Winelio — Modèle économique</span>
+    <span>4 / 4</span>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,25 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic:
+      - img
+    - main [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e6]:
+          - img [ref=e7]
+          - generic [ref=e9]: inelio
+        - generic [ref=e10]:
+          - paragraph [ref=e11]: Regardez votre boîte mail
+          - heading "Entrez le code reçu" [level=1] [ref=e12]
+          - paragraph [ref=e13]: Un code à 6 chiffres a été envoyé à test@example.com.
+        - generic [ref=e14]:
+          - generic [ref=e15]:
+            - text: Code à 6 chiffres
+            - textbox "Code à 6 chiffres" [ref=e16]:
+              - /placeholder: "123456"
+              - text: "123456"
+          - generic [ref=e29]: Code invalide ou expiré.
+          - button "Se connecter" [ref=e17]
+          - button "Revenir à l'accueil" [ref=e18]
+  - button "Open Next.js Dev Tools" [ref=e25] [cursor=pointer]:
+    - img [ref=e26]
+  - alert [ref=e19]

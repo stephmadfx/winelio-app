@@ -1,0 +1,54 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic:
+      - img
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]: Connexion securisee
+        - generic [ref=e8]:
+          - img [ref=e9]
+          - generic [ref=e11]: inelio
+        - heading "Accedez a votre dashboard" [level=1] [ref=e12]
+        - paragraph [ref=e13]: Un code à 6 chiffres vient d'être envoyé. Regardez votre boîte mail puis saisissez le code reçu.
+        - generic [ref=e14]:
+          - article [ref=e15]:
+            - img [ref=e17]
+            - heading "Design dashboard" [level=2] [ref=e19]
+            - paragraph [ref=e20]: Même logique de cartes, d'ombres douces et d'accents orange.
+          - article [ref=e21]:
+            - img [ref=e23]
+            - heading "Connexion rapide" [level=2] [ref=e25]
+            - paragraph [ref=e26]: Un code unique par email, sans mot de passe à retenir.
+          - article [ref=e27]:
+            - img [ref=e29]
+            - heading "Réseau privé" [level=2] [ref=e31]
+            - paragraph [ref=e32]: L'inscription reste obligatoire par code parrain validé.
+          - article [ref=e33]:
+            - img [ref=e35]
+            - heading "Mobile d'abord" [level=2] [ref=e37]
+            - paragraph [ref=e38]: La même hiérarchie visuelle reste lisible sur petit écran.
+        - generic [ref=e39]:
+          - paragraph [ref=e40]: Ce qui change
+          - paragraph [ref=e41]: "Meme identite visuelle que le dashboard: fond clair, cartes blanches, accent orange et rythme plus lisible sur mobile."
+      - generic [ref=e42]:
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - paragraph [ref=e46]: Etape 2 sur 2
+            - heading "Regardez votre boîte mail" [level=2] [ref=e47]
+            - paragraph [ref=e48]: Un code à 6 chiffres vient d'être envoyé. Regardez votre boîte mail puis saisissez le code reçu.
+          - img [ref=e50]
+        - generic [ref=e52]:
+          - paragraph [ref=e53]: Regardez votre boîte mail
+          - paragraph [ref=e54]: Un code à 6 chiffres a été envoyé à test@example.com.
+        - generic [ref=e55]:
+          - generic [ref=e56]:
+            - text: Code à 6 chiffres
+            - textbox "Code à 6 chiffres" [active] [ref=e57]:
+              - /placeholder: "123456"
+          - button "Se connecter" [disabled] [ref=e58]
+        - generic [ref=e59]:
+          - button "Utiliser une autre adresse" [ref=e60]
+          - button "Renvoyer le code" [ref=e61]
+  - button "Open Next.js Dev Tools" [ref=e67] [cursor=pointer]:
+    - img [ref=e68]
+  - alert [ref=e71]

@@ -1,0 +1,161 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic:
+      - img
+    - generic: Mode démonstration — données fictives
+    - generic [ref=e4]:
+      - img [ref=e6]
+      - heading "Complétez votre profil" [level=2] [ref=e8]
+      - paragraph [ref=e9]: "Avant d'accéder à la plateforme, vous devez renseigner vos informations personnelles : prénom, nom, téléphone, adresse, code postal et ville."
+      - link "Compléter mon profil →" [ref=e10] [cursor=pointer]:
+        - /url: /profile
+    - complementary [ref=e11]:
+      - generic [ref=e12]:
+        - link "Winelio — Accueil" [ref=e13] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e14]:
+            - img [ref=e15]
+            - generic [ref=e17]: inelio
+        - paragraph [ref=e18]: Espace Membre
+      - navigation [ref=e19]:
+        - link "Dashboard" [ref=e20] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e21]
+          - text: Dashboard
+        - link "Recommandations" [ref=e23] [cursor=pointer]:
+          - /url: /recommendations
+          - img [ref=e24]
+          - text: Recommandations
+        - link "Réseau" [ref=e26] [cursor=pointer]:
+          - /url: /network
+          - img [ref=e27]
+          - text: Réseau
+        - link "Wallet" [ref=e29] [cursor=pointer]:
+          - /url: /wallet
+          - img [ref=e30]
+          - text: Wallet
+        - link "Entreprises" [ref=e32] [cursor=pointer]:
+          - /url: /companies
+          - img [ref=e33]
+          - text: Entreprises
+        - link "Profil" [ref=e35] [cursor=pointer]:
+          - /url: /profile
+          - img [ref=e36]
+          - text: Profil
+        - link "Paramètres" [ref=e38] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e39]
+          - text: Paramètres
+      - generic [ref=e41]:
+        - paragraph [ref=e42]: test@example.com
+        - button "Déconnexion" [ref=e43]
+    - main [ref=e44]:
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - img [ref=e49]
+          - heading "Bienvenue sur Winelio !" [level=2] [ref=e51]
+          - paragraph [ref=e52]: Pour commencer, présentez-vous à votre réseau.
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - generic [ref=e55]:
+              - generic [ref=e56]: Prénom *
+              - textbox "Jean" [active] [ref=e57]
+            - generic [ref=e58]:
+              - generic [ref=e59]: Nom *
+              - textbox "Dupont" [ref=e60]
+          - button "Continuer" [ref=e61]
+      - generic [ref=e62]:
+        - generic [ref=e63]:
+          - generic [ref=e64]:
+            - heading "Tableau de bord" [level=2] [ref=e65]
+            - paragraph [ref=e66]: jeudi 9 avril 2026
+          - link "Nouvelle recommandation" [ref=e67] [cursor=pointer]:
+            - /url: /recommendations/new
+            - img [ref=e68]
+            - text: Nouvelle recommandation
+        - generic [ref=e70]:
+          - generic [ref=e72]:
+            - img [ref=e74]
+            - generic [ref=e76]:
+              - img [ref=e78]
+              - generic [ref=e80]: Recommandations
+            - generic [ref=e81]:
+              - generic [ref=e82]:
+                - paragraph [ref=e83]: "0"
+                - paragraph [ref=e84]: ce mois
+              - generic [ref=e85]:
+                - img [ref=e86]
+                - text: "+0"
+          - generic [ref=e89]:
+            - img [ref=e91]
+            - generic [ref=e93]:
+              - img [ref=e95]
+              - generic [ref=e97]: Gains totaux
+            - generic [ref=e99]:
+              - paragraph [ref=e100]: 0.00 €
+              - paragraph [ref=e101]: dont 0 € retirés
+          - generic [ref=e103]:
+            - img [ref=e105]
+            - generic [ref=e107]:
+              - img [ref=e109]
+              - generic [ref=e111]: Membres réseau
+            - generic [ref=e113]:
+              - paragraph [ref=e114]: "0"
+              - paragraph [ref=e115]: 0 filleuls directs
+          - generic [ref=e117]:
+            - img [ref=e119]
+            - generic [ref=e121]:
+              - img [ref=e123]
+              - generic [ref=e125]: Taux de succès
+            - generic [ref=e127]:
+              - paragraph [ref=e128]: 0 %
+              - paragraph [ref=e129]: 0 / 0 recos
+        - generic [ref=e136]:
+          - generic [ref=e137]:
+            - generic [ref=e139]:
+              - generic [ref=e140]:
+                - heading "Recommandations récentes" [level=3] [ref=e141]
+                - link "Voir tout" [ref=e142] [cursor=pointer]:
+                  - /url: /recommendations
+              - paragraph [ref=e143]: Aucune recommandation pour l'instant.
+            - generic [ref=e145]:
+              - heading "Performance mensuelle" [level=3] [ref=e146]
+              - generic [ref=e147]:
+                - generic [ref=e149]: déc.
+                - generic [ref=e151]: janv.
+                - generic [ref=e153]: févr.
+                - generic [ref=e155]: mars
+                - generic [ref=e157]: avr.
+          - generic [ref=e158]:
+            - generic [ref=e160]:
+              - generic [ref=e161]:
+                - img [ref=e162]
+                - heading "Mon Portefeuille" [level=3] [ref=e164]
+              - generic [ref=e165]:
+                - paragraph [ref=e166]: Solde disponible
+                - paragraph [ref=e167]: 0,00 €
+                - generic [ref=e168]:
+                  - img [ref=e169]
+                  - text: 0 Wins
+              - link "Retirer mes gains" [ref=e171] [cursor=pointer]:
+                - /url: /wallet/withdraw
+            - generic [ref=e173]:
+              - generic [ref=e174]:
+                - heading "Votre réseau" [level=3] [ref=e175]
+                - link [ref=e176] [cursor=pointer]:
+                  - /url: /network
+                  - img [ref=e177]
+              - generic [ref=e179]:
+                - generic [ref=e180]:
+                  - generic [ref=e182]: "?"
+                  - generic [ref=e183]: Vous
+                - link "Inviter" [ref=e185] [cursor=pointer]:
+                  - /url: /network
+                  - img [ref=e187]
+                  - generic [ref=e189]: Inviter
+            - generic [ref=e191]:
+              - heading "Activité" [level=3] [ref=e192]
+              - paragraph [ref=e193]: Aucune activité récente.
+  - button "Open Next.js Dev Tools" [ref=e199] [cursor=pointer]:
+    - img [ref=e200]
+  - alert [ref=e203]

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-container": "#6c3b00",
+                    "on-secondary-fixed": "#512b00",
+                    "error-container": "#fb5151",
+                    "surface-dim": "#d1d5d7",
+                    "error-dim": "#9f0519",
+                    "on-tertiary-container": "#575f61",
+                    "on-primary-container": "#451000",
+                    "surface-variant": "#dadddf",
+                    "tertiary": "#565d5f",
+                    "on-secondary": "#fff0e6",
+                    "on-surface-variant": "#595c5d",
+                    "on-primary-fixed-variant": "#551600",
+                    "surface-container-high": "#e0e3e4",
+                    "surface-container-lowest": "#ffffff",
+                    "outline-variant": "#abadae",
+                    "on-tertiary": "#edf4f6",
+                    "on-error": "#ffefee",
+                    "on-background": "#2c2f30",
+                    "inverse-on-surface": "#9b9d9e",
+                    "inverse-surface": "#0c0f10",
+                    "tertiary-fixed-dim": "#e2e9ec",
+                    "on-tertiary-fixed-variant": "#62696b",
+                    "on-secondary-fixed-variant": "#794300",
+                    "secondary": "#894d00",
+                    "primary-container": "#ff7949",
+                    "surface-container": "#e6e8ea",
+                    "secondary-fixed-dim": "#ffb46d",
+                    "secondary-dim": "#784200",
+                    "outline": "#757778",
+                    "error": "#b31b25",
+                    "primary-fixed": "#ff7949",
+                    "surface-container-highest": "#dadddf",
+                    "inverse-primary": "#fe6a34",
+                    "primary-dim": "#922c00",
+                    "on-surface": "#2c2f30",
+                    "on-tertiary-fixed": "#454c4f",
+                    "on-primary-fixed": "#000000",
+                    "surface-container-low": "#eff1f2",
+                    "surface-tint": "#a63300",
+                    "primary": "#a63300",
+                    "primary-fixed-dim": "#f7652f",
+                    "surface": "#f5f6f7",
+                    "surface-bright": "#f5f6f7",
+                    "secondary-fixed": "#ffc795",
+                    "tertiary-container": "#f1f8fa",
+                    "tertiary-fixed": "#f1f8fa",
+                    "tertiary-dim": "#4a5153",
+                    "on-error-container": "#570008",
+                    "secondary-container": "#ffc795",
+                    "background": "#f5f6f7",
+                    "on-primary": "#ffefeb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Manrope', sans-serif; }
+        h1, h2, h3 { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 px-6 flex items-center justify-between bg-surface/70 backdrop-blur-md h-[80px] shadow-[0_16px_32px_rgba(166,51,0,0.06)]">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-on-primary font-bold text-sm shadow-lg">
+                JD
+            </div>
+<div>
+<h1 class="text-sm font-label text-on-surface-variant leading-none">Bonjour, Prénom 👋</h1>
+<p class="style_brand_logo text-lg font-bold text-[#a63300] uppercase tracking-wider leading-tight">The Digital Sommelier</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative flex items-center gap-2 bg-surface-container-high px-3 py-1.5 rounded-full transition-colors hover:bg-surface-container-highest">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="text-xs font-bold text-on-surface">12,50 €</span>
+</div>
+<button class="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+<span class="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-surface"></span>
+</button>
+</div>
+</header>
+<main class="mt-24 px-6 space-y-8">
+<!-- Hero Banner -->
+<section class="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary to-primary-container p-8 shadow-[0_20px_40px_rgba(166,51,0,0.15)]">
+<div class="relative z-10 space-y-4">
+<div class="space-y-1">
+<h2 class="text-2xl font-bold text-on-primary leading-tight">Votre réseau travaille pour vous</h2>
+<p class="text-on-primary/80 text-sm font-medium">3 recommandations ce mois · 5 membres actifs</p>
+</div>
+<button class="bg-surface-container-lowest text-primary px-6 py-3 rounded-full font-bold text-sm shadow-sm active:scale-95 transition-transform flex items-center gap-2">
+                    Faire une recommandation
+                    <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<!-- Decorative circle -->
+<div class="absolute -right-12 -top-12 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+<div class="absolute -left-8 -bottom-8 w-32 h-32 bg-primary-dim/20 rounded-full blur-2xl"></div>
+</section>
+<!-- Metrics Grid -->
+<section>
+<div class="grid grid-cols-2 gap-4">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.02)] relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-12 h-1 bg-primary/20 group-hover:bg-primary transition-colors"></div>
+<span class="material-symbols-outlined text-primary-dim mb-3 block" data-icon="content_paste">content_paste</span>
+<div class="text-2xl font-bold text-on-surface mb-0.5">3</div>
+<div class="text-[10px] uppercase tracking-wider font-bold text-on-surface-variant">Recommandations</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.02)] relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-12 h-1 bg-secondary/20 group-hover:bg-secondary transition-colors"></div>
+<span class="material-symbols-outlined text-secondary mb-3 block" data-icon="payments">payments</span>
+<div class="text-2xl font-bold text-on-surface mb-0.5">247,50 €</div>
+<div class="text-[10px] uppercase tracking-wider font-bold text-on-surface-variant">Gains totaux</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.02)] relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-12 h-1 bg-primary-container/20 group-hover:bg-primary-container transition-colors"></div>
+<span class="material-symbols-outlined text-primary-container mb-3 block" data-icon="hub">hub</span>
+<div class="text-2xl font-bold text-on-surface mb-0.5">12</div>
+<div class="text-[10px] uppercase tracking-wider font-bold text-on-surface-variant">Membres réseau</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.02)] relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-12 h-1 bg-tertiary/20 group-hover:bg-tertiary transition-colors"></div>
+<span class="material-symbols-outlined text-tertiary mb-3 block" data-icon="monitoring">monitoring</span>
+<div class="text-2xl font-bold text-on-surface mb-0.5">75%</div>
+<div class="text-[10px] uppercase tracking-wider font-bold text-on-surface-variant">Taux de succès</div>
+</div>
+</div>
+</section>
+<!-- Quick Actions -->
+<section class="-mx-6 px-6 overflow-x-auto no-scrollbar flex items-center gap-3">
+<button class="whitespace-nowrap flex items-center gap-2 bg-primary/10 text-primary font-bold text-sm px-5 py-3 rounded-full border border-primary/5 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="add_circle">add_circle</span>
+                Nouvelle reco
+            </button>
+<button class="whitespace-nowrap flex items-center gap-2 bg-primary/5 text-primary font-bold text-sm px-5 py-3 rounded-full active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="group_add">group_add</span>
+                Inviter
+            </button>
+<button class="whitespace-nowrap flex items-center gap-2 bg-primary/5 text-primary font-bold text-sm px-5 py-3 rounded-full active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="wallet">wallet</span>
+                Wallet
+            </button>
+<button class="whitespace-nowrap flex items-center gap-2 bg-primary/5 text-primary font-bold text-sm px-5 py-3 rounded-full active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="account_tree">account_tree</span>
+                Réseau
+            </button>
+</section>
+<!-- Network Activity -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="text-lg font-bold text-on-surface">Activité du réseau</h3>
+<button class="text-primary font-bold text-xs uppercase tracking-widest">Voir tout →</button>
+</div>
+<div class="space-y-3">
+<!-- Activity Item 1 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-lg transition-all hover:bg-surface-container">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-bold text-xs">MD</div>
+<div>
+<p class="text-sm font-semibold text-on-surface">Marie D. a validé une reco</p>
+<p class="text-xs text-on-surface-variant">Il y a 2h</p>
+</div>
+</div>
+<div class="bg-secondary-container/40 text-on-secondary-container px-3 py-1 rounded-full font-bold text-xs">
+                        +18 €
+                    </div>
+</div>
+<!-- Activity Item 2 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-lg transition-all hover:bg-surface-container">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-bold text-xs">JL</div>
+<div>
+<p class="text-sm font-semibold text-on-surface">Jean L. a rejoint l'équipe</p>
+<p class="text-xs text-on-surface-variant">Il y a 5h</p>
+</div>
+</div>
+<div class="w-8 h-8 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined" data-icon="trending_up">trending_up</span>
+</div>
+</div>
+<!-- Activity Item 3 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-lg transition-all hover:bg-surface-container">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed-dim text-on-tertiary-fixed flex items-center justify-center font-bold text-xs">SR</div>
+<div>
+<p class="text-sm font-semibold text-on-surface">Sarah R. a validé une reco</p>
+<p class="text-xs text-on-surface-variant">Hier</p>
+</div>
+</div>
+<div class="bg-secondary-container/40 text-on-secondary-container px-3 py-1 rounded-full font-bold text-xs">
+                        +12 €
+                    </div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-6 bg-surface/70 backdrop-blur-md rounded-t-[3rem] shadow-[0_-16px_32px_rgba(166,51,0,0.06)]">
+<!-- Dashboard (Active) -->
+<a class="flex flex-col items-center justify-center bg-secondary-container/40 text-[#a63300] rounded-full p-3 transition-all duration-300 scale-90 active:duration-200 ease-out" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-manrope text-[10px] font-semibold tracking-tight">Dashboard</span>
+</a>
+<!-- Recommandations -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-[#a63300] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-manrope text-[10px] font-semibold tracking-tight">Recommandations</span>
+</a>
+<!-- Réseau -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-[#a63300] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-manrope text-[10px] font-semibold tracking-tight">Réseau</span>
+</a>
+<!-- Wallet -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-[#a63300] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-manrope text-[10px] font-semibold tracking-tight">Wallet</span>
+</a>
+<!-- Profil -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-[#a63300] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-manrope text-[10px] font-semibold tracking-tight">Profil</span>
+</a>
+</nav>
+</body></html>

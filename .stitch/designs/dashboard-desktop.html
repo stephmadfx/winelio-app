@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+
+<html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Winelio - Tableau de bord</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Manrope:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-on-surface": "#9b9d9e",
+                    "inverse-surface": "#0c0f10",
+                    "tertiary-fixed": "#f1f8fa",
+                    "outline-variant": "#abadae",
+                    "on-primary-fixed-variant": "#551600",
+                    "on-primary": "#ffefeb",
+                    "primary-container": "#ff7949",
+                    "primary-fixed": "#ff7949",
+                    "error-container": "#fb5151",
+                    "surface-bright": "#f5f6f7",
+                    "tertiary-container": "#f1f8fa",
+                    "on-primary-fixed": "#000000",
+                    "surface-container-low": "#eff1f2",
+                    "on-surface": "#2c2f30",
+                    "on-tertiary-fixed": "#454c4f",
+                    "tertiary-dim": "#4a5153",
+                    "on-secondary-container": "#6c3b00",
+                    "primary-dim": "#922c00",
+                    "inverse-primary": "#fe6a34",
+                    "secondary-dim": "#784200",
+                    "on-secondary": "#fff0e6",
+                    "tertiary-fixed-dim": "#e2e9ec",
+                    "primary": "#a63300",
+                    "on-tertiary-container": "#575f61",
+                    "outline": "#757778",
+                    "on-primary-container": "#451000",
+                    "secondary-fixed": "#ffc795",
+                    "surface-container": "#e6e8ea",
+                    "surface-variant": "#dadddf",
+                    "on-error-container": "#570008",
+                    "background": "#f5f6f7",
+                    "on-surface-variant": "#595c5d",
+                    "error": "#b31b25",
+                    "surface": "#f5f6f7",
+                    "on-secondary-fixed": "#512b00",
+                    "on-tertiary": "#edf4f6",
+                    "secondary": "#894d00",
+                    "surface-container-highest": "#dadddf",
+                    "secondary-fixed-dim": "#ffb46d",
+                    "on-error": "#ffefee",
+                    "surface-dim": "#d1d5d7",
+                    "on-secondary-fixed-variant": "#794300",
+                    "on-tertiary-fixed-variant": "#62696b",
+                    "error-dim": "#9f0519",
+                    "tertiary": "#565d5f",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed-dim": "#f7652f",
+                    "secondary-container": "#ffc795",
+                    "surface-tint": "#a63300",
+                    "on-background": "#2c2f30",
+                    "surface-container-high": "#e0e3e4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; background-color: #f5f6f7; }
+        .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .editorial-card {
+            border-top-left-radius: 3rem;
+        }
+        .ambient-shadow {
+            box-shadow: 0 16px 32px rgba(166, 51, 0, 0.06);
+        }
+    </style>
+</head>
+<body class="text-on-surface">
+<!-- SideNavBar Component -->
+<aside class="fixed left-0 top-0 h-screen w-[240px] rounded-r-2xl bg-slate-50 dark:bg-slate-900 shadow-[16px_0_32px_rgba(166,51,0,0.04)] flex flex-col h-full p-4 border-r border-transparent z-50">
+<div class="mb-10 px-4">
+<h1 class="text-2xl font-bold tracking-tight text-[#a63300] font-headline">Winelio</h1>
+<p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Digital Sommelier</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-[#a63300] bg-[#eff1f2] dark:bg-slate-800 font-bold rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-[#a63300] hover:bg-white dark:hover:bg-slate-800 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="wine_bar">wine_bar</span>
+<span class="font-label text-sm">Recommandations</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-[#a63300] hover:bg-white dark:hover:bg-slate-800 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="hub">hub</span>
+<span class="font-label text-sm">Réseau</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-[#a63300] hover:bg-white dark:hover:bg-slate-800 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-label text-sm">Wallet</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-[#a63300] hover:bg-white dark:hover:bg-slate-800 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label text-sm">Profil</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-[#a63300] hover:bg-white dark:hover:bg-slate-800 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label text-sm">Paramètres</span>
+</a>
+</nav>
+<div class="mt-auto pt-4 border-t border-slate-100/50">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-[#a63300] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span class="font-label text-sm font-medium">Mon Profil</span>
+</a>
+</div>
+</aside>
+<!-- TopAppBar Component -->
+<header class="fixed top-0 right-0 w-[calc(100%-240px)] h-20 bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl flex justify-between items-center px-8 z-40">
+<div class="flex flex-col">
+<h2 class="font-headline text-xl font-extrabold text-on-surface">Tableau de bord</h2>
+<p class="text-xs text-on-surface-variant font-medium">Lundi, 24 Mai 2024</p>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-gradient-to-br from-[#a63300] to-[#ff7949] text-white px-6 py-2.5 rounded-2xl shadow-[0_8px_16px_rgba(166,51,0,0.2)] font-headline text-sm font-bold flex items-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-lg" data-icon="add">add</span>
+                Nouvelle recommandation
+            </button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-[240px] pt-28 px-8 pb-12 min-h-screen">
+<!-- KPI Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest p-6 rounded-2xl ambient-shadow flex flex-col justify-between h-32 border-l-4 border-primary">
+<div class="flex justify-between items-start">
+<span class="text-on-surface-variant text-xs font-bold uppercase tracking-wider">Recommandations</span>
+<span class="bg-primary/10 text-primary px-2 py-1 rounded-lg text-xs font-bold flex items-center">
+<span class="material-symbols-outlined text-xs mr-1" data-icon="arrow_upward">arrow_upward</span>
+                        2
+                    </span>
+</div>
+<div class="text-3xl font-headline font-extrabold">3</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest p-6 rounded-2xl ambient-shadow flex flex-col justify-between h-32">
+<div class="flex justify-between items-start">
+<span class="text-on-surface-variant text-xs font-bold uppercase tracking-wider">Gains totaux</span>
+<span class="text-on-surface-variant text-[10px] font-medium italic">dont 18 € ce mois</span>
+</div>
+<div class="text-3xl font-headline font-extrabold">247,50 €</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest p-6 rounded-2xl ambient-shadow flex flex-col justify-between h-32">
+<div class="flex justify-between items-start">
+<span class="text-on-surface-variant text-xs font-bold uppercase tracking-wider">Membres réseau</span>
+<span class="bg-secondary/10 text-secondary px-2 py-1 rounded-lg text-xs font-bold">2 nouveaux</span>
+</div>
+<div class="text-3xl font-headline font-extrabold">12</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest p-6 rounded-2xl ambient-shadow flex flex-col justify-between h-32 overflow-hidden relative">
+<div class="flex justify-between items-start z-10">
+<span class="text-on-surface-variant text-xs font-bold uppercase tracking-wider">Taux de succès</span>
+</div>
+<div class="text-3xl font-headline font-extrabold z-10">75%</div>
+<!-- Mini Sparkline visualization -->
+<div class="absolute bottom-0 left-0 w-full h-12 opacity-20 pointer-events-none">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 100 30">
+<path d="M0 25 Q 25 5, 50 20 T 100 10" fill="none" stroke="#a63300" stroke-linecap="round" stroke-width="4"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+<!-- Left Column (60%) -->
+<div class="lg:col-span-3 space-y-8">
+<!-- Recent Recommendations Card -->
+<div class="bg-surface-container-lowest editorial-card ambient-shadow p-8 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline text-lg font-bold">Recommandations récentes</h3>
+<button class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
+                            Voir tout <span class="material-symbols-outlined text-sm" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="text-on-surface-variant text-xs uppercase tracking-widest border-b border-surface-container">
+<th class="pb-4 font-bold">Vin / Client</th>
+<th class="pb-4 font-bold">Statut</th>
+<th class="pb-4 font-bold text-right">Commission</th>
+<th class="pb-4 font-bold text-right">Date</th>
+</tr>
+</thead>
+<tbody class="text-sm">
+<tr class="border-b border-surface-container/50">
+<td class="py-5">
+<div class="flex flex-col">
+<span class="font-bold">Château Margaux 2015</span>
+<span class="text-xs text-on-surface-variant">Jean Dupont</span>
+</div>
+</td>
+<td class="py-5">
+<span class="px-3 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-extrabold uppercase">Validé</span>
+</td>
+<td class="py-5 font-bold text-right">12,50 €</td>
+<td class="py-5 text-on-surface-variant text-right">22 Mai</td>
+</tr>
+<tr class="border-b border-surface-container/50">
+<td class="py-5">
+<div class="flex flex-col">
+<span class="font-bold">Gevrey-Chambertin</span>
+<span class="text-xs text-on-surface-variant">Marie Curie</span>
+</div>
+</td>
+<td class="py-5">
+<span class="px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-extrabold uppercase">En attente</span>
+</td>
+<td class="py-5 font-bold text-right">8,20 €</td>
+<td class="py-5 text-on-surface-variant text-right">20 Mai</td>
+</tr>
+<tr>
+<td class="py-5">
+<div class="flex flex-col">
+<span class="font-bold">Sancerre "Les Baronnes"</span>
+<span class="text-xs text-on-surface-variant">Luc Bernard</span>
+</div>
+</td>
+<td class="py-5">
+<span class="px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-extrabold uppercase">Annulé</span>
+</td>
+<td class="py-5 font-bold text-right">0,00 €</td>
+<td class="py-5 text-on-surface-variant text-right">18 Mai</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Monthly Performance Card -->
+<div class="bg-surface-container-lowest rounded-2xl ambient-shadow p-8">
+<h3 class="font-headline text-lg font-bold mb-6">Performance mensuelle</h3>
+<div class="h-64 flex items-end justify-between gap-2 px-2">
+<!-- Bar chart mockup -->
+<div class="flex flex-col items-center flex-1">
+<div class="w-full bg-surface-container rounded-t-lg h-[40%] hover:bg-primary-container transition-colors cursor-pointer relative group">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">€45</span>
+</div>
+<span class="text-[10px] mt-4 font-bold text-on-surface-variant">JAN</span>
+</div>
+<div class="flex flex-col items-center flex-1">
+<div class="w-full bg-surface-container rounded-t-lg h-[65%] hover:bg-primary-container transition-colors cursor-pointer relative group"></div>
+<span class="text-[10px] mt-4 font-bold text-on-surface-variant">FEV</span>
+</div>
+<div class="flex flex-col items-center flex-1">
+<div class="w-full bg-surface-container rounded-t-lg h-[55%] hover:bg-primary-container transition-colors cursor-pointer relative group"></div>
+<span class="text-[10px] mt-4 font-bold text-on-surface-variant">MAR</span>
+</div>
+<div class="flex flex-col items-center flex-1">
+<div class="w-full bg-surface-container rounded-t-lg h-[85%] hover:bg-primary-container transition-colors cursor-pointer relative group"></div>
+<span class="text-[10px] mt-4 font-bold text-on-surface-variant">AVR</span>
+</div>
+<div class="flex flex-col items-center flex-1">
+<div class="w-full bg-gradient-to-t from-primary to-primary-container rounded-t-lg h-[100%] cursor-pointer relative group">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] py-1 px-2 rounded opacity-100">€247</span>
+</div>
+<span class="text-[10px] mt-4 font-bold text-primary">MAI</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column (40%) -->
+<div class="lg:col-span-2 space-y-8">
+<!-- Wallet Quick View -->
+<div class="bg-gradient-to-br from-on-surface to-slate-800 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+<div class="relative z-10">
+<div class="flex justify-between items-center mb-6">
+<span class="text-xs font-bold uppercase tracking-widest opacity-60">Wallet Rapide</span>
+<span class="material-symbols-outlined opacity-60" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+<div class="mb-6">
+<p class="text-3xl font-headline font-extrabold mb-1">158,40 €</p>
+<p class="text-xs text-white/60 font-medium">Solde disponible en EUR</p>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-white/10">
+<div>
+<p class="text-xl font-headline font-bold">1,240 <span class="text-xs font-medium opacity-60">Wins</span></p>
+<p class="text-[10px] opacity-60 uppercase font-bold tracking-wider">Programme Fidélité</p>
+</div>
+<button class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-xs font-bold transition-colors">
+                                Retirer
+                            </button>
+</div>
+</div>
+<!-- Decorative Circle -->
+<div class="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl"></div>
+</div>
+<!-- Network View -->
+<div class="bg-surface-container-lowest rounded-2xl ambient-shadow p-6">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline text-md font-bold">Votre réseau</h3>
+<span class="material-symbols-outlined text-slate-400" data-icon="more_horiz">more_horiz</span>
+</div>
+<div class="flex flex-col items-center py-4">
+<!-- Simplified Visual Tree -->
+<div class="relative flex flex-col items-center">
+<div class="w-16 h-16 rounded-full border-4 border-primary-fixed-dim p-1 bg-white mb-8 relative">
+<img alt="User Profile" class="w-full h-full rounded-full object-cover" data-alt="professional male portrait with warm studio lighting and neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIF-8BbAm12wQ5pTWttDxffRv0WPrD0S1QX16meeRBxfkx7gFPYO1qqS-pwM3c8YPuObpeXLNLWyetViFNAta2I-k_KQplQmMnVZTCyWLYIPQptdyyJVQFHh7mv1r-7Udxy5EcpeCfEF0SVn_hrYm0-0n6PSppqgOhJ1MVdATf8sUFP3Zgn2WS87RJflTCiMGvYcwIqcbrq5HHBJfrH__mrIGLOS-vU0wj2bbZv4O6eT03-bywCr8ZFM21MzAAkxhE-CzT7DNOtfs"/>
+<div class="absolute -bottom-2 -right-2 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full">VOUS</div>
+</div>
+<div class="flex gap-12 relative">
+<!-- Connecting lines (mocked with div) -->
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 w-32 h-8 border-t-2 border-x-2 border-surface-container rounded-t-xl"></div>
+<div class="flex flex-col items-center">
+<div class="w-12 h-12 rounded-full border-2 border-surface-container overflow-hidden">
+<img alt="Network Member" class="w-full h-full object-cover" data-alt="smiling young woman portrait with natural soft daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAM5ZuMVqo8cPK8ceXZfMWxOo6YHjlBaluMnKa7Vm9O9Gqk2yrqBHC9hVnd9Ikik5_kChW-D8Y16l4ZG_pwrzmKh95xK3syVe3x_KFiOVavyaxduWDX5mW6t0Vt5vIFf-1AZ4U2kWVQ_LD949kSacVnDP5uJ5O9zLd4iM3lVOTNNjLSSLFKpn8hISMDGb8vEbQYa3qAL4ZboAqXwcLr_5u1UZ80KJISTLsj5HFRd9D7TCNn84bgGFKZAxa4FWd7K2TFL7qqOqgzyuE"/>
+</div>
+<span class="text-[10px] mt-2 font-bold text-on-surface-variant">Léa M.</span>
+</div>
+<div class="flex flex-col items-center">
+<div class="w-12 h-12 rounded-full border-2 border-surface-container overflow-hidden">
+<img alt="Network Member" class="w-full h-full object-cover" data-alt="cheerful man portrait with outdoor sunset background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCuIFtGptmsI0jSpYhvJBqvsd37bw3wzVSjR0bjCT0SCVrrnd0OR317sXWyQlnq6KMy2kIZIAmfimgCxGnWszjPB3c1lhD5TTacxLAsQIJ4cLdTi7mzOcS4MK7aOoRDSP2l3x3qyxY6v_ktUWVGkeyyiApXqumbv1N3nyUbGJFixftp2atIGHMOPrsu2gnyqU0r34GMvqzhuIQxfEKkYFo2oTOgr7B6IF6hl9qIzoknASM7NQOYqp0VrR1gMql9WwiaswgA67yyezQ"/>
+</div>
+<span class="text-[10px] mt-2 font-bold text-on-surface-variant">Marc O.</span>
+</div>
+<div class="flex flex-col items-center">
+<div class="w-12 h-12 rounded-full border-2 border-surface-container bg-surface-container flex items-center justify-center">
+<span class="text-[10px] font-bold text-on-surface-variant">+9</span>
+</div>
+<span class="text-[10px] mt-2 font-bold text-on-surface-variant">Voir</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Activity Feed -->
+<div class="bg-surface-container-lowest rounded-2xl ambient-shadow p-6">
+<h3 class="font-headline text-md font-bold mb-6">Activité récente</h3>
+<div class="space-y-6">
+<div class="flex gap-4">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="check_circle">check_circle</span>
+</div>
+<div>
+<p class="text-sm font-bold">Commission confirmée</p>
+<p class="text-xs text-on-surface-variant">Vente Château Margaux terminée.</p>
+<p class="text-[10px] text-on-surface-variant mt-1">Il y a 2h</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="person_add">person_add</span>
+</div>
+<div>
+<p class="text-sm font-bold">Nouveau membre</p>
+<p class="text-xs text-on-surface-variant">Marc O. a rejoint votre réseau.</p>
+<p class="text-[10px] text-on-surface-variant mt-1">Il y a 5h</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-slate-500 text-sm" data-icon="history">history</span>
+</div>
+<div>
+<p class="text-sm font-bold">Conseil généré</p>
+<p class="text-xs text-on-surface-variant">Nouvelle recommandation pour Marie C.</p>
+<p class="text-[10px] text-on-surface-variant mt-1">Hier</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="star">star</span>
+</div>
+<div>
+<p class="text-sm font-bold">Objectif atteint</p>
+<p class="text-xs text-on-surface-variant">Vous avez atteint 75% de succès !</p>
+<p class="text-[10px] text-on-surface-variant mt-1">Il y a 2 jours</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

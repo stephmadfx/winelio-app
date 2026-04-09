@@ -1,0 +1,21 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic:
+      - img
+    - main [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: Plateforme de recommandations
+        - generic [ref=e7]:
+          - img [ref=e8]
+          - generic [ref=e10]: inelio
+        - paragraph [ref=e11]: Recommandez des professionnels, suivez vos commissions et rejoignez le réseau en quelques étapes.
+        - generic [ref=e12]:
+          - link "Se connecter" [ref=e13] [cursor=pointer]:
+            - /url: /auth/login
+          - link "Créer un compte avec rotation" [ref=e14] [cursor=pointer]:
+            - /url: /auth/login?mode=register&open=1
+          - link "J’ai un code parrain" [ref=e15] [cursor=pointer]:
+            - /url: /auth/login?mode=register
+        - paragraph [ref=e16]: Sans code, votre compte sera rattaché à une tête de lignée selon une répartition séquentielle ou aléatoire.
+    - contentinfo [ref=e17]: © 2026 Winelio. Tous droits réservés.
+  - alert [ref=e18]

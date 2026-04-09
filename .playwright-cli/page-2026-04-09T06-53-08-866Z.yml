@@ -1,0 +1,45 @@
+- generic [ref=e2]:
+  - generic:
+    - img
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: Connexion securisee
+      - generic [ref=e8]:
+        - img [ref=e9]
+        - generic [ref=e11]: inelio
+      - heading "Accedez a votre dashboard" [level=1] [ref=e12]
+      - paragraph [ref=e13]: Entrez votre adresse email, nous vous envoyons un code de connexion à 6 chiffres.
+      - generic [ref=e14]:
+        - article [ref=e15]:
+          - img [ref=e17]
+          - heading "Design dashboard" [level=2] [ref=e19]
+          - paragraph [ref=e20]: Même logique de cartes, d'ombres douces et d'accents orange.
+        - article [ref=e21]:
+          - img [ref=e23]
+          - heading "Connexion rapide" [level=2] [ref=e25]
+          - paragraph [ref=e26]: Un code unique par email, sans mot de passe à retenir.
+        - article [ref=e27]:
+          - img [ref=e29]
+          - heading "Réseau privé" [level=2] [ref=e31]
+          - paragraph [ref=e32]: L'inscription reste obligatoire par code parrain validé.
+        - article [ref=e33]:
+          - img [ref=e35]
+          - heading "Mobile d'abord" [level=2] [ref=e37]
+          - paragraph [ref=e38]: La même hiérarchie visuelle reste lisible sur petit écran.
+      - generic [ref=e39]:
+        - paragraph [ref=e40]: Ce qui change
+        - paragraph [ref=e41]: "Meme identite visuelle que le dashboard: fond clair, cartes blanches, accent orange et rythme plus lisible sur mobile."
+    - generic [ref=e42]:
+      - generic [ref=e44]:
+        - generic [ref=e45]:
+          - paragraph [ref=e46]: Etape 1 sur 3
+          - heading "Recevoir un code" [level=2] [ref=e47]
+          - paragraph [ref=e48]: Entrez votre adresse email, nous vous envoyons un code de connexion à 6 chiffres.
+        - img [ref=e50]
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - text: Adresse email
+          - textbox "Adresse email" [ref=e54]:
+            - /placeholder: vous@exemple.com
+        - button "Recevoir le code de connexion" [ref=e55]
+      - button "Pas de compte ? Creer un compte" [ref=e56]
