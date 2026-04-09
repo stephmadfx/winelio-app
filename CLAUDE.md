@@ -160,7 +160,7 @@ Toutes les tables ont des politiques RLS actives. Les utilisateurs ne voient que
 - **IP** : 31.97.152.195
 - **SSH** : root / 04660466aA@@@
 - **Coolify** : http://31.97.152.195:8000 (contact@aide-multimedia.fr / 04660466aA@@@)
-- **SMTP** : dahu.o2switch.net port 587 (contact@aide-multimedia.fr)
+- **SMTP** : ssl0.ovh.net port **465 SSL** (support@winelio.app) — guillemets obligatoires si le mot de passe contient `#`
 
 ## Serveur de développement local
 - Port : variable selon les autres projets ouverts — actuellement **3003** (`http://localhost:3003`). Vérifier avec `ps aux | grep "next dev"` ou tester les ports 3000-3010.

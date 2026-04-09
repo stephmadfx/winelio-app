@@ -4,10 +4,11 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import nodemailer from "nodemailer";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 
+const smtpPort = Number(process.env.SMTP_PORT) || 465;
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "ssl0.ovh.net",
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
+  port: smtpPort,
+  secure: smtpPort === 465,
   connectionTimeout: 8000,
   greetingTimeout: 8000,
   socketTimeout: 8000,

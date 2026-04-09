@@ -4,10 +4,11 @@ import nodemailer from "nodemailer";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 
+const _smtpPort = Number(process.env.SMTP_PORT) || 465;
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "ssl0.ovh.net",
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
+  port: _smtpPort,
+  secure: _smtpPort === 465,
   auth: {
     user: process.env.SMTP_USER || "support@winelio.app",
     pass: process.env.SMTP_PASS || "",
