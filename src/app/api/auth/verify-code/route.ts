@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config";
+import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
 
 export async function POST(req: Request) {
   try {
@@ -116,6 +117,18 @@ export async function POST(req: Request) {
         access_token: accessToken,
         refresh_token: refreshToken || "",
       });
+
+      // Assigner un parrain si nécessaire (auto-rotation fondateurs)
+      // Décode le JWT pour récupérer le user ID (sub claim)
+      try {
+        const payload = JSON.parse(atob(accessToken.split(".")[1]));
+        if (payload.sub) {
+          await assignSponsorIfNeeded(payload.sub);
+        }
+      } catch (e) {
+        console.error("assign-sponsor in verify-code error:", e);
+      }
+
       return response;
     }
 

@@ -89,14 +89,16 @@ function LoginForm() {
   // Appelé systématiquement — la route serveur ignore si le parrain est déjà assigné
   const applyReferral = async () => {
     const storedRef = localStorage.getItem("winelio_ref");
+    if (!storedRef) return;
 
+    // Assignation via code parrain explicite (lien d'invitation)
     await fetch("/api/auth/assign-sponsor", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sponsorCode: storedRef || null }),
-    });
+      body: JSON.stringify({ sponsorCode: storedRef }),
+    }).catch(() => {});
 
-    if (storedRef) localStorage.removeItem("winelio_ref");
+    localStorage.removeItem("winelio_ref");
   };
 
   // Step 1: demander le code via notre API (pas GoTrue)
