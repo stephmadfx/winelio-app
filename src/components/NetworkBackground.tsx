@@ -119,7 +119,7 @@ export function NetworkBackground() {
     <div
       aria-hidden="true"
       className="absolute left-0 right-0 bottom-0 overflow-hidden pointer-events-none z-0"
-      style={{ top: 75 }}
+      style={{ top: "calc(100dvh / 3)" }}
     >
       <div style={{ position: "absolute", inset: 0, opacity: fading ? 0 : 1,
                     transition: `opacity ${FADE_MS}ms ease` }}>
