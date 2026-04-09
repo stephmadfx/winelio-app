@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import nodemailer from "nodemailer";
 import { he } from "@/lib/html-escape";
+import { LOGO_IMG_HTML } from "@/lib/email-logo";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "ssl0.ovh.net",
@@ -42,11 +43,7 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
               <!-- Logo -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="padding-bottom:2px;">
-                    <img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-color.png"
-                         alt="Winelio" width="464"
-                         style="display:block;border:0;width:100%;max-width:464px;" />
-                  </td>
+                  <td align="center" style="padding-bottom:6px;">${LOGO_IMG_HTML}</td>
                 </tr>
                 <tr>
                   <td align="center" style="padding-bottom:20px;">
@@ -276,7 +273,7 @@ export async function POST() {
     await transporter.sendMail({
       from: `"Winelio" <${process.env.SMTP_USER || "support@winelio.app"}>`,
       to: user.email!,
-      subject: `Bienvenue sur Winelio, ${firstName} ! 🎉`,
+      subject: `Bienvenue sur Winelio, ${firstName} !`,
       html: buildWelcomeEmail(firstName, profile.sponsor_code),
     });
 
