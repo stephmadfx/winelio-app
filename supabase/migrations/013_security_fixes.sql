@@ -3,7 +3,7 @@
 -- 2. Solde wallet : contrainte positive
 
 -- ── OTP : colonne attempts ──────────────────────────────────────────────────
-ALTER TABLE public.otp_codes
+ALTER TABLE winelio.otp_codes
   ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0;
 
 -- ── Wallet : empêcher les soldes négatifs en DB ─────────────────────────────
