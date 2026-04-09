@@ -23,7 +23,7 @@ const navItems = [
     icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z",
   },
   {
-    label: "Wallet",
+    label: "Gains",
     href: "/wallet",
     icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
   },
@@ -64,6 +64,9 @@ export function MobileHeader({
   const displayName = firstName ?? userEmail.split("@")[0];
   const initials = displayName.slice(0, 2).toUpperCase();
 
+  const hour = new Date().getHours();
+  const greeting = hour >= 19 || hour < 6 ? "Bonsoir," : "Bonjour,";
+
   const openMenu = () => {
     setVisible(true);
     // micro-délai pour que le navigateur applique le style initial avant la transition
@@ -97,12 +100,14 @@ export function MobileHeader({
       >
         <div className="relative flex items-center justify-between px-4 h-16">
           {/* Gauche : logo */}
-          <WinelioLogo variant="color" height={28} gradientId="wGrad-mheader" />
+          <Link href="/dashboard" aria-label="Winelio — Accueil">
+            <WinelioLogo variant="color" height={28} gradientId="wGrad-mheader" />
+          </Link>
 
           {/* Centre : greeting */}
           <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center leading-none">
             <span className="text-[10px] uppercase tracking-widest text-winelio-gray font-bold">
-              Bonjour,
+              {greeting}
             </span>
             <span className="font-bold text-base text-winelio-orange tracking-tight">
               {displayName} 👋

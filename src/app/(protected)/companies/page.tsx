@@ -29,7 +29,7 @@ export default async function CompaniesPage() {
           href="/companies/new"
           className="px-5 py-2.5 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity text-center"
         >
-          Ajouter une entreprise
+          Je suis professionnel
         </Link>
       </div>
 
@@ -52,16 +52,19 @@ export default async function CompaniesPage() {
               </svg>
             </div>
             <h3 className="text-lg font-semibold text-winelio-dark mb-2">
-              Aucune entreprise
+              Vous êtes actuellement enregistré comme particulier
             </h3>
-            <p className="text-muted-foreground mb-6">
-              Ajoutez votre première entreprise pour commencer à recevoir des recommandations.
+            <p className="text-muted-foreground mb-2">
+              Si vous êtes un professionnel ou que vous possédez une entreprise, enregistrez-la ici pour commencer à recevoir des recommandations de la part du réseau Winelio.
+            </p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Votre entreprise sera vérifiée par notre équipe avant d&apos;apparaître dans le réseau.
             </p>
             <Link
               href="/companies/new"
               className="inline-block px-6 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
             >
-              Ajouter une entreprise
+              Enregistrer mon entreprise
             </Link>
           </CardContent>
         </Card>

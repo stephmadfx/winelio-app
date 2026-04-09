@@ -18,6 +18,36 @@ input, textarea, select {
   font-size: max(16px, 1em);
 }
 
+/* Dashboard — entrée en fondu + glisse vers le haut (stagger via animationDelay) */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.45s ease-out both;
+}
+
+/* Wallet card — balayage lumineux en boucle */
+@keyframes shimmer-sweep {
+  0%   { transform: translateX(-100%) skewX(-12deg); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateX(350%) skewX(-12deg); opacity: 0; }
+}
+.animate-shimmer {
+  animation: shimmer-sweep 1.6s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+/* Hover lift sur les cartes KPI */
+.card-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px -6px rgba(0, 0, 0, 0.10);
+}
+
 /* Pulsing ring animation for active recommendations on network graph nodes */
 @keyframes winelio-ping {
   0%, 100% {

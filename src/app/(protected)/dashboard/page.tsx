@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { OnboardingModal } from "@/components/onboarding-modal";
 import { Card, CardContent } from "@/components/ui/card";
+import { MonthlyBarChart } from "@/components/monthly-bar-chart";
+import { AnimatedCounter } from "@/components/animated-counter";
 import { FeedEvent, formatUserName, formatRelativeTime } from "@/lib/feed-utils";
 
 export default async function DashboardPage() {
@@ -225,40 +227,9 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        {/* Grille KPIs 2×2 */}
-        <div className="grid grid-cols-2 gap-3">
-          <KpiCard value={String(recoThisMonth ?? 0)} label="Recos ce mois" variant="orange"
-            icon="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          <KpiCard value={`${Number(totalEarned).toFixed(0)} €`} label="Gains totaux" variant="amber"
-            icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          <KpiCard value={String(networkCount)} label="Membres réseau" variant="orange"
-            icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-          <KpiCard value={`${successRate} %`} label="Taux de succès" variant="amber"
-            icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </div>
-
-        {/* Actions rapides */}
-        <section className="space-y-3">
-          <h3 className="font-bold text-winelio-dark text-base">Actions rapides</h3>
-          <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
-            <ActionChip href="/recommendations/new" label="Reco" icon="M12 4v16m8-8H4" />
-            <ActionChip href="/network" label="Inviter"
-              icon="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            <ActionChip href="/wallet" label="Wallet"
-              icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            <ActionChip href="/network" label="Réseau"
-              icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </div>
-        </section>
-
         {/* Feed d'activité */}
         <section className="space-y-3">
-          <div className="flex justify-between items-center">
-            <h3 className="font-bold text-winelio-dark text-base">Activité</h3>
-            <Link href="/recommendations" className="text-winelio-orange font-bold text-xs uppercase tracking-widest">
-              Voir tout →
-            </Link>
-          </div>
+          <h3 className="font-bold text-winelio-dark text-base">Activité</h3>
           {topEvents.length > 0 ? (
             <div className="space-y-2">
               {topEvents.map((event, i) => (
@@ -275,6 +246,32 @@ export default async function DashboardPage() {
               </CardContent>
             </Card>
           )}
+        </section>
+
+        {/* Grille KPIs 2×2 */}
+        <div className="grid grid-cols-2 gap-3">
+          <KpiCard numValue={recoThisMonth ?? 0} label="Recos ce mois" variant="orange" delay={0}
+            icon="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          <KpiCard numValue={Number(totalEarned)} suffix=" €" label="Gains totaux" variant="amber" delay={80}
+            icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <KpiCard numValue={networkCount} label="Membres réseau" variant="orange" delay={160}
+            icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          <KpiCard numValue={successRate} suffix=" %" label="Taux de succès" variant="amber" delay={240}
+            icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </div>
+
+        {/* Actions rapides */}
+        <section className="space-y-3">
+          <h3 className="font-bold text-winelio-dark text-base">Actions rapides</h3>
+          <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
+            <ActionChip href="/recommendations/new" label="Reco" icon="M12 4v16m8-8H4" />
+            <ActionChip href="/network" label="Inviter"
+              icon="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            <ActionChip href="/wallet" label="Gains"
+              icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <ActionChip href="/network" label="Réseau"
+              icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </div>
         </section>
       </div>
 
@@ -303,35 +300,68 @@ export default async function DashboardPage() {
         {/* KPIs desktop – 4 colonnes */}
         <section className="grid grid-cols-4 gap-5">
           <DesktopKpiCard
-            value={String(recoThisMonth ?? 0)}
+            numValue={recoThisMonth ?? 0}
             label="Recommandations"
             sub="ce mois"
             trend={`+${recoThisMonth ?? 0}`}
             icon="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
             accentColor="orange"
+            delay={0}
           />
           <DesktopKpiCard
-            value={`${Number(totalEarned).toFixed(2)} €`}
+            numValue={Number(totalEarned)}
+            suffix=" €"
+            decimals={2}
             label="Gains totaux"
             sub={`dont ${Number(wallet?.total_earned ?? 0 - Number(availableBalance)).toFixed(0)} € retirés`}
             icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             accentColor="amber"
+            delay={80}
           />
           <DesktopKpiCard
-            value={String(networkCount)}
+            numValue={networkCount}
             label="Membres réseau"
             sub={`${directReferrals?.length ?? 0} filleuls directs`}
             icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
             accentColor="orange"
+            delay={160}
           />
           <DesktopKpiCard
-            value={`${successRate} %`}
+            numValue={successRate}
+            suffix=" %"
             label="Taux de succès"
             sub={`${completedRecos ?? 0} / ${totalRecos ?? 0} recos`}
             sparkline={monthlyData.map((m) => m.count)}
             icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
             accentColor="amber"
+            delay={240}
           />
+        </section>
+
+        {/* Activité récente — pleine largeur */}
+        <section>
+          <Card className="!rounded-2xl shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-lg text-winelio-dark">Activité</h3>
+                <Link href="/recommendations" className="text-winelio-orange font-bold text-sm hover:underline">
+                  Voir tout
+                </Link>
+              </div>
+              {topEvents.length > 0 ? (
+                <div className="relative space-y-4">
+                  <div className="absolute left-[19px] top-2 bottom-2 w-[2px] bg-gray-100" />
+                  {topEvents.slice(0, 3).map((event) => (
+                    <DesktopActivityItem key={event.id} event={event} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-winelio-gray text-sm text-center py-4">
+                  Aucune activité récente.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </section>
 
         {/* Grille 7/5 */}
@@ -389,25 +419,7 @@ export default async function DashboardPage() {
             <Card className="!rounded-2xl shadow-sm">
               <CardContent className="p-6">
                 <h3 className="font-bold text-lg text-winelio-dark mb-5">Performance mensuelle</h3>
-                <div className="h-40 flex items-end justify-between gap-3 px-1">
-                  {monthlyData.map((m) => (
-                    <div key={m.label} className="flex-1 flex flex-col items-center gap-2">
-                      <div className="w-full bg-gray-100 rounded-t-lg h-full relative overflow-hidden">
-                        <div
-                          className={`w-full absolute bottom-0 rounded-t-lg transition-all duration-500 ${
-                            m.isCurrent
-                              ? "bg-gradient-to-t from-winelio-orange to-winelio-amber shadow-[0_0_15px_rgba(255,107,53,0.3)]"
-                              : "bg-gray-200 hover:bg-winelio-orange/20"
-                          }`}
-                          style={{ height: `${Math.max((m.count / maxMonthCount) * 100, 4)}%` }}
-                        />
-                      </div>
-                      <span className={`text-xs font-semibold ${m.isCurrent ? "text-winelio-orange" : "text-winelio-gray"}`}>
-                        {m.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <MonthlyBarChart data={monthlyData} maxCount={maxMonthCount} />
               </CardContent>
             </Card>
           </div>
@@ -417,6 +429,8 @@ export default async function DashboardPage() {
 
             {/* Wallet card */}
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-winelio-orange via-[#e55728] to-[#b83d00] p-6 text-white shadow-lg">
+              {/* Shimmer sweep */}
+              <div className="animate-shimmer absolute top-0 bottom-0 w-24 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
               <div className="absolute -right-8 -top-8 w-36 h-36 bg-white/10 rounded-full blur-2xl pointer-events-none" />
               <div className="absolute -left-8 -bottom-8 w-28 h-28 bg-black/10 rounded-full blur-xl pointer-events-none" />
               <div className="relative z-10 space-y-5">
@@ -504,24 +518,6 @@ export default async function DashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Activité récente */}
-            <Card className="!rounded-2xl shadow-sm">
-              <CardContent className="p-6">
-                <h3 className="font-bold text-lg text-winelio-dark mb-4">Activité</h3>
-                {topEvents.length > 0 ? (
-                  <div className="relative space-y-4">
-                    <div className="absolute left-[19px] top-2 bottom-2 w-[2px] bg-gray-100" />
-                    {topEvents.slice(0, 3).map((event) => (
-                      <DesktopActivityItem key={event.id} event={event} />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-winelio-gray text-sm text-center py-4">
-                    Aucune activité récente.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
           </div>
         </section>
       </div>
@@ -531,12 +527,12 @@ export default async function DashboardPage() {
 
 /* ── Composants partagés ── */
 
-function KpiCard({ value, label, variant, icon }: {
-  value: string; label: string; variant: "orange" | "amber"; icon: string;
+function KpiCard({ numValue, suffix = "", decimals = 0, label, variant, icon, delay = 0 }: {
+  numValue: number; suffix?: string; decimals?: number; label: string; variant: "orange" | "amber"; icon: string; delay?: number;
 }) {
   const isOrange = variant === "orange";
   return (
-    <Card className="!rounded-2xl shadow-sm">
+    <Card className="animate-fade-up card-lift !rounded-2xl shadow-sm" style={{ animationDelay: `${delay}ms` }}>
       <CardContent className="p-4 flex flex-col gap-3">
         <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isOrange ? "bg-winelio-orange/10" : "bg-winelio-amber/10"}`}>
           <svg className={`w-5 h-5 ${isOrange ? "text-winelio-orange" : "text-winelio-amber"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -544,7 +540,9 @@ function KpiCard({ value, label, variant, icon }: {
           </svg>
         </div>
         <div>
-          <p className="text-[28px] font-extrabold text-winelio-dark leading-none">{value}</p>
+          <p className="text-[28px] font-extrabold text-winelio-dark leading-none">
+            <AnimatedCounter to={numValue} suffix={suffix} decimals={decimals} delay={delay} />
+          </p>
           <p className="text-xs text-winelio-gray font-semibold mt-1">{label}</p>
         </div>
       </CardContent>
@@ -552,9 +550,9 @@ function KpiCard({ value, label, variant, icon }: {
   );
 }
 
-function DesktopKpiCard({ value, label, sub, trend, sparkline, icon, accentColor }: {
-  value: string; label: string; sub?: string; trend?: string;
-  sparkline?: number[]; icon: string; accentColor: "orange" | "amber";
+function DesktopKpiCard({ numValue, suffix = "", decimals = 0, label, sub, trend, sparkline, icon, accentColor, delay = 0 }: {
+  numValue: number; suffix?: string; decimals?: number; label: string; sub?: string; trend?: string;
+  sparkline?: number[]; icon: string; accentColor: "orange" | "amber"; delay?: number;
 }) {
   const isOrange = accentColor === "orange";
   const color = isOrange ? "text-winelio-orange" : "text-winelio-amber";
@@ -562,7 +560,7 @@ function DesktopKpiCard({ value, label, sub, trend, sparkline, icon, accentColor
   const maxSpark = sparkline ? Math.max(...sparkline, 1) : 1;
 
   return (
-    <Card className="!rounded-2xl shadow-sm overflow-hidden">
+    <Card className="animate-fade-up card-lift !rounded-2xl shadow-sm overflow-hidden" style={{ animationDelay: `${delay}ms` }}>
       <CardContent className="p-5 flex flex-col gap-3 relative">
         {/* icône déco en fond */}
         <div className={`absolute top-3 right-3 opacity-[0.06] ${color}`}>
@@ -580,7 +578,9 @@ function DesktopKpiCard({ value, label, sub, trend, sparkline, icon, accentColor
         </div>
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-3xl font-extrabold text-winelio-dark leading-none">{value}</p>
+            <p className="text-3xl font-extrabold text-winelio-dark leading-none">
+              <AnimatedCounter to={numValue} suffix={suffix} decimals={decimals} delay={delay} />
+            </p>
             {sub && <p className={`text-xs mt-1 font-medium ${color}`}>{sub}</p>}
           </div>
           {trend && (

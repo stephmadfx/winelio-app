@@ -163,7 +163,7 @@ Toutes les tables ont des politiques RLS actives. Les utilisateurs ne voient que
 - **SMTP** : dahu.o2switch.net port 587 (contact@aide-multimedia.fr)
 
 ## Serveur de développement local
-- Port : **3001** (`http://localhost:3001`)
+- Port : variable selon les autres projets ouverts — actuellement **3003** (`http://localhost:3003`). Vérifier avec `ps aux | grep "next dev"` ou tester les ports 3000-3010.
 - **Après chaque `git push`, relancer le serveur dev** :
   ```bash
   pkill -f "next dev" ; sleep 1 ; cd /Users/steph/PROJETS/WINELIO/winelio && npm run dev &
