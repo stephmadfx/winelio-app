@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
                 const trimmed = line.trim();
                 return (
                   !trimmed.startsWith(">") &&
-                  !/^On .+wrote:$/s.test(trimmed) &&
+                  !/^On .+wrote:$/.test(trimmed) &&
                   !/^Le .+ a écrit\s*:/.test(trimmed) &&
                   !trimmed.startsWith("--")
                 );
