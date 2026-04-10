@@ -1,0 +1,26 @@
+name: IMAP Poll — Bug Replies
+
+on:
+  schedule:
+    # Toutes les 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call imap-poll endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            "https://dev2.winelio.app/api/bugs/imap-poll" \
+            -H "Authorization: Bearer ${CRON_SECRET}")
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "HTTP $status — $body"
+          if [ "$status" != "200" ]; then
+            echo "::error::imap-poll failed with HTTP $status"
+            exit 1
+          fi
