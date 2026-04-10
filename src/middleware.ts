@@ -77,10 +77,11 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect API routes (except auth callback)
+  // Protect API routes (except auth callback and cron endpoints)
   if (
     request.nextUrl.pathname.startsWith("/api/") &&
-    !request.nextUrl.pathname.startsWith("/api/auth/")
+    !request.nextUrl.pathname.startsWith("/api/auth/") &&
+    !request.nextUrl.pathname.startsWith("/api/bugs/imap-poll")
   ) {
     if (!user) {
       return NextResponse.json(
