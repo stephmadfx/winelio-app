@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
   try {
     await sendMailWithTimeout({
       from: `"Winelio Support" <${process.env.SMTP_USER || "support@winelio.app"}>`,
-      to: "support@winelio.app",
+      to: process.env.ADMIN_NOTIFY_EMAIL || "support@winelio.app",
       replyTo: "support@winelio.app",
       subject: `[Bug #${reportId}] Signalement - ${pageUrl}`,
       html: buildBugEmailHtml(reportId, user.email ?? "", message.trim(), pageUrl, screenshotSignedUrl),
