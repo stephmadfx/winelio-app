@@ -29,7 +29,31 @@ export function BugReportButton({ userId }: { userId: string }) {
   const [pendingReply, setPendingReply] = useState<PendingReply | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Supabase Realtime — écoute les réponses du support
+  // Vérifier au montage s'il y a des réponses non lues (en cas de rechargement)
+  useEffect(() => {
+    const supabase = createClient();
+    const seenKey = `bug-replies-seen-${userId}`;
+    const seen: string[] = JSON.parse(localStorage.getItem(seenKey) ?? "[]");
+
+    supabase
+      .schema("winelio")
+      .from("bug_reports")
+      .select("id, admin_reply")
+      .eq("user_id", userId)
+      .eq("status", "replied")
+      .not("admin_reply", "is", null)
+      .then(({ data }) => {
+        if (!data) return;
+        const unread = data.find((r) => !seen.includes(r.id) && r.admin_reply);
+        if (unread) {
+          const reply: PendingReply = { id: unread.id, reply: unread.admin_reply };
+          setPendingReply(reply);
+          setHasUnread(true);
+        }
+      });
+  }, [userId]);
+
+  // Supabase Realtime — écoute les réponses du support en temps réel
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -60,7 +84,7 @@ export function BugReportButton({ userId }: { userId: string }) {
                 onClick: () => {
                   setPendingReply(reply);
                   setReplyOpen(true);
-                  setHasUnread(false);
+                  markReplySeen(reply.id);
                 },
               },
             });
@@ -74,10 +98,17 @@ export function BugReportButton({ userId }: { userId: string }) {
     };
   }, [userId]);
 
+  function markReplySeen(id: string) {
+    const seenKey = `bug-replies-seen-${userId}`;
+    const seen: string[] = JSON.parse(localStorage.getItem(seenKey) ?? "[]");
+    if (!seen.includes(id)) localStorage.setItem(seenKey, JSON.stringify([...seen, id]));
+    setHasUnread(false);
+  }
+
   function handleOpen() {
     if (hasUnread && pendingReply) {
       setReplyOpen(true);
-      setHasUnread(false);
+      markReplySeen(pendingReply.id);
       return;
     }
     setOpen(true);
@@ -205,11 +236,11 @@ export function BugReportButton({ userId }: { userId: string }) {
             {/* Screenshot */}
             {screenshot ? (
               <div className="space-y-2">
-                <div className="relative rounded-lg overflow-hidden border border-black/10 bg-gray-50 h-36">
+                <div className="relative rounded-lg overflow-hidden border border-black/10 bg-gray-50 h-48">
                   <img
                     src={screenshot}
                     alt="Screenshot"
-                    className="w-full h-full object-cover object-top"
+                    className="w-full h-full object-contain"
                   />
                   <button
                     type="button"
