@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
 
   let processed = 0;
   let errors = 0;
+  const debug: string[] = [];
 
   try {
     await client.connect();
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest) {
       // (pas seulement non-lus — Apple Mail peut les marquer lus avant le cron)
       const allUids = await client.search({ all: true }, { uid: true });
       const uids: number[] = Array.isArray(allUids) ? allUids : [];
+      debug.push(`uids: ${uids.length}`);
 
       // Récupérer les rapports encore en attente pour éviter des requêtes inutiles
       const { data: pendingReports } = await supabaseAdmin
@@ -61,6 +63,7 @@ export async function GET(req: NextRequest) {
             if (!msg) continue;
             const typedMsg = msg as { envelope?: { subject?: string }; source?: Buffer };
             const subject = typedMsg.envelope?.subject ?? "";
+            debug.push(`[${uid}] ${subject.substring(0, 80)}`);
 
             // Ne traiter que les RÉPONSES admin : sujet doit commencer par "Re:"
             // (l'email original du bug report a aussi [Bug #UUID] dans le sujet — on l'ignore)
@@ -133,5 +136,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "IMAP connection failed", details: String(err) }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, processed, errors });
+  return NextResponse.json({ success: true, processed, errors, debug });
 }
