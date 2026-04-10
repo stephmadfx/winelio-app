@@ -1,0 +1,27 @@
+name: Deploy to dev2.winelio.app
+
+on:
+  push:
+    branches:
+      - dev2
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'Dockerfile'
+      - 'next.config.*'
+      - 'tailwind.config.*'
+      - 'tsconfig.json'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Coolify deployment
+        env:
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          curl -X POST \
+            "http://31.97.152.195:8000/api/v1/deploy?uuid=eo5jc02jc760apovne577bln&force=false" \
+            -H "Authorization: Bearer ${COOLIFY_TOKEN}"

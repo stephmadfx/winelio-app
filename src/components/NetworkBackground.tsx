@@ -119,14 +119,14 @@ export function NetworkBackground() {
     <div
       aria-hidden="true"
       className="absolute left-0 right-0 bottom-0 overflow-hidden pointer-events-none z-0"
-      style={{ top: "calc(100dvh / 3)" }}
+      style={{ top: "calc(100dvh / 4.5)" }}
     >
       <div style={{ position: "absolute", inset: 0, opacity: fading ? 0 : 1,
                     transition: `opacity ${FADE_MS}ms ease` }}>
         <svg
           viewBox="0 0 100 545"
-          preserveAspectRatio="xMidYMin meet"
-          style={{ width: "100%", height: "100%", opacity: 0.4 }}
+          preserveAspectRatio="xMidYMin slice"
+          style={{ width: "100%", height: "100%", opacity: 0.14 }}
         >
           <defs>
             <linearGradient id="nlG" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -144,8 +144,8 @@ export function NetworkBackground() {
                 key={e.id}
                 x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
                 stroke="url(#nlG)"
-                strokeWidth="0.25"
-                strokeOpacity="0.38"
+                strokeWidth="0.35"
+                strokeOpacity="0.55"
                 strokeLinecap="round"
                 strokeDasharray={e.len}
                 strokeDashoffset={e.len}
@@ -165,7 +165,7 @@ export function NetworkBackground() {
                 <g key={n.id}>
                   {n.level <= 3 && (
                     <circle cx={n.x} cy={n.y} r={r * 2.4}
-                      fill="none" stroke="#FF6B35" strokeWidth="0.14"
+                      fill="none" stroke="#FF6B35" strokeWidth="0.18"
                       style={{
                         transformBox:   "fill-box" as React.CSSProperties["transformBox"],
                         transformOrigin: "center",
@@ -187,8 +187,8 @@ export function NetworkBackground() {
 
           <style>{`
             @keyframes nl-draw  { to { stroke-dashoffset: 0 } }
-            @keyframes nl-in    { to { fill-opacity: .45 } }
-            @keyframes nl-pulse { 0%,100%{fill-opacity:.28} 50%{fill-opacity:.55} }
+            @keyframes nl-in    { to { fill-opacity: .7 } }
+            @keyframes nl-pulse { 0%,100%{fill-opacity:.45} 50%{fill-opacity:.8} }
             @keyframes nl-ripple {
               0%  { transform:scale(1);   stroke-opacity:.45 }
               100%{ transform:scale(4);   stroke-opacity:0   }
