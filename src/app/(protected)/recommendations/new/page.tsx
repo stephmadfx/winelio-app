@@ -58,6 +58,31 @@ export default function NewRecommendationPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  const [userId, setUserId] = useState<string | null>(null);
+  const [selfForMe, setSelfForMe] = useState(false);
+  const [selfProfile, setSelfProfile] = useState<{ first_name: string; last_name: string; email: string; phone: string } | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      const uid = data.user?.id ?? null;
+      setUserId(uid);
+      if (uid) {
+        const { data: profile } = await supabase
+          .schema("winelio")
+          .from("profiles")
+          .select("first_name, last_name, phone")
+          .eq("id", uid)
+          .single();
+        setSelfProfile({
+          first_name: profile?.first_name ?? "",
+          last_name: profile?.last_name ?? "",
+          email: data.user?.email ?? "",
+          phone: profile?.phone ?? "",
+        });
+      }
+    });
+  }, [supabase]);
+
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -140,10 +165,12 @@ export default function NewRecommendationPage() {
   }
 
   useEffect(() => {
+    if (!userId) return;
     let query = supabase
       .from("profiles")
       .select("id, first_name, last_name, city, latitude, longitude, company:companies(name, alias, category:categories(name)), reviews!professional_id(rating)")
       .eq("is_professional", true)
+      .neq("id", userId)
       .order("last_name");
 
     query.then(({ data }) => {
@@ -208,7 +235,7 @@ export default function NewRecommendationPage() {
       }
       setProfessionals(results);
     });
-  }, [proSearch, supabase, selectedCategory, userLocation, radius, sortBy, selectedCommune]);
+  }, [proSearch, supabase, selectedCategory, userLocation, radius, sortBy, selectedCommune, userId]);
 
   useEffect(() => {
     if (postalCode.length !== 5) {
@@ -243,8 +270,30 @@ export default function NewRecommendationPage() {
       if (!user) throw new Error("Non authentifié");
 
       let contactId = selectedContactId;
-      if (createContact) {
+      if (selfForMe && selfProfile) {
+        // Chercher un contact existant avec cet email, sinon en créer un
+        const { data: existing } = await supabase
+          .schema("winelio")
+          .from("contacts")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("email", selfProfile.email)
+          .maybeSingle();
+        if (existing) {
+          contactId = existing.id;
+        } else {
+          const { data: newContact, error: contactErr } = await supabase
+            .schema("winelio")
+            .from("contacts")
+            .insert({ ...selfProfile, user_id: user.id })
+            .select("id")
+            .single();
+          if (contactErr) throw new Error("Erreur création contact");
+          contactId = newContact.id;
+        }
+      } else if (createContact) {
         const { data: newContact, error: contactErr } = await supabase
+          .schema("winelio")
           .from("contacts")
           .insert({ ...contactForm, user_id: user.id })
           .select("id")
@@ -295,6 +344,7 @@ export default function NewRecommendationPage() {
 
   const canProceed = () => {
     if (step === 1) {
+      if (selfForMe) return true;
       if (selectedContactId) return true;
       if (createContact) return contactForm.first_name.trim() && contactForm.last_name.trim() && contactForm.email.trim() && contactForm.phone.trim();
       return false;
@@ -387,7 +437,7 @@ export default function NewRecommendationPage() {
           <div className="mb-6">
             <h2 className="text-lg font-bold text-winelio-dark">Qui a besoin d&apos;un professionnel ?</h2>
             <p className="mt-1 text-sm text-winelio-gray">
-              La personne que vous souhaitez mettre en relation — un ami, un voisin, un collègue...
+              Vous-même, ou quelqu&apos;un que vous souhaitez mettre en relation.
             </p>
           </div>
 
@@ -401,7 +451,7 @@ export default function NewRecommendationPage() {
                   {contacts.map((c) => (
                     <button
                       key={c.id}
-                      onClick={() => setSelectedContactId(c.id)}
+                      onClick={() => { setSelectedContactId(c.id); setSelfForMe(false); }}
                       className={`w-full flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition-all cursor-pointer ${
                         selectedContactId === c.id
                           ? "border-winelio-orange bg-winelio-orange/5 shadow-sm shadow-winelio-orange/10"
@@ -433,13 +483,50 @@ export default function NewRecommendationPage() {
                 </>
               )}
               <button
-                onClick={() => { setCreateContact(true); setSelectedContactId(null); }}
+                onClick={() => { setCreateContact(true); setSelectedContactId(null); setSelfForMe(false); }}
                 className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-winelio-orange/40 px-5 py-4 text-sm font-semibold text-winelio-orange hover:border-winelio-orange hover:bg-winelio-orange/5 transition-all cursor-pointer"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                 </svg>
                 Ajouter un nouveau contact
+              </button>
+
+              {/* Option : Pour moi-même */}
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-winelio-gray/10" />
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-winelio-light px-3 text-xs text-winelio-gray">ou</span>
+                </div>
+              </div>
+              <button
+                onClick={() => { setSelfForMe(!selfForMe); setSelectedContactId(null); }}
+                className={`w-full flex items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all cursor-pointer ${
+                  selfForMe
+                    ? "border-winelio-orange bg-winelio-orange/5 shadow-sm shadow-winelio-orange/10"
+                    : "border-winelio-gray/15 bg-white hover:border-winelio-orange/30 shadow-sm"
+                }`}
+              >
+                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-winelio-dark">Pour moi-même</p>
+                  {selfProfile && (
+                    <p className="text-sm text-winelio-gray truncate">{selfProfile.first_name} {selfProfile.last_name} · {selfProfile.email}</p>
+                  )}
+                </div>
+                {selfForMe && (
+                  <div className="w-5 h-5 rounded-full bg-winelio-orange flex items-center justify-center shrink-0">
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
               </button>
             </div>
           ) : (
