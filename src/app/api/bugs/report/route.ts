@@ -44,28 +44,25 @@ export async function POST(req: NextRequest) {
 
   const reportId = crypto.randomUUID();
   let screenshotStoragePath: string | null = null;
-  let screenshotSignedUrl: string | null = null;
+  let screenshotBuffer: Buffer | null = null;
+  let screenshotExt = "jpg";
 
   if (screenshot && screenshot.size > 0) {
     if (screenshot.size > 5 * 1024 * 1024) {
       return NextResponse.json({ error: "Screenshot trop volumineux (max 5 Mo)" }, { status: 413 });
     }
     const bytes = await screenshot.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    screenshotBuffer = Buffer.from(bytes);
     const extMap: Record<string, string> = { "image/webp": "webp", "image/jpeg": "jpg", "image/gif": "gif" };
-    const ext = extMap[screenshot.type] ?? "png";
-    const path = `${user.id}/${reportId}.${ext}`;
+    screenshotExt = extMap[screenshot.type] ?? "png";
+    const path = `${user.id}/${reportId}.${screenshotExt}`;
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from("bug-screenshots")
-      .upload(path, buffer, { contentType: screenshot.type, upsert: false });
+      .upload(path, screenshotBuffer, { contentType: screenshot.type, upsert: false });
 
     if (!uploadError) {
       screenshotStoragePath = path;
-      const { data: signed } = await supabaseAdmin.storage
-        .from("bug-screenshots")
-        .createSignedUrl(path, 60 * 60 * 24 * 7); // 7 jours
-      screenshotSignedUrl = signed?.signedUrl ?? null;
     } else {
       console.error("[bug/report] Storage upload error:", uploadError);
     }
@@ -93,7 +90,10 @@ export async function POST(req: NextRequest) {
       to: process.env.ADMIN_NOTIFY_EMAIL || "support@winelio.app",
       replyTo: "support@winelio.app",
       subject: `[Bug #${reportId}] Signalement - ${pageUrl}`,
-      html: buildBugEmailHtml(reportId, user.email ?? "", message.trim(), pageUrl, screenshotSignedUrl),
+      html: buildBugEmailHtml(reportId, user.email ?? "", message.trim(), pageUrl, !!screenshotBuffer),
+      attachments: screenshotBuffer
+        ? [{ filename: `screenshot-${reportId.substring(0, 8)}.${screenshotExt}`, content: screenshotBuffer, contentType: screenshot!.type }]
+        : [],
     });
   } catch (err) {
     console.error("[bug/report] SMTP error:", err);
@@ -108,16 +108,14 @@ function buildBugEmailHtml(
   userEmail: string,
   message: string,
   pageUrl: string,
-  screenshotUrl: string | null
+  hasScreenshot: boolean
 ): string {
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const shortId = reportId.substring(0, 8);
-  const screenshotHtml = screenshotUrl
+  const screenshotHtml = hasScreenshot
     ? `<table width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
-       <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="text-align:center;">
-         <a href="${screenshotUrl}" style="display:inline-block;background:#FFF5F0;border:1px solid #FF6B35;border-radius:8px;padding:10px 20px;color:#FF6B35;font-size:13px;text-decoration:none;">
-           Voir le screenshot →
-         </a>
+       <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="background:#F8F9FA;border-radius:8px;padding:10px 16px;">
+         <p style="margin:0;color:#636E72;font-size:12px;">📎 Screenshot joint en pièce jointe</p>
        </td></tr></table>`
     : "";
 
