@@ -35,72 +35,89 @@ export async function GET(req: NextRequest) {
     const lock = await client.getMailboxLock("INBOX");
 
     try {
-      // Chercher les messages non lus
-      const searchResult = await client.search({ seen: false }, { uid: true });
-      const uids: number[] = Array.isArray(searchResult) ? searchResult : [];
+      // Chercher TOUS les emails avec [Bug #UUID] dans le sujet
+      // (pas seulement non-lus — Apple Mail peut les marquer lus avant le cron)
+      const allUids = await client.search({ all: true }, { uid: true });
+      const uids: number[] = Array.isArray(allUids) ? allUids : [];
 
-      for (const uid of uids) {
-        try {
-          const msg = await client.fetchOne(
-            String(uid),
-            { envelope: true, source: true },
-            { uid: true }
-          );
+      // Récupérer les rapports encore en attente pour éviter des requêtes inutiles
+      const { data: pendingReports } = await supabaseAdmin
+        .from("bug_reports")
+        .select("id")
+        .eq("status", "pending");
+      const pendingIds = new Set((pendingReports ?? []).map((r: { id: string }) => r.id));
 
-          if (!msg) continue;
-          const typedMsg = msg as { envelope?: { subject?: string }; source?: Buffer };
-          const subject = typedMsg.envelope?.subject ?? "";
-          const match = subject.match(/\[Bug #([0-9a-f-]{36})\]/i);
-          if (!match) continue;
+      if (pendingIds.size === 0) {
+        // Aucun rapport en attente, rien à faire
+      } else {
+        for (const uid of uids) {
+          try {
+            const msg = await client.fetchOne(
+              String(uid),
+              { envelope: true, source: true },
+              { uid: true }
+            );
 
-          const reportId = match[1];
-          const rawSource = typedMsg.source?.toString("utf-8") ?? "";
+            if (!msg) continue;
+            const typedMsg = msg as { envelope?: { subject?: string }; source?: Buffer };
+            const subject = typedMsg.envelope?.subject ?? "";
 
-          // Séparer headers et corps (RFC 2822 : ligne vide entre les deux)
-          const headerBodySep = rawSource.indexOf("\r\n\r\n") >= 0
-            ? rawSource.indexOf("\r\n\r\n") + 4
-            : rawSource.indexOf("\n\n") >= 0
-              ? rawSource.indexOf("\n\n") + 2
-              : 0;
-          const bodyOnly = rawSource.substring(headerBodySep);
+            // Chercher [Bug #UUID] — présent dans les réponses "Re: [Bug #UUID]..."
+            const match = subject.match(/\[Bug #([0-9a-f-]{36})\]/i);
+            if (!match) continue;
 
-          // Extraire le texte de réponse (ignorer les lignes citées et les signatures)
-          const replyText = bodyOnly
-            .replace(/\r\n/g, "\n")
-            .split("\n")
-            .filter((line) => {
-              const trimmed = line.trim();
-              return (
-                !trimmed.startsWith(">") &&
-                !/^On .+wrote:$/s.test(trimmed) &&
-                !/^Le .+ a écrit\s*:/.test(trimmed) &&
-                !trimmed.startsWith("--")
-              );
-            })
-            .join("\n")
-            .trim()
-            .substring(0, 2000);
+            const reportId = match[1];
 
-          if (!replyText) continue;
+            // Ne traiter que les rapports encore en attente
+            if (!pendingIds.has(reportId)) continue;
 
-          const { error: dbError } = await supabaseAdmin
-            .from("bug_reports")
-            .update({
-              status: "replied",
-              admin_reply: replyText,
-              replied_at: new Date().toISOString(),
-            })
-            .eq("id", reportId)
-            .eq("status", "pending"); // Éviter d'écraser une réponse existante
+            const rawSource = typedMsg.source?.toString("utf-8") ?? "";
 
-          if (!dbError) {
-            // Marquer comme lu
-            await client.messageFlagsAdd(String(uid), ["\\Seen"], { uid: true });
-            processed++;
+            // Séparer headers et corps (RFC 2822 : ligne vide entre les deux)
+            const headerBodySep = rawSource.indexOf("\r\n\r\n") >= 0
+              ? rawSource.indexOf("\r\n\r\n") + 4
+              : rawSource.indexOf("\n\n") >= 0
+                ? rawSource.indexOf("\n\n") + 2
+                : 0;
+            const bodyOnly = rawSource.substring(headerBodySep);
+
+            // Extraire uniquement le texte de la réponse (ignorer les citations et signatures)
+            const replyText = bodyOnly
+              .replace(/\r\n/g, "\n")
+              .split("\n")
+              .filter((line) => {
+                const trimmed = line.trim();
+                return (
+                  !trimmed.startsWith(">") &&
+                  !/^On .+wrote:$/s.test(trimmed) &&
+                  !/^Le .+ a écrit\s*:/.test(trimmed) &&
+                  !trimmed.startsWith("--")
+                );
+              })
+              .join("\n")
+              .trim()
+              .substring(0, 2000);
+
+            if (!replyText) continue;
+
+            const { error: dbError } = await supabaseAdmin
+              .from("bug_reports")
+              .update({
+                status: "replied",
+                admin_reply: replyText,
+                replied_at: new Date().toISOString(),
+              })
+              .eq("id", reportId)
+              .eq("status", "pending");
+
+            if (!dbError) {
+              processed++;
+              pendingIds.delete(reportId); // éviter double traitement si deux emails pour le même rapport
+            }
+          } catch (msgErr) {
+            console.error(`[imap-poll] Erreur message uid=${uid}:`, msgErr);
+            errors++;
           }
-        } catch (msgErr) {
-          console.error(`[imap-poll] Erreur message uid=${uid}:`, msgErr);
-          errors++;
         }
       }
     } finally {
