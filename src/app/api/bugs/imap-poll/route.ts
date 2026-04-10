@@ -62,7 +62,10 @@ export async function GET(req: NextRequest) {
             const typedMsg = msg as { envelope?: { subject?: string }; source?: Buffer };
             const subject = typedMsg.envelope?.subject ?? "";
 
-            // Chercher [Bug #UUID] — présent dans les réponses "Re: [Bug #UUID]..."
+            // Ne traiter que les RÉPONSES admin : sujet doit commencer par "Re:"
+            // (l'email original du bug report a aussi [Bug #UUID] dans le sujet — on l'ignore)
+            if (!/^Re\s*:/i.test(subject)) continue;
+
             const match = subject.match(/\[Bug #([0-9a-f-]{36})\]/i);
             if (!match) continue;
 
