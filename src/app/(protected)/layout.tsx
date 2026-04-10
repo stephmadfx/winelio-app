@@ -6,6 +6,7 @@ import { MobileNav } from "@/components/mobile-nav";
 import { MobileHeader } from "@/components/mobile-header";
 import { AppBackground } from "@/components/AppBackground";
 import { ProfileIncompleteModal } from "@/components/profile-incomplete-modal";
+import { BugReportButton } from "@/components/bug-report-button";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
@@ -62,6 +63,9 @@ export default async function ProtectedLayout({
       {/* Mobile: header + bottom nav */}
       <MobileHeader userEmail={user.email ?? ""} firstName={profile?.first_name ?? undefined} isSuperAdmin={isSuperAdmin} demoBanner={DEMO_MODE} />
       <MobileNav />
+
+      {/* Bug report button (toutes pages) */}
+      <BugReportButton userId={user.id} />
 
       {/* Main content: adaptatif mobile/desktop */}
       <main className={`relative z-10 pb-24 px-4 lg:pb-0 lg:ml-64 lg:px-8 lg:py-8 ${DEMO_MODE ? "pt-22 lg:pt-6" : "pt-16 lg:pt-0"}`}>
