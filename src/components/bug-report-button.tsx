@@ -92,13 +92,10 @@ export function BugReportButton({ userId }: { userId: string }) {
     try {
       const { toJpeg } = await import("html-to-image");
       const dataUrl = await toJpeg(document.body, {
-        quality: 0.7,
-        pixelRatio: 1,
-        skipFonts: true,
-        filter: (node) => {
-          // Exclure les iframes et vidéos cross-origin
-          return !["IFRAME", "VIDEO"].includes(node.nodeName);
-        },
+        quality: 0.92,
+        pixelRatio: window.devicePixelRatio ?? 2,
+        skipFonts: false,
+        filter: (node) => !["IFRAME", "VIDEO"].includes(node.nodeName),
       });
       setScreenshot(dataUrl);
     } catch (err) {
