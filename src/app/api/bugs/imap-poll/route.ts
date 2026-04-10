@@ -56,21 +56,28 @@ export async function GET(req: NextRequest) {
           const reportId = match[1];
           const rawSource = typedMsg.source?.toString("utf-8") ?? "";
 
-          // Extraire le texte de réponse (ignorer les lignes citées)
-          const replyText = rawSource
+          // Séparer headers et corps (RFC 2822 : ligne vide entre les deux)
+          const headerBodySep = rawSource.indexOf("\r\n\r\n") >= 0
+            ? rawSource.indexOf("\r\n\r\n") + 4
+            : rawSource.indexOf("\n\n") >= 0
+              ? rawSource.indexOf("\n\n") + 2
+              : 0;
+          const bodyOnly = rawSource.substring(headerBodySep);
+
+          // Extraire le texte de réponse (ignorer les lignes citées et les signatures)
+          const replyText = bodyOnly
+            .replace(/\r\n/g, "\n")
             .split("\n")
             .filter((line) => {
               const trimmed = line.trim();
               return (
                 !trimmed.startsWith(">") &&
-                !/^On .+wrote:$/.test(trimmed) &&
-                !/^De :/.test(trimmed) &&
-                !/^From:/.test(trimmed) &&
+                !/^On .+wrote:$/s.test(trimmed) &&
+                !/^Le .+ a écrit\s*:/.test(trimmed) &&
                 !trimmed.startsWith("--")
               );
             })
             .join("\n")
-            .replace(/\r/g, "")
             .trim()
             .substring(0, 2000);
 
