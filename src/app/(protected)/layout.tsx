@@ -69,10 +69,17 @@ export default async function ProtectedLayout({
       </div>
 
       {/* Mobile: header + bottom nav */}
-      <MobileHeader userEmail={user.email ?? ""} firstName={profile?.first_name ?? undefined} isSuperAdmin={isSuperAdmin} demoBanner={DEMO_MODE} />
+      <MobileHeader
+        userEmail={user.email ?? ""}
+        firstName={profile?.first_name ?? undefined}
+        isSuperAdmin={isSuperAdmin}
+        demoBanner={DEMO_MODE}
+        userId={user.id}
+        allBugReports={allBugReports ?? []}
+      />
       <MobileNav />
 
-      {/* Bug report button (toutes pages) */}
+      {/* Bug report button — mobile: dans le header / desktop: floating */}
       <BugReportButton userId={user.id} allBugReports={allBugReports ?? []} />
 
       {/* Main content: adaptatif mobile/desktop */}

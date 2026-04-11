@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SignOutButton } from "./sign-out-button";
 import { WinelioLogo } from "./winelio-logo";
+import { BugReportButton } from "./bug-report";
+import type { BugReport } from "./bug-report/types";
 
 const navItems = [
   {
@@ -51,11 +53,15 @@ export function MobileHeader({
   firstName,
   isSuperAdmin,
   demoBanner = false,
+  userId,
+  allBugReports = [],
 }: {
   userEmail: string;
   firstName?: string;
   isSuperAdmin?: boolean;
   demoBanner?: boolean;
+  userId: string;
+  allBugReports?: BugReport[];
 }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -114,16 +120,19 @@ export function MobileHeader({
             </span>
           </div>
 
-          {/* Droite : hamburger */}
-          <button
-            onClick={openMenu}
-            className="w-10 h-10 flex items-center justify-center rounded-xl text-winelio-gray active:bg-winelio-orange/10 active:text-winelio-orange transition-colors"
-            aria-label="Ouvrir le menu"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+          {/* Droite : bug + hamburger */}
+          <div className="flex items-center gap-0.5">
+            <BugReportButton userId={userId} allBugReports={allBugReports} variant="inline" />
+            <button
+              onClick={openMenu}
+              className="w-10 h-10 flex items-center justify-center rounded-xl text-winelio-gray active:bg-winelio-orange/10 active:text-winelio-orange transition-colors"
+              aria-label="Ouvrir le menu"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
         </div>
       </header>
 

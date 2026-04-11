@@ -13,9 +13,10 @@ import { ReportFormDialog } from "./ReportFormDialog";
 interface BugReportButtonProps {
   userId: string;
   allBugReports?: BugReport[];
+  variant?: "floating" | "inline";
 }
 
-export const BugReportButton = ({ userId, allBugReports = [] }: BugReportButtonProps) => {
+export const BugReportButton = ({ userId, allBugReports = [], variant = "floating" }: BugReportButtonProps) => {
   const [formOpen, setFormOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [replyOpen, setReplyOpen] = useState(false);
@@ -94,15 +95,26 @@ export const BugReportButton = ({ userId, allBugReports = [] }: BugReportButtonP
 
   return (
     <>
-      <button onClick={handleFloatingButtonClick}
-        className="fixed bottom-16 right-4 z-50 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber shadow-lg shadow-winelio-orange/30 flex items-center gap-1.5 px-3 h-8 text-white text-xs font-semibold hover:scale-105 active:scale-95 transition-transform lg:bottom-4"
-        aria-label="Signaler un bug">
-        {hasUnread && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white" />}
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M5.07 5.07A9 9 0 1 0 18.93 18.93 9 9 0 0 0 5.07 5.07z" />
-        </svg>
-        <span>Signaler un bug</span>
-      </button>
+      {variant === "inline" ? (
+        <button onClick={handleFloatingButtonClick}
+          className="relative w-10 h-10 flex items-center justify-center rounded-xl text-winelio-gray active:bg-winelio-orange/10 active:text-winelio-orange transition-colors"
+          aria-label="Signaler un bug">
+          {hasUnread && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-white" />}
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M5.07 5.07A9 9 0 1 0 18.93 18.93 9 9 0 0 0 5.07 5.07z" />
+          </svg>
+        </button>
+      ) : (
+        <button onClick={handleFloatingButtonClick}
+          className="fixed bottom-16 right-4 z-50 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber shadow-lg shadow-winelio-orange/30 hidden lg:flex items-center gap-1.5 px-3 h-8 text-white text-xs font-semibold hover:scale-105 active:scale-95 transition-transform lg:bottom-4"
+          aria-label="Signaler un bug">
+          {hasUnread && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white" />}
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M5.07 5.07A9 9 0 1 0 18.93 18.93 9 9 0 0 0 5.07 5.07z" />
+          </svg>
+          <span>Signaler un bug</span>
+        </button>
+      )}
 
       <ReportFormDialog
         open={formOpen}
