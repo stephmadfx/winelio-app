@@ -184,6 +184,7 @@ export async function GET(req: NextRequest) {
 
             const rawSource = typedMsg.source?.toString("utf-8") ?? "";
             const replyText = extractReplyText(rawSource).substring(0, 2000);
+            debug.push(`[${uid}] replyText="${replyText.substring(0, 80)}" rawLen=${rawSource.length}`);
 
             if (!replyText) continue;
 
