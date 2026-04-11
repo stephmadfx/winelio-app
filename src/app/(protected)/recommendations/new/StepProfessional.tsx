@@ -97,7 +97,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
     if (!navigator.geolocation) { setGeoStatus("unavailable"); return; }
     setGeoStatus("loading");
     navigator.geolocation.getCurrentPosition(
-      (pos) => { setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGeoStatus("granted"); setSortBy("distance"); },
+      (pos) => { setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGeoStatus("granted"); setSortBy("distance"); setRadius(99999); },
       () => setGeoStatus("denied"),
       { enableHighAccuracy: true, timeout: 10000 }
     );
