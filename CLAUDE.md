@@ -163,7 +163,7 @@ Toutes les tables ont des politiques RLS actives. Les utilisateurs ne voient que
 - **SMTP** : ssl0.ovh.net port **465 SSL** (support@winelio.app) — guillemets obligatoires si le mot de passe contient `#`
 
 ## Serveur de développement local
-- Port : variable selon les autres projets ouverts — actuellement **3003** (`http://localhost:3003`). Vérifier avec `ps aux | grep "next dev"` ou tester les ports 3000-3010.
+- Port : **3002** fixe (`http://localhost:3002`) — défini via `--port 3002` dans `package.json`.
 - **Après chaque `git push`, relancer le serveur dev** :
   ```bash
   pkill -f "next dev" ; sleep 1 ; cd /Users/steph/PROJETS/WINELIO/winelio && npm run dev &

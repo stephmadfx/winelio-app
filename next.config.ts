@@ -27,7 +27,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev",
               "font-src 'self'",
-              "connect-src 'self' https://supabase.aide-multimedia.fr https://geo.api.gouv.fr",
+              "connect-src 'self' https://supabase.aide-multimedia.fr wss://supabase.aide-multimedia.fr https://geo.api.gouv.fr",
               "frame-ancestors 'none'",
             ].join("; "),
           },
