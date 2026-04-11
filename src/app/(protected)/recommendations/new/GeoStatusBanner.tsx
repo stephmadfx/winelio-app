@@ -25,7 +25,7 @@ export const GeoStatusBanner = ({ status, radius, onRequestGeo, onRadiusChange }
   );
   if (status === "unavailable") return (
     <div className="mb-4 rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3.5 text-sm text-amber-700">
-      Géolocalisation indisponible. Recherchez par nom ou catégorie.
+      Position non disponible. Recherchez par nom ou code postal.
     </div>
   );
   if (status === "denied") return (

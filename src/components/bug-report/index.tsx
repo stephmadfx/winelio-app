@@ -97,12 +97,13 @@ export const BugReportButton = ({ userId, allBugReports = [], variant = "floatin
     <>
       {variant === "inline" ? (
         <button onClick={handleFloatingButtonClick}
-          className="relative w-10 h-10 flex items-center justify-center rounded-xl text-winelio-gray active:bg-winelio-orange/10 active:text-winelio-orange transition-colors"
+          className="relative flex items-center gap-1 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber px-2.5 h-7 text-white active:opacity-80 transition-opacity"
           aria-label="Signaler un bug">
-          {hasUnread && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-white" />}
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          {hasUnread && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-white" />}
+          <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M5.07 5.07A9 9 0 1 0 18.93 18.93 9 9 0 0 0 5.07 5.07z" />
           </svg>
+          <span className="text-[10px] font-bold whitespace-nowrap">Signaler un bug</span>
         </button>
       ) : (
         <button onClick={handleFloatingButtonClick}
