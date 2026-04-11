@@ -16,9 +16,71 @@ interface PendingReply {
   reply: string;
 }
 
-export function BugReportButton({ userId }: { userId: string }) {
+interface BugReport {
+  id: string;
+  message: string;
+  page_url: string;
+  status: string;
+  admin_reply: string | null;
+  reply_images: string[] | null;
+  created_at: string;
+}
+
+/**
+ * Décode le quoted-printable en respectant l'encodage UTF-8.
+ * String.fromCharCode() ne gère pas les séquences multi-octets (=C3=A9 → é).
+ * On accumule les octets consécutifs et on les décode via TextDecoder.
+ */
+function decodeQP(s: string): string {
+  s = s.replace(/=\r?\n/g, ""); // soft line breaks
+  const parts: string[] = [];
+  const bytes: number[] = [];
+  let i = 0;
+  while (i < s.length) {
+    if (s[i] === "=" && i + 2 < s.length && /^[0-9A-F]{2}$/i.test(s.slice(i + 1, i + 3))) {
+      bytes.push(parseInt(s.slice(i + 1, i + 3), 16));
+      i += 3;
+    } else {
+      if (bytes.length) {
+        parts.push(new TextDecoder("utf-8").decode(new Uint8Array(bytes)));
+        bytes.length = 0;
+      }
+      parts.push(s[i]);
+      i++;
+    }
+  }
+  if (bytes.length) parts.push(new TextDecoder("utf-8").decode(new Uint8Array(bytes)));
+  return parts.join("");
+}
+
+/** Décode le quoted-printable et nettoie les headers MIME résiduels dans admin_reply */
+function cleanReplyText(raw: string): string {
+  let text = raw.replace(/\r\n/g, "\n");
+  text = decodeQP(text);
+  // Si le texte commence par des headers MIME (Content-*), sauter jusqu'au contenu réel
+  const blocks = text.split(/\n\n+/);
+  for (const block of blocks) {
+    const t = block.trim();
+    if (/^Content-/m.test(t)) continue; // bloc de headers, ignorer
+    // Filtrer citations et signatures
+    const clean = t.split("\n")
+      .filter(l => {
+        const s = l.trim();
+        return s && !s.startsWith(">") && !s.startsWith("--") &&
+          !/^On .+wrote:/.test(s) && !/^Le .+ a écrit/.test(s) &&
+          !/^-{2,}/.test(s);
+      })
+      .join("\n").trim();
+    if (clean) return clean;
+  }
+  return raw.trim();
+}
+
+export function BugReportButton({ userId, allBugReports = [] }: { userId: string; allBugReports?: BugReport[] }) {
   const [open, setOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [replyOpen, setReplyOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<BugReport | null>(null);
   const [message, setMessage] = useState("");
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
@@ -26,32 +88,25 @@ export function BugReportButton({ userId }: { userId: string }) {
   const [capturing, setCapturing] = useState(false);
   const [captureFailed, setCaptureFailed] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
-  const [pendingReply, setPendingReply] = useState<PendingReply | null>(null);
+  const [pendingReplies, setPendingReplies] = useState<PendingReply[]>([]);
+  const [replyIndex, setReplyIndex] = useState(0);
+  const [reports, setReports] = useState<BugReport[]>(allBugReports);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Vérifier au montage s'il y a des réponses non lues (en cas de rechargement)
+  // Vérifier au montage s'il y a des réponses non lues (données passées par le serveur)
   useEffect(() => {
-    const supabase = createClient();
     const seenKey = `bug-replies-seen-${userId}`;
     const seen: string[] = JSON.parse(localStorage.getItem(seenKey) ?? "[]");
-
-    supabase
-      .schema("winelio")
-      .from("bug_reports")
-      .select("id, admin_reply")
-      .eq("user_id", userId)
-      .eq("status", "replied")
-      .not("admin_reply", "is", null)
-      .then(({ data }) => {
-        if (!data) return;
-        const unread = data.find((r) => !seen.includes(r.id) && r.admin_reply);
-        if (unread) {
-          const reply: PendingReply = { id: unread.id, reply: unread.admin_reply };
-          setPendingReply(reply);
-          setHasUnread(true);
-        }
-      });
-  }, [userId]);
+    const unread = allBugReports
+      .filter((r) => r.status === "replied" && r.admin_reply && !seen.includes(r.id))
+      .map((r) => ({ id: r.id, reply: cleanReplyText(r.admin_reply!) }));
+    if (unread.length > 0) {
+      setPendingReplies(unread);
+      setReplyIndex(0);
+      setHasUnread(true);
+    }
+  }, [userId, allBugReports]);
 
   // Supabase Realtime — écoute les réponses du support en temps réel
   useEffect(() => {
@@ -73,16 +128,19 @@ export function BugReportButton({ userId }: { userId: string }) {
             admin_reply: string;
           };
           if (row.status === "replied" && row.admin_reply) {
-            const reply: PendingReply = { id: row.id, reply: row.admin_reply };
+            const cleaned = cleanReplyText(row.admin_reply);
+            const reply: PendingReply = { id: row.id, reply: cleaned };
             setHasUnread(true);
-            setPendingReply(reply);
+            setPendingReplies((prev) => {
+              const already = prev.find((r) => r.id === row.id);
+              return already ? prev : [...prev, reply];
+            });
             toast("Réponse du support Winelio", {
-              description: row.admin_reply.substring(0, 120) + (row.admin_reply.length > 120 ? "…" : ""),
+              description: cleaned.substring(0, 120) + (cleaned.length > 120 ? "…" : ""),
               duration: 10000,
               action: {
                 label: "Voir",
                 onClick: () => {
-                  setPendingReply(reply);
                   setReplyOpen(true);
                   markReplySeen(reply.id);
                 },
@@ -102,16 +160,38 @@ export function BugReportButton({ userId }: { userId: string }) {
     const seenKey = `bug-replies-seen-${userId}`;
     const seen: string[] = JSON.parse(localStorage.getItem(seenKey) ?? "[]");
     if (!seen.includes(id)) localStorage.setItem(seenKey, JSON.stringify([...seen, id]));
+  }
+
+  function markAllRepliesSeen() {
+    pendingReplies.forEach((r) => markReplySeen(r.id));
     setHasUnread(false);
   }
 
   function handleOpen() {
-    if (hasUnread && pendingReply) {
+    if (hasUnread && pendingReplies.length > 0) {
+      setReplyIndex(0);
       setReplyOpen(true);
-      markReplySeen(pendingReply.id);
       return;
     }
     setOpen(true);
+  }
+
+  function formatDate(iso: string) {
+    return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/bugs/report?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setReports((prev) => prev.filter((r) => r.id !== id));
+        setPendingReplies((prev) => prev.filter((r) => r.id !== id));
+        markReplySeen(id);
+      }
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   async function handleCapture() {
@@ -321,48 +401,188 @@ export function BugReportButton({ userId }: { userId: string }) {
             />
 
             {/* Actions */}
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={handleClose} disabled={loading}>
-                Annuler
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={loading || !message.trim()}
-                className="bg-gradient-to-r from-winelio-orange to-winelio-amber text-white border-0"
-              >
-                {loading ? "Envoi…" : "Envoyer →"}
-              </Button>
+            <div className="flex gap-2 justify-between">
+              {reports.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => { setOpen(false); setHistoryOpen(true); }}
+                  className="text-xs text-winelio-gray hover:text-winelio-orange underline underline-offset-2 transition-colors"
+                >
+                  Historique ({reports.length})
+                </button>
+              ) : <span />}
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleClose} disabled={loading}>
+                  Annuler
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={loading || !message.trim()}
+                  className="bg-gradient-to-r from-winelio-orange to-winelio-amber text-white border-0"
+                >
+                  {loading ? "Envoi…" : "Envoyer →"}
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Dialog réponse support */}
-      <Dialog open={replyOpen} onOpenChange={setReplyOpen}>
+      {/* Dialog réponse support (notifications non lues OU depuis l'historique) */}
+      <Dialog open={replyOpen} onOpenChange={(v) => {
+        if (!v) { if (!selectedReport) markAllRepliesSeen(); setSelectedReport(null); }
+        setReplyOpen(v);
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <span>💬</span>
-              Réponse du support
+            <DialogTitle className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2">
+                <span>💬</span>
+                Réponse du support
+              </span>
+              {!selectedReport && pendingReplies.length > 1 && (
+                <span className="text-xs font-normal text-winelio-gray">
+                  {replyIndex + 1} / {pendingReplies.length}
+                </span>
+              )}
             </DialogTitle>
           </DialogHeader>
-          {pendingReply && (
-            <div className="space-y-4">
-              <div className="bg-gray-50 border border-black/10 rounded-lg p-4">
-                <p className="text-sm text-winelio-dark leading-relaxed whitespace-pre-wrap">
-                  {pendingReply.reply}
-                </p>
+          {(() => {
+            // Mode historique : afficher la réponse du rapport sélectionné
+            if (selectedReport?.admin_reply) {
+              const text = cleanReplyText(selectedReport.admin_reply);
+              const images = selectedReport.reply_images ?? [];
+              return (
+                <div className="space-y-4">
+                  <p className="text-xs text-winelio-gray">{selectedReport.page_url} · {formatDate(selectedReport.created_at)}</p>
+                  <div className="bg-gray-50 border border-black/10 rounded-lg p-4">
+                    <p className="text-sm text-winelio-dark leading-relaxed whitespace-pre-wrap">{text}</p>
+                  </div>
+                  {images.length > 0 && (
+                    <div className="space-y-2">
+                      {images.map((url, i) => (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                          <img src={url} alt={`Image ${i + 1}`} className="w-full rounded-lg border border-black/10 object-contain max-h-64" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-winelio-gray">Réf. bug #{selectedReport.id.substring(0, 8)}</p>
+                  <div className="flex justify-between items-center">
+                    <button type="button" onClick={() => { setSelectedReport(null); setReplyOpen(false); setHistoryOpen(true); }}
+                      className="text-xs text-winelio-gray underline underline-offset-2">
+                      ← Retour à l&apos;historique
+                    </button>
+                    <Button variant="outline" size="sm" onClick={() => { setSelectedReport(null); setReplyOpen(false); }}>Fermer</Button>
+                  </div>
+                </div>
+              );
+            }
+            // Mode notifications non lues
+            const current = pendingReplies[replyIndex];
+            if (!current) return null;
+            const currentFull = reports.find((r) => r.id === current.id);
+            const currentImages = currentFull?.reply_images ?? [];
+            return (
+              <div className="space-y-4">
+                <div className="bg-gray-50 border border-black/10 rounded-lg p-4">
+                  <p className="text-sm text-winelio-dark leading-relaxed whitespace-pre-wrap">{current.reply}</p>
+                </div>
+                {currentImages.length > 0 && (
+                  <div className="space-y-2">
+                    {currentImages.map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                        <img src={url} alt={`Image ${i + 1}`} className="w-full rounded-lg border border-black/10 object-contain max-h-64" />
+                      </a>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-winelio-gray">Réf. bug #{current.id.substring(0, 8)}</p>
+                <div className="flex items-center justify-between gap-2">
+                  {pendingReplies.length > 1 ? (
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" disabled={replyIndex === 0}
+                        onClick={() => setReplyIndex((i) => i - 1)}>← Préc.</Button>
+                      <Button variant="outline" size="sm" disabled={replyIndex === pendingReplies.length - 1}
+                        onClick={() => setReplyIndex((i) => i + 1)}>Suiv. →</Button>
+                    </div>
+                  ) : <span />}
+                  <Button variant="outline" onClick={() => { markAllRepliesSeen(); setReplyOpen(false); }}>Fermer</Button>
+                </div>
               </div>
-              <p className="text-xs text-winelio-gray">
-                Réf. bug #{pendingReply.id.substring(0, 8)}
-              </p>
-              <div className="flex justify-end">
-                <Button variant="outline" onClick={() => setReplyOpen(false)}>
-                  Fermer
-                </Button>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog historique */}
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span>📋</span>
+              Historique des signalements
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+            {reports.length === 0 ? (
+              <p className="text-sm text-winelio-gray text-center py-8">Aucun signalement</p>
+            ) : reports.map((report) => (
+              <div key={report.id} className="border border-black/8 rounded-lg p-3 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                    report.status === "replied"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-amber-100 text-amber-700"
+                  }`}>
+                    {report.status === "replied" ? "Répondu" : "En attente"}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-winelio-gray">{formatDate(report.created_at)}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(report.id)}
+                      disabled={deletingId === report.id}
+                      className="text-winelio-gray hover:text-red-500 transition-colors disabled:opacity-40"
+                      title="Supprimer"
+                    >
+                      {deletingId === report.id ? (
+                        <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                        </svg>
+                      ) : (
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-winelio-gray">{report.page_url}</p>
+                <p className="text-sm text-winelio-dark line-clamp-2">{report.message}</p>
+                {report.status === "replied" && report.admin_reply && (
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedReport(report); setHistoryOpen(false); setReplyOpen(true); }}
+                    className="text-xs text-winelio-orange underline underline-offset-2 hover:text-winelio-amber transition-colors"
+                  >
+                    Voir la réponse →
+                  </button>
+                )}
               </div>
-            </div>
-          )}
+            ))}
+          </div>
+          <div className="flex justify-between items-center pt-2 border-t border-black/8">
+            <button
+              type="button"
+              onClick={() => { setHistoryOpen(false); setOpen(true); }}
+              className="text-xs text-winelio-orange underline underline-offset-2"
+            >
+              + Nouveau signalement
+            </button>
+            <Button variant="outline" size="sm" onClick={() => setHistoryOpen(false)}>Fermer</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

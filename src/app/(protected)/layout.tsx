@@ -32,6 +32,14 @@ export default async function ProtectedLayout({
 
   const isSuperAdmin = user.app_metadata?.role === "super_admin";
 
+  // Tous les rapports de bug de l'utilisateur (pour l'historique + détection non-lus)
+  const { data: allBugReports } = await supabase
+    .from("bug_reports")
+    .select("id, message, page_url, status, admin_reply, reply_images, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("first_name, last_name, phone, postal_code, city, address")
@@ -65,7 +73,7 @@ export default async function ProtectedLayout({
       <MobileNav />
 
       {/* Bug report button (toutes pages) */}
-      <BugReportButton userId={user.id} />
+      <BugReportButton userId={user.id} allBugReports={allBugReports ?? []} />
 
       {/* Main content: adaptatif mobile/desktop */}
       <main className={`relative z-10 pb-24 px-4 lg:pb-0 lg:ml-64 lg:px-8 lg:py-8 ${DEMO_MODE ? "pt-22 lg:pt-6" : "pt-16 lg:pt-0"}`}>

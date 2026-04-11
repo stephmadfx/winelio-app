@@ -103,6 +103,25 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ success: true, id: reportId });
 }
 
+export async function DELETE(req: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+  const { error } = await supabaseAdmin
+    .from("bug_reports")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id); // sécurité : l'utilisateur ne peut supprimer que ses propres rapports
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
+}
+
 function buildBugEmailHtml(
   reportId: string,
   userEmail: string,
