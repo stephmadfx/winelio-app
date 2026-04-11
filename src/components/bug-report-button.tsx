@@ -101,6 +101,7 @@ export function BugReportButton({ userId, allBugReports = [] }: { userId: string
   const [replyIndex, setReplyIndex] = useState(0);
   const [reports, setReports] = useState<BugReport[]>(allBugReports);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Vérifier au montage s'il y a des réponses non lues (données passées par le serveur)
@@ -470,9 +471,9 @@ export function BugReportButton({ userId, allBugReports = [] }: { userId: string
                   {images.length > 0 && (
                     <div className="space-y-2">
                       {images.map((url, i) => (
-                        <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                          <img src={url} alt={`Image ${i + 1}`} className="w-full rounded-lg border border-black/10 object-contain max-h-64" />
-                        </a>
+                        <button key={i} type="button" onClick={() => setLightboxUrl(url)} className="w-full block">
+                          <img src={url} alt={`Image ${i + 1}`} className="w-full rounded-lg border border-black/10 object-contain max-h-64 hover:opacity-90 transition-opacity cursor-zoom-in" />
+                        </button>
                       ))}
                     </div>
                   )}
@@ -500,9 +501,9 @@ export function BugReportButton({ userId, allBugReports = [] }: { userId: string
                 {currentImages.length > 0 && (
                   <div className="space-y-2">
                     {currentImages.map((url, i) => (
-                      <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                        <img src={url} alt={`Image ${i + 1}`} className="w-full rounded-lg border border-black/10 object-contain max-h-64" />
-                      </a>
+                      <button key={i} type="button" onClick={() => setLightboxUrl(url)} className="w-full block">
+                        <img src={url} alt={`Image ${i + 1}`} className="w-full rounded-lg border border-black/10 object-contain max-h-64 hover:opacity-90 transition-opacity cursor-zoom-in" />
+                      </button>
                     ))}
                   </div>
                 )}
@@ -594,6 +595,30 @@ export function BugReportButton({ userId, allBugReports = [] }: { userId: string
           </div>
         </DialogContent>
       </Dialog>
+      {/* Lightbox image */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxUrl(null)}
+            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+            aria-label="Fermer"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <img
+            src={lightboxUrl}
+            alt="Pièce jointe"
+            className="max-w-[92vw] max-h-[88vh] rounded-xl shadow-2xl object-contain animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </>
   );
 }
