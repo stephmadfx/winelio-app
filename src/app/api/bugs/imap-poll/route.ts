@@ -35,21 +35,26 @@ function extractReplyText(raw: string): string {
   const normalized = raw.replace(/\r\n/g, "\n");
 
   function filterLines(text: string): string {
-    return text
-      .split("\n")
-      .filter((l) => {
-        const t = l.trim();
-        return (
-          t &&
-          !t.startsWith(">") &&
-          !/^On .+wrote:/.test(t) &&
-          !/^Le .+ a ecrit/.test(t) &&
-          !/^Le .+ a =C3=A9crit/.test(t) &&
-          !t.startsWith("--")
-        );
-      })
-      .join("\n")
-      .trim();
+    const lines = text.split("\n");
+    const result: string[] = [];
+    for (const l of lines) {
+      const t = l.trim();
+      // Dès qu'on rencontre le début d'une citation ou d'un séparateur, on arrête
+      if (
+        t.startsWith(">") ||
+        /^On .+wrote:/i.test(t) ||
+        /^Le .+[àa].+ a [eé]crit/i.test(t) ||
+        /^-{3,}/.test(t) ||
+        // Patterns propres à notre template de bug report
+        /^Nouveau signalement de bug/i.test(t) ||
+        /^Ref\. #[0-9a-f-]{8}/i.test(t) ||
+        /^© \d{4} Winelio/i.test(t)
+      ) break;
+      // Ignorer les lignes de signature sans arrêter
+      if (t.startsWith("--")) continue;
+      if (t) result.push(l);
+    }
+    return result.join("\n").trim();
   }
 
   // Chercher chaque occurrence de "Content-Type: text/plain" (case-insensitive)

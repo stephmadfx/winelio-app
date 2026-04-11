@@ -63,14 +63,23 @@ function cleanReplyText(raw: string): string {
     const t = block.trim();
     if (/^Content-/m.test(t)) continue; // bloc de headers, ignorer
     // Filtrer citations et signatures
-    const clean = t.split("\n")
-      .filter(l => {
-        const s = l.trim();
-        return s && !s.startsWith(">") && !s.startsWith("--") &&
-          !/^On .+wrote:/.test(s) && !/^Le .+ a écrit/.test(s) &&
-          !/^-{2,}/.test(s);
-      })
-      .join("\n").trim();
+    const lines = t.split("\n");
+    const kept: string[] = [];
+    for (const l of lines) {
+      const s = l.trim();
+      if (
+        s.startsWith(">") ||
+        /^On .+wrote:/i.test(s) ||
+        /^Le .+[àa].+ a [eé]crit/i.test(s) ||
+        /^-{3,}/.test(s) ||
+        /^Nouveau signalement de bug/i.test(s) ||
+        /^Ref\. #[0-9a-f-]{8}/i.test(s) ||
+        /^© \d{4} Winelio/i.test(s)
+      ) break;
+      if (s.startsWith("--")) continue;
+      if (s) kept.push(l);
+    }
+    const clean = kept.join("\n").trim();
     if (clean) return clean;
   }
   return raw.trim();
