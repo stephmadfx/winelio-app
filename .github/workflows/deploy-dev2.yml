@@ -23,5 +23,8 @@ jobs:
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
         run: |
           curl -X POST \
+            --max-time 30 \
+            --connect-timeout 10 \
             "http://31.97.152.195:8000/api/v1/deploy?uuid=eo5jc02jc760apovne577bln&force=false" \
-            -H "Authorization: Bearer ${COOLIFY_TOKEN}"
+            -H "Authorization: Bearer ${COOLIFY_TOKEN}" \
+            || echo "::warning::Coolify trigger failed or timed out — deploy manually if needed"

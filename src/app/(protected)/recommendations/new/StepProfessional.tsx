@@ -43,7 +43,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
     if (!userId) return;
     supabase
       .from("profiles")
-      .select("id, first_name, last_name, city, latitude, longitude, company:companies(name, alias, category:categories(name)), reviews!professional_id(rating)")
+      .select("id, first_name, last_name, city, latitude, longitude, company:companies(name, alias, category:categories(name))")
       .eq("is_professional", true)
       .neq("id", userId)
       .order("last_name")
@@ -52,16 +52,14 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
           const company = Array.isArray(p.company) ? p.company[0] : p.company;
           const cat = company?.category;
           const catName = Array.isArray(cat) ? cat[0]?.name ?? null : (cat as { name: string } | null)?.name ?? null;
-          const reviews = Array.isArray((p as Record<string, unknown>).reviews) ? (p as Record<string, unknown>).reviews as { rating: number }[] : [];
-          const reviewCount = reviews.length;
           return {
             id: p.id, first_name: p.first_name, last_name: p.last_name,
             company_name: company?.name ?? null,
             company_alias: (company as { alias?: string | null } | null)?.alias ?? null,
             category_name: catName, city: p.city, latitude: p.latitude, longitude: p.longitude,
             distance: userLocation && p.latitude && p.longitude ? haversineKm(userLocation.lat, userLocation.lng, p.latitude, p.longitude) : null,
-            avg_rating: reviewCount > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount : null,
-            review_count: reviewCount,
+            avg_rating: null,
+            review_count: 0,
           };
         });
         if (proSearch.length >= 2) {
