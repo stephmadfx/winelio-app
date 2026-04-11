@@ -28,55 +28,72 @@ function decodeQP(s: string): string {
 
 /**
  * Extrait le texte brut de la réponse admin depuis le source RFC 2822.
- * Gère les emails multipart (Apple Mail, Gmail) avec quoted-printable.
+ * Cherche directement les sections Content-Type: text/plain sans splitter
+ * par \n\n (qui echoue sur les emails lourds avec pieces jointes base64).
  */
 function extractReplyText(raw: string): string {
   const normalized = raw.replace(/\r\n/g, "\n");
 
-  // Trouver toutes les sections text/plain (séparées par blank lines)
-  // Un email MIME a : outer headers \n\n [boundary \n part-headers \n\n content \n\n ...]
-  const candidates: string[] = [];
-
-  // Découper par double saut de ligne pour isoler les blocs headers/contenu
-  const blocks = normalized.split(/\n\n+/);
-
-  let isQP = false;
-  let isTextPlain = true;
-
-  for (const block of blocks) {
-    const trimmed = block.trim();
-    // Bloc de headers MIME (chaque ligne commence par Header: ou est un fold)
-    if (/^[\w-]+:/m.test(trimmed) && trimmed.split("\n").every(l => /^[\w-]+:|^\s/.test(l) || l.trim() === "")) {
-      isQP = /Content-Transfer-Encoding:\s*quoted-printable/i.test(trimmed);
-      isTextPlain = !trimmed.includes("Content-Type:") || /Content-Type:\s*text\/plain/i.test(trimmed);
-      continue;
-    }
-
-    if (!isTextPlain) continue;
-
-    let text = isQP ? decodeQP(trimmed) : trimmed;
-
-    // Filtrer les lignes citées et signatures
-    text = text
+  function filterLines(text: string): string {
+    return text
       .split("\n")
-      .filter((line) => {
-        const t = line.trim();
+      .filter((l) => {
+        const t = l.trim();
         return (
+          t &&
           !t.startsWith(">") &&
           !/^On .+wrote:/.test(t) &&
-          !/^Le .+ a écrit/.test(t) &&
-          !t.startsWith("--") &&
-          // Ignorer les MIME boundaries résiduelles
-          !/^-{2,}/.test(t)
+          !/^Le .+ a ecrit/.test(t) &&
+          !/^Le .+ a =C3=A9crit/.test(t) &&
+          !t.startsWith("--")
         );
       })
       .join("\n")
       .trim();
-
-    if (text) candidates.push(text);
   }
 
-  return candidates[0] ?? "";
+  // Chercher chaque occurrence de "Content-Type: text/plain" (case-insensitive)
+  const candidates: string[] = [];
+  const ctRegex = /content-type:\s*text\/plain/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = ctRegex.exec(normalized)) !== null) {
+    // Remonter au debut de ce bloc de headers
+    let headersStart = normalized.lastIndexOf("\n\n", match.index);
+    if (headersStart === -1) headersStart = 0;
+    else headersStart += 2;
+
+    // Trouver la fin des headers (double newline apres le Content-Type)
+    const headersEnd = normalized.indexOf("\n\n", match.index);
+    if (headersEnd === -1) continue;
+
+    const headers = normalized.slice(headersStart, headersEnd);
+    const isQP = /Content-Transfer-Encoding:\s*quoted-printable/i.test(headers);
+
+    const contentStart = headersEnd + 2;
+
+    // Fin du contenu : prochaine boundary (ligne commencant par "--")
+    const boundaryIdx = normalized.indexOf("\n--", contentStart);
+    const contentEnd = boundaryIdx !== -1 ? boundaryIdx : normalized.length;
+
+    let content = normalized.slice(contentStart, contentEnd).trim();
+    // Ignorer les blocs base64 purs
+    if (/^[A-Za-z0-9+/\n]+=*$/.test(content.replace(/\s/g, ""))) continue;
+
+    if (isQP) content = decodeQP(content);
+    const filtered = filterLines(content);
+    if (filtered) candidates.push(filtered);
+  }
+
+  if (candidates.length > 0) return candidates[0];
+
+  // Fallback : email simple sans MIME
+  const headerEnd = normalized.indexOf("\n\n");
+  if (headerEnd === -1) return "";
+  const isQP = /Content-Transfer-Encoding:\s*quoted-printable/i.test(normalized.slice(0, headerEnd));
+  let content = normalized.slice(headerEnd + 2).trim();
+  if (isQP) content = decodeQP(content);
+  return filterLines(content);
 }
 
 /**
