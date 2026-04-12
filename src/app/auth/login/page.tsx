@@ -364,7 +364,7 @@ function LoginForm() {
                 onClick={() => switchMethod("code")}
                 className="mt-4 text-sm font-medium text-winelio-gray transition hover:text-winelio-orange"
               >
-                Mot de passe oublié ? → Recevoir un code
+                Mot de passe oublié ? Se connecter par code email →
               </button>
             </>
           )}
