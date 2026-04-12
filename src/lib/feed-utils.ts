@@ -73,7 +73,7 @@ export function feedEventLabel(event: FeedEvent): string {
     case "withdrawal_done":
       return `Votre retrait de ${event.amount.toFixed(0)} € a été traité`
     case "milestone":
-      return `🎉 ${event.label}`
+      return event.label
     case "reco_completed":
       return `${event.user}${event.city ? ` (${event.city})` : ""} — affaire conclue · ${event.amount.toFixed(0)} €`
   }
