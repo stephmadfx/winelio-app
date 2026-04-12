@@ -43,7 +43,7 @@ export function MobileNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-white/80 backdrop-blur-xl border-t border-black/5 shadow-[0_-8px_24px_rgba(255,107,53,0.06)] lg:hidden">
-      <div className="flex items-end justify-around px-2 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="flex items-end justify-around px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           const isLoading = loadingHref === item.href;
