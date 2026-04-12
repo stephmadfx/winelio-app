@@ -25,6 +25,46 @@ export default function SettingsPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
+  // État du formulaire mot de passe
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess(false);
+
+    if (newPassword.length < 8) {
+      setPasswordError("Le mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Les mots de passe ne correspondent pas.");
+      return;
+    }
+
+    setPasswordLoading(true);
+    const res = await fetch("/api/auth/set-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: newPassword }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setPasswordLoading(false);
+
+    if (!res.ok) {
+      setPasswordError(data.error || "Une erreur est survenue.");
+      return;
+    }
+
+    setPasswordSuccess(true);
+    setNewPassword("");
+    setConfirmPassword("");
+  };
+
   useEffect(() => setMounted(true), []);
 
   const openDeleteDialog = () => {
@@ -162,6 +202,67 @@ export default function SettingsPage() {
               <span className="font-medium text-winelio-dark">1.0.0</span>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Sécurité */}
+      <Card className="!rounded-2xl mb-4">
+        <CardContent className="p-5 sm:p-6">
+          <h3 className="text-base font-semibold text-winelio-dark mb-1 flex items-center gap-2">
+            <svg className="w-5 h-5 text-winelio-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Sécurité
+          </h3>
+          <p className="text-xs text-winelio-gray mb-4">
+            Définissez ou modifiez votre mot de passe pour vous connecter sans code email.
+          </p>
+
+          <form onSubmit={handleSetPassword} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="new-password" className="text-sm font-medium text-winelio-dark">
+                Nouveau mot de passe
+              </label>
+              <input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => { setNewPassword(e.target.value); setPasswordError(""); setPasswordSuccess(false); }}
+                placeholder="8 caractères minimum"
+                autoComplete="new-password"
+                className="w-full rounded-xl border border-gray-200 bg-winelio-light/70 px-4 py-2.5 text-sm text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="confirm-password" className="text-sm font-medium text-winelio-dark">
+                Confirmer le mot de passe
+              </label>
+              <input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => { setConfirmPassword(e.target.value); setPasswordError(""); setPasswordSuccess(false); }}
+                placeholder="Répétez le mot de passe"
+                autoComplete="new-password"
+                className="w-full rounded-xl border border-gray-200 bg-winelio-light/70 px-4 py-2.5 text-sm text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+              />
+            </div>
+
+            {passwordError && (
+              <p className="text-sm text-red-500">{passwordError}</p>
+            )}
+            {passwordSuccess && (
+              <p className="text-sm text-green-600 font-medium">Mot de passe enregistré avec succès.</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={passwordLoading || !newPassword || !confirmPassword}
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber text-white text-sm font-semibold shadow-[0_8px_20px_rgba(255,107,53,0.2)] transition hover:brightness-105 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {passwordLoading ? "Enregistrement…" : "Enregistrer le mot de passe"}
+            </button>
+          </form>
         </CardContent>
       </Card>
 
