@@ -58,6 +58,7 @@ export function ActivityFeed({ initialEvents, demoMode, className }: Props) {
   /* ── Fonction centrale : ajouter un événement avec animation ── */
   const pushEvent = useCallback((event: FeedEvent) => {
     lastEventTimeRef.current = Date.now()
+    let keyToRemove: string | null = null
 
     setItems((prev) => {
       const active = prev.filter((i) => i._phase !== "exiting")
@@ -83,14 +84,19 @@ export function ActivityFeed({ initialEvents, demoMode, className }: Props) {
       let next = [...active]
       if (next.length >= MAX_VISIBLE) {
         const last = next[next.length - 1]
+        keyToRemove = last._key
         next[next.length - 1] = { ...last, _phase: "exiting" }
-        setTimeout(() => {
-          setItems((p) => p.filter((i) => i._key !== last._key))
-        }, 300)
       }
 
       return [toFeedItem(event), ...next]
     })
+
+    if (keyToRemove) {
+      const key = keyToRemove
+      setTimeout(() => {
+        setItems((p) => p.filter((i) => i._key !== key))
+      }, 300)
+    }
 
     // Retirer la classe "entering" après la fin de l'animation
     setTimeout(() => {
@@ -249,11 +255,10 @@ export function ActivityFeed({ initialEvents, demoMode, className }: Props) {
 
           {hasEvents ? (
             <div className="flex flex-col gap-2">
-              {items.map((item, index) => (
+              {items.map((item) => (
                 <FeedItemRow
                   key={item._key}
                   item={item}
-                  index={index}
                   refCallback={(el) => {
                     if (el) itemRefs.current.set(item._key, el)
                     else itemRefs.current.delete(item._key)
@@ -278,11 +283,9 @@ export function ActivityFeed({ initialEvents, demoMode, className }: Props) {
 /* ── Ligne d'événement ── */
 function FeedItemRow({
   item,
-  index,
   refCallback,
 }: {
   item: FeedItem
-  index: number
   refCallback: (el: HTMLDivElement | null) => void
 }) {
   const color  = feedEventColor(item.kind)
