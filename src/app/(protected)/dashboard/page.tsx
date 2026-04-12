@@ -168,7 +168,8 @@ export default async function DashboardPage() {
       // Étapes récentes sur les recos de l'utilisateur (step_advanced)
       supabase
         .from("recommendation_steps")
-        .select("id, completed_at, recommendation_id, step:steps(name, order_index)")
+        .select("id, completed_at, recommendation_id, step:steps(name, order_index), recommendation:recommendations!inner(referrer_id)")
+        .eq("recommendation.referrer_id", user.id)
         .not("completed_at", "is", null)
         .gte("completed_at", sevenDaysAgo)
         .order("completed_at", { ascending: false })
@@ -222,9 +223,14 @@ export default async function DashboardPage() {
       refProfiles?.forEach((p) => { profilesMap[p.id] = p; });
     }
 
+    // Map member_id → depth depuis le résultat RPC
+    const networkDepthMap = new Map<string, number>(
+      (networkRows ?? []).map((r: { member_id: string; depth: number }) => [r.member_id, r.depth])
+    );
+
     // Niv. 2-5
     deepReferrals?.forEach((p) => {
-      const level = allNetworkIds.indexOf(p.id) >= 0 ? 2 : 3;
+      const level = networkDepthMap.get(p.id) ?? 2;
       activityEvents.push({
         id: `nr2-${p.id}`,
         kind: "new_referral",
@@ -480,7 +486,7 @@ export default async function DashboardPage() {
             suffix=" €"
             decimals={2}
             label="Gains totaux"
-            sub={`dont ${Number(wallet?.total_earned ?? 0 - Number(availableBalance)).toFixed(0)} € retirés`}
+            sub={`dont ${(Number(wallet?.total_earned ?? 0) - Number(availableBalance)).toFixed(0)} € retirés`}
             icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             accentColor="amber"
             delay={80}
