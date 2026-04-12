@@ -692,5 +692,6 @@ function getActivityLabel(event: FeedEvent): string {
     case "big_commission": return `Commission importante — ${"user" in event ? event.user : ""}`;
     case "top_sponsor": return `${"user" in event ? event.user : ""} — top parrain de la semaine`;
     case "top_reco": return `Plus grosse reco du jour`;
+    default: return "";
   }
 }
