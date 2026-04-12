@@ -75,7 +75,14 @@ export async function updateProfile(data: {
 
   if (error) return { error: "Erreur lors de la sauvegarde." };
 
-  const firstCompletion = !!(wasIncomplete && willBeComplete);
+  // Le seed démo ne se déclenche que pour les comptes créés après le déploiement
+  // de la fonctionnalité (2026-04-12). Les anciens comptes qui complètent leur
+  // profil en retard ne doivent pas recevoir de réseau démo.
+  const DEMO_SEED_LAUNCH = new Date("2026-04-12T00:00:00Z");
+  const accountCreatedAt = user.created_at ? new Date(user.created_at) : null;
+  const isNewAccount = accountCreatedAt !== null && accountCreatedAt >= DEMO_SEED_LAUNCH;
+
+  const firstCompletion = !!(wasIncomplete && willBeComplete && isNewAccount);
   return { firstCompletion };
 }
 
