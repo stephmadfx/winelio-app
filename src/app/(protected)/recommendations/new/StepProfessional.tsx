@@ -40,43 +40,43 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
   }, []);
 
   useEffect(() => {
-    if (!userId) return;
-    supabase
+    let query = supabase
       .from("profiles")
-      .select("id, first_name, last_name, city, latitude, longitude, company:companies(name, alias, category:categories(name))")
+      .select("id, first_name, last_name, city, latitude, longitude, companies(name, alias, categories(name))")
       .eq("is_professional", true)
-      .neq("id", userId)
-      .order("last_name")
-      .then(({ data }) => {
-        let results: Professional[] = (data ?? []).map((p) => {
-          const company = Array.isArray(p.company) ? p.company[0] : p.company;
-          const cat = company?.category;
-          const catName = Array.isArray(cat) ? cat[0]?.name ?? null : (cat as { name: string } | null)?.name ?? null;
-          return {
-            id: p.id, first_name: p.first_name, last_name: p.last_name,
-            company_name: company?.name ?? null,
-            company_alias: (company as { alias?: string | null } | null)?.alias ?? null,
-            category_name: catName, city: p.city, latitude: p.latitude, longitude: p.longitude,
-            distance: userLocation && p.latitude && p.longitude ? haversineKm(userLocation.lat, userLocation.lng, p.latitude, p.longitude) : null,
-            avg_rating: null,
-            review_count: 0,
-          };
-        });
-        if (proSearch.length >= 2) {
-          const q = proSearch.toLowerCase();
-          results = results.filter((p) => proSearch.startsWith("#")
-            ? (p.company_alias ?? "").toLowerCase().startsWith(q)
-            : (p.company_name ?? "").toLowerCase().includes(q) || (p.first_name ?? "").toLowerCase().includes(q) || (p.last_name ?? "").toLowerCase().includes(q)
-          );
-        }
-        if (selectedCategory !== "all") results = results.filter((p) => p.category_name === selectedCategory);
-        if (userLocation && sortBy === "distance") {
-          results = results.filter((p) => p.distance === null || p.distance <= radius);
-          results.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
-        }
-        if (selectedCommune) results = results.filter((p) => (p.city ?? "").toLowerCase().includes(selectedCommune.toLowerCase()));
-        setProfessionals(results);
+      .order("last_name");
+    if (userId) query = query.neq("id", userId);
+    query.then(({ data, error }) => {
+      if (error) { console.error("[StepProfessional] query error:", error); return; }
+      let results: Professional[] = (data ?? []).map((p) => {
+        const company = Array.isArray(p.companies) ? p.companies[0] : p.companies;
+        const cat = company?.categories;
+        const catName = Array.isArray(cat) ? cat[0]?.name ?? null : (cat as { name: string } | null)?.name ?? null;
+        return {
+          id: p.id, first_name: p.first_name, last_name: p.last_name,
+          company_name: company?.name ?? null,
+          company_alias: (company as { alias?: string | null } | null)?.alias ?? null,
+          category_name: catName, city: p.city, latitude: p.latitude, longitude: p.longitude,
+          distance: userLocation && p.latitude && p.longitude ? haversineKm(userLocation.lat, userLocation.lng, p.latitude, p.longitude) : null,
+          avg_rating: null,
+          review_count: 0,
+        };
       });
+      if (proSearch.length >= 2) {
+        const q = proSearch.toLowerCase();
+        results = results.filter((p) => proSearch.startsWith("#")
+          ? (p.company_alias ?? "").toLowerCase().startsWith(q)
+          : (p.company_name ?? "").toLowerCase().includes(q) || (p.first_name ?? "").toLowerCase().includes(q) || (p.last_name ?? "").toLowerCase().includes(q)
+        );
+      }
+      if (selectedCategory !== "all") results = results.filter((p) => p.category_name === selectedCategory);
+      if (userLocation && sortBy === "distance") {
+        results = results.filter((p) => p.distance === null || p.distance <= radius);
+        results.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+      }
+      if (selectedCommune) results = results.filter((p) => (p.city ?? "").toLowerCase().includes(selectedCommune.toLowerCase()));
+      setProfessionals(results);
+    });
   }, [proSearch, userId, selectedCategory, userLocation, radius, sortBy, selectedCommune]);
 
   useEffect(() => {
