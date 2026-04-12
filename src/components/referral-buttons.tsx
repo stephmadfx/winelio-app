@@ -260,7 +260,7 @@ export function ShareButton({ code }: { code: string }) {
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="p-0 overflow-hidden rounded-2xl">
+        <DialogContent className="p-0 overflow-hidden rounded-2xl flex flex-col">
           {/* Header */}
           <div className="bg-gradient-to-r from-winelio-orange to-winelio-amber px-6 pt-6 pb-5 text-white text-center">
             <DialogHeader>
@@ -273,13 +273,13 @@ export function ShareButton({ code }: { code: string }) {
             </DialogHeader>
           </div>
 
-          <div className="p-6 flex flex-col items-center gap-5">
+          <div className="p-6 flex flex-col items-center gap-5 w-full">
             {/* QR Code */}
-            <div className="relative">
-              <div className="w-52 h-52 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-white flex items-center justify-center">
+            <div className="relative mx-auto">
+              <div className="w-48 h-48 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-white flex items-center justify-center">
                 <QRCodeSVG
                   value={referralUrl}
-                  size={192}
+                  size={168}
                   bgColor="#ffffff"
                   fgColor="#2D3436"
                   level="M"
@@ -293,8 +293,8 @@ export function ShareButton({ code }: { code: string }) {
             </div>
 
             {/* Lien */}
-            <div className="w-full mt-2 bg-slate-50 rounded-xl border border-slate-100 px-3 py-2.5 flex items-center gap-2">
-              <span className="flex-1 text-xs text-slate-500 truncate">{referralUrl}</span>
+            <div className="w-full mt-2 bg-slate-50 rounded-xl border border-slate-100 px-3 py-2.5 flex items-center gap-2 min-w-0">
+              <span className="flex-1 text-xs text-slate-500 truncate min-w-0">{referralUrl}</span>
               <button
                 onClick={handleCopyLink}
                 className="shrink-0 text-winelio-orange hover:text-winelio-amber transition-colors cursor-pointer"
