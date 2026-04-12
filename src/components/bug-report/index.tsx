@@ -97,13 +97,13 @@ export const BugReportButton = ({ userId, allBugReports = [], variant = "floatin
     <>
       {variant === "inline" ? (
         <button onClick={handleFloatingButtonClick}
-          className="relative flex items-center gap-1 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber px-2.5 h-7 text-white active:opacity-80 transition-opacity"
+          className={`relative flex items-center gap-1 rounded-full px-2.5 py-1 min-h-7 text-white active:opacity-80 transition-all ${hasUnread ? "bg-gradient-to-br from-winelio-orange to-winelio-amber" : "bg-gradient-to-br from-violet-500 to-purple-500"}`}
           aria-label="Signaler un bug">
           {hasUnread && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-white" />}
           <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M5.07 5.07A9 9 0 1 0 18.93 18.93 9 9 0 0 0 5.07 5.07z" />
           </svg>
-          <span className="text-[10px] font-bold whitespace-nowrap">Signaler un bug</span>
+          <span className="text-[10px] font-bold leading-tight text-center">Signaler<br />un bug</span>
         </button>
       ) : (
         <button onClick={handleFloatingButtonClick}
@@ -122,6 +122,7 @@ export const BugReportButton = ({ userId, allBugReports = [], variant = "floatin
         loading={false}
         historyCount={reports.length}
         onClose={() => setFormOpen(false)}
+        onReopenForm={() => setFormOpen(true)}
         onOpenHistory={() => { setFormOpen(false); setHistoryOpen(true); }}
         onSubmitSuccess={() => setFormOpen(false)}
       />

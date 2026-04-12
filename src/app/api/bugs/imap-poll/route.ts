@@ -2,6 +2,121 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ImapFlow } from "imapflow";
 import { uploadToR2 } from "@/lib/r2";
+import nodemailer from "nodemailer";
+
+const smtpPort = Number(process.env.SMTP_PORT) || 465;
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || "ssl0.ovh.net",
+  port: smtpPort,
+  secure: smtpPort === 465,
+  connectionTimeout: 8000,
+  greetingTimeout: 8000,
+  socketTimeout: 8000,
+  auth: {
+    user: process.env.SMTP_USER || "support@winelio.app",
+    pass: process.env.SMTP_PASS || "",
+  },
+});
+
+async function sendReplyNotification(
+  userEmail: string,
+  reportId: string,
+  originalMessage: string,
+  pageUrl: string,
+  replyText: string,
+  imageUrls: string[]
+) {
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const shortId = reportId.substring(0, 8);
+
+  const imagesHtml = imageUrls.length > 0
+    ? `<table width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+       <table width="100%" cellpadding="0" cellspacing="0"><tr><td>
+         <p style="margin:0 0 10px;color:#636E72;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Screenshots joints</p>
+         ${imageUrls.map(url => `<img src="${url}" style="max-width:100%;border-radius:8px;border:1px solid #F0F2F4;display:block;margin-bottom:10px;" alt="Screenshot" />`).join("")}
+       </td></tr></table>`
+    : "";
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#F0F2F4;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F0F2F4;">
+<tr><td align="center" style="padding:40px 20px;">
+<table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;">
+  <tr><td style="background:linear-gradient(90deg,#FF6B35,#F7931E);height:4px;font-size:0;border-radius:4px 4px 0 0;">&nbsp;</td></tr>
+  <tr><td style="background:#fff;border-radius:0 0 16px 16px;padding:40px 48px 36px;">
+    <p style="text-align:center;margin:0 0 24px;">
+      <img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-color.png" width="160" height="44" style="display:block;margin:0 auto;border:0;max-width:160px;" alt="Winelio" />
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:1px;background:#F0F2F4;font-size:0;">&nbsp;</td></tr></table>
+    <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td width="52" height="52" style="background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:13px;text-align:center;vertical-align:middle;">
+          <span style="font-size:24px;">💬</span>
+        </td>
+        <td style="padding-left:16px;vertical-align:middle;">
+          <p style="margin:0;color:#2D3436;font-size:18px;font-weight:700;">Réponse à votre signalement</p>
+          <p style="margin:4px 0 0;color:#636E72;font-size:13px;">Réf. #${esc(shortId)}</p>
+        </td>
+      </tr>
+    </table>
+
+    <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF5F0;border-left:3px solid #FF6B35;border-radius:0 8px 8px 0;padding:16px 20px;">
+      <tr><td>
+        <p style="margin:0 0 4px;color:#636E72;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Réponse du support</p>
+        <p style="margin:0;color:#2D3436;font-size:14px;line-height:1.6;">${esc(replyText).replace(/\n/g, "<br>")}</p>
+      </td></tr>
+    </table>
+
+    ${imagesHtml}
+
+    <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8F9FA;border-radius:8px;padding:14px 18px;">
+      <tr><td>
+        <p style="margin:0 0 6px;color:#636E72;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Votre signalement initial</p>
+        <p style="margin:0;color:#636E72;font-size:13px;line-height:1.5;">${esc(originalMessage)}</p>
+        <p style="margin:6px 0 0;color:#B2BAC0;font-size:11px;">Page : ${esc(pageUrl)}</p>
+      </td></tr>
+    </table>
+
+    <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+    <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+      <table cellpadding="0" cellspacing="0"><tr><td style="background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:8px;">
+        <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://dev2.winelio.app"}/dashboard" style="display:inline-block;padding:12px 28px;color:#fff;font-size:14px;font-weight:700;text-decoration:none;">Ouvrir Winelio →</a>
+      </td></tr></table>
+    </td></tr></table>
+
+    <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+    <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:1px;background:#F0F2F4;font-size:0;">&nbsp;</td></tr></table>
+    <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+
+    <p style="margin:0;color:#B2BAC0;font-size:11px;text-align:center;">
+      © 2026 <span style="color:#FF6B35;font-weight:600;">Winelio</span> — <span style="color:#FF6B35;">Merci de nous aider à améliorer l'application !</span>
+    </p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+
+  await Promise.race([
+    transporter.sendMail({
+      from: `"Winelio Support" <${process.env.SMTP_USER || "support@winelio.app"}>`,
+      to: userEmail,
+      replyTo: "support@winelio.app",
+      subject: `Réponse à votre signalement #${shortId}`,
+      html,
+    }),
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error("SMTP timeout")), 10000)),
+  ]);
+}
 
 /** Décode le quoted-printable en UTF-8 (séquences multi-octets gérées via TextDecoder) */
 function decodeQP(s: string): string {
@@ -237,6 +352,32 @@ export async function GET(req: NextRequest) {
             if (!dbError) {
               processed++;
               pendingIds.delete(reportId); // éviter double traitement si deux emails pour le même rapport
+
+              // Envoyer la notification email à l'utilisateur
+              try {
+                const { data: report } = await supabaseAdmin
+                  .from("bug_reports")
+                  .select("user_id, message, page_url")
+                  .eq("id", reportId)
+                  .single();
+
+                if (report) {
+                  const { data: { user: reportUser } } = await supabaseAdmin.auth.admin.getUserById(report.user_id);
+                  if (reportUser?.email) {
+                    await sendReplyNotification(
+                      reportUser.email,
+                      reportId,
+                      report.message,
+                      report.page_url ?? "/",
+                      replyText,
+                      imageUrls
+                    );
+                    debug.push(`[${uid}] notification email envoyée à ${reportUser.email}`);
+                  }
+                }
+              } catch (mailErr) {
+                console.error(`[imap-poll] Erreur envoi notification email:`, mailErr);
+              }
             }
           } catch (msgErr) {
             console.error(`[imap-poll] Erreur message uid=${uid}:`, msgErr);

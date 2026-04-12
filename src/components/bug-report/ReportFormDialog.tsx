@@ -10,11 +10,12 @@ interface ReportFormDialogProps {
   loading: boolean;
   historyCount: number;
   onClose: () => void;
+  onReopenForm: () => void;
   onOpenHistory: () => void;
   onSubmitSuccess: () => void;
 }
 
-export const ReportFormDialog = ({ open, loading, historyCount, onClose, onOpenHistory, onSubmitSuccess }: ReportFormDialogProps) => {
+export const ReportFormDialog = ({ open, loading, historyCount, onClose, onReopenForm, onOpenHistory, onSubmitSuccess }: ReportFormDialogProps) => {
   const [message, setMessage] = useState("");
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
@@ -33,10 +34,13 @@ export const ReportFormDialog = ({ open, loading, historyCount, onClose, onOpenH
   const handleClose = () => { reset(); onClose(); };
 
   const handleCapture = async () => {
-    onClose();
     setCapturing(true);
     setCaptureFailed(false);
-    await new Promise((r) => setTimeout(r, 350));
+    // Laisser le spinner s'afficher avant de fermer le dialog
+    await new Promise((r) => setTimeout(r, 150));
+    onClose();
+    // Attendre que l'animation de fermeture du dialog soit terminée
+    await new Promise((r) => setTimeout(r, 300));
     try {
       const { toJpeg } = await import("html-to-image");
       const dataUrl = await toJpeg(document.body, {
@@ -50,6 +54,7 @@ export const ReportFormDialog = ({ open, loading, historyCount, onClose, onOpenH
       setCaptureFailed(true);
     } finally {
       setCapturing(false);
+      onReopenForm();
     }
   };
 

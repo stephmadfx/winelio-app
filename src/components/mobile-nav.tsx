@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 
 const navItems = [
   {
@@ -33,35 +34,50 @@ const navItems = [
 
 export function MobileNav() {
   const pathname = usePathname();
+  const [loadingHref, setLoadingHref] = useState<string | null>(null);
+
+  // Quand la route change, la page est chargée → on efface le loading
+  useEffect(() => {
+    setLoadingHref(null);
+  }, [pathname]);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-white/80 backdrop-blur-xl border-t border-black/5 shadow-[0_-8px_24px_rgba(255,107,53,0.06)] lg:hidden">
       <div className="flex items-end justify-around px-2 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
         {navItems.map((item) => {
-          const isActive =
-            pathname === item.href || pathname.startsWith(item.href + "/");
+          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          const isLoading = loadingHref === item.href;
+
           return (
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => { if (!isActive) setLoadingHref(item.href); }}
               className={`flex flex-col items-center justify-center min-w-[3rem] px-2 py-2 rounded-2xl transition-all ${
                 isActive
                   ? "bg-gradient-to-br from-winelio-orange to-winelio-amber text-white shadow-lg scale-110 -translate-y-1"
+                  : isLoading
+                  ? "bg-winelio-orange/10 text-winelio-orange scale-95"
                   : "text-winelio-gray active:text-winelio-orange active:scale-95"
               }`}
             >
-              <svg
-                className="w-5 h-5 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={isActive ? 2 : 1.5}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
-              </svg>
-              <span
-                className={`text-[10px] mt-0.5 leading-tight font-semibold uppercase tracking-wide`}
-              >
+              {isLoading ? (
+                <svg className="w-5 h-5 shrink-0 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" />
+                  <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+              ) : (
+                <svg
+                  className="w-5 h-5 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={isActive ? 2 : 1.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+                </svg>
+              )}
+              <span className="text-[10px] mt-0.5 leading-tight font-semibold uppercase tracking-wide">
                 {item.label}
               </span>
             </Link>
