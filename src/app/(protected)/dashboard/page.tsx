@@ -6,7 +6,8 @@ import { OnboardingModal } from "@/components/onboarding-modal";
 import { Card, CardContent } from "@/components/ui/card";
 import { MonthlyBarChart } from "@/components/monthly-bar-chart";
 import { AnimatedCounter } from "@/components/animated-counter";
-import { FeedEvent, formatUserName, formatRelativeTime } from "@/lib/feed-utils";
+import { FeedEvent, formatUserName } from "@/lib/feed-utils";
+import { ActivityFeed } from "@/components/activity-feed";
 
 export default async function DashboardPage() {
   const user = await getUser();
@@ -82,23 +83,68 @@ export default async function DashboardPage() {
     .eq("sponsor_id", user.id)
     .limit(3);
 
-  // Événements d'activité personnelle
+  // ── Événements d'activité réseau (11 types) ──────────────────────
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const activityEvents: FeedEvent[] = [];
 
+  // Filleuls directs récents (niv. 1)
+  const { data: newDirectReferrals } = await supabase
+    .from("profiles")
+    .select("id, first_name, last_name, city, created_at")
+    .eq("sponsor_id", user.id)
+    .gte("created_at", sevenDaysAgo)
+    .order("created_at", { ascending: false })
+    .limit(3);
+
+  newDirectReferrals?.forEach((p) => {
+    activityEvents.push({
+      id: `nr1-${p.id}`,
+      kind: "new_referral",
+      user: formatUserName(p.first_name, p.last_name),
+      city: p.city,
+      level: 1,
+      timestamp: p.created_at,
+    });
+  });
+
   if (allNetworkIds.length > 0) {
+    // Filleuls niv. 2-5 récents
+    const directIds = (newDirectReferrals ?? []).map((p) => p.id);
+    const networkIdsDeep = allNetworkIds.filter((id) => !directIds.includes(id) && id !== user.id);
+
     const [
-      { data: newReferrals },
+      { data: deepReferrals },
+      { data: sponsoredMembers },
       { data: validatedRecos },
       { data: bigCommissions },
+      { data: recentSteps },
+      { data: ownCommissions },
+      { data: completedWithdrawals },
+      { data: completedRecosFull },
     ] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, first_name, last_name, city, created_at")
-        .eq("sponsor_id", user.id)
-        .gte("created_at", sevenDaysAgo)
-        .order("created_at", { ascending: false })
-        .limit(3),
+      // Niv. 2-5 récents
+      networkIdsDeep.length > 0
+        ? supabase
+            .from("profiles")
+            .select("id, first_name, last_name, city, created_at, sponsor_id")
+            .in("id", networkIdsDeep)
+            .gte("created_at", sevenDaysAgo)
+            .order("created_at", { ascending: false })
+            .limit(3)
+        : Promise.resolve({ data: [] }),
+
+      // Membres du réseau ayant parrainé quelqu'un (referral_sponsored)
+      allNetworkIds.length > 0
+        ? supabase
+            .from("profiles")
+            .select("id, first_name, last_name, city, created_at, sponsor_id")
+            .in("sponsor_id", allNetworkIds)
+            .gte("created_at", sevenDaysAgo)
+            .order("created_at", { ascending: false })
+            .limit(3)
+        : Promise.resolve({ data: [] }),
+
+      // Recos validées dans le réseau (reco_validated)
       supabase
         .from("recommendations")
         .select("id, referrer_id, amount, created_at")
@@ -107,6 +153,8 @@ export default async function DashboardPage() {
         .gte("created_at", sevenDaysAgo)
         .order("created_at", { ascending: false })
         .limit(3),
+
+      // Grosses commissions réseau (big_commission)
       supabase
         .from("commission_transactions")
         .select("id, user_id, amount, created_at")
@@ -116,11 +164,54 @@ export default async function DashboardPage() {
         .gte("created_at", sevenDaysAgo)
         .order("created_at", { ascending: false })
         .limit(3),
+
+      // Étapes récentes sur les recos de l'utilisateur (step_advanced)
+      supabase
+        .from("recommendation_steps")
+        .select("id, completed_at, recommendation_id, step:steps(name, order_index)")
+        .not("completed_at", "is", null)
+        .gte("completed_at", sevenDaysAgo)
+        .order("completed_at", { ascending: false })
+        .limit(5),
+
+      // Commissions propres de l'utilisateur (commission_received)
+      supabase
+        .from("commission_transactions")
+        .select("id, amount, created_at")
+        .eq("user_id", user.id)
+        .eq("status", "EARNED")
+        .gte("created_at", sevenDaysAgo)
+        .order("created_at", { ascending: false })
+        .limit(3),
+
+      // Retraits traités (withdrawal_done)
+      supabase
+        .from("withdrawals")
+        .select("id, amount, updated_at")
+        .eq("user_id", user.id)
+        .eq("status", "COMPLETED")
+        .gte("updated_at", sevenDaysAgo)
+        .order("updated_at", { ascending: false })
+        .limit(2),
+
+      // Recos de l'utilisateur terminées avec montant (reco_completed)
+      supabase
+        .from("recommendations")
+        .select("id, amount, created_at, referrer_id")
+        .eq("referrer_id", user.id)
+        .eq("status", "COMPLETED")
+        .gt("amount", 0)
+        .gte("created_at", sevenDaysAgo)
+        .order("created_at", { ascending: false })
+        .limit(3),
     ]);
 
+    // Enrichir les profils manquants
     const referrerIds = [
       ...(validatedRecos?.map((r) => r.referrer_id) ?? []),
       ...(bigCommissions?.map((c) => c.user_id) ?? []),
+      ...(sponsoredMembers?.map((p) => p.sponsor_id).filter(Boolean) ?? []),
+      ...(deepReferrals?.map((p) => p.sponsor_id).filter(Boolean) ?? []),
     ];
     const profilesMap: Record<string, { first_name: string | null; last_name: string | null; city: string | null }> = {};
     if (referrerIds.length > 0) {
@@ -131,16 +222,34 @@ export default async function DashboardPage() {
       refProfiles?.forEach((p) => { profilesMap[p.id] = p; });
     }
 
-    newReferrals?.forEach((p) => {
+    // Niv. 2-5
+    deepReferrals?.forEach((p) => {
+      const level = allNetworkIds.indexOf(p.id) >= 0 ? 2 : 3;
       activityEvents.push({
-        id: `nr-${p.id}`,
+        id: `nr2-${p.id}`,
         kind: "new_referral",
         user: formatUserName(p.first_name, p.last_name),
         city: p.city,
-        level: 1,
+        level,
         timestamp: p.created_at,
       });
     });
+
+    // referral_sponsored
+    sponsoredMembers?.forEach((p) => {
+      const sponsor = p.sponsor_id ? profilesMap[p.sponsor_id] : null;
+      if (sponsor) {
+        activityEvents.push({
+          id: `rs-${p.id}`,
+          kind: "referral_sponsored",
+          user: formatUserName(sponsor.first_name, sponsor.last_name),
+          city: sponsor.city,
+          timestamp: p.created_at,
+        });
+      }
+    });
+
+    // reco_validated
     validatedRecos?.forEach((r) => {
       const prof = profilesMap[r.referrer_id];
       activityEvents.push({
@@ -152,23 +261,93 @@ export default async function DashboardPage() {
         timestamp: r.created_at,
       });
     });
+
+    // big_commission
     bigCommissions?.forEach((c) => {
       const prof = profilesMap[c.user_id];
       activityEvents.push({
         id: `cr-${c.id}`,
-        kind: "commission_received",
+        kind: "big_commission",
         user: formatUserName(prof?.first_name ?? null, prof?.last_name ?? null),
         city: prof?.city ?? null,
         amount: c.amount,
         timestamp: c.created_at,
       });
     });
-    activityEvents.sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
+
+    // step_advanced (filtrer les étapes trivielles : ne pas inclure étape 1)
+    recentSteps?.forEach((s) => {
+      const rawStep = s.step as unknown;
+      const step: { name: string; order_index: number } | null = Array.isArray(rawStep)
+        ? (rawStep[0] ?? null)
+        : (rawStep as { name: string; order_index: number } | null);
+      if (!step || step.order_index <= 1) return;
+      activityEvents.push({
+        id: `sa-${s.id}`,
+        kind: "step_advanced",
+        user: formatUserName(profile?.first_name ?? null, profile?.last_name ?? null),
+        city: null,
+        stepLabel: step.name,
+        stepIndex: step.order_index,
+        timestamp: s.completed_at!,
+      });
+    });
+
+    // commission_received (propres à l'utilisateur)
+    ownCommissions?.forEach((c) => {
+      activityEvents.push({
+        id: `ci-${c.id}`,
+        kind: "commission_received",
+        user: formatUserName(profile?.first_name ?? null, profile?.last_name ?? null),
+        city: null,
+        amount: c.amount,
+        timestamp: c.created_at,
+      });
+    });
+
+    // withdrawal_done
+    completedWithdrawals?.forEach((w) => {
+      activityEvents.push({
+        id: `wd-${w.id}`,
+        kind: "withdrawal_done",
+        amount: w.amount,
+        timestamp: w.updated_at,
+      });
+    });
+
+    // reco_completed (recos de l'utilisateur terminées)
+    completedRecosFull?.forEach((r) => {
+      activityEvents.push({
+        id: `rc-${r.id}`,
+        kind: "reco_completed",
+        user: formatUserName(profile?.first_name ?? null, profile?.last_name ?? null),
+        city: null,
+        amount: r.amount ?? 0,
+        timestamp: r.created_at,
+      });
+    });
+
+    // milestone réseau
+    const milestones = [5, 10, 25, 50, 100];
+    const reached = milestones.filter((m) => networkCount >= m);
+    if (reached.length > 0) {
+      const top = reached[reached.length - 1];
+      activityEvents.push({
+        id: `ms-${top}`,
+        kind: "milestone",
+        count: networkCount,
+        label: `Votre réseau a atteint ${top} membres !`,
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 
-  const topEvents = activityEvents.slice(0, 4);
+  activityEvents.sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
+
+  const topEvents = activityEvents.slice(0, 20); // 20 pour alimenter la rotation démo
+  const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   const totalEarned = wallet?.total_earned ?? 0;
   const availableBalance = wallet?.available ?? 0;
   const totalWins = wallet?.total_wins ?? 0;
@@ -228,24 +407,12 @@ export default async function DashboardPage() {
         </section>
 
         {/* Feed d'activité */}
-        <section className="space-y-3">
-          <h3 className="font-bold text-winelio-dark text-base">Activité</h3>
-          {topEvents.length > 0 ? (
-            <div className="space-y-2">
-              {topEvents.map((event, i) => (
-                <ActivityItem key={event.id} event={event} alternate={i % 2 === 1} />
-              ))}
-            </div>
-          ) : (
-            <Card className="!rounded-2xl">
-              <CardContent className="p-6 text-center">
-                <p className="text-winelio-gray text-sm">Aucune activité récente dans votre réseau.</p>
-                <Link href="/network" className="inline-block mt-3 text-winelio-orange font-semibold text-sm">
-                  Inviter des membres →
-                </Link>
-              </CardContent>
-            </Card>
-          )}
+        <section>
+          <ActivityFeed
+            initialEvents={topEvents}
+            demoMode={demoMode}
+            className="!h-[300px]"
+          />
         </section>
 
         {/* Grille KPIs 2×2 */}
@@ -340,28 +507,7 @@ export default async function DashboardPage() {
 
         {/* Activité récente — pleine largeur */}
         <section>
-          <Card className="!rounded-2xl shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-lg text-winelio-dark">Activité</h3>
-                <Link href="/recommendations" className="text-winelio-orange font-bold text-sm hover:underline">
-                  Voir tout
-                </Link>
-              </div>
-              {topEvents.length > 0 ? (
-                <div className="relative space-y-4">
-                  <div className="absolute left-[19px] top-2 bottom-2 w-[2px] bg-gray-100" />
-                  {topEvents.slice(0, 3).map((event) => (
-                    <DesktopActivityItem key={event.id} event={event} />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-winelio-gray text-sm text-center py-4">
-                  Aucune activité récente.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <ActivityFeed initialEvents={topEvents} demoMode={demoMode} />
         </section>
 
         {/* Grille 7/5 */}
@@ -619,60 +765,6 @@ function ActionChip({ href, label, icon }: { href: string; label: string; icon: 
   );
 }
 
-function ActivityItem({ event, alternate }: { event: FeedEvent; alternate: boolean }) {
-  const userName = "user" in event ? event.user : "Winelio";
-  const amount = "amount" in event ? event.amount : undefined;
-  const initials = userName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-  return (
-    <div className={`flex items-center gap-3 p-3.5 rounded-2xl ${alternate ? "bg-winelio-light" : "bg-white"} shadow-sm`}>
-      <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${alternate ? "bg-winelio-amber/20 text-winelio-amber" : "bg-winelio-orange/20 text-winelio-orange"}`}>
-        {initials}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-winelio-dark leading-snug">{getActivityLabel(event)}</p>
-        <p className="text-[11px] text-winelio-gray mt-0.5">{formatRelativeTime(event.timestamp)}</p>
-      </div>
-      {amount !== undefined && (
-        <div className="bg-winelio-orange/10 px-2.5 py-1 rounded-full shrink-0">
-          <span className="text-winelio-orange font-bold text-xs">+{Number(amount).toFixed(0)} €</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DesktopActivityItem({ event }: { event: FeedEvent }) {
-  const amount = "amount" in event ? event.amount : undefined;
-  const isReco = event.kind === "reco_validated" || event.kind === "commission_received";
-  const isMember = event.kind === "new_referral" || event.kind === "referral_sponsored";
-  return (
-    <div className="flex gap-3 relative z-10">
-      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-        isReco ? "bg-winelio-orange/15 text-winelio-orange" :
-        isMember ? "bg-winelio-amber/15 text-winelio-amber" :
-        "bg-gray-100 text-winelio-gray"
-      }`}>
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          {isReco ? (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-          )}
-        </svg>
-      </div>
-      <div className="flex-1 pt-1">
-        <p className="text-sm font-semibold text-winelio-dark">{getActivityLabel(event)}</p>
-        {amount !== undefined && (
-          <p className="text-xs text-winelio-gray mt-0.5">
-            <span className="font-bold text-winelio-orange">+{Number(amount).toFixed(0)} €</span>
-          </p>
-        )}
-        <span className="text-xs text-winelio-gray/70 mt-0.5 block">{formatRelativeTime(event.timestamp)}</span>
-      </div>
-    </div>
-  );
-}
-
 function RecoStatusBadge({ status }: { status: string }) {
   if (status === "COMPLETED") {
     return <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-bold bg-teal-50 text-teal-600">Validé</span>;
@@ -683,15 +775,3 @@ function RecoStatusBadge({ status }: { status: string }) {
   return <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-bold bg-winelio-amber/15 text-winelio-amber">En cours</span>;
 }
 
-function getActivityLabel(event: FeedEvent): string {
-  switch (event.kind) {
-    case "new_referral": return `${"user" in event ? event.user : ""} a rejoint votre réseau`;
-    case "reco_validated": return `${"user" in event ? event.user : ""} a validé une recommandation`;
-    case "commission_received": return `Commission reçue — ${"user" in event ? event.user : ""}`;
-    case "referral_sponsored": return `${"user" in event ? event.user : ""} a parrainé un nouveau membre`;
-    case "big_commission": return `Commission importante — ${"user" in event ? event.user : ""}`;
-    case "top_sponsor": return `${"user" in event ? event.user : ""} — top parrain de la semaine`;
-    case "top_reco": return `Plus grosse reco du jour`;
-    default: return "";
-  }
-}
