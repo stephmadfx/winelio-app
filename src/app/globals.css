@@ -93,8 +93,8 @@ input, textarea, select {
 
 /* Halo orange sur le nouvel item, s'estompe */
 @keyframes feed-glow-fade {
-  0%   { border-color: rgba(255,107,53,0.4); background: #fff8f5; box-shadow: 0 2px 12px rgba(255,107,53,0.12); }
-  100% { border-color: rgb(240,240,240); background: #fff; box-shadow: none; }
+  0%   { background: #fff8f5; box-shadow: 0 2px 12px rgba(255,107,53,0.12); }
+  100% { background: #fff; box-shadow: none; }
 }
 
 /* Shimmer sweep sur le nouvel item */

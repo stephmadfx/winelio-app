@@ -294,10 +294,10 @@ function FeedItemRow({
   const amount = "amount" in item ? (item as { amount: number }).amount : undefined
 
   const colorMap = {
-    orange: { bg: "bg-winelio-orange/15 text-winelio-orange", badge: "bg-winelio-orange/10 text-winelio-orange" },
-    amber:  { bg: "bg-winelio-amber/15 text-winelio-amber",   badge: "bg-winelio-amber/10 text-winelio-amber" },
-    teal:   { bg: "bg-teal-500/15 text-teal-600",             badge: "bg-teal-50 text-teal-600" },
-    purple: { bg: "bg-purple-500/15 text-purple-600",         badge: "bg-purple-50 text-purple-600" },
+    orange: { bg: "bg-winelio-orange/15 text-winelio-orange", badge: "bg-winelio-orange/10 text-winelio-orange", cardBorder: "#FF6B35" },
+    amber:  { bg: "bg-winelio-amber/15 text-winelio-amber",   badge: "bg-winelio-amber/10 text-winelio-amber",   cardBorder: "#F7931E" },
+    teal:   { bg: "bg-teal-500/15 text-teal-600",             badge: "bg-teal-50 text-teal-600",                 cardBorder: "#14B8A6" },
+    purple: { bg: "bg-purple-500/15 text-purple-600",         badge: "bg-purple-50 text-purple-600",             cardBorder: "#8B5CF6" },
   }
   const c = colorMap[color]
 
@@ -307,8 +307,9 @@ function FeedItemRow({
   return (
     <div
       ref={refCallback}
-      className="feed-item-row flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-gray-100 bg-white relative overflow-hidden flex-shrink-0"
+      className="feed-item-row flex items-center gap-3 px-3 py-2.5 rounded-2xl relative overflow-hidden flex-shrink-0"
       style={{
+        border: `2px solid ${isEntering ? "rgba(255,107,53,0.4)" : c.cardBorder}`,
         animation: isEntering
           ? "feed-push-in 0.42s cubic-bezier(0.34,1.45,0.64,1) forwards, feed-glow-fade 1.5s ease forwards"
           : isExiting
