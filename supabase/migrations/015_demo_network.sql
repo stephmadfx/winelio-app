@@ -334,6 +334,63 @@ BEGIN
     END IF;
   END LOOP;
 
+  -- ── RECOMMANDATIONS PROPRES DE L'UTILISATEUR (4-5) ─────────
+  -- Garantit que "Reco ce mois" affiche des données non nulles
+  FOR i IN 1..(4 + floor(random() * 2)::int) LOOP
+    SELECT id INTO v_pro_id
+    FROM winelio.profiles
+    WHERE demo_owner_id = p_user_id AND is_professional = true
+    ORDER BY random() LIMIT 1;
+
+    IF v_pro_id IS NULL THEN CONTINUE; END IF;
+
+    v_reco_id := gen_random_uuid();
+    v_amount  := v_amounts[1 + (floor(random() * 12))::int];
+    v_rnd     := random();
+    IF v_rnd < 0.30 THEN
+      v_status := 'PENDING';
+    ELSIF v_rnd < 0.70 THEN
+      v_status := v_active_st[1 + (floor(random() * 4))::int];
+    ELSE
+      v_status := v_valid_st[1 + (floor(random() * 2))::int];
+    END IF;
+
+    -- Les 2 premières recos dans le mois courant, les suivantes dans les 1-3 mois passés
+    INSERT INTO winelio.recommendations
+      (id, referrer_id, professional_id, project_description,
+       status, amount, is_demo, created_at, updated_at)
+    VALUES (
+      v_reco_id, p_user_id, v_pro_id,
+      v_reco_descs[1 + (floor(random() * 10))::int],
+      v_status, v_amount, true,
+      CASE WHEN i <= 2
+        THEN now() - ((floor(random() * 10))::text || ' days')::interval
+        ELSE now() - ((20 + floor(random() * 50))::text || ' days')::interval
+      END,
+      now() - ((floor(random() * 3))::text || ' days')::interval
+    );
+
+    IF v_status = ANY(v_valid_st) THEN
+      INSERT INTO winelio.commission_transactions
+        (user_id, recommendation_id, amount, level, type, status,
+         referrer_id, is_demo, earned_at, created_at)
+      VALUES (
+        p_user_id, v_reco_id, ROUND(v_amount * 0.10 * 0.60, 2),
+        0, 'recommendation', 'EARNED',
+        p_user_id, true, now(), now()
+      );
+    ELSIF v_status = ANY(v_active_st) THEN
+      INSERT INTO winelio.commission_transactions
+        (user_id, recommendation_id, amount, level, type, status,
+         referrer_id, is_demo, created_at)
+      VALUES (
+        p_user_id, v_reco_id, ROUND(v_amount * 0.10 * 0.60, 2),
+        0, 'recommendation', 'PENDING',
+        p_user_id, true, now()
+      );
+    END IF;
+  END LOOP;
+
   -- Note : le trigger winelio.update_wallet_on_commission met à jour
   -- automatiquement user_wallet_summaries à chaque INSERT commission.
 
@@ -361,7 +418,7 @@ BEGIN
   FROM winelio.commission_transactions
   WHERE user_id = p_user_id AND status = 'PENDING' AND is_demo = true;
 
-  -- 1. Commissions liées aux recos demo
+  -- 1. Commissions liées aux recos demo du réseau
   DELETE FROM winelio.commission_transactions
   WHERE is_demo = true
     AND recommendation_id IN (
@@ -372,16 +429,28 @@ BEGIN
         )
     );
 
+  -- 1b. Commissions liées aux recos propres de l'utilisateur (referrer = p_user_id)
+  DELETE FROM winelio.commission_transactions
+  WHERE is_demo = true
+    AND recommendation_id IN (
+      SELECT id FROM winelio.recommendations
+      WHERE is_demo = true AND referrer_id = p_user_id
+    );
+
   -- 2. Commissions is_demo du vrai user (réseau)
   DELETE FROM winelio.commission_transactions
   WHERE user_id = p_user_id AND is_demo = true;
 
-  -- 3. Recommandations demo
+  -- 3. Recommandations demo du réseau
   DELETE FROM winelio.recommendations
   WHERE is_demo = true
     AND referrer_id IN (
       SELECT id FROM winelio.profiles WHERE demo_owner_id = p_user_id
     );
+
+  -- 3b. Recommandations propres de l'utilisateur (demo)
+  DELETE FROM winelio.recommendations
+  WHERE is_demo = true AND referrer_id = p_user_id;
 
   -- 4. Entreprises des profils demo
   DELETE FROM winelio.companies
