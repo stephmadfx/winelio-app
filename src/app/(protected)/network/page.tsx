@@ -24,7 +24,7 @@ export default async function NetworkPage() {
 
   const { data: referrals, count: totalReferrals } = await supabase
     .from("profiles")
-    .select("id, first_name, last_name, city, created_at, avatar, is_professional, companies!owner_id(alias, city, category:categories(name))", { count: "exact" })
+    .select("id, first_name, last_name, city, created_at, avatar, is_professional, is_demo, companies!owner_id(alias, city, category:categories(name))", { count: "exact" })
     .eq("sponsor_id", user.id);
 
   const referralsWithStats = await Promise.all(
@@ -211,6 +211,11 @@ export default async function NetworkPage() {
                       <div className="min-w-0">
                         <p className={`font-semibold text-sm truncate ${isPro ? "font-mono text-winelio-orange" : "text-winelio-dark"}`}>
                           {displayName}
+                          {ref.is_demo && (
+                            <span className="ml-1.5 inline-flex items-center px-1 py-0.5 rounded text-[9px] font-semibold text-orange-400 bg-orange-50 border border-orange-100">
+                              demo
+                            </span>
+                          )}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
                           {displaySub

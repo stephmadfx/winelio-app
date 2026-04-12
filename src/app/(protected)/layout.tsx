@@ -7,6 +7,7 @@ import { MobileHeader } from "@/components/mobile-header";
 import { AppBackground } from "@/components/AppBackground";
 import { ProfileIncompleteModal } from "@/components/profile-incomplete-modal";
 import { BugReportButton } from "@/components/bug-report-button";
+import { DemoSeedBanner } from "@/components/DemoSeedBanner";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
@@ -59,6 +60,7 @@ export default async function ProtectedLayout({
     <div className={`relative min-h-dvh bg-winelio-light dark:bg-slate-900 transition-colors duration-200 ${DEMO_MODE ? "pt-6" : ""}`}>
       <AppBackground />
       <DemoBanner />
+      {DEMO_MODE && <DemoSeedBanner />}
 
       {/* Modal profil incomplet */}
       {!isProfileComplete && <ProfileIncompleteModal />}

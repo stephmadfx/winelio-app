@@ -241,7 +241,7 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
   const notifications: Array<{ email: string; firstName: string; level: number }> = [];
   for (const { id, level } of sponsorChain) {
     const email = emailMap.get(id);
-    if (!email || email.endsWith("@winelio-pro.fr")) continue;
+    if (!email || email.endsWith("@winelio-pro.fr") || email.endsWith("@winelio-demo.internal")) continue;
     notifications.push({ email, firstName: profileMap.get(id) || "Membre", level });
   }
 

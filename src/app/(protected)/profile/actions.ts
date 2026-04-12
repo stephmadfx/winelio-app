@@ -17,7 +17,7 @@ export async function updateProfile(data: {
   city?: string;
   postal_code?: string;
   is_professional?: boolean;
-}): Promise<{ error?: string }> {
+}): Promise<{ error?: string; firstCompletion?: boolean }> {
   const user = await getUser();
   if (!user) return { error: "Non authentifié" };
 
@@ -55,13 +55,28 @@ export async function updateProfile(data: {
   }
 
   const supabase = await createClient();
+
+  // Lire le profil AVANT update pour détecter la première complétion
+  const { data: before } = await supabase
+    .from("profiles")
+    .select("first_name, last_name")
+    .eq("id", user.id)
+    .single();
+
+  const wasIncomplete = !before?.first_name || !before?.last_name;
+  const willBeComplete =
+    (patch.first_name ?? before?.first_name) &&
+    (patch.last_name  ?? before?.last_name);
+
   const { error } = await supabase
     .from("profiles")
     .update(patch)
     .eq("id", user.id);
 
   if (error) return { error: "Erreur lors de la sauvegarde." };
-  return {};
+
+  const firstCompletion = !!(wasIncomplete && willBeComplete);
+  return { firstCompletion };
 }
 
 /**

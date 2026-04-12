@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { assignSponsor, updateProfile } from "@/app/(protected)/profile/actions";
+import { triggerDemoSeed } from "@/components/DemoSeedBanner";
 
 interface Profile {
   id: string;
@@ -54,6 +55,10 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
       // - profil complet → modal disparaît
       // - champ supprimé → modal réapparaît
       router.refresh();
+      // Première complétion du profil → déclencher le seed demo si actif
+      if (result.firstCompletion && process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
+        triggerDemoSeed();
+      }
     } else {
       setAutoSaveStatus("error");
     }

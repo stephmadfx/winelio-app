@@ -25,7 +25,7 @@ export async function GET(request: Request) {
       p_user_id: user.id,
       p_max_depth: 5,
     });
-    const validIds = new Set((networkIds ?? []).map((r: { id: string }) => r.id));
+    const validIds = new Set((networkIds ?? []).map((r: { member_id: string }) => r.member_id));
     if (!validIds.has(parentId)) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
   const { data: children } = await supabaseAdmin
     .from("profiles")
-    .select("id, first_name, last_name, city, is_professional, companies!owner_id(alias, category:categories(name))")
+    .select("id, first_name, last_name, city, is_professional, is_demo, companies!owner_id(alias, category:categories(name))")
     .eq("sponsor_id", parentId);
 
   if (!children) {
@@ -78,6 +78,7 @@ export async function GET(request: Request) {
         last_name: child.last_name,
         city: child.city,
         is_professional: (child as { is_professional?: boolean }).is_professional ?? false,
+        is_demo: (child as { is_demo?: boolean }).is_demo ?? false,
         company_alias: rawCompany ? (rawCompany as { alias?: string | null }).alias ?? null : null,
         company_category: catName,
         childCount: childCount ?? 0,

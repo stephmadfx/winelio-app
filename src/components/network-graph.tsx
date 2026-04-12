@@ -7,6 +7,7 @@ interface GraphNode {
   last_name: string | null;
   city: string | null;
   is_professional: boolean;
+  is_demo: boolean;
   company_alias: string | null;
   company_category: string | null;
   level: number;
@@ -202,6 +203,7 @@ export function NetworkGraph({ userId, userName }: { userId: string; userName: s
       last_name: string | null;
       city: string | null;
       is_professional: boolean;
+      is_demo: boolean;
       company_alias: string | null;
       company_category: string | null;
       childCount: number;
@@ -213,6 +215,7 @@ export function NetworkGraph({ userId, userName }: { userId: string; userName: s
       last_name: c.last_name,
       city: c.city,
       is_professional: c.is_professional,
+      is_demo: c.is_demo,
       company_alias: c.company_alias,
       company_category: c.company_category,
       level,
@@ -237,6 +240,7 @@ export function NetworkGraph({ userId, userName }: { userId: string; userName: s
         last_name: userName.split(" ").slice(1).join(" ") ?? "",
         city: null,
         is_professional: false,
+        is_demo: false,
         company_alias: null,
         company_category: null,
         level: 0,
@@ -469,6 +473,17 @@ function NodeView({ node, onClick, selectedId }: {
             <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
           </svg>
           <span className="relative z-10">{initials}</span>
+
+          {/* Badge Demo */}
+          {node.is_demo && !isRoot && (
+            <div
+              className="absolute flex items-center justify-center rounded-full bg-orange-100 border border-orange-200"
+              style={{ width: 16, height: 16, bottom: -4, left: -4, zIndex: 3 }}
+              title="Profil de démonstration"
+            >
+              <span style={{ fontSize: 7, fontWeight: 800, color: "#FF6B35", lineHeight: 1 }}>D</span>
+            </div>
+          )}
 
           {/* Green check badge */}
           {hasCompleted && (

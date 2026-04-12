@@ -9,6 +9,7 @@ interface TreeNode {
   last_name: string | null;
   city: string | null;
   is_professional: boolean;
+  is_demo: boolean;
   company_alias: string | null;
   company_category: string | null;
   referral_count: number;
@@ -42,7 +43,7 @@ export function NetworkTree({ userId }: { userId: string }) {
     async (parentId: string): Promise<TreeNode[]> => {
       const { data: children } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name, city, is_professional, companies!owner_id(alias, category:categories(name))")
+        .select("id, first_name, last_name, city, is_professional, is_demo, companies!owner_id(alias, category:categories(name))")
         .eq("sponsor_id", parentId);
 
       if (!children || children.length === 0) return [];
@@ -74,6 +75,7 @@ export function NetworkTree({ userId }: { userId: string }) {
             last_name: child.last_name,
             city: child.city,
             is_professional: (child as { is_professional?: boolean }).is_professional ?? false,
+            is_demo: (child as { is_demo?: boolean }).is_demo ?? false,
             company_alias: rawCompany ? (rawCompany as { alias?: string | null }).alias ?? null : null,
             company_category: catName,
             referral_count: count ?? 0,
@@ -111,9 +113,10 @@ export function NetworkTree({ userId }: { userId: string }) {
         let current = next;
         let node: TreeNode | undefined;
 
-        for (const idx of path) {
+        for (let i = 0; i < path.length; i++) {
+          const idx = path[i];
           node = current[idx];
-          if (path.indexOf(idx) < path.length - 1) {
+          if (i < path.length - 1) {
             current = node.children;
           }
         }
@@ -127,9 +130,10 @@ export function NetworkTree({ userId }: { userId: string }) {
               const updated = structuredClone(prevState);
               let cur = updated;
               let n: TreeNode | undefined;
-              for (const idx of path) {
+              for (let i = 0; i < path.length; i++) {
+                const idx = path[i];
                 n = cur[idx];
-                if (path.indexOf(idx) < path.length - 1) {
+                if (i < path.length - 1) {
                   cur = n.children;
                 }
               }
@@ -291,6 +295,11 @@ function TreeNodeRow({
               <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold text-white ${colors.badge} shrink-0`}>
                 N{level}
               </span>
+              {node.is_demo && (
+                <span className="inline-flex items-center justify-center px-1 py-0.5 rounded text-[8px] font-bold text-orange-400 bg-orange-50 border border-orange-200 shrink-0">
+                  demo
+                </span>
+              )}
             </div>
             <p className="text-[11px] text-winelio-gray mt-0.5 truncate">
               {[

@@ -25,6 +25,26 @@ export default function SettingsPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
+  // État purge demo
+  const [demoDeleting, setDemoDeleting] = useState(false);
+  const [demoDeleteOpen, setDemoDeleteOpen] = useState(false);
+  const [demoDeleteDone, setDemoDeleteDone] = useState(false);
+
+  const handlePurgeDemo = async () => {
+    setDemoDeleting(true);
+    try {
+      const res = await fetch("/api/demo/seed-network", { method: "DELETE" });
+      if (res.ok) {
+        setDemoDeleteDone(true);
+        setDemoDeleteOpen(false);
+        localStorage.removeItem("demo_seed_status");
+        router.refresh();
+      }
+    } finally {
+      setDemoDeleting(false);
+    }
+  };
+
   // État du formulaire mot de passe
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -305,6 +325,61 @@ export default function SettingsPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Réseau démo */}
+      {process.env.NEXT_PUBLIC_DEMO_MODE === "true" && (
+        <Card className="!rounded-2xl border-orange-100 mb-4">
+          <CardContent className="p-5 sm:p-6">
+            <h3 className="text-sm font-semibold text-winelio-gray uppercase tracking-wider mb-3">
+              Réseau démo
+            </h3>
+            {demoDeleteDone ? (
+              <p className="text-sm text-green-600">✓ Données demo supprimées.</p>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Votre réseau contient des profils de démonstration pour vous montrer le potentiel de Winelio.
+                  Vous pouvez les supprimer à tout moment.
+                </p>
+                <button
+                  onClick={() => setDemoDeleteOpen(true)}
+                  className="px-4 py-2 rounded-xl border border-red-200 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors"
+                >
+                  Supprimer les données demo
+                </button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Dialog de confirmation purge demo */}
+      <Dialog open={demoDeleteOpen} onOpenChange={setDemoDeleteOpen}>
+        <DialogContent className="max-w-md mx-4 rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Supprimer le réseau démo ?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-2">
+            Tous les profils, recommandations et commissions de démonstration seront supprimés.
+            Vos vrais filleuls et données réelles ne seront pas affectés.
+          </p>
+          <DialogFooter>
+            <button
+              onClick={() => setDemoDeleteOpen(false)}
+              className="px-4 py-2 rounded-xl border text-sm"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={handlePurgeDemo}
+              disabled={demoDeleting}
+              className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 disabled:opacity-50"
+            >
+              {demoDeleting ? "Suppression..." : "Supprimer"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Zone dangereuse */}
       <Card className="!rounded-2xl border-red-200">
