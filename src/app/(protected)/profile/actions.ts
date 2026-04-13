@@ -136,3 +136,79 @@ export async function assignSponsor(sponsorCode: string): Promise<{ error?: stri
 
   return {};
 }
+
+/**
+ * Finalise l'onboarding Pro :
+ * 1. Met à jour profiles (is_professional, work_mode, pro_engagement_accepted)
+ * 2. Crée ou met à jour la company principale (siret, category_id)
+ */
+export async function completeProOnboarding(data: {
+  work_mode: "remote" | "onsite" | "both";
+  category_id: string;
+  siret: string | null;
+}): Promise<{ error?: string }> {
+  const user = await getUser();
+  if (!user) return { error: "Non authentifié" };
+
+  const supabase = await createClient();
+
+  // 1. Mettre à jour le profil
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({
+      is_professional: true,
+      work_mode: data.work_mode,
+      pro_engagement_accepted: true,
+    })
+    .eq("id", user.id);
+
+  if (profileError) return { error: "Erreur lors de la mise à jour du profil." };
+
+  // 2. Récupérer le profil pour le nom (fallback name)
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("first_name, last_name")
+    .eq("id", user.id)
+    .single();
+
+  const fallbackName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Mon entreprise";
+
+  // 3. Vérifier si une company existe déjà
+  const { data: existingCompany } = await supabase
+    .from("companies")
+    .select("id")
+    .eq("owner_id", user.id)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingCompany) {
+    // Mettre à jour la company existante
+    const patch: Record<string, string | null> = {};
+    if (data.category_id) patch.category_id = data.category_id;
+    if (data.siret !== null) patch.siret = data.siret;
+
+    if (Object.keys(patch).length > 0) {
+      const { error: companyError } = await supabase
+        .from("companies")
+        .update(patch)
+        .eq("id", existingCompany.id);
+      if (companyError) return { error: "Erreur lors de la mise à jour de l'entreprise." };
+    }
+  } else {
+    // Créer une nouvelle company
+    const { generateUniqueAlias } = await import("@/lib/generate-alias");
+    const alias = await generateUniqueAlias(supabase);
+
+    const { error: companyError } = await supabase.from("companies").insert({
+      owner_id: user.id,
+      name: fallbackName,
+      category_id: data.category_id || null,
+      siret: data.siret || null,
+      alias,
+    });
+    if (companyError) return { error: "Erreur lors de la création de l'entreprise." };
+  }
+
+  return {};
+}
