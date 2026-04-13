@@ -127,13 +127,7 @@ export default async function AdminReseau() {
     })
   );
 
-  // 4. Tous les profils pour la vue globale ReactFlow
-  // On ne passe que les membres des réseaux des 3 racines (exclut les comptes test isolés)
-  const { data: allNodes } = await supabaseAdmin
-    .from("profiles")
-    .select("id, first_name, last_name, email, sponsor_id, is_professional, is_active");
-
   return (
-    <AdminNetworkContent roots={roots} allNodes={allNodes ?? []} />
+    <AdminNetworkContent roots={roots} />
   );
 }

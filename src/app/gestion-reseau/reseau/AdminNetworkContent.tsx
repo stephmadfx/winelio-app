@@ -1,26 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import dynamic from "next/dynamic";
 import { NetworkGraph } from "@/components/network-graph";
 import { NetworkTree } from "@/components/network-tree";
 import { Card, CardContent } from "@/components/ui/card";
 import { CopyButton } from "@/components/referral-buttons";
-
-const AdminNetworkTree = dynamic(
-  () => import("@/components/admin/NetworkTree").then((m) => m.NetworkTree),
-  {
-    ssr: false,
-    loading: () => (
-      <div
-        className="bg-gray-900 rounded-xl border border-white/5 flex items-center justify-center"
-        style={{ height: "70vh" }}
-      >
-        <p className="text-gray-500 text-sm">Chargement de l&apos;arbre…</p>
-      </div>
-    ),
-  }
-);
 
 interface DirectReferral {
   id: string;
@@ -49,26 +33,13 @@ interface RootData {
   directReferrals: DirectReferral[];
 }
 
-interface ProfileNode {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  email: string | null;
-  sponsor_id: string | null;
-  is_professional: boolean;
-  is_active: boolean;
-}
-
 export function AdminNetworkContent({
   roots,
-  allNodes,
 }: {
   roots: RootData[];
-  allNodes: ProfileNode[];
 }) {
   const [activeTab, setActiveTab] = useState<string>("global");
 
-  const rootIds = roots.map((r) => r.id);
   const totalMembers = roots.reduce((s, r) => s + r.networkSize, 0);
   const totalCommissions = roots.reduce((s, r) => s + r.totalCommissions, 0);
 
@@ -175,11 +146,69 @@ export function AdminNetworkContent({
 
       {/* Vue globale */}
       {activeTab === "global" && (
-        <div>
-          <p className="text-xs text-muted-foreground mb-4">
-            Clic carte → résumé · Bouton ▼ → déplier 3 niveaux
-          </p>
-          <AdminNetworkTree nodes={allNodes} rootIds={rootIds} />
+        <div className="space-y-8">
+          {roots.map((root) => {
+            const displayName =
+              [root.first_name, root.last_name].filter(Boolean).join(" ") ||
+              root.email;
+            return (
+              <div key={root.id}>
+                {/* Séparateur racine */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center text-white font-bold text-sm shrink-0">
+                    {[root.first_name, root.last_name]
+                      .filter(Boolean)
+                      .map((n) => n![0])
+                      .join("")
+                      .toUpperCase() || "?"}
+                  </div>
+                  <div>
+                    <p className="font-bold text-winelio-dark">{displayName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {root.networkSize} membre{root.networkSize > 1 ? "s" : ""} ·{" "}
+                      {root.directCount} filleul{root.directCount > 1 ? "s" : ""} direct{root.directCount > 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab(root.id)}
+                    className="ml-auto text-xs text-winelio-orange hover:text-winelio-amber transition-colors font-medium"
+                  >
+                    Vue détaillée →
+                  </button>
+                </div>
+
+                {/* Vue graphique */}
+                <Card className="!rounded-2xl mb-4">
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-sm font-semibold text-winelio-dark mb-1">
+                      Vue graphique
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Pincez pour zoomer · Glissez pour naviguer
+                    </p>
+                    <NetworkGraph
+                      userId={root.id}
+                      userName={displayName}
+                      rootLabel={root.first_name ?? displayName}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Liste réseau */}
+                <Card className="!rounded-2xl">
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-sm font-semibold text-winelio-dark mb-1">
+                      Liste détaillée
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Réseau complet sur 5 niveaux
+                    </p>
+                    <NetworkTree userId={root.id} />
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })}
         </div>
       )}
 
