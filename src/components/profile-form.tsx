@@ -14,6 +14,7 @@ interface Profile {
   city: string | null;
   postal_code: string | null;
   is_professional: boolean;
+  pro_engagement_accepted: boolean;
   sponsor_code: string | null;
   sponsor_id: string | null;
 }
@@ -243,7 +244,23 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
             type="button"
             role="switch"
             aria-checked={form.is_professional}
-            onClick={() => setForm((prev) => ({ ...prev, is_professional: !prev.is_professional }))}
+            onClick={() => {
+              if (!form.is_professional) {
+                // Activer → rediriger vers onboarding sauf si déjà fait
+                if (profile.pro_engagement_accepted) {
+                  const updated = { ...form, is_professional: true };
+                  setForm(updated);
+                  saveToDb(updated);  // sauvegarde immédiate
+                } else {
+                  router.push("/profile/pro-onboarding");
+                }
+              } else {
+                // Désactiver → sauvegarde immédiate
+                const updated = { ...form, is_professional: false };
+                setForm(updated);
+                saveToDb(updated);
+              }
+            }}
             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
               form.is_professional ? "bg-winelio-orange" : "bg-gray-300"
             }`}
