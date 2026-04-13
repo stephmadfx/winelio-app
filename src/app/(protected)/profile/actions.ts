@@ -141,6 +141,7 @@ export async function assignSponsor(sponsorCode: string): Promise<{ error?: stri
  * Finalise l'onboarding Pro :
  * 1. Met à jour profiles (is_professional, work_mode, pro_engagement_accepted)
  * 2. Crée ou met à jour la company principale (siret, category_id)
+ * 3. Envoie un email de confirmation au pro
  */
 export async function completeProOnboarding(data: {
   work_mode: "remote" | "onsite" | "both";
@@ -164,7 +165,7 @@ export async function completeProOnboarding(data: {
 
   if (profileError) return { error: "Erreur lors de la mise à jour du profil." };
 
-  // 2. Récupérer le profil pour le nom (fallback name)
+  // 2. Récupérer le profil pour le nom (fallback name) + catégorie pour l'email
   const { data: profile } = await supabase
     .from("profiles")
     .select("first_name, last_name")
@@ -208,6 +209,23 @@ export async function completeProOnboarding(data: {
       alias,
     });
     if (companyError) return { error: "Erreur lors de la création de l'entreprise." };
+  }
+
+  // 3. Envoyer l'email de confirmation (non bloquant — on ignore les erreurs SMTP)
+  if (user.email) {
+    const { data: category } = await supabase
+      .from("categories")
+      .select("name")
+      .eq("id", data.category_id)
+      .maybeSingle();
+
+    const { notifyProOnboarding } = await import("@/lib/notify-pro-onboarding");
+    notifyProOnboarding({
+      email: user.email,
+      firstName: profile?.first_name || profile?.last_name || "Professionnel",
+      workMode: data.work_mode,
+      categoryName: category?.name || "—",
+    }).catch((err) => console.error("notify-pro-onboarding error:", err));
   }
 
   return {};
