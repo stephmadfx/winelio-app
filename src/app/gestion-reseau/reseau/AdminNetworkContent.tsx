@@ -146,67 +146,76 @@ export function AdminNetworkContent({
 
       {/* Vue globale */}
       {activeTab === "global" && (
-        <div className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {roots.map((root) => {
             const displayName =
               [root.first_name, root.last_name].filter(Boolean).join(" ") ||
-              root.email;
+              root.email.split("@")[0];
+            const initials =
+              [root.first_name, root.last_name]
+                .filter(Boolean)
+                .map((n) => n![0])
+                .join("")
+                .toUpperCase() || "?";
             return (
-              <div key={root.id}>
-                {/* Séparateur racine */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center text-white font-bold text-sm shrink-0">
-                    {[root.first_name, root.last_name]
-                      .filter(Boolean)
-                      .map((n) => n![0])
-                      .join("")
-                      .toUpperCase() || "?"}
+              <Card key={root.id} className="!rounded-2xl hover:shadow-md transition-shadow">
+                <CardContent className="p-5">
+                  {/* En-tête racine */}
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center text-white font-bold text-base shrink-0">
+                      {initials}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-winelio-dark truncate">{displayName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{root.email}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-bold text-winelio-dark">{displayName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {root.networkSize} membre{root.networkSize > 1 ? "s" : ""} ·{" "}
-                      {root.directCount} filleul{root.directCount > 1 ? "s" : ""} direct{root.directCount > 1 ? "s" : ""}
-                    </p>
+
+                  {/* Statistiques */}
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="bg-muted/50 rounded-xl p-3 text-center">
+                      <p className="text-2xl font-extrabold tabular-nums text-winelio-dark">
+                        {root.networkSize}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">
+                        Membres
+                      </p>
+                    </div>
+                    <div className="bg-muted/50 rounded-xl p-3 text-center">
+                      <p className="text-2xl font-extrabold tabular-nums text-winelio-dark">
+                        {root.directCount}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">
+                        Directs
+                      </p>
+                    </div>
+                    <div className="bg-winelio-orange/5 rounded-xl p-3 text-center col-span-2">
+                      <p className="text-xl font-extrabold tabular-nums text-winelio-orange">
+                        {root.totalCommissions.toFixed(2)} €
+                      </p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">
+                        Commissions totales
+                      </p>
+                    </div>
                   </div>
+
+                  {/* Code parrain */}
+                  <div className="flex items-center justify-between bg-muted/30 rounded-xl px-3 py-2 mb-4">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Code parrain</span>
+                    <span className="font-mono font-bold text-sm text-winelio-orange tracking-widest">
+                      {root.sponsor_code ?? "—"}
+                    </span>
+                  </div>
+
+                  {/* Bouton vue détaillée */}
                   <button
                     onClick={() => setActiveTab(root.id)}
-                    className="ml-auto text-xs text-winelio-orange hover:text-winelio-amber transition-colors font-medium"
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber text-white text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all"
                   >
-                    Vue détaillée →
+                    Voir le réseau complet →
                   </button>
-                </div>
-
-                {/* Vue graphique */}
-                <Card className="!rounded-2xl mb-4">
-                  <CardContent className="p-4 sm:p-6">
-                    <h3 className="text-sm font-semibold text-winelio-dark mb-1">
-                      Vue graphique
-                    </h3>
-                    <p className="text-xs text-muted-foreground mb-4">
-                      Pincez pour zoomer · Glissez pour naviguer
-                    </p>
-                    <NetworkGraph
-                      userId={root.id}
-                      userName={displayName}
-                      rootLabel={root.first_name ?? displayName}
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Liste réseau */}
-                <Card className="!rounded-2xl">
-                  <CardContent className="p-4 sm:p-6">
-                    <h3 className="text-sm font-semibold text-winelio-dark mb-1">
-                      Liste détaillée
-                    </h3>
-                    <p className="text-xs text-muted-foreground mb-4">
-                      Réseau complet sur 5 niveaux
-                    </p>
-                    <NetworkTree userId={root.id} />
-                  </CardContent>
-                </Card>
-              </div>
+                </CardContent>
+              </Card>
             );
           })}
         </div>
