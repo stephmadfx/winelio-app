@@ -24,6 +24,38 @@ export default async function AdminUtilisateurs({
   }
 
   const { data: users, count } = await query;
+
+  const userIds = (users ?? []).map((u) => u.id);
+
+  // Récupère les noms des parrains (self-join non supporté par PostgREST sur schéma custom)
+  const sponsorIds = [...new Set((users ?? []).map((u) => u.sponsor_id).filter(Boolean))];
+  const { data: sponsorProfiles } = sponsorIds.length
+    ? await supabaseAdmin
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", sponsorIds)
+    : { data: [] };
+
+  const sponsorMap: Record<string, { first_name: string | null; last_name: string | null }> = {};
+  for (const s of sponsorProfiles ?? []) {
+    sponsorMap[s.id] = { first_name: s.first_name, last_name: s.last_name };
+  }
+
+  // Récupère le nb de parrainages directs pour chaque user de la page
+  const { data: sponsorCounts } = userIds.length
+    ? await supabaseAdmin
+        .from("profiles")
+        .select("sponsor_id")
+        .in("sponsor_id", userIds)
+    : { data: [] };
+
+  const referralCount: Record<string, number> = {};
+  for (const row of sponsorCounts ?? []) {
+    if (row.sponsor_id) {
+      referralCount[row.sponsor_id] = (referralCount[row.sponsor_id] ?? 0) + 1;
+    }
+  }
+
   const totalPages = Math.ceil((count ?? 0) / pageSize);
 
   return (
@@ -57,6 +89,8 @@ export default async function AdminUtilisateurs({
             <tr>
               <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Membre</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Parrain</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Filleuls</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">SIRET</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Statut</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Inscrit le</th>
@@ -66,7 +100,12 @@ export default async function AdminUtilisateurs({
           <tbody className="divide-y divide-border">
             {(users ?? []).map((user) => {
               const company = Array.isArray(user.company) ? user.company[0] : user.company;
+              const sponsor = user.sponsor_id ? sponsorMap[user.sponsor_id] : null;
               const initials = `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase() || "?";
+              const sponsorName = sponsor
+                ? `${sponsor.first_name ?? ""} ${sponsor.last_name ?? ""}`.trim()
+                : null;
+              const filleuls = referralCount[user.id] ?? 0;
               return (
                 <tr key={user.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
@@ -90,6 +129,20 @@ export default async function AdminUtilisateurs({
                     }`}>
                       {user.is_professional ? "Pro" : "Particulier"}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {sponsorName ? (
+                      <span className="text-xs text-foreground">{sponsorName}</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/40">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {filleuls > 0 ? (
+                      <span className="text-xs font-semibold text-winelio-orange">{filleuls}</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/40">0</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-xs font-mono">
                     {company?.siret
@@ -130,7 +183,12 @@ export default async function AdminUtilisateurs({
       <div className="md:hidden space-y-2">
         {(users ?? []).map((user) => {
           const company = Array.isArray(user.company) ? user.company[0] : user.company;
+          const sponsor = user.sponsor_id ? sponsorMap[user.sponsor_id] : null;
           const initials = `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase() || "?";
+          const sponsorName = sponsor
+            ? `${sponsor.first_name ?? ""} ${sponsor.last_name ?? ""}`.trim()
+            : null;
+          const filleuls = referralCount[user.id] ?? 0;
           return (
             <Link
               key={user.id}
@@ -144,7 +202,9 @@ export default async function AdminUtilisateurs({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-foreground truncate">{`${user.first_name ?? ""} ${user.last_name ?? ""}`.trim() || "—"}</p>
-                <p className="text-xs text-muted-foreground">{company?.name ?? (user.is_professional ? "Pro" : "Particulier")}</p>
+                <p className="text-xs text-muted-foreground">
+                  {sponsorName ? `Parrain : ${sponsorName}` : (company?.name ?? (user.is_professional ? "Pro" : "Particulier"))}
+                </p>
               </div>
               <div className="flex flex-col items-end gap-1 shrink-0">
                 <span className={`text-xs px-2 py-0.5 rounded border ${
@@ -152,7 +212,9 @@ export default async function AdminUtilisateurs({
                 }`}>
                   {!user.is_active ? "Suspendu" : "Actif"}
                 </span>
-                <span className="text-[10px] text-muted-foreground">{new Date(user.created_at).toLocaleDateString("fr-FR")}</span>
+                {filleuls > 0 && (
+                  <span className="text-[10px] text-winelio-orange font-semibold">{filleuls} filleul{filleuls > 1 ? "s" : ""}</span>
+                )}
               </div>
             </Link>
           );

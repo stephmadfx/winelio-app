@@ -21,7 +21,7 @@ function LoginForm() {
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [step, setStep] = useState<"email" | "code">("email");
-  const [authMethod, setAuthMethod] = useState<"code" | "password">("code");
+  const [authMethod, setAuthMethod] = useState<"code" | "password">("password");
 
   // Restaure le dernier email utilisé (sessionStorage : effacé en fin de session)
   useEffect(() => {
