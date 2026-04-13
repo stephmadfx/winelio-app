@@ -20,7 +20,8 @@ export async function GET(request: Request) {
   }
 
   // Vérifie que parentId appartient bien au réseau de l'utilisateur connecté (anti-IDOR)
-  if (parentId !== user.id) {
+  // Exception : les super_admin peuvent consulter n'importe quel réseau
+  if (parentId !== user.id && user.app_metadata?.role !== "super_admin") {
     const { data: networkIds } = await supabaseAdmin.rpc("get_network_ids", {
       p_user_id: user.id,
       p_max_depth: 5,

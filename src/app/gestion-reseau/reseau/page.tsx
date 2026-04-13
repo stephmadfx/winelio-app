@@ -1,47 +1,139 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { NetworkTreeWrapper } from "./NetworkTreeWrapper";
+import { AdminNetworkContent } from "./AdminNetworkContent";
 
 export default async function AdminReseau() {
-  const { data: profiles } = await supabaseAdmin
+  // 1. Identifier les super_admin (= têtes de réseau)
+  const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({
+    perPage: 100,
+  });
+  const superAdmins = (usersData?.users ?? []).filter(
+    (u) => u.app_metadata?.role === "super_admin"
+  );
+
+  // 2. Profils des racines
+  const superAdminIds = superAdmins.map((u) => u.id);
+  const { data: rootProfiles } = await supabaseAdmin
+    .from("profiles")
+    .select("id, first_name, last_name, sponsor_code")
+    .in("id", superAdminIds);
+
+  // 3. Stats par racine
+  const now = new Date();
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  const roots = await Promise.all(
+    (rootProfiles ?? []).map(async (profile) => {
+      const authUser = superAdmins.find((u) => u.id === profile.id);
+
+      // Taille réseau (niveaux 1-5)
+      let networkSize = 0;
+      let currentLevelIds = [profile.id];
+      for (let lvl = 1; lvl <= 5; lvl++) {
+        if (currentLevelIds.length === 0) break;
+        const { data: lvlMembers } = await supabaseAdmin
+          .from("profiles")
+          .select("id")
+          .in("sponsor_id", currentLevelIds);
+        if (!lvlMembers || lvlMembers.length === 0) break;
+        networkSize += lvlMembers.length;
+        currentLevelIds = lvlMembers.map((m) => m.id);
+      }
+
+      // Nombre de filleuls directs
+      const { count: directCount } = await supabaseAdmin
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("sponsor_id", profile.id);
+
+      // Liste filleuls directs avec stats
+      const { data: directReferrals } = await supabaseAdmin
+        .from("profiles")
+        .select(
+          "id, first_name, last_name, city, is_professional, is_demo, created_at, companies!owner_id(alias, category:categories(name))"
+        )
+        .eq("sponsor_id", profile.id);
+
+      const directWithStats = await Promise.all(
+        (directReferrals ?? []).map(async (ref) => {
+          const { count: subCount } = await supabaseAdmin
+            .from("profiles")
+            .select("id", { count: "exact", head: true })
+            .eq("sponsor_id", ref.id);
+
+          const { data: commData } = await supabaseAdmin
+            .from("commission_transactions")
+            .select("amount")
+            .eq("user_id", ref.id);
+
+          const rawCompany = Array.isArray(ref.companies)
+            ? ref.companies[0] ?? null
+            : (ref.companies ?? null);
+          const rawCat = rawCompany
+            ? (rawCompany as Record<string, unknown>).category
+            : null;
+          const catName = Array.isArray(rawCat)
+            ? (rawCat[0] as { name: string } | undefined)?.name ?? null
+            : (rawCat as { name: string } | null)?.name ?? null;
+
+          return {
+            id: ref.id,
+            first_name: ref.first_name ?? null,
+            last_name: ref.last_name ?? null,
+            city: (ref as { city?: string | null }).city ?? null,
+            is_professional:
+              (ref as { is_professional?: boolean }).is_professional ?? false,
+            is_demo: (ref as { is_demo?: boolean }).is_demo ?? false,
+            company_alias: rawCompany
+              ? (rawCompany as { alias?: string | null }).alias ?? null
+              : null,
+            company_category: catName,
+            created_at: ref.created_at,
+            sub_referrals: subCount ?? 0,
+            total_commissions: (commData ?? []).reduce(
+              (s, c) => s + (c.amount ?? 0),
+              0
+            ),
+          };
+        })
+      );
+
+      // Commissions gagnées par cette racine (depuis son réseau)
+      const { data: commData } = await supabaseAdmin
+        .from("commission_transactions")
+        .select("amount, created_at")
+        .eq("user_id", profile.id)
+        .not("level", "is", null);
+
+      const totalCommissions = (commData ?? []).reduce(
+        (s, c) => s + (c.amount ?? 0),
+        0
+      );
+      const commissionsThisMonth = (commData ?? [])
+        .filter((c) => c.created_at >= firstOfMonth)
+        .reduce((s, c) => s + (c.amount ?? 0), 0);
+
+      return {
+        id: profile.id,
+        first_name: profile.first_name ?? null,
+        last_name: profile.last_name ?? null,
+        email: authUser?.email ?? "",
+        sponsor_code: profile.sponsor_code ?? null,
+        directCount: directCount ?? 0,
+        networkSize,
+        totalCommissions,
+        commissionsThisMonth,
+        directReferrals: directWithStats,
+      };
+    })
+  );
+
+  // 4. Tous les profils pour la vue globale ReactFlow
+  // On ne passe que les membres des réseaux des 3 racines (exclut les comptes test isolés)
+  const { data: allNodes } = await supabaseAdmin
     .from("profiles")
     .select("id, first_name, last_name, email, sponsor_id, is_professional, is_active");
 
-  const nodes = profiles ?? [];
-
-  const nodeIds = new Set(nodes.map((n) => n.id));
-  const childrenMap = new Map<string, number>();
-  for (const n of nodes) {
-    if (n.sponsor_id && nodeIds.has(n.sponsor_id)) {
-      childrenMap.set(n.sponsor_id, (childrenMap.get(n.sponsor_id) ?? 0) + 1);
-    }
-  }
-
-  // Racines = pas de sponsor valide dans le dataset
-  const allRootIds = nodes
-    .filter((n) => !n.sponsor_id || !nodeIds.has(n.sponsor_id))
-    .map((n) => n.id);
-
-  // N'afficher que les racines qui ont au moins un filleul (évite d'afficher des centaines de membres isolés)
-  const rootIds = allRootIds.filter((id) => (childrenMap.get(id) ?? 0) > 0);
-  const isolatedCount = allRootIds.length - rootIds.length;
-
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Réseau MLM</h1>
-        <div className="text-right">
-          <span className="text-sm text-gray-500">
-            {nodes.length} membre{nodes.length > 1 ? "s" : ""} ·{" "}
-            {rootIds.length} tête{rootIds.length > 1 ? "s" : ""} de réseau
-          </span>
-          {isolatedCount > 0 && (
-            <p className="text-xs text-gray-600 mt-0.5">
-              {isolatedCount} membre{isolatedCount > 1 ? "s" : ""} isolé{isolatedCount > 1 ? "s" : ""} non affiché{isolatedCount > 1 ? "s" : ""}
-            </p>
-          )}
-        </div>
-      </div>
-      <NetworkTreeWrapper nodes={nodes} rootIds={rootIds} />
-    </div>
+    <AdminNetworkContent roots={roots} allNodes={allNodes ?? []} />
   );
 }

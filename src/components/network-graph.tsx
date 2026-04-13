@@ -23,7 +23,7 @@ const LEVEL_COLORS = [
   "#FF6B35", "#F7931E", "#FBBF24", "#34D399", "#60A5FA", "#A78BFA",
 ];
 
-export function NetworkGraph({ userId, userName }: { userId: string; userName: string }) {
+export function NetworkGraph({ userId, userName, rootLabel }: { userId: string; userName: string; rootLabel?: string }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({ dragging: false, startX: 0, startY: 0, tx: 0, ty: 0, scale: 1 });
@@ -372,7 +372,7 @@ export function NetworkGraph({ userId, userName }: { userId: string; userName: s
             className="flex items-start justify-center pt-8"
             style={{ transformOrigin: "center top", minWidth: "100%", minHeight: "100%" }}
           >
-            <NodeView node={tree} onClick={handleNodeClick} selectedId={selectedNode?.id ?? null} />
+            <NodeView node={tree} onClick={handleNodeClick} selectedId={selectedNode?.id ?? null} rootLabel={rootLabel} />
           </div>
         ) : null}
       </div>
@@ -421,10 +421,11 @@ export function NetworkGraph({ userId, userName }: { userId: string; userName: s
 }
 
 // ── Node visual component ────────────────────────────
-function NodeView({ node, onClick, selectedId }: {
+function NodeView({ node, onClick, selectedId, rootLabel }: {
   node: GraphNode;
   onClick: (node: GraphNode) => void;
   selectedId: string | null;
+  rootLabel?: string;
 }) {
   const color = LEVEL_COLORS[node.level] ?? "#9ca3af";
   const initials = [node.first_name, node.last_name].filter(Boolean).map(n => n![0]).join("").toUpperCase();
@@ -512,7 +513,7 @@ function NodeView({ node, onClick, selectedId }: {
           color: isRoot ? "#2D3436" : "#636E72",
         }}>
           {isRoot
-            ? "Vous"
+            ? (rootLabel ?? "Vous")
             : node.is_professional && node.company_alias
             ? node.company_alias
             : node.level === 1
@@ -547,7 +548,7 @@ function NodeView({ node, onClick, selectedId }: {
             {node.children.map(child => (
               <div key={child.id} className="flex flex-col items-center" style={{ padding: "0 4px" }}>
                 <div className="border-l border-dashed border-gray-300" style={{ height: 12 }} />
-                <NodeView node={child} onClick={onClick} selectedId={selectedId} />
+                <NodeView node={child} onClick={onClick} selectedId={selectedId} rootLabel={rootLabel} />
               </div>
             ))}
           </div>
