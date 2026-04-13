@@ -23,7 +23,7 @@ const LEVEL_COLORS = [
   "#FF6B35", "#F7931E", "#FBBF24", "#34D399", "#60A5FA", "#A78BFA",
 ];
 
-export function NetworkGraph({ userId, userName, rootLabel }: { userId: string; userName: string; rootLabel?: string }) {
+export function NetworkGraph({ userId, userName, rootLabel, maxLevel = 5 }: { userId: string; userName: string; rootLabel?: string; maxLevel?: number }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({ dragging: false, startX: 0, startY: 0, tx: 0, ty: 0, scale: 1 });
@@ -306,7 +306,7 @@ export function NetworkGraph({ userId, userName, rootLabel }: { userId: string; 
     const vp = viewportRef.current;
     if (vp?.dataset.wasDrag) return;
     setSelectedNode(node);
-    if (node.childCount > 0 && node.level < 5) toggleExpand(node.id);
+    if (node.childCount > 0 && node.level < maxLevel) toggleExpand(node.id);
   }, [toggleExpand]);
 
   const zoomIn = () => { dragState.current.scale = Math.min(dragState.current.scale + 0.2, 4); applyTransform(); rerender(n => n + 1); };

@@ -475,6 +475,7 @@ function RootView({ root }: { root: RootData }) {
             userId={root.id}
             userName={displayName}
             rootLabel={root.first_name ?? displayName}
+            maxLevel={999}
           />
         </CardContent>
       </Card>
@@ -483,8 +484,8 @@ function RootView({ root }: { root: RootData }) {
       <Card className="!rounded-2xl">
         <CardContent className="p-4 sm:p-6">
           <h3 className="text-base font-semibold text-winelio-dark mb-1">Liste détaillée</h3>
-          <p className="text-xs text-muted-foreground mb-4">Réseau complet sur 5 niveaux</p>
-          <NetworkTree userId={root.id} />
+          <p className="text-xs text-muted-foreground mb-4">Réseau complet — tous niveaux</p>
+          <NetworkTree userId={root.id} maxLevel={999} />
         </CardContent>
       </Card>
     </div>

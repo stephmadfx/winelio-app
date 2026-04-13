@@ -32,7 +32,7 @@ function getColors(level: number) {
   return LEVEL_COLORS[level] ?? { border: "border-l-gray-300", badge: "bg-gray-400", bg: "bg-gray-50", text: "text-gray-500" };
 }
 
-export function NetworkTree({ userId }: { userId: string }) {
+export function NetworkTree({ userId, maxLevel = 5 }: { userId: string; maxLevel?: number }) {
   const [roots, setRoots] = useState<TreeNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -202,6 +202,7 @@ export function NetworkTree({ userId }: { userId: string }) {
             path={[i]}
             onToggle={toggleNode}
             isLast={i === roots.length - 1}
+            maxLevel={maxLevel}
           />
         ))}
       </div>
@@ -215,14 +216,15 @@ function TreeNodeRow({
   path,
   onToggle,
   isLast,
+  maxLevel = 5,
 }: {
   node: TreeNode;
   level: number;
   path: number[];
   onToggle: (path: number[]) => void;
   isLast: boolean;
+  maxLevel?: number;
 }) {
-  const maxLevel = 5;
   const initials = [node.first_name, node.last_name]
     .filter(Boolean)
     .map((n) => n![0])
@@ -334,6 +336,7 @@ function TreeNodeRow({
               path={[...path, i]}
               onToggle={onToggle}
               isLast={i === node.children.length - 1}
+              maxLevel={maxLevel}
             />
           ))}
         </div>
