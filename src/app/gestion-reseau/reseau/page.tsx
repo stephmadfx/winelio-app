@@ -3,12 +3,17 @@ import { AdminNetworkContent } from "./AdminNetworkContent";
 
 export default async function AdminReseau() {
   // 1. Identifier les super_admin (= têtes de réseau)
-  const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({
-    perPage: 100,
-  });
-  const superAdmins = (usersData?.users ?? []).filter(
-    (u) => u.app_metadata?.role === "super_admin"
-  );
+  // On pagine toutes les pages car il peut y avoir des milliers d'auth.users (comptes test inclus)
+  type AuthUser = { id: string; email?: string; app_metadata?: Record<string, unknown> };
+  const superAdmins: AuthUser[] = [];
+  let page = 1;
+  while (true) {
+    const { data: batch } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+    const users = (batch?.users ?? []) as AuthUser[];
+    superAdmins.push(...users.filter((u) => u.app_metadata?.role === "super_admin"));
+    if (users.length < 1000) break;
+    page++;
+  }
 
   // 2. Profils des racines
   const superAdminIds = superAdmins.map((u) => u.id);
