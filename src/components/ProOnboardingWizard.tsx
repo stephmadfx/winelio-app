@@ -1,0 +1,312 @@
+// src/components/ProOnboardingWizard.tsx
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { completeProOnboarding } from "@/app/(protected)/profile/actions";
+
+type WorkMode = "remote" | "onsite" | "both";
+
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface Props {
+  categories: Category[];
+  defaultSiret: string;
+  defaultCategoryId: string;
+}
+
+const WORK_MODES: { value: WorkMode; label: string; sub: string; icon: string }[] = [
+  { value: "remote",  label: "Distanciel", sub: "En ligne",    icon: "💻" },
+  { value: "onsite",  label: "Présentiel", sub: "En personne", icon: "🤝" },
+  { value: "both",    label: "Les deux",   sub: "Flexible",    icon: "🌍" },
+];
+
+export function ProOnboardingWizard({ categories, defaultSiret, defaultCategoryId }: Props) {
+  const router = useRouter();
+  const [step, setStep] = useState(1);
+  const [workMode, setWorkMode] = useState<WorkMode | null>(null);
+  const [categoryId, setCategoryId] = useState(defaultCategoryId);
+  const [siret, setSiret] = useState(defaultSiret);
+  const [siretSkipped, setSiretSkipped] = useState(false);
+  const [engagementChecked, setEngagementChecked] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    setSaving(true);
+    setError(null);
+    const result = await completeProOnboarding({
+      work_mode: workMode!,
+      category_id: categoryId,
+      siret: siretSkipped ? null : siret.trim() || null,
+    });
+    if (result.error) {
+      setError(result.error);
+      setSaving(false);
+      return;
+    }
+    router.push("/profile?pro=1");
+    router.refresh();
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Barre de progression */}
+      <StepBar current={step} />
+
+      {/* Étape 1 */}
+      {step === 1 && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <span className="inline-block bg-gradient-to-r from-winelio-orange to-winelio-amber text-white text-xs font-bold px-3 py-1 rounded-full mb-3">
+            ÉTAPE 1 / 3
+          </span>
+          <h2 className="text-xl font-bold text-winelio-dark mb-1">Comment tu travailles avec tes clients ?</h2>
+          <p className="text-sm text-winelio-gray mb-6">Cela aide tes futurs clients à savoir comment te contacter.</p>
+          <div className="grid grid-cols-3 gap-3">
+            {WORK_MODES.map((m) => (
+              <button
+                key={m.value}
+                type="button"
+                onClick={() => setWorkMode(m.value)}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                  workMode === m.value
+                    ? "border-winelio-orange bg-orange-50"
+                    : "border-gray-200 hover:border-winelio-orange/40"
+                }`}
+              >
+                <span className="text-3xl">{m.icon}</span>
+                <span className={`text-sm font-semibold ${workMode === m.value ? "text-winelio-orange" : "text-winelio-dark"}`}>
+                  {m.label}
+                </span>
+                <span className="text-xs text-winelio-gray">{m.sub}</span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-6 flex justify-end">
+            <button
+              type="button"
+              disabled={!workMode}
+              onClick={() => setStep(2)}
+              className="px-6 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40"
+            >
+              Suivant →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Étape 2 */}
+      {step === 2 && (
+        <Step2
+          categories={categories}
+          categoryId={categoryId}
+          setCategoryId={setCategoryId}
+          siret={siret}
+          setSiret={setSiret}
+          siretSkipped={siretSkipped}
+          setSiretSkipped={setSiretSkipped}
+          onBack={() => setStep(1)}
+          onNext={() => setStep(3)}
+        />
+      )}
+
+      {/* Étape 3 */}
+      {step === 3 && (
+        <Step3
+          checked={engagementChecked}
+          setChecked={setEngagementChecked}
+          saving={saving}
+          error={error}
+          onBack={() => setStep(2)}
+          onSubmit={handleSubmit}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ── Barre de progression ── */
+function StepBar({ current }: { current: number }) {
+  const steps = ["Mon activité", "Mon entreprise", "Engagement"];
+  return (
+    <div className="flex items-center gap-0">
+      {steps.map((label, i) => {
+        const n = i + 1;
+        const active = n === current;
+        const done = n < current;
+        return (
+          <div key={n} className="flex-1 flex flex-col items-center gap-1 relative">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                done
+                  ? "bg-green-500 text-white"
+                  : active
+                  ? "bg-gradient-to-br from-winelio-orange to-winelio-amber text-white"
+                  : "bg-gray-200 text-gray-400"
+              }`}
+            >
+              {done ? "✓" : n}
+            </div>
+            <span className={`text-xs font-medium ${active ? "text-winelio-orange" : "text-gray-400"}`}>
+              {label}
+            </span>
+            {i < steps.length - 1 && (
+              <div
+                className={`absolute top-4 left-1/2 w-full h-0.5 -z-10 ${done ? "bg-green-400" : "bg-gray-200"}`}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Étape 2 ── */
+function Step2({
+  categories, categoryId, setCategoryId, siret, setSiret,
+  siretSkipped, setSiretSkipped, onBack, onNext,
+}: {
+  categories: Category[];
+  categoryId: string;
+  setCategoryId: (v: string) => void;
+  siret: string;
+  setSiret: (v: string) => void;
+  siretSkipped: boolean;
+  setSiretSkipped: (v: boolean) => void;
+  onBack: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-6">
+      <span className="inline-block bg-gray-200 text-gray-500 text-xs font-bold px-3 py-1 rounded-full mb-3">
+        ÉTAPE 2 / 3
+      </span>
+      <h2 className="text-xl font-bold text-winelio-dark mb-6">Ton activité professionnelle</h2>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-winelio-gray mb-1">
+            Catégorie d&apos;activité <span className="text-winelio-orange">*</span>
+          </label>
+          <select
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white"
+          >
+            <option value="">Sélectionner une catégorie…</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-winelio-gray mb-1">
+            Numéro SIRET{" "}
+            <span className="text-gray-400 text-xs font-normal">(fortement recommandé)</span>
+          </label>
+          <input
+            type="text"
+            value={siret}
+            onChange={(e) => setSiret(e.target.value)}
+            disabled={siretSkipped}
+            placeholder="123 456 789 00012"
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange disabled:bg-gray-50 disabled:text-gray-400"
+          />
+          <button
+            type="button"
+            onClick={() => { setSiretSkipped(!siretSkipped); setSiret(""); }}
+            className="mt-1.5 text-xs text-winelio-orange hover:underline"
+          >
+            {siretSkipped ? "← Renseigner mon SIRET" : "Je n'ai pas encore de SIRET →"}
+          </button>
+        </div>
+      </div>
+      <div className="mt-6 flex justify-between">
+        <button
+          type="button"
+          onClick={onBack}
+          className="px-5 py-2.5 border border-gray-200 text-winelio-gray font-medium rounded-xl hover:bg-gray-50 transition-colors"
+        >
+          ← Retour
+        </button>
+        <button
+          type="button"
+          disabled={!categoryId}
+          onClick={onNext}
+          className="px-6 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40"
+        >
+          Suivant →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Étape 3 ── */
+function Step3({
+  checked, setChecked, saving, error, onBack, onSubmit,
+}: {
+  checked: boolean;
+  setChecked: (v: boolean) => void;
+  saving: boolean;
+  error: string | null;
+  onBack: () => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-6">
+      <span className="inline-block bg-gray-200 text-gray-500 text-xs font-bold px-3 py-1 rounded-full mb-3">
+        ÉTAPE 3 / 3
+      </span>
+      <h2 className="text-xl font-bold text-winelio-dark mb-1">Tu as tout à gagner 🚀</h2>
+      <p className="text-sm text-winelio-gray mb-4">Lis et accepte cet engagement pour activer ton compte Pro.</p>
+      <div className="bg-orange-50 border-l-4 border-winelio-orange rounded-r-xl p-4 mb-5 text-sm text-winelio-dark leading-relaxed">
+        Je m&apos;engage à traiter chaque recommandation avec sérieux et réactivité. Je comprends que chaque lead
+        Winelio est une opportunité concrète d&apos;augmenter mon chiffre d&apos;affaires. Je m&apos;engage à suivre
+        l&apos;avancement de chaque mission directement via l&apos;application Winelio, car c&apos;est ce qui me
+        garantit d&apos;être recommandé à nouveau, de gagner en visibilité et de fidéliser ma clientèle sur le
+        long terme.
+      </div>
+      <label className="flex items-start gap-3 cursor-pointer">
+        <div
+          onClick={() => setChecked(!checked)}
+          className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 transition-all ${
+            checked
+              ? "bg-gradient-to-br from-winelio-orange to-winelio-amber border-winelio-orange"
+              : "border-gray-300"
+          }`}
+        >
+          {checked && <span className="text-white text-xs font-bold">✓</span>}
+        </div>
+        <span className="text-sm text-winelio-dark font-medium">
+          J&apos;ai lu et j&apos;accepte cet engagement — je suis prêt à booster mon activité avec Winelio.
+        </span>
+      </label>
+      {error && (
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+          {error}
+        </div>
+      )}
+      <div className="mt-6 flex justify-between items-center">
+        <button
+          type="button"
+          onClick={onBack}
+          className="px-5 py-2.5 border border-gray-200 text-winelio-gray font-medium rounded-xl hover:bg-gray-50 transition-colors"
+        >
+          ← Retour
+        </button>
+        <button
+          type="button"
+          disabled={!checked || saving}
+          onClick={onSubmit}
+          className="px-7 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-bold rounded-xl shadow-lg shadow-orange-200 hover:opacity-90 transition-opacity disabled:opacity-40 text-base"
+        >
+          {saving ? "Activation…" : "🚀 Devenir Pro !"}
+        </button>
+      </div>
+    </div>
+  );
+}
