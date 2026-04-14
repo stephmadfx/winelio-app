@@ -42,13 +42,15 @@ async function getKPIs() {
     prevMembersRes,
     allRecosRes,
     completedRecosRes,
+    cagnotteAllRes,
+    cagnotteMoisRes,
   ] = await Promise.all([
     // Membres actifs
     supabaseAdmin.from("profiles").select("id", { count: "exact", head: true }).eq("is_active", true),
-    // Commissions distribuées (EARNED)
-    supabaseAdmin.from("commission_transactions").select("amount").eq("status", "EARNED"),
-    // Commissions en attente (PENDING)
-    supabaseAdmin.from("commission_transactions").select("amount").eq("status", "PENDING"),
+    // Commissions distribuées (EARNED) — hors cagnotte Winelio
+    supabaseAdmin.from("commission_transactions").select("amount").eq("status", "EARNED").neq("type", "platform_winelio"),
+    // Commissions en attente (PENDING) — hors cagnotte Winelio
+    supabaseAdmin.from("commission_transactions").select("amount").eq("status", "PENDING").neq("type", "platform_winelio"),
     // Recommandations en cours
     supabaseAdmin.from("recommendations").select("id", { count: "exact", head: true })
       .not("status", "in", '("COMPLETED","CANCELLED")'),
@@ -68,11 +70,18 @@ async function getKPIs() {
     // Recommandations terminées
     supabaseAdmin.from("recommendations").select("id", { count: "exact", head: true })
       .eq("status", "COMPLETED"),
+    // Cagnotte Winelio — total cumulé
+    supabaseAdmin.from("commission_transactions").select("amount").eq("type", "platform_winelio").eq("status", "EARNED"),
+    // Cagnotte Winelio — ce mois
+    supabaseAdmin.from("commission_transactions").select("amount").eq("type", "platform_winelio").eq("status", "EARNED")
+      .gte("created_at", monthStart),
   ]);
 
-  const totalEarned  = (earnedRes.data  ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
-  const totalPending = (pendingRes.data ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
-  const totalWins    = (winsRes.data    ?? []).reduce((s, w) => s + (w.total_wins ?? 0), 0);
+  const totalEarned    = (earnedRes.data       ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
+  const totalPending   = (pendingRes.data      ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
+  const totalWins      = (winsRes.data         ?? []).reduce((s, w) => s + (w.total_wins ?? 0), 0);
+  const cagnotteTotal  = (cagnotteAllRes.data  ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
+  const cagnotteMois   = (cagnotteMoisRes.data ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
 
   const newMembers  = newMembersRes.count  ?? 0;
   const prevMembers = prevMembersRes.count ?? 0;
@@ -98,6 +107,8 @@ async function getKPIs() {
     conversionRate,
     completedRecos,
     totalRecos,
+    cagnotteTotal,
+    cagnotteMois,
   };
 }
 
@@ -244,6 +255,25 @@ export default async function AdminDashboard() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Vue d&apos;ensemble</h1>
+
+      {/* Cagnotte Winelio */}
+      <div className="rounded-xl p-5 bg-gradient-to-r from-amber-500/20 to-winelio-orange/20 border border-winelio-orange/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-winelio-orange uppercase tracking-widest mb-1">
+            💰 Cagnotte Winelio (14 %)
+          </p>
+          <p className="text-3xl font-bold text-white">
+            {kpis.cagnotteTotal.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+          </p>
+          <p className="text-xs text-gray-400 mt-1">Total cumulé — revenus plateforme</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-gray-400 mb-0.5">Ce mois</p>
+          <p className="text-xl font-bold text-winelio-amber">
+            + {kpis.cagnotteMois.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+          </p>
+        </div>
+      </div>
 
       {/* Row 1 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
