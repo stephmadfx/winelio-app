@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { COMMISSION_TYPE, COMMISSION_STATUS } from "@/lib/constants";
+import { COMMISSION_TYPE, COMMISSION_STATUS, WINELIO_SYSTEM_USER_ID } from "@/lib/constants";
 
 interface CompensationPlan {
   id: string;
@@ -10,11 +10,17 @@ interface CompensationPlan {
   level_3_percentage: number;
   level_4_percentage: number;
   level_5_percentage: number;
+  platform_percentage: number;
+  affiliation_percentage: number;
+  cashback_wins_percentage: number;
 }
 
 interface CommissionResult {
   referrer_commission: number;
   level_commissions: { level: number; amount: number }[];
+  platform_commission: number;
+  affiliation_commission: number;
+  cashback_wins: number;
 }
 
 export function calculateCommissions(
@@ -36,7 +42,11 @@ export function calculateCommissions(
     .map((pct, i) => ({ level: i + 1, amount: baseCommission * (pct / 100) }))
     .filter((lc) => lc.amount > 0);
 
-  return { referrer_commission, level_commissions };
+  const platform_commission   = baseCommission * ((plan.platform_percentage   ?? 14) / 100);
+  const affiliation_commission = baseCommission * ((plan.affiliation_percentage ?? 1)  / 100);
+  const cashback_wins          = baseCommission * ((plan.cashback_wins_percentage ?? 1) / 100);
+
+  return { referrer_commission, level_commissions, platform_commission, affiliation_commission, cashback_wins };
 }
 
 /**
@@ -48,6 +58,7 @@ export function calculateCommissions(
 export async function createCommissions(
   recommendationId: string,
   referrerId: string,
+  professionalId: string,
   amount: number,
   planId: string | null
 ): Promise<void> {
@@ -81,7 +92,8 @@ export async function createCommissions(
 
   if (!plan) return;
 
-  const { referrer_commission, level_commissions } = calculateCommissions(amount, plan);
+  const { referrer_commission, level_commissions, platform_commission, affiliation_commission, cashback_wins } =
+    calculateCommissions(amount, plan);
 
   const commissions: Array<{
     recommendation_id: string;
@@ -91,6 +103,7 @@ export async function createCommissions(
     level: number;
     status: string;
   }> = [
+    // Referrer (60%)
     {
       recommendation_id: recommendationId,
       user_id: referrerId,
@@ -99,8 +112,18 @@ export async function createCommissions(
       level: 0,
       status: COMMISSION_STATUS.EARNED,
     },
+    // Cagnotte Winelio (14%)
+    {
+      recommendation_id: recommendationId,
+      user_id: WINELIO_SYSTEM_USER_ID,
+      amount: platform_commission,
+      type: COMMISSION_TYPE.PLATFORM_WINELIO,
+      level: 0,
+      status: COMMISSION_STATUS.EARNED,
+    },
   ];
 
+  // Niveaux MLM (4% × 5)
   let currentId = referrerId;
   for (const lc of level_commissions) {
     const { data: profile } = await supabaseAdmin
@@ -121,6 +144,38 @@ export async function createCommissions(
     });
 
     currentId = profile.sponsor_id;
+  }
+
+  // Affiliation bonus (1%) → sponsor du professionnel
+  if (affiliation_commission > 0) {
+    const { data: proProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("sponsor_id")
+      .eq("id", professionalId)
+      .single();
+
+    if (proProfile?.sponsor_id) {
+      commissions.push({
+        recommendation_id: recommendationId,
+        user_id: proProfile.sponsor_id,
+        amount: affiliation_commission,
+        type: COMMISSION_TYPE.AFFILIATION_BONUS,
+        level: 0,
+        status: COMMISSION_STATUS.EARNED,
+      });
+    }
+  }
+
+  // Cashback pro (1% en Wins) → le professionnel lui-même
+  if (cashback_wins > 0) {
+    commissions.push({
+      recommendation_id: recommendationId,
+      user_id: professionalId,
+      amount: cashback_wins,
+      type: COMMISSION_TYPE.PROFESSIONAL_CASHBACK,
+      level: 0,
+      status: COMMISSION_STATUS.EARNED,
+    });
   }
 
   await supabaseAdmin.from("commission_transactions").insert(commissions);

@@ -10,7 +10,11 @@ export const COMMISSION_TYPE = {
   AFFILIATION_BONUS:     "affiliation_bonus",
   PROFESSIONAL_CASHBACK: "professional_cashback",
   MANUAL_ADJUSTMENT:     "manual_adjustment",
+  PLATFORM_WINELIO:      "platform_winelio",
 } as const;
+
+// UUID réservé au profil système "Cagnotte Winelio"
+export const WINELIO_SYSTEM_USER_ID = "00000000-0000-0000-0000-000000000001";
 
 export type CommissionType = typeof COMMISSION_TYPE[keyof typeof COMMISSION_TYPE];
 

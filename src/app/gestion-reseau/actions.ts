@@ -46,12 +46,12 @@ export async function advanceRecommendationStep(
   if (orderIndex === 6) {
     const { data: reco } = await supabaseAdmin
       .from("recommendations")
-      .select("id, referrer_id, amount, compensation_plan_id")
+      .select("id, referrer_id, professional_id, amount, compensation_plan_id")
       .eq("id", recommendationId)
       .single();
 
     if (reco?.amount) {
-      await createCommissions(reco.id, reco.referrer_id, reco.amount, reco.compensation_plan_id ?? null);
+      await createCommissions(reco.id, reco.referrer_id, reco.professional_id, reco.amount, reco.compensation_plan_id ?? null);
       // Recalcule les wallets des bénéficiaires après insertion
       const { data: newCommissions } = await supabaseAdmin
         .from("commission_transactions")

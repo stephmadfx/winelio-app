@@ -103,6 +103,7 @@ export async function POST(request: Request) {
       await createCommissions(
         rec.id,
         rec.referrer_id,
+        rec.professional_id,
         rec.amount,
         rec.compensation_plan_id ?? null
       );
