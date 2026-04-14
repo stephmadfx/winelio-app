@@ -123,8 +123,9 @@ export async function createCommissions(
     },
   ];
 
-  // Niveaux MLM (4% × 5)
+  // Niveaux MLM (4% × 5) — les niveaux non distribués (chaîne trop courte) vont à la cagnotte
   let currentId = referrerId;
+  let undistributed = 0;
   for (const lc of level_commissions) {
     const { data: profile } = await supabaseAdmin
       .from("profiles")
@@ -132,7 +133,11 @@ export async function createCommissions(
       .eq("id", currentId)
       .single();
 
-    if (!profile?.sponsor_id) break;
+    if (!profile?.sponsor_id) {
+      // Chaîne interrompue : récupérer ce niveau et tous les suivants
+      undistributed += lc.amount;
+      continue;
+    }
 
     commissions.push({
       recommendation_id: recommendationId,
@@ -146,7 +151,7 @@ export async function createCommissions(
     currentId = profile.sponsor_id;
   }
 
-  // Affiliation bonus (1%) → sponsor du professionnel
+  // Affiliation bonus (1%) → sponsor du professionnel, ou cagnotte si absent
   if (affiliation_commission > 0) {
     const { data: proProfile } = await supabaseAdmin
       .from("profiles")
@@ -163,6 +168,16 @@ export async function createCommissions(
         level: 0,
         status: COMMISSION_STATUS.EARNED,
       });
+    } else {
+      undistributed += affiliation_commission;
+    }
+  }
+
+  // Abonder la cagnotte Winelio avec les montants non distribués
+  if (undistributed > 0) {
+    const platformEntry = commissions.find((c) => c.type === COMMISSION_TYPE.PLATFORM_WINELIO);
+    if (platformEntry) {
+      platformEntry.amount = Math.round((platformEntry.amount + undistributed) * 100) / 100;
     }
   }
 
