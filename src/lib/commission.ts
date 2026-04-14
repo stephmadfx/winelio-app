@@ -126,7 +126,13 @@ export async function createCommissions(
   // Niveaux MLM (4% × 5) — les niveaux non distribués (chaîne trop courte) vont à la cagnotte
   let currentId = referrerId;
   let undistributed = 0;
+  let chainBroken = false;
   for (const lc of level_commissions) {
+    if (chainBroken) {
+      undistributed += lc.amount;
+      continue;
+    }
+
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("sponsor_id")
@@ -134,7 +140,7 @@ export async function createCommissions(
       .single();
 
     if (!profile?.sponsor_id) {
-      // Chaîne interrompue : récupérer ce niveau et tous les suivants
+      chainBroken = true;
       undistributed += lc.amount;
       continue;
     }
