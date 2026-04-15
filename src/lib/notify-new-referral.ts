@@ -243,10 +243,10 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
       `${newMemberName} vient de rejoindre Winelio en tant que ${levelLabel} dans votre réseau.`,
       "",
       level === 1
-        ? "En tant que parrain direct, vous beneficierez d'une commission sur chaque recommandation validee de ce nouveau membre."
-        : `Votre reseau grandit ! Vous percevrez une commission sur les recommandations validees au niveau ${level}.`,
+        ? "En tant que parrain direct, vous bénéficierez d'une commission sur chaque recommandation validée de ce nouveau membre."
+        : `Votre réseau grandit ! Vous percevrez une commission sur les recommandations validées au niveau ${level}.`,
       "",
-      "Voir mon reseau : " + (process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.fr") + "/network",
+      "Voir mon réseau : " + (process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.fr") + "/network",
       "",
       "---",
       "© 2026 Winelio · Recommandez. Connectez. Gagnez.",
@@ -256,8 +256,8 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
       to: email,
       subject:
         level === 1
-          ? `${newMemberName} a rejoint votre reseau Winelio`
-          : `Nouveau membre niveau ${level} dans votre reseau Winelio`,
+          ? `${newMemberName} a rejoint votre réseau Winelio`
+          : `Nouveau membre niveau ${level} dans votre réseau Winelio`,
       html: buildReferralEmail(firstName, newMemberName, level),
       text: textBody,
       priority: level === 1 ? 3 : 7,

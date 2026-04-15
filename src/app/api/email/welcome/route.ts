@@ -260,8 +260,12 @@ export async function POST() {
 
     const firstName = profile.first_name || profile.last_name || "Nouveau membre";
 
+    if (!user.email) {
+      return NextResponse.json({ error: "Email utilisateur introuvable" }, { status: 400 });
+    }
+
     await queueEmail({
-      to: user.email!,
+      to: user.email,
       subject: `Bienvenue sur Winelio, ${firstName} !`,
       html: buildWelcomeEmail(firstName, profile.sponsor_code),
       priority: 5,

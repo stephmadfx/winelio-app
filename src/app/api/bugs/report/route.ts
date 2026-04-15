@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
 
   const reportId = crypto.randomUUID();
   let screenshotStoragePath: string | null = null;
+  let screenshotSignedUrl: string | null = null;
   let screenshotBuffer: Buffer | null = null;
   let screenshotExt = "jpg";
 
@@ -38,6 +39,10 @@ export async function POST(req: NextRequest) {
 
     if (!uploadError) {
       screenshotStoragePath = path;
+      const { data: signed } = await supabaseAdmin.storage
+        .from("bug-screenshots")
+        .createSignedUrl(path, 60 * 60 * 24 * 7); // 7 jours
+      screenshotSignedUrl = signed?.signedUrl ?? null;
     } else {
       console.error("[bug/report] Storage upload error:", uploadError);
     }
@@ -64,7 +69,7 @@ export async function POST(req: NextRequest) {
       to: process.env.ADMIN_NOTIFY_EMAIL || "support@winelio.app",
       replyTo: "support@winelio.app",
       subject: `[Bug #${reportId}] Signalement - ${pageUrl}`,
-      html: buildBugEmailHtml(reportId, user.email ?? "", message.trim(), pageUrl, !!screenshotBuffer),
+      html: buildBugEmailHtml(reportId, user.email ?? "", message.trim(), pageUrl, screenshotSignedUrl),
       priority: 10,
     });
   } catch (err) {
@@ -99,14 +104,14 @@ function buildBugEmailHtml(
   userEmail: string,
   message: string,
   pageUrl: string,
-  hasScreenshot: boolean
+  screenshotSignedUrl: string | null
 ): string {
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const shortId = reportId.substring(0, 8);
-  const screenshotHtml = hasScreenshot
+  const screenshotHtml = screenshotSignedUrl
     ? `<table width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
        <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="background:#F8F9FA;border-radius:8px;padding:10px 16px;">
-         <p style="margin:0;color:#636E72;font-size:12px;">📎 Screenshot disponible dans Supabase Storage (bug-screenshots/${reportId})</p>
+         <p style="margin:0;color:#636E72;font-size:12px;">📎 <a href="${esc(screenshotSignedUrl)}" style="color:#FF6B35;text-decoration:none;font-weight:600;">Voir le screenshot</a> (lien valide 7 jours)</p>
        </td></tr></table>`
     : "";
 
