@@ -1,32 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import nodemailer from "nodemailer";
-
-const smtpPort = Number(process.env.SMTP_PORT) || 465;
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "ssl0.ovh.net",
-  port: smtpPort,
-  secure: smtpPort === 465,
-  connectionTimeout: 8000,
-  greetingTimeout: 8000,
-  socketTimeout: 8000,
-  auth: {
-    user: process.env.SMTP_USER || "support@winelio.app",
-    pass: process.env.SMTP_PASS || "",
-  },
-});
-
-const SEND_MAIL_TIMEOUT_MS = 10000;
-
-async function sendMailWithTimeout(message: Parameters<typeof transporter.sendMail>[0]) {
-  return Promise.race([
-    transporter.sendMail(message),
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("SMTP timeout")), SEND_MAIL_TIMEOUT_MS)
-    ),
-  ]);
-}
+import { queueEmail } from "@/lib/email-queue";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -83,20 +58,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Erreur base de données" }, { status: 500 });
   }
 
-  // Envoi email support
+  // Envoi email support (screenshot stocké dans Supabase Storage, lien inclus dans le HTML)
   try {
-    await sendMailWithTimeout({
-      from: `"Winelio Support" <${process.env.SMTP_USER || "support@winelio.app"}>`,
+    await queueEmail({
       to: process.env.ADMIN_NOTIFY_EMAIL || "support@winelio.app",
       replyTo: "support@winelio.app",
       subject: `[Bug #${reportId}] Signalement - ${pageUrl}`,
       html: buildBugEmailHtml(reportId, user.email ?? "", message.trim(), pageUrl, !!screenshotBuffer),
-      attachments: screenshotBuffer
-        ? [{ filename: `screenshot-${reportId.substring(0, 8)}.${screenshotExt}`, content: screenshotBuffer, contentType: screenshot!.type }]
-        : [],
+      priority: 10,
     });
   } catch (err) {
-    console.error("[bug/report] SMTP error:", err);
+    console.error("[bug/report] queue error:", err);
     // Ne pas bloquer la réponse si l'email échoue
   }
 
@@ -134,7 +106,7 @@ function buildBugEmailHtml(
   const screenshotHtml = hasScreenshot
     ? `<table width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
        <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="background:#F8F9FA;border-radius:8px;padding:10px 16px;">
-         <p style="margin:0;color:#636E72;font-size:12px;">📎 Screenshot joint en pièce jointe</p>
+         <p style="margin:0;color:#636E72;font-size:12px;">📎 Screenshot disponible dans Supabase Storage (bug-screenshots/${reportId})</p>
        </td></tr></table>`
     : "";
 

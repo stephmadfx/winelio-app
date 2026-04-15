@@ -1,19 +1,7 @@
-import nodemailer from "nodemailer";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
-
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "ssl0.ovh.net",
-  port: Number(process.env.SMTP_PORT) || 465,
-  secure: (Number(process.env.SMTP_PORT) || 465) === 465,
-  auth: {
-    user: process.env.SMTP_USER || "support@winelio.app",
-    pass: process.env.SMTP_PASS || "",
-  },
-});
-
-const FROM = `"Winelio" <${process.env.SMTP_USER || "support@winelio.app"}>`;
+import { queueEmail } from "@/lib/email-queue";
 
 // ─── Helpers HTML ─────────────────────────────────────────────────────────────
 
@@ -210,12 +198,12 @@ export async function sendCommissionPaymentEmail(
     return;
   }
 
-  await transporter.sendMail({
-    from: FROM,
+  await queueEmail({
     to: email,
     subject: `Commission Winelio — ${clientName} — ${amount.toFixed(2).replace(".", ",")} €`,
     html: buildPaymentLinkEmail(firstName, clientName, amount, checkoutUrl),
     text: `Bonjour ${firstName},\n\nVotre commission Winelio pour le client ${clientName} est de ${amount.toFixed(2)} €.\n\nRéglez-la ici : ${checkoutUrl}\n\n© 2026 Winelio`,
+    priority: 5,
   });
 }
 
@@ -237,12 +225,12 @@ export async function sendCommissionReminderEmail(
     return;
   }
 
-  await transporter.sendMail({
-    from: FROM,
+  await queueEmail({
     to: email,
     subject: `Rappel — Commission en attente ${amount.toFixed(2).replace(".", ",")} €`,
     html: buildReminderEmail(firstName, clientName, amount, checkoutUrl),
     text: `Bonjour ${firstName},\n\nRappel : votre commission Winelio de ${amount.toFixed(2)} € pour ${clientName} n'a pas encore été réglée.\n\nLien de paiement : ${checkoutUrl}\n\n© 2026 Winelio`,
+    priority: 5,
   });
 }
 
@@ -280,12 +268,12 @@ export async function sendCommissionAlertEmails(
 
   await Promise.allSettled(
     recipients.map(({ email, firstName }) =>
-      transporter.sendMail({
-        from: FROM,
+      queueEmail({
         to: email,
         subject: "Information — Commission non réglée",
         html: buildAlertEmail(firstName),
         text: `Bonjour ${firstName},\n\nNous vous informons que la commission liée à votre dossier n'a pas encore été réglée. Notre équipe assure le suivi.\n\nContact : support@winelio.app\n\n© 2026 Winelio`,
+        priority: 5,
       })
     )
   );

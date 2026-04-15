@@ -1,19 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import nodemailer from "nodemailer";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
-
-const _smtpPort = Number(process.env.SMTP_PORT) || 465;
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "ssl0.ovh.net",
-  port: _smtpPort,
-  secure: _smtpPort === 465,
-  auth: {
-    user: process.env.SMTP_USER || "support@winelio.app",
-    pass: process.env.SMTP_PASS || "",
-  },
-});
+import { queueEmail } from "@/lib/email-queue";
 
 function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
   const dashboardUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.fr";
@@ -271,11 +260,11 @@ export async function POST() {
 
     const firstName = profile.first_name || profile.last_name || "Nouveau membre";
 
-    await transporter.sendMail({
-      from: `"Winelio" <${process.env.SMTP_USER || "support@winelio.app"}>`,
+    await queueEmail({
       to: user.email!,
       subject: `Bienvenue sur Winelio, ${firstName} !`,
       html: buildWelcomeEmail(firstName, profile.sponsor_code),
+      priority: 5,
     });
 
     return NextResponse.json({ success: true });

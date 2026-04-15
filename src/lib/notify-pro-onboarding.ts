@@ -2,20 +2,9 @@
  * Envoie un email de confirmation au professionnel qui vient de compléter
  * son onboarding Pro (wizard 3 étapes).
  */
-import nodemailer from "nodemailer";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
-
-const _smtpPort = Number(process.env.SMTP_PORT) || 465;
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "ssl0.ovh.net",
-  port: _smtpPort,
-  secure: _smtpPort === 465,
-  auth: {
-    user: process.env.SMTP_USER || "support@winelio.app",
-    pass: process.env.SMTP_PASS || "",
-  },
-});
+import { queueEmail } from "@/lib/email-queue";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.fr";
 
@@ -231,8 +220,7 @@ export async function notifyProOnboarding({
 }): Promise<void> {
   const workModeLabel = WORK_MODE_LABELS[workMode] ?? workMode;
 
-  await transporter.sendMail({
-    from: `"Winelio" <${process.env.SMTP_USER || "support@winelio.app"}>`,
+  await queueEmail({
     to: email,
     subject: `${firstName}, votre fiche Pro Winelio est activée ! 🚀`,
     html: buildProConfirmEmail(firstName, workModeLabel, categoryName),
