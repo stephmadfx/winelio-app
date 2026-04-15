@@ -108,9 +108,9 @@ export function renderContentWithPlaceholders(
   const lines = content.split("\n");
 
   return lines.map((line, lineIndex) => {
-    const parts = line.split(/(\[[^\]]+\])/g);
+    const parts = line.split(/(\[[^a-z\]]+\])/g);
     const rendered = parts.map((part, partIndex) => {
-      const match = part.match(/^\[([^\]]+)\]$/);
+      const match = part.match(/^\[([^a-z\]]+)\]$/);
       if (match) {
         const key = match[1];
         return (

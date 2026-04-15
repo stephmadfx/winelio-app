@@ -48,8 +48,7 @@ export function DocumentViewer({
   onUpdateStatus: (documentId: string, status: "draft" | "reviewing" | "validated") => Promise<void>;
 }) {
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
-
-  const statusConf = STATUS_CONFIG[document.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.draft;
+  const [currentStatus, setCurrentStatus] = useState(document.status);
 
   const totalAnnotations = Object.values(annotationsBySectionId).reduce(
     (acc, arr) => acc + arr.length,
@@ -67,11 +66,13 @@ export function DocumentViewer({
           </p>
         </div>
         <select
-          defaultValue={document.status}
+          value={currentStatus}
           onChange={async (e) => {
-            await onUpdateStatus(document.id, e.target.value as "draft" | "reviewing" | "validated");
+            const newStatus = e.target.value as "draft" | "reviewing" | "validated";
+            setCurrentStatus(newStatus);
+            await onUpdateStatus(document.id, newStatus);
           }}
-          className={`text-xs font-semibold px-3 py-1.5 rounded-full border-0 cursor-pointer ${statusConf.classes}`}
+          className={`text-xs font-semibold px-3 py-1.5 rounded-full border-0 cursor-pointer ${STATUS_CONFIG[currentStatus as keyof typeof STATUS_CONFIG]?.classes ?? STATUS_CONFIG.draft.classes}`}
         >
           <option value="draft">Brouillon</option>
           <option value="reviewing">En révision</option>

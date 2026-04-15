@@ -122,8 +122,15 @@ function AnnotationThread({
             rows={2}
             className="w-full text-xs bg-muted/50 rounded-lg px-2.5 py-2 resize-none outline-none focus:ring-1 focus:ring-winelio-orange/50 placeholder:text-muted-foreground"
             onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey))
-                handleSubmit(e as unknown as React.FormEvent);
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                const val = inputValue;
+                if (!val.trim()) return;
+                setInputValue("");
+                startTransition(async () => {
+                  await onAddAnnotation(section.id, val);
+                });
+              }
             }}
           />
           <div className="flex justify-end mt-1.5">
