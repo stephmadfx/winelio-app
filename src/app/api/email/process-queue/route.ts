@@ -76,7 +76,7 @@ export async function POST(req: Request) {
             status:       attempts >= maxAttempts ? "failed" : "pending",
             attempts,
             error:        err instanceof Error ? err.message : String(err),
-            scheduled_at: attempts >= maxAttempts ? undefined : nextTry,
+            scheduled_at: attempts >= maxAttempts ? null : nextTry,
           })
           .eq("id", row.id);
 
