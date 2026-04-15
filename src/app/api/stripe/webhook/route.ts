@@ -54,8 +54,11 @@ export async function POST(req: Request) {
     .eq("id", recommendationId)
     .single();
 
-  if (!reco?.amount) {
-    return NextResponse.json({ error: "Recommandation introuvable ou sans montant" }, { status: 404 });
+  if (!reco) {
+    return NextResponse.json({ error: "Recommandation introuvable" }, { status: 404 });
+  }
+  if (reco.amount == null) {
+    return NextResponse.json({ error: "Recommandation sans montant" }, { status: 400 });
   }
 
   // ── Créer et distribuer les commissions ──────────────────────────────────────
@@ -74,7 +77,7 @@ export async function POST(req: Request) {
     .eq("recommendation_id", reco.id);
 
   const uniqueUsers = [...new Set((commissions ?? []).map((c) => c.user_id))];
-  await Promise.all(uniqueUsers.map((userId) => recalculateWallet(userId)));
+  await Promise.allSettled(uniqueUsers.map((userId) => recalculateWallet(userId)));
 
   // ── Marquer la session comme payée ───────────────────────────────────────────
   await supabaseAdmin
