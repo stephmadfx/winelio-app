@@ -54,7 +54,7 @@ function ctaButton(label: string, url: string): string {
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td align="center" style="background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:12px;">
-            <a href="${url}" style="display:inline-block;color:#ffffff;font-size:15px;font-weight:700;padding:15px 36px;border-radius:12px;text-decoration:none;">${label}</a>
+            <a href="${url.replace(/"/g, "&quot;")}" style="display:inline-block;color:#ffffff;font-size:15px;font-weight:700;padding:15px 36px;border-radius:12px;text-decoration:none;">${label}</a>
           </td>
         </tr>
       </table>
@@ -103,7 +103,7 @@ function buildPaymentLinkEmail(
     <p style="color:#636E72;font-size:13px;text-align:center;margin:0 0 20px;">
       Ce lien est valable <strong style="color:#2D3436;">24 heures</strong>. Un rappel vous sera envoyé si nécessaire.
     </p>
-    ${ctaButton("Payer ma commission →", he(checkoutUrl))}
+    ${ctaButton("Payer ma commission →", checkoutUrl)}
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr>
     </table>
@@ -147,7 +147,7 @@ function buildReminderEmail(
     <p style="color:#636E72;font-size:13px;text-align:center;margin:0 0 20px;">
       Merci de procéder au règlement dès que possible pour maintenir votre accès à la plateforme.
     </p>
-    ${ctaButton("Payer ma commission →", he(checkoutUrl))}`;
+    ${ctaButton("Payer ma commission →", checkoutUrl)}`;
 
   return emailShell(content);
 }
@@ -205,7 +205,10 @@ export async function sendCommissionPaymentEmail(
 
   const firstName = profileResult.data?.first_name || "Professionnel";
   const email = authResult.data?.user?.email;
-  if (!email) return;
+  if (!email) {
+    console.error(`[notify-commission-payment] Email introuvable pour proId=${proId}`);
+    return;
+  }
 
   await transporter.sendMail({
     from: FROM,
@@ -229,7 +232,10 @@ export async function sendCommissionReminderEmail(
 
   const firstName = profileResult.data?.first_name || "Professionnel";
   const email = authResult.data?.user?.email;
-  if (!email) return;
+  if (!email) {
+    console.error(`[notify-commission-payment] Email introuvable pour proId=${proId}`);
+    return;
+  }
 
   await transporter.sendMail({
     from: FROM,
@@ -244,10 +250,11 @@ export async function sendCommissionAlertEmails(
   contactId: string,
   referrerId: string
 ): Promise<void> {
-  const [contactProfile, referrerProfile] = await Promise.all([
-    supabaseAdmin.from("profiles").select("first_name, id").eq("id", contactId).maybeSingle(),
-    supabaseAdmin.from("profiles").select("first_name").eq("id", referrerId).single(),
-  ]);
+  const { data: referrerProfile } = await supabaseAdmin
+    .from("profiles")
+    .select("first_name")
+    .eq("id", referrerId)
+    .single();
 
   const { data: contactRow } = await supabaseAdmin
     .from("contacts")
@@ -257,7 +264,7 @@ export async function sendCommissionAlertEmails(
 
   const referrerAuth = await supabaseAdmin.auth.admin.getUserById(referrerId);
   const referrerEmail = referrerAuth.data?.user?.email;
-  const referrerFirstName = referrerProfile.data?.first_name || "Membre";
+  const referrerFirstName = referrerProfile?.first_name || "Membre";
 
   const recipients: Array<{ email: string; firstName: string }> = [];
 
