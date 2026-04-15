@@ -8,18 +8,9 @@ import { AppBackground } from "@/components/AppBackground";
 import { ProfileIncompleteModal } from "@/components/profile-incomplete-modal";
 import { BugReportButton } from "@/components/bug-report-button";
 import { DemoSeedBanner } from "@/components/DemoSeedBanner";
+import { BetaBanner } from "@/components/BetaBanner";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
-
-function DemoBanner() {
-  if (!DEMO_MODE) return null;
-  return (
-    <div className="fixed top-0 left-0 right-0 z-[9999] h-6 bg-amber-400/90 backdrop-blur-sm flex items-center justify-center gap-2 text-amber-900 text-[11px] font-medium tracking-wide select-none pointer-events-none">
-      <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-700 animate-pulse" />
-      Mode démonstration — données fictives
-    </div>
-  );
-}
 
 export default async function ProtectedLayout({
   children,
@@ -59,7 +50,7 @@ export default async function ProtectedLayout({
   return (
     <div className={`relative min-h-dvh bg-winelio-light dark:bg-slate-900 transition-colors duration-200 ${DEMO_MODE ? "pt-6" : ""}`}>
       <AppBackground />
-      <DemoBanner />
+      <BetaBanner />
       {DEMO_MODE && <DemoSeedBanner />}
 
       {/* Modal profil incomplet */}
