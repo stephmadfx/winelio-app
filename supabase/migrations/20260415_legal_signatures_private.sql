@@ -1,15 +1,11 @@
--- supabase/migrations/20260415_is_hoguet_and_storage.sql
+-- supabase/migrations/20260415_legal_signatures_private.sql
+-- Correction : passer le bucket legal-signatures en privé
+-- et remplacer la policy lecture publique par une policy owner + super_admin
 
--- 1. Colonne is_hoguet sur winelio.categories
-ALTER TABLE winelio.categories
-  ADD COLUMN IF NOT EXISTS is_hoguet boolean NOT NULL DEFAULT false;
+UPDATE storage.buckets SET public = false WHERE id = 'legal-signatures';
 
--- 2. Bucket Supabase Storage pour les signatures légales (privé)
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('legal-signatures', 'legal-signatures', false)
-ON CONFLICT (id) DO NOTHING;
+DROP POLICY IF EXISTS "Public read legal-signatures" ON storage.objects;
 
--- 3. RLS : lecture réservée au propriétaire ou à un super_admin
 DO $$
 BEGIN
   IF NOT EXISTS (
