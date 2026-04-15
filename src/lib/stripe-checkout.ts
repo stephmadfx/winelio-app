@@ -14,7 +14,6 @@ export async function createStripeCheckoutSession(
 ): Promise<string> {
   // ── 1. Vérification idempotente ──────────────────────────────────────────────
   const { data: existing } = await supabaseAdmin
-    .schema("winelio")
     .from("stripe_payment_sessions")
     .select("stripe_session_id")
     .eq("recommendation_id", recommendationId)
@@ -30,7 +29,6 @@ export async function createStripeCheckoutSession(
     }
     // Session expirée → marquer expired et en créer une nouvelle
     await supabaseAdmin
-      .schema("winelio")
       .from("stripe_payment_sessions")
       .update({ status: "expired" })
       .eq("stripe_session_id", existing.stripe_session_id);
@@ -38,7 +36,6 @@ export async function createStripeCheckoutSession(
 
   // ── 2. Récupérer la recommandation ───────────────────────────────────────────
   const { data: reco } = await supabaseAdmin
-    .schema("winelio")
     .from("recommendations")
     .select(
       "id, amount, professional_id, referrer_id, compensation_plan_id, contact:contacts(first_name, last_name)"
@@ -46,7 +43,10 @@ export async function createStripeCheckoutSession(
     .eq("id", recommendationId)
     .single();
 
-  if (!reco?.amount) {
+  if (!reco) {
+    throw new Error(`Recommandation ${recommendationId} introuvable`);
+  }
+  if (!reco.amount) {
     throw new Error(`Recommandation ${recommendationId} sans montant`);
   }
 
@@ -54,7 +54,6 @@ export async function createStripeCheckoutSession(
   let commissionRate = 10; // taux par défaut
   if (reco.compensation_plan_id) {
     const { data: plan } = await supabaseAdmin
-      .schema("winelio")
       .from("compensation_plans")
       .select("commission_rate")
       .eq("id", reco.compensation_plan_id)
@@ -62,7 +61,6 @@ export async function createStripeCheckoutSession(
     if (plan) commissionRate = plan.commission_rate;
   } else {
     const { data: defaultPlan } = await supabaseAdmin
-      .schema("winelio")
       .from("compensation_plans")
       .select("commission_rate")
       .eq("is_default", true)
@@ -117,9 +115,8 @@ export async function createStripeCheckoutSession(
   if (!session.url)
     throw new Error("Stripe n'a pas retourné d'URL de checkout");
 
-  // ── 7. Sauvegarder en DB ─────────────────────────────────────────────────────
-  await supabaseAdmin
-    .schema("winelio")
+  // ── 7. Sauvegarder en DB (avant email — si l'insert échoue, expirer la session Stripe) ─────
+  const { error: insertError } = await supabaseAdmin
     .from("stripe_payment_sessions")
     .insert({
       recommendation_id: recommendationId,
@@ -127,13 +124,28 @@ export async function createStripeCheckoutSession(
       amount: commissionAmount,
     });
 
-  // ── 8. Envoyer l'email au professionnel ──────────────────────────────────────
-  await sendCommissionPaymentEmail(
-    reco.professional_id,
-    clientName,
-    commissionAmount,
-    session.url
-  );
+  if (insertError) {
+    // Expirer la session Stripe pour éviter une double facturation au prochain appel
+    try {
+      await stripe.checkout.sessions.expire(session.id);
+    } catch {
+      // On a fait notre possible
+    }
+    throw new Error(`Impossible d'enregistrer la session de paiement: ${insertError.message}`);
+  }
+
+  // ── 8. Envoyer l'email (non-critique — échec logué mais non propagé) ──────────
+  try {
+    await sendCommissionPaymentEmail(
+      reco.professional_id,
+      clientName,
+      commissionAmount,
+      session.url
+    );
+  } catch (emailErr) {
+    console.error("[stripe-checkout] Échec envoi email commission:", emailErr);
+    // Ne pas faire échouer le flux — la session Stripe est créée et en DB
+  }
 
   return session.url;
 }
