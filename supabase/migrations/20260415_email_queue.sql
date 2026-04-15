@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS winelio.email_queue (
   from_email   text        NOT NULL DEFAULT 'support@winelio.app',
   from_name    text        NOT NULL DEFAULT 'Winelio',
   reply_to     text,
-  priority     int         NOT NULL DEFAULT 5,
+  priority     int         NOT NULL DEFAULT 5 CHECK (priority BETWEEN 1 AND 10),
   status       text        NOT NULL DEFAULT 'pending'
                            CHECK (status IN ('pending','sending','sent','failed')),
   attempts     int         NOT NULL DEFAULT 0,
@@ -25,6 +25,7 @@ CREATE INDEX IF NOT EXISTS email_queue_process_idx
   ON winelio.email_queue (priority ASC, scheduled_at ASC)
   WHERE status = 'pending';
 
+-- Accès réservé au service_role uniquement (aucune policy = deny-all pour anon/authenticated)
 ALTER TABLE winelio.email_queue ENABLE ROW LEVEL SECURITY;
 
 CREATE EXTENSION IF NOT EXISTS pg_cron;
