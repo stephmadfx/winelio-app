@@ -537,17 +537,17 @@ function NodeView({ node, onClick, selectedId, rootLabel }: {
       {/* Children with connectors */}
       {showKids && (
         <div className="flex flex-col items-center mt-1">
-          <div className="border-l border-dashed border-gray-300" style={{ height: 16 }} />
+          <div className="border-l-2 border-dashed border-gray-400" style={{ height: 16 }} />
           <div className="relative flex items-start">
             {node.children.length > 1 && (
-              <div className="absolute top-0 border-t border-dashed border-gray-300" style={{
+              <div className="absolute top-0 border-t-2 border-dashed border-gray-400" style={{
                 left: `calc(${100 / (node.children.length * 2)}%)`,
                 right: `calc(${100 / (node.children.length * 2)}%)`,
               }} />
             )}
             {node.children.map(child => (
               <div key={child.id} className="flex flex-col items-center" style={{ padding: "0 4px" }}>
-                <div className="border-l border-dashed border-gray-300" style={{ height: 12 }} />
+                <div className="border-l-2 border-dashed border-gray-400" style={{ height: 12 }} />
                 <NodeView node={child} onClick={onClick} selectedId={selectedId} rootLabel={rootLabel} />
               </div>
             ))}
@@ -558,7 +558,7 @@ function NodeView({ node, onClick, selectedId, rootLabel }: {
       {/* Loading */}
       {node.expanded && !node.loaded && node.childCount > 0 && (
         <div className="mt-2 flex flex-col items-center">
-          <div className="border-l border-dashed border-gray-300" style={{ height: 12 }} />
+          <div className="border-l-2 border-dashed border-gray-400" style={{ height: 12 }} />
           <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: color, borderTopColor: "transparent" }} />
         </div>
       )}
