@@ -21,23 +21,31 @@ export function hashDocument(content: string): string {
 export async function getDocumentHash(
   documentId: string
 ): Promise<{ hash: string; version: string } | null> {
-  const [{ data: sections }, { data: doc }] = await Promise.all([
-    supabaseAdmin
-      .from("document_sections")
-      .select("content")
-      .eq("document_id", documentId)
-      .order("order_index"),
-    supabaseAdmin
-      .from("legal_documents")
-      .select("version")
-      .eq("id", documentId)
-      .single(),
-  ]);
+  try {
+    const [
+      { data: sections, error: sectionsError },
+      { data: doc, error: docError },
+    ] = await Promise.all([
+      supabaseAdmin
+        .from("document_sections")
+        .select("content")
+        .eq("document_id", documentId)
+        .order("order_index"),
+      supabaseAdmin
+        .from("legal_documents")
+        .select("version")
+        .eq("id", documentId)
+        .single(),
+    ]);
 
-  if (!sections || !doc) return null;
+    if (sectionsError || docError || !sections || !doc) return null;
 
-  const fullContent = sections.map((s) => s.content).join("\n\n");
-  return { hash: hashDocument(fullContent), version: doc.version };
+    const fullContent = sections.map((s) => s.content).join("\n\n");
+    return { hash: hashDocument(fullContent), version: doc.version };
+  } catch (err) {
+    console.error(`[audit] Error fetching document hash for ${documentId}:`, err);
+    return null;
+  }
 }
 
 type OnboardingEventPayload = {
@@ -60,7 +68,7 @@ type OnboardingEventPayload = {
 export async function logOnboardingEvent(
   payload: OnboardingEventPayload
 ): Promise<void> {
-  await supabaseAdmin.from("pro_onboarding_events").insert({
+  const { error } = await supabaseAdmin.from("pro_onboarding_events").insert({
     user_id: payload.userId,
     event_type: payload.eventType,
     ip_address: payload.ip,
@@ -70,4 +78,10 @@ export async function logOnboardingEvent(
     document_hash: payload.documentHash ?? null,
     metadata: payload.metadata ?? null,
   });
+
+  if (error) {
+    throw new Error(
+      `Failed to log onboarding event for user ${payload.userId}: ${error.message}`
+    );
+  }
 }
