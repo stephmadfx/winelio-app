@@ -5,6 +5,7 @@ import {
   reactivateUser,
   adjustCommission,
 } from "../../actions";
+import { ProOnboardingAuditTimeline, type OnboardingEvent } from "@/components/admin/ProOnboardingAuditTimeline";
 
 export default async function AdminUserDetail({
   params,
@@ -13,7 +14,7 @@ export default async function AdminUserDetail({
 }) {
   const { id } = await params;
 
-  const [profileRes, walletRes, recoCountRes, sponsorCountRes, companyRes] =
+  const [profileRes, walletRes, recoCountRes, sponsorCountRes, companyRes, auditRes] =
     await Promise.all([
       supabaseAdmin
         .from("profiles")
@@ -38,6 +39,11 @@ export default async function AdminUserDetail({
         .select("name, legal_name, alias, siret, siren, vat_number, email, phone, website, address, city, postal_code, is_verified")
         .eq("owner_id", id)
         .maybeSingle(),
+      supabaseAdmin
+        .from("pro_onboarding_events")
+        .select("id, event_type, ip_address, user_agent, document_id, document_version, document_hash, metadata, created_at")
+        .eq("user_id", id)
+        .order("created_at", { ascending: true }),
     ]);
 
   if (!profileRes.data) notFound();
@@ -46,6 +52,7 @@ export default async function AdminUserDetail({
   const wallet = walletRes.data;
   const company = companyRes.data;
   const sponsor = Array.isArray(profile.sponsor) ? profile.sponsor[0] : profile.sponsor;
+  const auditEvents: OnboardingEvent[] = (auditRes.data ?? []) as OnboardingEvent[];
 
   return (
     <div className="max-w-2xl">
@@ -202,6 +209,16 @@ export default async function AdminUserDetail({
               <p className="text-yellow-400">{wallet.pending_commissions?.toLocaleString("fr-FR")} €</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Audit onboarding */}
+      {(profile.is_professional || auditEvents.length > 0) && (
+        <div className="bg-gray-900 rounded-xl border border-white/5 p-5 mb-4">
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+            Audit onboarding
+          </h2>
+          <ProOnboardingAuditTimeline events={auditEvents} />
         </div>
       )}
 
