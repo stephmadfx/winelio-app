@@ -1,0 +1,24 @@
+name: Stripe Commission Reminders
+
+on:
+  schedule:
+    - cron: "0 * * * *"  # Toutes les heures
+  workflow_dispatch:       # Déclenchement manuel possible
+
+jobs:
+  run-cron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call cron-reminders endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/stripe/cron-reminders")
+          echo "HTTP response: $response"
+          if [ "$response" != "200" ]; then
+            echo "Cron failed with HTTP $response"
+            exit 1
+          fi
