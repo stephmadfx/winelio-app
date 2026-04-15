@@ -3,19 +3,25 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { completeProOnboarding } from "@/app/(protected)/profile/actions";
+
+const SignatureModal = dynamic(() => import("@/components/SignatureModal"), { ssr: false });
 
 type WorkMode = "remote" | "onsite" | "both";
 
 interface Category {
   id: string;
   name: string;
+  is_hoguet: boolean;
 }
 
 interface Props {
   categories: Category[];
   defaultSiret: string;
   defaultCategoryId: string;
+  cguAgentsImmoDocumentId: string | null;
+  cguAgentsImmoSections: { article_number: string; title: string; content: string }[];
 }
 
 const WORK_MODES: { value: WorkMode; label: string; sub: string; icon: string }[] = [
@@ -24,7 +30,13 @@ const WORK_MODES: { value: WorkMode; label: string; sub: string; icon: string }[
   { value: "both",    label: "Les deux",   sub: "Flexible",    icon: "🌍" },
 ];
 
-export function ProOnboardingWizard({ categories, defaultSiret, defaultCategoryId }: Props) {
+export function ProOnboardingWizard({
+  categories,
+  defaultSiret,
+  defaultCategoryId,
+  cguAgentsImmoDocumentId,
+  cguAgentsImmoSections,
+}: Props) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [workMode, setWorkMode] = useState<WorkMode | null>(null);
@@ -34,6 +46,9 @@ export function ProOnboardingWizard({ categories, defaultSiret, defaultCategoryI
   const [engagementChecked, setEngagementChecked] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+
+  const isHoguet = categories.find((c) => c.id === categoryId)?.is_hoguet ?? false;
 
   const handleSubmit = async () => {
     setSaving(true);
@@ -116,12 +131,23 @@ export function ProOnboardingWizard({ categories, defaultSiret, defaultCategoryI
       {/* Étape 3 */}
       {step === 3 && (
         <Step3
+          isHoguet={isHoguet}
           checked={engagementChecked}
           setChecked={setEngagementChecked}
           saving={saving}
           error={error}
           onBack={() => setStep(2)}
           onSubmit={handleSubmit}
+          onOpenSignature={() => setShowSignatureModal(true)}
+        />
+      )}
+
+      {/* Modale signature CGU Agents Immobiliers */}
+      {showSignatureModal && cguAgentsImmoDocumentId && (
+        <SignatureModal
+          cguDocumentId={cguAgentsImmoDocumentId}
+          sections={cguAgentsImmoSections}
+          onClose={() => setShowSignatureModal(false)}
         />
       )}
     </div>
@@ -247,14 +273,16 @@ function Step2({
 
 /* ── Étape 3 ── */
 function Step3({
-  checked, setChecked, saving, error, onBack, onSubmit,
+  isHoguet, checked, setChecked, saving, error, onBack, onSubmit, onOpenSignature,
 }: {
+  isHoguet: boolean;
   checked: boolean;
   setChecked: (v: boolean) => void;
   saving: boolean;
   error: string | null;
   onBack: () => void;
   onSubmit: () => void;
+  onOpenSignature: () => void;
 }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6">
@@ -262,29 +290,44 @@ function Step3({
         ÉTAPE 3 / 3
       </span>
       <h2 className="text-xl font-bold text-winelio-dark mb-1">Tu as tout à gagner 🚀</h2>
-      <p className="text-sm text-winelio-gray mb-4">Lis et accepte cet engagement pour activer ton compte Pro.</p>
-      <div className="bg-orange-50 border-l-4 border-winelio-orange rounded-r-xl p-4 mb-5 text-sm text-winelio-dark leading-relaxed">
-        Je m&apos;engage à traiter chaque recommandation avec sérieux et réactivité. Je comprends que chaque lead
-        Winelio est une opportunité concrète d&apos;augmenter mon chiffre d&apos;affaires. Je m&apos;engage à suivre
-        l&apos;avancement de chaque mission directement via l&apos;application Winelio, car c&apos;est ce qui me
-        garantit d&apos;être recommandé à nouveau, de gagner en visibilité et de fidéliser ma clientèle sur le
-        long terme.
-      </div>
-      <label className="flex items-start gap-3 cursor-pointer">
-        <div
-          onClick={() => setChecked(!checked)}
-          className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 transition-all ${
-            checked
-              ? "bg-gradient-to-br from-winelio-orange to-winelio-amber border-winelio-orange"
-              : "border-gray-300"
-          }`}
-        >
-          {checked && <span className="text-white text-xs font-bold">✓</span>}
-        </div>
-        <span className="text-sm text-winelio-dark font-medium">
-          J&apos;ai lu et j&apos;accepte cet engagement — je suis prêt à booster mon activité avec Winelio.
-        </span>
-      </label>
+
+      {isHoguet ? (
+        <>
+          <p className="text-sm text-winelio-gray mb-4">
+            En tant qu&apos;agent immobilier (loi Hoguet), tu dois signer électroniquement les CGU spécifiques à ton activité pour activer ton compte Pro.
+          </p>
+          <div className="bg-orange-50 border-l-4 border-winelio-orange rounded-r-xl p-4 mb-5 text-sm text-winelio-dark leading-relaxed">
+            Les CGU Agents Immobiliers encadrent l&apos;utilisation de la plateforme Winelio conformément à la loi Hoguet et aux obligations réglementaires de la profession. Une signature électronique avec horodatage certifié te sera demandée.
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-winelio-gray mb-4">Lis et accepte cet engagement pour activer ton compte Pro.</p>
+          <div className="bg-orange-50 border-l-4 border-winelio-orange rounded-r-xl p-4 mb-5 text-sm text-winelio-dark leading-relaxed">
+            Je m&apos;engage à traiter chaque recommandation avec sérieux et réactivité. Je comprends que chaque lead
+            Winelio est une opportunité concrète d&apos;augmenter mon chiffre d&apos;affaires. Je m&apos;engage à suivre
+            l&apos;avancement de chaque mission directement via l&apos;application Winelio, car c&apos;est ce qui me
+            garantit d&apos;être recommandé à nouveau, de gagner en visibilité et de fidéliser ma clientèle sur le
+            long terme.
+          </div>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <div
+              onClick={() => setChecked(!checked)}
+              className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 transition-all ${
+                checked
+                  ? "bg-gradient-to-br from-winelio-orange to-winelio-amber border-winelio-orange"
+                  : "border-gray-300"
+              }`}
+            >
+              {checked && <span className="text-white text-xs font-bold">✓</span>}
+            </div>
+            <span className="text-sm text-winelio-dark font-medium">
+              J&apos;ai lu et j&apos;accepte cet engagement — je suis prêt à booster mon activité avec Winelio.
+            </span>
+          </label>
+        </>
+      )}
+
       {error && (
         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
           {error}
@@ -298,14 +341,24 @@ function Step3({
         >
           ← Retour
         </button>
-        <button
-          type="button"
-          disabled={!checked || saving}
-          onClick={onSubmit}
-          className="px-7 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-bold rounded-xl shadow-lg shadow-orange-200 hover:opacity-90 transition-opacity disabled:opacity-40 text-base"
-        >
-          {saving ? "Activation…" : "🚀 Devenir Pro !"}
-        </button>
+        {isHoguet ? (
+          <button
+            type="button"
+            onClick={onOpenSignature}
+            className="px-7 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-bold rounded-xl shadow-lg shadow-orange-200 hover:opacity-90 transition-opacity text-base"
+          >
+            ✍️ Signer les CGU
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled={!checked || saving}
+            onClick={onSubmit}
+            className="px-7 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-bold rounded-xl shadow-lg shadow-orange-200 hover:opacity-90 transition-opacity disabled:opacity-40 text-base"
+          >
+            {saving ? "Activation…" : "🚀 Devenir Pro !"}
+          </button>
+        )}
       </div>
     </div>
   );
