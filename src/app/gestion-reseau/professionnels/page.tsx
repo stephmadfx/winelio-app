@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ProfessionnelsTable } from "@/components/admin/ProfessionnelsTable";
+import { verifyCompany } from "@/app/gestion-reseau/actions";
 
 export default async function AdminProfessionnels() {
   const [{ data: companies }, { data: categories }] = await Promise.all([
@@ -37,6 +38,7 @@ export default async function AdminProfessionnels() {
       <ProfessionnelsTable
         companies={companies ?? []}
         categories={categories ?? []}
+        onVerify={verifyCompany}
       />
     </div>
   );

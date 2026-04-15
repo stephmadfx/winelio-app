@@ -145,12 +145,26 @@ Toutes les tables ont des politiques RLS actives. Les utilisateurs ne voient que
 - Chaque user a un `sponsor_code` unique (6 chars)
 - `sponsor_id` pointe vers le parrain
 - Quand une reco est validée (étape 6) :
-  - Referrer reçoit 60% de la commission
-  - Niveau 1 (sponsor du referrer) : 4%
-  - Niveau 2-5 : 4% chacun
-  - Affiliation bonus (sponsor du pro) : 1%
-  - Cashback pro (en Wins) : 1%
-  - Plateforme : 14%
+  - Referrer reçoit 60% de la commission (`recommendation`)
+  - Niveau 1 (sponsor du referrer) : 4% (`referral_level_1`)
+  - Niveau 2-5 : 4% chacun (`referral_level_2` … `referral_level_5`)
+  - Affiliation bonus (sponsor du pro) : 1% (`affiliation_bonus`)
+  - Cashback pro (en Wins) : 1% (`professional_cashback`)
+  - Cagnotte Winelio : 14% (`platform_winelio`) → toujours distribuée, même en mode démo
+
+### Cagnotte Winelio
+- **UUID système fixe** : `00000000-0000-0000-0000-000000000001` (`WINELIO_SYSTEM_USER_ID`)
+- Profil système : email `system@winelio.app`, prénom `Cagnotte`, nom `Winelio`
+- Toutes les commissions non distribuables (chaîne MLM trop courte, pas de sponsor pro) sont automatiquement redirigées vers cette cagnotte (règle du spillover)
+- Visible uniquement dans le dashboard super admin (`/gestion-reseau`) — jamais côté utilisateur
+- Les KPI "commissions distribuées" et "en attente" excluent `platform_winelio` (`.neq("type", "platform_winelio")`)
+- Migrations : `supabase/migrations/20260414_cagnotte_winelio.sql` + `20260414_backfill_platform_winelio.sql`
+
+### Règle spillover MLM
+Quand la chaîne de parrainage est plus courte que 5 niveaux (ou que le sponsor du professionnel est absent) :
+- Les montants non attribuables s'accumulent dans `undistributed`
+- Après la boucle, `undistributed` est ajouté à l'entrée `platform_winelio` existante
+- Optimisation : flag `chainBroken` pour éviter les requêtes DB redondantes une fois la chaîne rompue
 
 ### Wallet
 - **EUR** : total_earned, total_withdrawn, pending_commissions, available
@@ -164,9 +178,13 @@ Toutes les tables ont des politiques RLS actives. Les utilisateurs ne voient que
 
 ## Serveur de développement local
 - Port : **3002** fixe (`http://localhost:3002`) — défini via `--port 3002` dans `package.json`.
-- **Après chaque `git push`, relancer le serveur dev** :
+- **Le serveur dev est géré par PM2** — ne pas utiliser `pkill -f "next dev"` directement.
+- Commandes PM2 :
   ```bash
-  pkill -f "next dev" ; sleep 1 ; cd /Users/steph/PROJETS/WINELIO/winelio && npm run dev &
+  pm2 list                        # voir tous les process
+  pm2 stop winelio winelio-dev    # arrêter
+  pm2 start winelio               # redémarrer
+  pm2 logs winelio --lines 50     # voir les logs
   ```
 - Vérifier que le serveur tourne bien avant de tester dans le navigateur.
 
@@ -181,8 +199,8 @@ npm run dev
 # Relancer le serveur dev (après un push)
 pkill -f "next dev" ; sleep 1 ; npm run dev &
 
-# Accéder à la DB Supabase (production sur VPS — container temp-supabase-db)
-sshpass -p '04660466aA@@@' ssh root@31.97.152.195 "docker exec temp-supabase-db psql -U supabase_admin -d postgres"
+# Accéder à la DB Supabase (production sur VPS)
+sshpass -p '04660466aA@@@' ssh root@31.97.152.195 "docker exec supabase-db-ixlhs1fg5t2n8c4zsgvnys0r psql -U supabase_admin -d postgres"
 ```
 
 ## Code source de l'ancien développeur

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useTransition } from "react";
 
 type OwnerRow = { first_name: string | null; last_name: string | null; email: string | null };
 type CategoryRow = { name: string };
@@ -59,11 +59,23 @@ const PAGE_SIZE = 25;
 export function ProfessionnelsTable({
   companies,
   categories,
+  onVerify,
 }: {
   companies: Company[];
   categories: Category[];
+  onVerify: (companyId: string, verified: boolean) => Promise<void>;
 }) {
   const [nameFilter, setNameFilter] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const [pendingId, setPendingId] = useState<string | null>(null);
+
+  function handleVerify(companyId: string, verified: boolean) {
+    setPendingId(companyId);
+    startTransition(async () => {
+      await onVerify(companyId, verified);
+      setPendingId(null);
+    });
+  }
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [cityInput, setCityInput] = useState("");
   const [radius, setRadius] = useState(50);
@@ -282,11 +294,26 @@ export function ProfessionnelsTable({
                     )}
                     {/* Statut */}
                     <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded whitespace-nowrap ${
-                        c.is_verified ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-gray-500"
-                      }`}>
-                        {c.is_verified ? "✓ Vérifié" : "Non vérifié"}
-                      </span>
+                      <div className="flex flex-col gap-1.5">
+                        <span className={`text-xs px-2 py-0.5 rounded whitespace-nowrap w-fit ${
+                          c.is_verified ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-gray-500"
+                        }`}>
+                          {c.is_verified ? "✓ Vérifié" : "Non vérifié"}
+                        </span>
+                        <button
+                          onClick={() => handleVerify(c.id, !c.is_verified)}
+                          disabled={isPending && pendingId === c.id}
+                          className={`text-xs px-2 py-0.5 rounded whitespace-nowrap transition-colors disabled:opacity-50 ${
+                            c.is_verified
+                              ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                              : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                          }`}
+                        >
+                          {isPending && pendingId === c.id
+                            ? "..."
+                            : c.is_verified ? "Révoquer" : "Vérifier"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -323,6 +350,17 @@ export function ProfessionnelsTable({
                     }`}>
                       {c.is_verified ? "✓ Vérifié" : "Non vérifié"}
                     </span>
+                    <button
+                      onClick={() => handleVerify(c.id, !c.is_verified)}
+                      disabled={isPending && pendingId === c.id}
+                      className={`text-xs px-2 py-0.5 rounded transition-colors disabled:opacity-50 ${
+                        c.is_verified
+                          ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                          : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                      }`}
+                    >
+                      {isPending && pendingId === c.id ? "..." : c.is_verified ? "Révoquer" : "Vérifier"}
+                    </button>
                     {cat?.name && (
                       <span className="text-xs px-2 py-0.5 rounded bg-blue-500/10 text-blue-400">
                         {cat.name}
