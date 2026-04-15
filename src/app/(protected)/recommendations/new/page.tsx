@@ -103,6 +103,21 @@ export default function NewRecommendationPage() {
       }).select("id").single();
 
       if (recError) throw new Error("Erreur création recommandation");
+
+      // Envoi invitation Winelio si demandé (fire & forget)
+      if (wantsToJoin && !selfForMe) {
+        const contactEmail = createContact
+          ? contactForm.email
+          : contacts.find((c) => c.id === selectedContactId)?.email;
+        if (contactEmail) {
+          fetch("/api/network/send-invite", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ to: contactEmail }),
+          }).catch((err) => console.error("[send-invite]", err));
+        }
+      }
+
       router.push(`/recommendations/${recommendation.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue");
