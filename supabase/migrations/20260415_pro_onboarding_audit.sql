@@ -30,5 +30,8 @@ CREATE POLICY "super_admin_read_onboarding_events"
   ON winelio.pro_onboarding_events FOR SELECT
   USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin');
 
--- Écriture : service role uniquement (server actions via supabaseAdmin)
--- Pas de policy INSERT/UPDATE/DELETE pour les rôles non-service
+-- Écriture : service role uniquement (supabaseAdmin bypass RLS)
+-- INSERT explicitement refusé pour les rôles autres que service_role
+CREATE POLICY "pro_onboarding_events_deny_insert"
+  ON winelio.pro_onboarding_events FOR INSERT
+  WITH CHECK (false);
