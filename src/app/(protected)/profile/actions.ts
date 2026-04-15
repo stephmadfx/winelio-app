@@ -149,13 +149,6 @@ export async function completeProOnboarding(data: {
   work_mode: "remote" | "onsite" | "both";
   category_id: string;
   siret: string | null;
-  verified?: {
-    siren: string;
-    legal_name: string | null;
-    address: string | null;
-    city: string | null;
-    postal_code: string | null;
-  } | null;
 }): Promise<{ error?: string }> {
   const user = await getUser();
   if (!user) return { error: "Non authentifié" };
@@ -195,18 +188,8 @@ export async function completeProOnboarding(data: {
     .limit(1)
     .maybeSingle();
 
-  const verifiedPatch: Record<string, string | boolean | null> = {};
-  if (data.verified) {
-    verifiedPatch.siren = data.verified.siren;
-    verifiedPatch.is_verified = true;
-    if (data.verified.legal_name) verifiedPatch.legal_name = data.verified.legal_name;
-    if (data.verified.address) verifiedPatch.address = data.verified.address;
-    if (data.verified.city) verifiedPatch.city = data.verified.city;
-    if (data.verified.postal_code) verifiedPatch.postal_code = data.verified.postal_code;
-  }
-
   if (existingCompany) {
-    const patch: Record<string, string | boolean | null> = { ...verifiedPatch };
+    const patch: Record<string, string | null> = {};
     if (data.category_id) patch.category_id = data.category_id;
     if (data.siret !== null) patch.siret = data.siret;
     if (Object.keys(patch).length > 0) {
@@ -221,11 +204,10 @@ export async function completeProOnboarding(data: {
     const alias = await generateUniqueAlias(supabase);
     const { error: companyError } = await supabase.from("companies").insert({
       owner_id: user.id,
-      name: data.verified?.legal_name || fallbackName,
+      name: fallbackName,
       category_id: data.category_id || null,
       siret: data.siret || null,
       alias,
-      ...verifiedPatch,
     });
     if (companyError) return { error: "Erreur lors de la création de l'entreprise." };
   }
@@ -237,21 +219,13 @@ export async function completeProOnboarding(data: {
       .select("name")
       .eq("id", data.category_id)
       .maybeSingle();
-    const firstName = profile?.first_name || profile?.last_name || "Professionnel";
     const { notifyProOnboarding } = await import("@/lib/notify-pro-onboarding");
     notifyProOnboarding({
       email: user.email,
-      firstName,
+      firstName: profile?.first_name || profile?.last_name || "Professionnel",
       workMode: data.work_mode,
       categoryName: category?.name || "—",
     }).catch((err) => console.error("notify-pro-onboarding error:", err));
-
-    // Si pas de SIRET : rappel automatique dans 15 jours
-    if (!data.siret) {
-      const { notifySiretReminder } = await import("@/lib/notify-siret-reminder");
-      notifySiretReminder({ email: user.email, firstName })
-        .catch((err) => console.error("notify-siret-reminder error:", err));
-    }
   }
 
   // 5. Audit trail

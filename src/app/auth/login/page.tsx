@@ -164,11 +164,7 @@ function LoginForm() {
     const res = await fetch("/api/auth/login-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        password,
-        sponsorCode: localStorage.getItem("winelio_ref") || null,
-      }),
+      body: JSON.stringify({ email, password }),
     });
 
     const data = await res.json();

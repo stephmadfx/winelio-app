@@ -5,7 +5,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { completeProOnboarding } from "@/app/(protected)/profile/actions";
-import { verifySiren, isValidSirenOrSiret, type SirenVerification } from "@/lib/siren";
 
 const SignatureModal = dynamic(() => import("@/components/SignatureModal"), { ssr: false });
 
@@ -44,7 +43,6 @@ export function ProOnboardingWizard({
   const [categoryId, setCategoryId] = useState(defaultCategoryId);
   const [siret, setSiret] = useState(defaultSiret);
   const [siretSkipped, setSiretSkipped] = useState(false);
-  const [sirenData, setSirenData] = useState<SirenVerification | null>(null);
   const [engagementChecked, setEngagementChecked] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,15 +57,6 @@ export function ProOnboardingWizard({
       work_mode: workMode!,
       category_id: categoryId,
       siret: siretSkipped ? null : siret.trim() || null,
-      verified: sirenData
-        ? {
-            siren: sirenData.siren,
-            legal_name: sirenData.legal_name,
-            address: sirenData.adresse,
-            city: sirenData.city,
-            postal_code: sirenData.postal_code,
-          }
-        : null,
     });
     if (result.error) {
       setError(result.error);
@@ -134,8 +123,6 @@ export function ProOnboardingWizard({
           setSiret={setSiret}
           siretSkipped={siretSkipped}
           setSiretSkipped={setSiretSkipped}
-          sirenData={sirenData}
-          setSirenData={setSirenData}
           onBack={() => setStep(1)}
           onNext={() => setStep(3)}
         />
@@ -207,7 +194,7 @@ function StepBar({ current }: { current: number }) {
 /* ── Étape 2 ── */
 function Step2({
   categories, categoryId, setCategoryId, siret, setSiret,
-  siretSkipped, setSiretSkipped, sirenData, setSirenData, onBack, onNext,
+  siretSkipped, setSiretSkipped, onBack, onNext,
 }: {
   categories: Category[];
   categoryId: string;
@@ -216,36 +203,9 @@ function Step2({
   setSiret: (v: string) => void;
   siretSkipped: boolean;
   setSiretSkipped: (v: boolean) => void;
-  sirenData: SirenVerification | null;
-  setSirenData: (v: SirenVerification | null) => void;
   onBack: () => void;
   onNext: () => void;
 }) {
-  const [verifying, setVerifying] = useState(false);
-  const [verifyError, setVerifyError] = useState<string | null>(null);
-  const parsed = isValidSirenOrSiret(siret);
-
-  const handleVerify = async () => {
-    setVerifying(true);
-    setVerifyError(null);
-    setSirenData(null);
-    try {
-      const data = await verifySiren(siret);
-      if (!data) {
-        setVerifyError("SIRET/SIREN introuvable dans le registre des entreprises.");
-      } else if (!data.actif) {
-        setSirenData(data);
-        setVerifyError("⚠️ Cette entreprise est cessée ou radiée.");
-      } else {
-        setSirenData(data);
-      }
-    } catch {
-      setVerifyError("Erreur de connexion au service de vérification.");
-    } finally {
-      setVerifying(false);
-    }
-  };
-
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6">
       <span className="inline-block bg-gray-200 text-gray-500 text-xs font-bold px-3 py-1 rounded-full mb-3">
@@ -273,51 +233,21 @@ function Step2({
             Numéro SIRET{" "}
             <span className="text-gray-400 text-xs font-normal">(fortement recommandé)</span>
           </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={siret}
-              onChange={(e) => { setSiret(e.target.value); setSirenData(null); setVerifyError(null); }}
-              disabled={siretSkipped}
-              placeholder="123 456 789 00012"
-              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange disabled:bg-gray-50 disabled:text-gray-400"
-            />
-            <button
-              type="button"
-              onClick={handleVerify}
-              disabled={siretSkipped || !parsed || verifying}
-              className="px-4 py-2.5 bg-winelio-dark text-white text-sm font-semibold rounded-xl hover:bg-winelio-dark/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
-            >
-              {verifying ? "…" : "Vérifier"}
-            </button>
-          </div>
+          <input
+            type="text"
+            value={siret}
+            onChange={(e) => setSiret(e.target.value)}
+            disabled={siretSkipped}
+            placeholder="123 456 789 00012"
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange disabled:bg-gray-50 disabled:text-gray-400"
+          />
           <button
             type="button"
-            onClick={() => { setSiretSkipped(!siretSkipped); setSiret(""); setSirenData(null); setVerifyError(null); }}
+            onClick={() => { setSiretSkipped(!siretSkipped); setSiret(""); }}
             className="mt-1.5 text-xs text-winelio-orange hover:underline"
           >
             {siretSkipped ? "← Renseigner mon SIRET" : "Je n'ai pas encore de SIRET →"}
           </button>
-
-          {sirenData && sirenData.actif && (
-            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl text-sm">
-              <div className="flex items-start gap-2">
-                <span className="text-green-600 font-bold">✓</span>
-                <div className="flex-1">
-                  <div className="font-semibold text-green-800">{sirenData.nom}</div>
-                  {sirenData.adresse && (
-                    <div className="text-xs text-green-700 mt-0.5">{sirenData.adresse}</div>
-                  )}
-                  <div className="text-xs text-green-600 mt-1">Entreprise active — SIREN {sirenData.siren}</div>
-                </div>
-              </div>
-            </div>
-          )}
-          {verifyError && (
-            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-              {verifyError}
-            </div>
-          )}
         </div>
       </div>
       <div className="mt-6 flex justify-between">

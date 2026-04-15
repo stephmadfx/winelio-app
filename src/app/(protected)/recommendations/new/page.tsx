@@ -90,17 +90,7 @@ export default function NewRecommendationPage() {
           contactId = newContact.id;
         }
       } else if (createContact) {
-        // country_code n'existe pas en base : préfixer le phone avec, puis l'enlever
-        const { country_code, phone, ...rest } = contactForm;
-        const fullPhone = phone
-          ? `${country_code ?? ""}${phone}`.replace(/\s/g, "")
-          : null;
-        const { data: newContact, error: err } = await supabase
-          .schema("winelio")
-          .from("contacts")
-          .insert({ ...rest, phone: fullPhone, user_id: user.id })
-          .select("id")
-          .single();
+        const { data: newContact, error: err } = await supabase.schema("winelio").from("contacts").insert({ ...contactForm, user_id: user.id }).select("id").single();
         if (err) throw new Error("Erreur création contact");
         contactId = newContact.id;
       }

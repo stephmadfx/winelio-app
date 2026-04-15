@@ -322,20 +322,8 @@ export function NetworkGraph({ userId, userName, rootLabel, maxLevel = 5 }: { us
     const vp = viewportRef.current;
     if (vp?.dataset.wasDrag) return;
     setSelectedNode(node);
-
-    // Charge les événements en cours uniquement pour les membres du réseau
-    if (node.id !== userId) {
-      setEvents(null);
-      setEventsLoading(true);
-      fetch(`/api/network/user-events?userId=${node.id}`)
-        .then((res) => (res.ok ? res.json() : { events: [] }))
-        .then((data) => setEvents(data.events ?? []))
-        .catch(() => setEvents([]))
-        .finally(() => setEventsLoading(false));
-    }
-
     if (node.childCount > 0 && node.level < maxLevel) toggleExpand(node.id);
-  }, [toggleExpand, userId, maxLevel]);
+  }, [toggleExpand]);
 
   const zoomIn = () => { dragState.current.scale = Math.min(dragState.current.scale + 0.2, 4); applyTransform(); rerender(n => n + 1); };
   const zoomOut = () => { dragState.current.scale = Math.max(dragState.current.scale - 0.2, 0.2); applyTransform(); rerender(n => n + 1); };
@@ -400,15 +388,7 @@ export function NetworkGraph({ userId, userName, rootLabel, maxLevel = 5 }: { us
             className="flex items-start justify-center pt-8"
             style={{ transformOrigin: "center top", minWidth: "100%", minHeight: "100%" }}
           >
-            <NodeView
-              node={tree}
-              onClick={handleNodeClick}
-              onClose={() => { setSelectedNode(null); setEvents(null); }}
-              selectedId={selectedNode?.id ?? null}
-              rootLabel={rootLabel}
-              events={events}
-              eventsLoading={eventsLoading}
-            />
+            <NodeView node={tree} onClick={handleNodeClick} selectedId={selectedNode?.id ?? null} rootLabel={rootLabel} />
           </div>
         ) : null}
       </div>
@@ -418,14 +398,12 @@ export function NetworkGraph({ userId, userName, rootLabel, maxLevel = 5 }: { us
 }
 
 // ── Node visual component ────────────────────────────
-function NodeView({ node, onClick, onClose, selectedId, rootLabel, events, eventsLoading }: {
+function NodeView({ node, onClick, selectedId, rootLabel }: {
   node: GraphNode;
   onClick: (node: GraphNode) => void;
   onClose: () => void;
   selectedId: string | null;
   rootLabel?: string;
-  events: NodeEvent[] | null;
-  eventsLoading: boolean;
 }) {
   const color = LEVEL_COLORS[node.level] ?? "#9ca3af";
   const initials = [node.first_name, node.last_name].filter(Boolean).map(n => n![0]).join("").toUpperCase();
@@ -643,16 +621,8 @@ function NodeView({ node, onClick, onClose, selectedId, rootLabel, events, event
             )}
             {node.children.map(child => (
               <div key={child.id} className="flex flex-col items-center" style={{ padding: "0 4px" }}>
-                <div className="border-l-2 border-dashed border-gray-400" style={{ height: 12 }} />
-                <NodeView
-                  node={child}
-                  onClick={onClick}
-                  onClose={onClose}
-                  selectedId={selectedId}
-                  rootLabel={rootLabel}
-                  events={events}
-                  eventsLoading={eventsLoading}
-                />
+                <div className="border-l border-dashed border-gray-300" style={{ height: 12 }} />
+                <NodeView node={child} onClick={onClick} selectedId={selectedId} rootLabel={rootLabel} />
               </div>
             ))}
           </div>

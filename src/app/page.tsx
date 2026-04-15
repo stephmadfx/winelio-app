@@ -3,7 +3,6 @@ import { WinelioLogo } from "@/components/winelio-logo";
 import { AppBackground } from "@/components/AppBackground";
 import { NetworkBackground } from "@/components/NetworkBackground";
 import { BetaBanner } from "@/components/BetaBanner";
-import { PromoVideo } from "@/components/PromoVideo";
 
 export default function Home() {
   return (
@@ -11,10 +10,9 @@ export default function Home() {
       <BetaBanner />
       <AppBackground />
       <NetworkBackground />
-      <main className="relative z-10 flex min-h-dvh items-center justify-center px-4 py-12 pt-14">
-        <div className="w-full max-w-sm text-center">
-          {/* Logo + tagline */}
-          <WinelioLogo variant="color" height={56} />
+      <main className="relative z-10 flex min-h-dvh items-center justify-center px-4 pt-7">
+        <div className="w-full max-w-xs text-center">
+          <WinelioLogo variant="color" height={64} />
           <p className="mt-3 text-sm text-winelio-gray">
             Recommandez. Connectez.{" "}
             <span className="text-winelio-orange font-semibold">Gagnez.</span>

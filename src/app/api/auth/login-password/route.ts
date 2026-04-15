@@ -6,7 +6,7 @@ import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
 
 export async function POST(req: Request) {
   try {
-    const { email, password, sponsorCode } = await req.json();
+    const { email, password } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
@@ -17,23 +17,18 @@ export async function POST(req: Request) {
 
     const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       db: { schema: "winelio" },
-      cookieOptions: {
-        name: "sb-winelio-auth-token",
-        sameSite: "lax",
-      },
       cookies: {
         getAll() {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          // Laisser @supabase/ssr gérer les options — ne pas forcer httpOnly:true
-          // (sinon le client browser ne peut pas lire le cookie → RLS cassée côté client).
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(
-              name,
-              value,
-              options as Parameters<typeof response.cookies.set>[2]
-            );
+            response.cookies.set(name, value, {
+              ...options as Parameters<typeof response.cookies.set>[2],
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+              sameSite: "lax",
+            });
           });
         },
       },
@@ -49,7 +44,7 @@ export async function POST(req: Request) {
     }
 
     try {
-      await assignSponsorIfNeeded(data.user.id, sponsorCode ?? null);
+      await assignSponsorIfNeeded(data.user.id);
     } catch (e) {
       console.error("assign-sponsor in login-password error:", e);
     }
