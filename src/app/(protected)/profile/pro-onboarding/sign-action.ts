@@ -92,12 +92,14 @@ export async function signAgentCGU(params: {
   if (profileError) throw new Error(`Erreur activation profil : ${profileError.message}`);
 
   // 8. Email de confirmation (fire & forget)
-  sendSignatureConfirmationEmail({
-    to: user.email!,
-    firstName: profile?.first_name ?? "",
-    pdfBuffer,
-    signedAt,
-  }).catch((err) => console.error("[signAgentCGU] Email error:", err));
+  if (user.email) {
+    sendSignatureConfirmationEmail({
+      to: user.email,
+      firstName: profile?.first_name ?? "",
+      pdfBuffer,
+      signedAt,
+    }).catch((err) => console.error("[signAgentCGU] Email error:", err));
+  }
 
   return { success: true, pdfUrl: pdfUrlData.publicUrl };
 }

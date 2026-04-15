@@ -15,12 +15,12 @@ const SignaturePad = forwardRef<SignaturePadRef, { className?: string }>(
 
     useEffect(() => {
       if (!canvasRef.current) return;
-      padRef.current = new SignaturePadLib(canvasRef.current, {
-        backgroundColor: "rgb(255,255,255)",
-      });
       const canvas = canvasRef.current;
       canvas.width = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
+      padRef.current = new SignaturePadLib(canvas, {
+        backgroundColor: "rgb(255,255,255)",
+      });
       return () => padRef.current?.off();
     }, []);
 

@@ -117,8 +117,8 @@ function markdownToHtml(text: string): string {
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/^- (.+)$/gm, "<li>$1</li>");
 
-  // Convert list items to ul (handle multi-line)
-  result = result.replace(/<li>[^]*?<\/li>/g, (match) => `<ul>${match}</ul>`);
+  // Group consecutive <li> into a single <ul>
+  result = result.replace(/((<li>.*?<\/li>\n?)+)/g, (match) => `<ul>${match}</ul>`);
 
   return result
     .replace(/\n\n/g, "</p><p>")
