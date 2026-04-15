@@ -45,6 +45,7 @@ export async function GET(req: Request) {
         .single();
 
       if (!reco) continue;
+      if (!session.amount) continue;
 
       const contactData = Array.isArray(reco.contact) ? reco.contact[0] : reco.contact;
       const clientName = contactData
@@ -53,8 +54,6 @@ export async function GET(req: Request) {
 
       const stripeSession = await stripe.checkout.sessions.retrieve(session.stripe_session_id);
       let checkoutUrl = stripeSession.url;
-
-      if (!session.amount) continue;
 
       if (stripeSession.status === "expired" || !checkoutUrl) {
         const newSession = await stripe.checkout.sessions.create({
