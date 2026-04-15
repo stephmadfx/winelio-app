@@ -191,7 +191,7 @@ export function RecoJourneyView({
         <input
           value={value}
           onChange={e => setValue(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAddAnnotation(stepId); } }}
+          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && value.trim()) { e.preventDefault(); handleAddAnnotation(stepId); } }}
           placeholder={stepId ? "Annoter cette étape…" : "Ajouter un commentaire…"}
           maxLength={1000}
           className="flex-1 bg-background/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-winelio-orange/50 transition-colors"
