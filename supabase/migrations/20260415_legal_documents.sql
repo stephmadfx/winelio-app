@@ -55,13 +55,12 @@ CREATE INDEX IF NOT EXISTS idx_document_sections_document_id
 CREATE INDEX IF NOT EXISTS idx_document_annotations_section_id
   ON winelio.document_annotations(section_id, created_at);
 
-CREATE INDEX IF NOT EXISTS idx_document_placeholder_values_document_id
-  ON winelio.document_placeholder_values(document_id);
-
+DROP TRIGGER IF EXISTS update_legal_documents_updated_at ON winelio.legal_documents;
 CREATE TRIGGER update_legal_documents_updated_at
   BEFORE UPDATE ON winelio.legal_documents
   FOR EACH ROW EXECUTE FUNCTION winelio.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_document_annotations_updated_at ON winelio.document_annotations;
 CREATE TRIGGER update_document_annotations_updated_at
   BEFORE UPDATE ON winelio.document_annotations
   FOR EACH ROW EXECUTE FUNCTION winelio.update_updated_at_column();
