@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { createCommissions } from "@/lib/commission";
 import { recalculateWallet } from "@/lib/wallet";
 import { COMMISSION_TYPE, COMMISSION_STATUS, WITHDRAWAL_STATUS } from "@/lib/constants";
+import { createStripeCheckoutSession } from "@/lib/stripe-checkout";
 
 async function assertSuperAdmin() {
   const supabase = await createClient();
@@ -33,7 +33,7 @@ export async function advanceRecommendationStep(
 
   if (stepError) throw new Error(`Erreur mise à jour étape: ${stepError.message}`);
 
-  // Vérifier si c'est l'étape "devis validé" (order_index=6) pour déclencher les commissions
+  // Récupérer l'order_index de l'étape validée
   const { data: stepRow } = await supabaseAdmin
     .from("recommendation_steps")
     .select("step:steps(order_index)")
@@ -43,24 +43,12 @@ export async function advanceRecommendationStep(
   const stepData = Array.isArray(stepRow?.step) ? stepRow.step[0] : stepRow?.step;
   const orderIndex = (stepData as { order_index: number } | null | undefined)?.order_index;
 
-  if (orderIndex === 6) {
-    const { data: reco } = await supabaseAdmin
-      .from("recommendations")
-      .select("id, referrer_id, professional_id, amount, compensation_plan_id")
-      .eq("id", recommendationId)
-      .single();
-
-    if (reco?.amount) {
-      await createCommissions(reco.id, reco.referrer_id, reco.professional_id, reco.amount, reco.compensation_plan_id ?? null);
-      // Recalcule les wallets des bénéficiaires après insertion
-      const { data: newCommissions } = await supabaseAdmin
-        .from("commission_transactions")
-        .select("user_id")
-        .eq("recommendation_id", reco.id);
-      const uniqueUsers = [...new Set((newCommissions ?? []).map((c) => c.user_id))];
-      for (const userId of uniqueUsers) {
-        await recalculateWallet(userId);
-      }
+  if (orderIndex === 7) {
+    // Déclencher le paiement Stripe de la commission pro
+    try {
+      await createStripeCheckoutSession(recommendationId);
+    } catch (err) {
+      console.error("[Stripe] Erreur création session checkout:", err);
     }
   }
 
@@ -119,6 +107,21 @@ export async function adjustCommission(
 
   await recalculateWallet(userId);
   revalidatePath(`/gestion-reseau/utilisateurs/${userId}`);
+}
+
+// ─── Entreprises ──────────────────────────────────────────────────────────────
+
+export async function verifyCompany(companyId: string, verified: boolean) {
+  await assertSuperAdmin();
+
+  const { error } = await supabaseAdmin
+    .from("companies")
+    .update({ is_verified: verified })
+    .eq("id", companyId);
+
+  if (error) throw new Error(`Erreur mise à jour entreprise: ${error.message}`);
+
+  revalidatePath("/gestion-reseau/professionnels");
 }
 
 // ─── Utilisateurs ─────────────────────────────────────────────────────────────
