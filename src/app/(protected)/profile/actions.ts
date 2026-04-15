@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getAuditContext, getDocumentHash, logOnboardingEvent } from "@/lib/audit";
 
 const POSTAL_CODE_RE = /^\d{5}$/;
 const PHONE_RE = /^[+\d\s()\-]{6,20}$/;
@@ -152,6 +154,7 @@ export async function completeProOnboarding(data: {
   if (!user) return { error: "Non authentifié" };
 
   const supabase = await createClient();
+  const { ip, userAgent } = await getAuditContext();
 
   // 1. Mettre à jour le profil
   const { error: profileError } = await supabase
@@ -165,16 +168,18 @@ export async function completeProOnboarding(data: {
 
   if (profileError) return { error: "Erreur lors de la mise à jour du profil." };
 
-  // 2. Récupérer le profil pour le nom (fallback name) + catégorie pour l'email
+  // 2. Récupérer le profil (nom + catégorie pour l'email)
   const { data: profile } = await supabase
     .from("profiles")
     .select("first_name, last_name")
     .eq("id", user.id)
     .single();
 
-  const fallbackName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Mon entreprise";
+  const fallbackName =
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
+    "Mon entreprise";
 
-  // 3. Vérifier si une company existe déjà
+  // 3. Vérifier/créer la company
   const { data: existingCompany } = await supabase
     .from("companies")
     .select("id")
@@ -184,11 +189,9 @@ export async function completeProOnboarding(data: {
     .maybeSingle();
 
   if (existingCompany) {
-    // Mettre à jour la company existante
     const patch: Record<string, string | null> = {};
     if (data.category_id) patch.category_id = data.category_id;
     if (data.siret !== null) patch.siret = data.siret;
-
     if (Object.keys(patch).length > 0) {
       const { error: companyError } = await supabase
         .from("companies")
@@ -197,10 +200,8 @@ export async function completeProOnboarding(data: {
       if (companyError) return { error: "Erreur lors de la mise à jour de l'entreprise." };
     }
   } else {
-    // Créer une nouvelle company
     const { generateUniqueAlias } = await import("@/lib/generate-alias");
     const alias = await generateUniqueAlias(supabase);
-
     const { error: companyError } = await supabase.from("companies").insert({
       owner_id: user.id,
       name: fallbackName,
@@ -211,14 +212,13 @@ export async function completeProOnboarding(data: {
     if (companyError) return { error: "Erreur lors de la création de l'entreprise." };
   }
 
-  // 3. Envoyer l'email de confirmation (non bloquant — on ignore les erreurs SMTP)
+  // 4. Email de confirmation (non bloquant)
   if (user.email) {
     const { data: category } = await supabase
       .from("categories")
       .select("name")
       .eq("id", data.category_id)
       .maybeSingle();
-
     const { notifyProOnboarding } = await import("@/lib/notify-pro-onboarding");
     notifyProOnboarding({
       email: user.email,
@@ -227,6 +227,45 @@ export async function completeProOnboarding(data: {
       categoryName: category?.name || "—",
     }).catch((err) => console.error("notify-pro-onboarding error:", err));
   }
+
+  // 5. Audit trail
+  const base = { userId: user.id, ip, userAgent };
+
+  // Chercher le document CGU Professionnels pour le hash
+  const { data: cguDoc } = await supabaseAdmin
+    .from("legal_documents")
+    .select("id")
+    .eq("title", "CGU Professionnels")
+    .eq("version", "1.0")
+    .maybeSingle();
+
+  const docHashData = cguDoc ? await getDocumentHash(cguDoc.id) : null;
+
+  await logOnboardingEvent({
+    ...base,
+    eventType: "category_set",
+    metadata: { category_id: data.category_id },
+  });
+
+  if (data.siret) {
+    await logOnboardingEvent({
+      ...base,
+      eventType: "siret_provided",
+      metadata: { siret: data.siret },
+    });
+  }
+
+  await logOnboardingEvent({ ...base, eventType: "engagement_accepted" });
+
+  await logOnboardingEvent({
+    ...base,
+    eventType: "cgu_accepted",
+    documentId: cguDoc?.id,
+    documentVersion: docHashData?.version ?? undefined,
+    documentHash: docHashData?.hash ?? undefined,
+  });
+
+  await logOnboardingEvent({ ...base, eventType: "pro_activated" });
 
   return {};
 }
