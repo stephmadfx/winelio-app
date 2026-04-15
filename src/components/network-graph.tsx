@@ -621,7 +621,7 @@ function NodeView({ node, onClick, selectedId, rootLabel }: {
             )}
             {node.children.map(child => (
               <div key={child.id} className="flex flex-col items-center" style={{ padding: "0 4px" }}>
-                <div className="border-l border-dashed border-gray-300" style={{ height: 12 }} />
+                <div className="border-l-2 border-dashed border-gray-400" style={{ height: 12 }} />
                 <NodeView node={child} onClick={onClick} selectedId={selectedId} rootLabel={rootLabel} />
               </div>
             ))}
