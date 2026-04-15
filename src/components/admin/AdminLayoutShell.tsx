@@ -5,7 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignOutButton } from "@/components/sign-out-button";
 
-const navItems = [
+type NavItem = {
+  label: string;
+  href: string;
+  icon: string;
+  children?: { label: string; href: string }[];
+};
+
+const navItems: NavItem[] = [
   {
     label: "Dashboard",
     href: "/gestion-reseau",
@@ -36,14 +43,21 @@ const navItems = [
     href: "/gestion-reseau/retraits",
     icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
   },
+  {
+    label: "Documents",
+    href: "/gestion-reseau/documents",
+    icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+  },
 ];
 
 export function AdminLayoutShell({
   children,
   userEmail,
+  documents = [],
 }: {
   children: React.ReactNode;
   userEmail: string;
+  documents?: { id: string; title: string; status: string }[];
 }) {
   const pathname = usePathname();
 
@@ -53,6 +67,12 @@ export function AdminLayoutShell({
   });
 
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const [docsOpen, setDocsOpen] = useState(() =>
+    typeof window !== "undefined"
+      ? pathname.startsWith("/gestion-reseau/documents")
+      : false
+  );
 
   useEffect(() => {
     localStorage.setItem("admin-sidebar-collapsed", String(collapsed));
@@ -98,6 +118,66 @@ export function AdminLayoutShell({
             item.href === "/gestion-reseau"
               ? pathname === "/gestion-reseau"
               : pathname.startsWith(item.href);
+
+          if (item.href === "/gestion-reseau/documents" && documents.length > 0) {
+            return (
+              <div key={item.href}>
+                <button
+                  onClick={() => !collapsed && setDocsOpen((p) => !p)}
+                  title={collapsed && !mobile ? item.label : undefined}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                    collapsed && !mobile ? "justify-center" : "justify-between"
+                  } ${
+                    isActive
+                      ? "bg-gradient-to-r from-winelio-orange to-winelio-amber text-white"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
+                    </svg>
+                    {(!collapsed || mobile) && (
+                      <span className="text-sm font-medium">{item.label}</span>
+                    )}
+                  </div>
+                  {(!collapsed || mobile) && (
+                    <svg
+                      className={`w-4 h-4 shrink-0 transition-transform ${docsOpen ? "rotate-180" : ""}`}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  )}
+                </button>
+                {docsOpen && (!collapsed || mobile) && (
+                  <div className="ml-8 mt-1 flex flex-col gap-1">
+                    {documents.map((doc) => {
+                      const docActive = pathname === `/gestion-reseau/documents/${doc.id}`;
+                      return (
+                        <Link
+                          key={doc.id}
+                          href={`/gestion-reseau/documents/${doc.id}`}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                            docActive
+                              ? "text-winelio-orange bg-orange-50 dark:bg-orange-950/20"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            doc.status === "validated" ? "bg-green-500" :
+                            doc.status === "reviewing" ? "bg-winelio-orange" : "bg-gray-400"
+                          }`} />
+                          <span className="truncate">{doc.title}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
             <Link
               key={item.href}
