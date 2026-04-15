@@ -32,13 +32,13 @@ function parseUserAgent(ua: string | null): string {
   if (!ua || ua === "unknown") return "Inconnu";
   const chrome = ua.match(/Chrome\/(\d+)/);
   const firefox = ua.match(/Firefox\/(\d+)/);
-  const safari = !chrome && ua.match(/Version\/(\d+).*Safari/);
+  const safari = chrome ? null : ua.match(/Version\/(\d+).*Safari/);
   const mac = /Mac OS X/.test(ua);
   const windows = /Windows NT/.test(ua);
   const os = mac ? "macOS" : windows ? "Windows" : "Linux";
   if (chrome) return `Chrome ${chrome[1]} / ${os}`;
   if (firefox) return `Firefox ${firefox[1]} / ${os}`;
-  if (safari) return `Safari ${(safari as RegExpMatchArray)[1]} / ${os}`;
+  if (safari) return `Safari ${safari[1]} / ${os}`;
   return os;
 }
 
@@ -49,14 +49,22 @@ function EventRow({ event }: { event: OnboardingEvent }) {
     bg: "bg-white/5",
   };
   const [verifying, setVerifying] = useState(false);
-  const [verifyResult, setVerifyResult] = useState<"unchanged" | "modified" | null>(null);
+  const [verifyResult, setVerifyResult] = useState<"unchanged" | "modified" | "not_found" | null>(null);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
 
   const handleVerify = async () => {
     if (!event.document_id || !event.document_hash) return;
     setVerifying(true);
+    setVerifyError(null);
     try {
       const result = await verifyDocumentIntegrity(event.document_id, event.document_hash);
-      setVerifyResult(result.unchanged ? "unchanged" : "modified");
+      if (result.notFound) {
+        setVerifyResult("not_found");
+      } else {
+        setVerifyResult(result.unchanged ? "unchanged" : "modified");
+      }
+    } catch (err) {
+      setVerifyError(err instanceof Error ? err.message : "Erreur lors de la vérification");
     } finally {
       setVerifying(false);
     }
@@ -98,7 +106,9 @@ function EventRow({ event }: { event: OnboardingEvent }) {
         </div>
         {event.document_hash && event.document_id && (
           <div className="mt-2">
-            {verifyResult === null ? (
+            {verifyError ? (
+              <span className="text-xs text-red-400">Erreur : {verifyError}</span>
+            ) : verifyResult === null ? (
               <button
                 onClick={handleVerify}
                 disabled={verifying}
@@ -108,6 +118,8 @@ function EventRow({ event }: { event: OnboardingEvent }) {
               </button>
             ) : verifyResult === "unchanged" ? (
               <span className="text-xs text-emerald-400">✅ Document inchangé</span>
+            ) : verifyResult === "not_found" ? (
+              <span className="text-xs text-gray-400">Document introuvable (supprimé ?)</span>
             ) : (
               <span className="text-xs text-yellow-400">⚠️ Document modifié depuis l'acceptation</span>
             )}
