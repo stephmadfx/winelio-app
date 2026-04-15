@@ -28,6 +28,7 @@ export default function NewRecommendationPage() {
   const [createContact, setCreateContact] = useState(false);
   const [contactForm, setContactForm] = useState<ContactFormData>({ first_name: "", last_name: "", email: "", phone: "", country_code: "+33" });
   const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
+  const [wantsToJoin, setWantsToJoin] = useState(false);
 
   // Step 2
   const [selectedProId, setSelectedProId] = useState<string | null>(null);
@@ -135,7 +136,8 @@ export default function NewRecommendationPage() {
           selectedContactId={selectedContactId} setSelectedContactId={setSelectedContactId}
           createContact={createContact} setCreateContact={setCreateContact}
           contactForm={contactForm} setContactForm={setContactForm}
-          contactErrors={contactErrors} setContactErrors={setContactErrors} />
+          contactErrors={contactErrors} setContactErrors={setContactErrors}
+          wantsToJoin={wantsToJoin} setWantsToJoin={setWantsToJoin} />
       )}
       {step === 2 && <StepProfessional userId={userId} selectedProId={selectedProId} onSelect={setSelectedProId} />}
       {step === 3 && <StepProject description={description} urgency={urgency} onDescriptionChange={setDescription} onUrgencyChange={setUrgency} />}
