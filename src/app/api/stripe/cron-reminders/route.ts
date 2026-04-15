@@ -23,34 +23,40 @@ export async function GET(req: Request) {
 
   // ── 1. Relances J+2 ──────────────────────────────────────────────────────────
   const reminderBefore = new Date(now.getTime() - REMINDER_DELAY_MS).toISOString();
-  const { data: toRemind } = await supabaseAdmin
+  const { data: toRemind, error: remindErr } = await supabaseAdmin
     .from("stripe_payment_sessions")
     .select("id, stripe_session_id, amount, recommendation_id")
     .eq("status", "pending")
     .is("reminder_sent_at", null)
     .lt("created_at", reminderBefore);
 
+  if (remindErr) {
+    console.error("[cron-reminders] Erreur requête relances:", remindErr);
+    return NextResponse.json({ error: remindErr.message }, { status: 500 });
+  }
+
   for (const session of toRemind ?? []) {
     try {
-      // Récupérer ou recréer la Checkout Session Stripe
+      // Récupérer les données reco une seule fois
+      const { data: reco } = await supabaseAdmin
+        .from("recommendations")
+        .select("professional_id, compensation_plan_id, contact:contact_id(first_name, last_name)")
+        .eq("id", session.recommendation_id)
+        .single();
+
+      if (!reco) continue;
+
+      const contactData = Array.isArray(reco.contact) ? reco.contact[0] : reco.contact;
+      const clientName = contactData
+        ? `${(contactData as { first_name?: string; last_name?: string }).first_name ?? ""} ${(contactData as { first_name?: string; last_name?: string }).last_name ?? ""}`.trim()
+        : "Client";
+
       const stripeSession = await stripe.checkout.sessions.retrieve(session.stripe_session_id);
       let checkoutUrl = stripeSession.url;
 
+      if (!session.amount) continue;
+
       if (stripeSession.status === "expired" || !checkoutUrl) {
-        // Recréer une session Stripe à partir des données DB
-        const { data: reco } = await supabaseAdmin
-          .from("recommendations")
-          .select("amount, professional_id, compensation_plan_id, contact:contact_id(first_name, last_name)")
-          .eq("id", session.recommendation_id)
-          .single();
-
-        if (!reco?.amount) continue;
-
-        const contact = Array.isArray(reco.contact) ? reco.contact[0] : reco.contact;
-        const clientName = contact
-          ? `${(contact as { first_name?: string; last_name?: string }).first_name ?? ""} ${(contact as { first_name?: string; last_name?: string }).last_name ?? ""}`.trim()
-          : "Client";
-
         const newSession = await stripe.checkout.sessions.create({
           mode: "payment",
           line_items: [
@@ -58,7 +64,7 @@ export async function GET(req: Request) {
               price_data: {
                 currency: "eur",
                 product_data: { name: `Commission Winelio — ${clientName} (relance)` },
-                unit_amount: Math.round((session.amount as number) * 100),
+                unit_amount: Math.round(session.amount * 100),
               },
               quantity: 1,
             },
@@ -73,28 +79,14 @@ export async function GET(req: Request) {
         });
 
         checkoutUrl = newSession.url;
-        // Mettre à jour le stripe_session_id en DB
-        await supabaseAdmin
+        const { error: updateErr } = await supabaseAdmin
           .from("stripe_payment_sessions")
           .update({ stripe_session_id: newSession.id })
           .eq("id", session.id);
+        if (updateErr) throw updateErr;
       }
 
       if (!checkoutUrl) continue;
-
-      // Récupérer les données nécessaires pour l'email
-      const { data: reco } = await supabaseAdmin
-        .from("recommendations")
-        .select("professional_id, contact:contact_id(first_name, last_name)")
-        .eq("id", session.recommendation_id)
-        .single();
-
-      if (!reco) continue;
-
-      const contact = Array.isArray(reco.contact) ? reco.contact[0] : reco.contact;
-      const clientName = contact
-        ? `${(contact as { first_name?: string; last_name?: string }).first_name ?? ""} ${(contact as { first_name?: string; last_name?: string }).last_name ?? ""}`.trim()
-        : "Client";
 
       await sendCommissionReminderEmail(
         (reco as { professional_id: string }).professional_id,
@@ -116,13 +108,18 @@ export async function GET(req: Request) {
 
   // ── 2. Alertes J+4 (48h après la relance) ────────────────────────────────────
   const alertBefore = new Date(now.getTime() - ALERT_DELAY_MS).toISOString();
-  const { data: toAlert } = await supabaseAdmin
+  const { data: toAlert, error: alertErr } = await supabaseAdmin
     .from("stripe_payment_sessions")
     .select("id, recommendation_id")
     .eq("status", "pending")
     .is("alert_sent_at", null)
     .not("reminder_sent_at", "is", null)
     .lt("reminder_sent_at", alertBefore);
+
+  if (alertErr) {
+    console.error("[cron-reminders] Erreur requête alertes:", alertErr);
+    return NextResponse.json({ error: alertErr.message }, { status: 500 });
+  }
 
   for (const session of toAlert ?? []) {
     try {
