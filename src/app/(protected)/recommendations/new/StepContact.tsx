@@ -20,6 +20,8 @@ interface StepContactProps {
   setContactForm: (form: ContactFormData) => void;
   contactErrors: Record<string, string>;
   setContactErrors: (e: Record<string, string>) => void;
+  wantsToJoin: boolean;
+  setWantsToJoin: (v: boolean) => void;
 }
 
 const CheckIcon = () => (
@@ -44,11 +46,41 @@ const Initials = ({ name }: { name: string }) => {
   );
 };
 
+const JoinNetworkCheckbox = ({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) => (
+  <label className="flex items-start gap-3 cursor-pointer mt-4">
+    <div
+      onClick={() => onChange(!checked)}
+      className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 transition-all cursor-pointer ${
+        checked
+          ? "bg-gradient-to-br from-winelio-orange to-winelio-amber border-winelio-orange"
+          : "border-gray-300 hover:border-winelio-orange/50"
+      }`}
+    >
+      {checked && (
+        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      )}
+    </div>
+    <span className="text-sm text-winelio-dark leading-relaxed">
+      Ce contact souhaite rejoindre le réseau Winelio —{" "}
+      <span className="text-winelio-gray">je lui enverrai une invitation par email avec mon code de parrainage.</span>
+    </span>
+  </label>
+);
+
 export const StepContact = ({
   contacts, selfProfile, selfForMe, setSelfForMe,
   selectedContactId, setSelectedContactId,
   createContact, setCreateContact,
   contactForm, setContactForm, contactErrors, setContactErrors,
+  wantsToJoin, setWantsToJoin,
 }: StepContactProps) => {
   const resetContactForm = () => {
     setCreateContact(false);
@@ -88,6 +120,9 @@ export const StepContact = ({
                   {selectedContactId === c.id && <SelectedBadge />}
                 </button>
               ))}
+              {selectedContactId && contacts.some((c) => c.id === selectedContactId) && (
+                <JoinNetworkCheckbox checked={wantsToJoin} onChange={setWantsToJoin} />
+              )}
               <Separator />
             </>
           )}
@@ -154,6 +189,7 @@ export const StepContact = ({
                 placeholder="6 12 34 56 78" className={inputCls(!!contactErrors.phone)} />
             </div>
           </Field>
+          <JoinNetworkCheckbox checked={wantsToJoin} onChange={setWantsToJoin} />
         </div>
       )}
     </div>
