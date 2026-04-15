@@ -1,17 +1,9 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { advanceRecommendationStep, toggleRecommendationStatus } from "../../actions";
-
-const STEP_NAMES = [
-  "Recommandation reçue",
-  "Acceptée par le professionnel",
-  "Contact établi",
-  "Rendez-vous fixé",
-  "Devis soumis",
-  "Devis validé",
-  "Paiement reçu",
-  "Affaire terminée",
-];
+import { addRecoAnnotation, deleteRecoAnnotation } from "./actions";
+import { RecoJourneyView, type AnnotationRow, type StepRow } from "@/components/admin/RecoJourneyView";
 
 export default async function AdminRecoDetail({
   params,
@@ -20,140 +12,74 @@ export default async function AdminRecoDetail({
 }) {
   const { id } = await params;
 
-  const { data: reco } = await supabaseAdmin
-    .from("recommendations")
-    .select(
-      `*,
-       referrer:profiles!referrer_id(id, first_name, last_name, email),
-       professional:profiles!professional_id(id, first_name, last_name, email),
-       recommendation_steps(id, completed_at, step:steps(order_index, name))`
-    )
-    .eq("id", id)
-    .single();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) notFound();
+
+  const [{ data: reco }, { data: annotationsRaw }] = await Promise.all([
+    supabaseAdmin
+      .from("recommendations")
+      .select(`
+        id, status, amount, compensation_plan_id,
+        referrer:profiles!referrer_id(first_name, last_name, email),
+        professional:profiles!professional_id(first_name, last_name, email),
+        recommendation_steps(id, completed_at, step:steps(order_index, name))
+      `)
+      .eq("id", id)
+      .single(),
+    supabaseAdmin
+      .from("recommendation_annotations")
+      .select("id, recommendation_step_id, content, created_at, author:profiles!author_id(id, first_name, last_name)")
+      .eq("recommendation_id", id)
+      .order("created_at"),
+  ]);
 
   if (!reco) notFound();
 
-  const steps = (reco.recommendation_steps ?? []).sort(
-    (a: { step: { order_index: number } }, b: { step: { order_index: number } }) =>
-      (a.step?.order_index ?? 0) - (b.step?.order_index ?? 0)
+  // Résoudre le commission_rate depuis le plan ou plan par défaut
+  let commissionRate: number | null = null;
+  if (reco.compensation_plan_id) {
+    const { data: plan } = await supabaseAdmin
+      .from("compensation_plans")
+      .select("commission_rate")
+      .eq("id", reco.compensation_plan_id)
+      .single();
+    commissionRate = plan?.commission_rate ?? null;
+  }
+  if (commissionRate === null) {
+    const { data: defaultPlan } = await supabaseAdmin
+      .from("compensation_plans")
+      .select("commission_rate")
+      .eq("is_default", true)
+      .eq("is_active", true)
+      .single();
+    commissionRate = defaultPlan?.commission_rate ?? null;
+  }
+
+  const steps = ((reco.recommendation_steps ?? []) as unknown as StepRow[]).sort(
+    (a, b) => (a.step?.order_index ?? 0) - (b.step?.order_index ?? 0)
   );
+
   const referrer = Array.isArray(reco.referrer) ? reco.referrer[0] : reco.referrer;
   const professional = Array.isArray(reco.professional) ? reco.professional[0] : reco.professional;
 
   return (
-    <div className="max-w-3xl">
-      <div className="flex items-center gap-3 mb-6">
-        <a href="/gestion-reseau/recommandations" className="text-gray-500 hover:text-white text-sm">
-          ← Recommandations
-        </a>
-        <span className="text-gray-600">/</span>
-        <h1 className="text-xl font-bold">Détail recommandation</h1>
-      </div>
-
-      {/* Infos générales */}
-      <div className="bg-gray-900 rounded-xl border border-white/5 p-5 mb-4 grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <p className="text-gray-500 text-xs mb-0.5">Referrer</p>
-          <p className="text-white font-medium">{`${referrer?.first_name ?? ""} ${referrer?.last_name ?? ""}`.trim() || "—"}</p>
-          <p className="text-gray-400 text-xs">{referrer?.email}</p>
-        </div>
-        <div>
-          <p className="text-gray-500 text-xs mb-0.5">Professionnel</p>
-          <p className="text-white font-medium">{`${professional?.first_name ?? ""} ${professional?.last_name ?? ""}`.trim() || "—"}</p>
-          <p className="text-gray-400 text-xs">{professional?.email}</p>
-        </div>
-        <div>
-          <p className="text-gray-500 text-xs mb-0.5">Montant deal</p>
-          <p className="text-emerald-400 font-bold">
-            {reco.amount ? `${Number(reco.amount).toLocaleString("fr-FR")} €` : "Non défini"}
-          </p>
-        </div>
-        <div>
-          <p className="text-gray-500 text-xs mb-0.5">Statut</p>
-          <p className="text-white">{reco.status}</p>
-        </div>
-      </div>
-
-      {/* Étapes */}
-      <div className="bg-gray-900 rounded-xl border border-white/5 p-5 mb-4">
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
-          Étapes du workflow
-        </h2>
-        <div className="space-y-2">
-          {steps.map((step: { id: string; completed_at: string | null; step: { order_index: number; name: string } }) => {
-            const isCompleted = !!step.completed_at;
-            return (
-            <div
-              key={step.id}
-              className={`flex items-center gap-3 p-3 rounded-lg ${
-                isCompleted ? "bg-emerald-500/10" : "bg-white/5"
-              }`}
-            >
-              <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                  isCompleted
-                    ? "bg-emerald-500 text-white"
-                    : "bg-gray-700 text-gray-400"
-                }`}
-              >
-                {isCompleted ? "✓" : step.step?.order_index}
-              </div>
-              <div className="flex-1">
-                <p className={`text-sm ${isCompleted ? "text-emerald-300" : "text-gray-300"}`}>
-                  {step.step?.name ?? `Étape ${step.step?.order_index}`}
-                </p>
-                {step.completed_at && (
-                  <p className="text-xs text-gray-500">
-                    {new Date(step.completed_at).toLocaleDateString("fr-FR")}
-                  </p>
-                )}
-              </div>
-              {!isCompleted && (
-                <form
-                  action={async () => {
-                    "use server";
-                    await advanceRecommendationStep(id, step.id);
-                  }}
-                >
-                  <button
-                    type="submit"
-                    className="text-xs bg-winelio-orange/20 text-winelio-orange hover:bg-winelio-orange/30 px-3 py-1.5 rounded-lg transition-colors"
-                  >
-                    Valider →
-                  </button>
-                </form>
-              )}
-            </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Actions sur le statut */}
-      <div className="bg-gray-900 rounded-xl border border-white/5 p-5">
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          Changer le statut
-        </h2>
-        <div className="flex gap-2 flex-wrap">
-          {["PENDING", "ACCEPTED", "CONTACT_MADE", "QUOTE_SUBMITTED", "QUOTE_VALIDATED", "PAYMENT_RECEIVED", "COMPLETED", "CANCELLED"].map((s) => (
-            <form
-              key={s}
-              action={async () => {
-                "use server";
-                await toggleRecommendationStatus(id, s);
-              }}
-            >
-              <button
-                type="submit"
-                disabled={reco.status === s}
-                className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-300 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                → {s}
-              </button>
-            </form>
-          ))}
-        </div>
-      </div>
-    </div>
+    <RecoJourneyView
+      reco={{
+        id: reco.id,
+        status: reco.status,
+        amount: reco.amount,
+        commission_rate: commissionRate,
+        referrer: referrer ?? null,
+        professional: professional ?? null,
+      }}
+      steps={steps}
+      annotations={(annotationsRaw ?? []) as unknown as AnnotationRow[]}
+      currentAdminId={user.id}
+      onAddAnnotation={addRecoAnnotation}
+      onDeleteAnnotation={deleteRecoAnnotation}
+      onAdvanceStep={advanceRecommendationStep}
+      onToggleStatus={toggleRecommendationStatus}
+    />
   );
 }
