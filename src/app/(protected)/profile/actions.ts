@@ -219,13 +219,21 @@ export async function completeProOnboarding(data: {
       .select("name")
       .eq("id", data.category_id)
       .maybeSingle();
+    const firstName = profile?.first_name || profile?.last_name || "Professionnel";
     const { notifyProOnboarding } = await import("@/lib/notify-pro-onboarding");
     notifyProOnboarding({
       email: user.email,
-      firstName: profile?.first_name || profile?.last_name || "Professionnel",
+      firstName,
       workMode: data.work_mode,
       categoryName: category?.name || "—",
     }).catch((err) => console.error("notify-pro-onboarding error:", err));
+
+    // Si pas de SIRET : rappel automatique dans 15 jours
+    if (!data.siret) {
+      const { notifySiretReminder } = await import("@/lib/notify-siret-reminder");
+      notifySiretReminder({ email: user.email, firstName })
+        .catch((err) => console.error("notify-siret-reminder error:", err));
+    }
   }
 
   // 5. Audit trail
