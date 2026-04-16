@@ -3,7 +3,7 @@
 // Modifie les valeurs ici ou via http://localhost:3001
 
 export const SLIDE_DURATIONS = [
-  { id: "slide1", label: "Accroche",  frames: 130 },
+  { id: "slide1", label: "Accroche",  frames: 175 },  // audio 5.25s → 158f + 17 buffer
   { id: "slide2", label: "Problème",  frames: 221 },
   { id: "slide3", label: "Solution",  frames: 254 },
   { id: "slide4", label: "Réseau",  frames: 218 },

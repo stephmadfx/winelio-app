@@ -7,7 +7,14 @@
     "build": "remotion render WinelioPromo out/winelio-promo.mp4 --codec h264"
   },
   "dependencies": {
+    "@remotion/animated-emoji": "4.0.289",
+    "@remotion/captions": "4.0.289",
     "@remotion/cli": "4.0.289",
+    "@remotion/layout-utils": "4.0.289",
+    "@remotion/lottie": "4.0.289",
+    "@remotion/media-utils": "4.0.289",
+    "@remotion/motion-blur": "4.0.289",
+    "@remotion/webcodecs": "4.0.289",
     "remotion": "4.0.289"
   },
   "devDependencies": {
