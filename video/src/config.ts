@@ -50,7 +50,7 @@ export const SLIDES: Slide[] = [
   {
     id: "slide5",
     label: "CTA final",
-    frames: 256,
+    frames: 450,
     texts: [
       "Votre réseau existe déjà.",
       "Il ne vous reste plus qu'à le monétiser.",

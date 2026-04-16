@@ -7,6 +7,7 @@ const VIDEO_URL = "https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/p
 export function PromoVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(false);
+  const [ended, setEnded] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -15,10 +16,8 @@ export function PromoVideo() {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          // Tenter de jouer avec son — le navigateur peut l'autoriser ou non
           video.muted = false;
           video.play().catch(() => {
-            // Navigateur a bloqué → fallback muet silencieux
             video.muted = true;
             setMuted(true);
             video.play().catch(() => {});
@@ -38,7 +37,16 @@ export function PromoVideo() {
     const next = !muted;
     video.muted = next;
     setMuted(next);
-    if (video.paused) video.play().catch(() => {});
+    if (video.paused && !ended) video.play().catch(() => {});
+  }
+
+  function replay() {
+    const video = videoRef.current;
+    if (!video) return;
+    setEnded(false);
+    video.currentTime = 0;
+    video.muted = muted;
+    video.play().catch(() => {});
   }
 
   return (
@@ -52,10 +60,29 @@ export function PromoVideo() {
         className="w-full block"
         style={{ aspectRatio: "16/9" }}
         onEnded={() => {
-          if (videoRef.current) videoRef.current.currentTime = 0;
+          const video = videoRef.current;
+          if (!video) return;
+          video.currentTime = video.duration - 0.05;
+          video.pause();
+          setEnded(true);
         }}
       />
 
+      {/* Bouton rejouer — apparaît en haut à gauche quand la vidéo est terminée */}
+      {ended && (
+        <button
+          onClick={replay}
+          className="absolute top-3 left-3 z-20 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-black/80"
+          aria-label="Rejouer"
+        >
+          <svg className="size-3.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+          </svg>
+          Rejouer
+        </button>
+      )}
+
+      {/* Bouton son — bas droite */}
       <button
         onClick={toggleSound}
         className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-black/70"

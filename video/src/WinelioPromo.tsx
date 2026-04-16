@@ -190,24 +190,50 @@ const Slide4: React.FC<{texts:string[]; dur:number}> = ({texts, dur}) => {
   );
 };
 
+// ── Flèche vers le bas ───────────────────────────────────────────────────────
+const DownArrow: React.FC<{bounce:number; opacity:number}> = ({bounce, opacity}) => (
+  <div style={{opacity, transform:`translateY(${bounce}px)`}}>
+    <svg width="80" height="90" viewBox="0 0 80 90" fill="none">
+      {/* Tige */}
+      <line x1="40" y1="0" x2="40" y2="55" stroke={ORANGE} strokeWidth="10" strokeLinecap="round"
+        style={{filter:"drop-shadow(0 0 12px rgba(255,107,53,0.9))"}}/>
+      {/* Tête */}
+      <polyline points="10,40 40,78 70,40" stroke={ORANGE} strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"
+        style={{filter:"drop-shadow(0 0 16px rgba(255,107,53,0.9))"}}/>
+    </svg>
+  </div>
+);
+
 // ── Slide 5 ───────────────────────────────────────────────────────────────────
 const Slide5: React.FC<{texts:string[]}> = ({texts}) => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
   const logoScale = spring({frame:f,fps,config:{damping:12,stiffness:90}});
   const pulse = interpolate(Math.sin(f*0.12),[-1,1],[1,1.04]);
+
+  // Flèches : apparaissent après frame 80, rebondissent vers le bas
+  const arrowOpacity = interpolate(f,[80,110],[0,1],{extrapolateLeft:"clamp",extrapolateRight:"clamp"});
+  const bounce1 = interpolate(Math.sin(f*0.15),[-1,1],[0,20]);
+  const bounce2 = interpolate(Math.sin(f*0.15 + 0.8),[-1,1],[0,20]); // léger décalage de phase
+
   return (
     <AbsoluteFill style={{display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",padding:"0 160px"}}>
-      <div style={{opacity:useFadeIn(0,12),transform:`scale(${interpolate(logoScale,[0,1],[0.5,1])})`,marginBottom:40}}>
+      <div style={{opacity:useFadeIn(0,12),transform:`scale(${interpolate(logoScale,[0,1],[0.5,1])})`,marginBottom:32}}>
         <Img src={staticFile("assets/logo-on-dark.png")} style={{height:90,objectFit:"contain"}}/>
       </div>
       <div style={{textAlign:"center"}}>
         <p style={{margin:0,opacity:useFadeIn(20),transform:`translateY(${useSlideUp(20)}px)`,fontSize:62,fontWeight:300,color:WHITE,lineHeight:1.3}}>
           {texts[0]}
         </p>
-        <p style={{margin:"16px 0 48px",opacity:useFadeIn(50),transform:`translateY(${useSlideUp(50)}px)`,fontSize:52,fontWeight:400,color:"rgba(255,255,255,0.7)",lineHeight:1.3}}>
+        <p style={{margin:"16px 0 36px",opacity:useFadeIn(50),transform:`translateY(${useSlideUp(50)}px)`,fontSize:52,fontWeight:400,color:"rgba(255,255,255,0.7)",lineHeight:1.3}}>
           {texts[1]}
         </p>
+        {/* Deux flèches vers le bas */}
+        <div style={{display:"flex",justifyContent:"center",gap:60,marginBottom:28}}>
+          <DownArrow bounce={bounce1} opacity={arrowOpacity}/>
+          <DownArrow bounce={bounce2} opacity={arrowOpacity}/>
+        </div>
+        {/* Bouton CTA */}
         <div style={{opacity:useFadeIn(70),transform:`scale(${pulse})`}}>
           <div style={{display:"inline-block",padding:"24px 72px",background:`linear-gradient(135deg,${ORANGE},${AMBER})`,borderRadius:60,fontSize:40,fontWeight:800,color:WHITE,letterSpacing:1,boxShadow:"0 8px 40px rgba(255,107,53,0.45)"}}>
             {texts[2]}
