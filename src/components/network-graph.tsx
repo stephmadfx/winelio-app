@@ -19,6 +19,20 @@ interface GraphNode {
   completedRecos: number;
 }
 
+interface NodeEvent {
+  id: string;
+  status: string;
+  step_order: number;
+  step_label: string;
+  amount: number | null;
+  created_at: string;
+  role: "referrer" | "professional";
+  contact_name: string | null;
+  professional_name: string | null;
+  professional_category: string | null;
+  referrer_name: string | null;
+}
+
 const LEVEL_COLORS = [
   "#FF6B35", "#F7931E", "#FBBF24", "#34D399", "#60A5FA", "#A78BFA",
 ];
@@ -31,6 +45,8 @@ export function NetworkGraph({ userId, userName, rootLabel, maxLevel = 5 }: { us
   const [tree, setTree] = useState<GraphNode | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [events, setEvents] = useState<NodeEvent[] | null>(null);
+  const [eventsLoading, setEventsLoading] = useState(false);
   const [, rerender] = useState(0);
 
   // ── Pan & zoom ─────────────────────────────────────
@@ -306,8 +322,20 @@ export function NetworkGraph({ userId, userName, rootLabel, maxLevel = 5 }: { us
     const vp = viewportRef.current;
     if (vp?.dataset.wasDrag) return;
     setSelectedNode(node);
+
+    // Charge les événements en cours uniquement pour les membres du réseau
+    if (node.id !== userId) {
+      setEvents(null);
+      setEventsLoading(true);
+      fetch(`/api/network/user-events?userId=${node.id}`)
+        .then((res) => (res.ok ? res.json() : { events: [] }))
+        .then((data) => setEvents(data.events ?? []))
+        .catch(() => setEvents([]))
+        .finally(() => setEventsLoading(false));
+    }
+
     if (node.childCount > 0 && node.level < maxLevel) toggleExpand(node.id);
-  }, [toggleExpand]);
+  }, [toggleExpand, userId, maxLevel]);
 
   const zoomIn = () => { dragState.current.scale = Math.min(dragState.current.scale + 0.2, 4); applyTransform(); rerender(n => n + 1); };
   const zoomOut = () => { dragState.current.scale = Math.max(dragState.current.scale - 0.2, 0.2); applyTransform(); rerender(n => n + 1); };
@@ -372,60 +400,32 @@ export function NetworkGraph({ userId, userName, rootLabel, maxLevel = 5 }: { us
             className="flex items-start justify-center pt-8"
             style={{ transformOrigin: "center top", minWidth: "100%", minHeight: "100%" }}
           >
-            <NodeView node={tree} onClick={handleNodeClick} selectedId={selectedNode?.id ?? null} rootLabel={rootLabel} />
+            <NodeView
+              node={tree}
+              onClick={handleNodeClick}
+              onClose={() => { setSelectedNode(null); setEvents(null); }}
+              selectedId={selectedNode?.id ?? null}
+              rootLabel={rootLabel}
+              events={events}
+              eventsLoading={eventsLoading}
+            />
           </div>
         ) : null}
       </div>
 
-      {/* Selected node info */}
-      {selectedNode && selectedNode.id !== userId && (
-        <div className="mt-3 p-3 sm:p-4 rounded-xl bg-white border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm"
-                style={{ backgroundColor: LEVEL_COLORS[selectedNode.level] ?? "#9ca3af" }}>
-                {[selectedNode.first_name, selectedNode.last_name].filter(Boolean).map(n => n![0]).join("").toUpperCase()}
-              </div>
-              <div>
-                <p className="font-semibold text-winelio-dark text-sm">
-                  {selectedNode.is_professional && selectedNode.company_alias
-                    ? selectedNode.company_alias
-                    : selectedNode.level === 1
-                    ? ([selectedNode.first_name, selectedNode.last_name].filter(Boolean).join(" ") || "Sans nom")
-                    : ([selectedNode.first_name, selectedNode.last_name]
-                        .filter(Boolean)
-                        .map((n) => `${n![0].toUpperCase()}.`)
-                        .join(" ") || "?")}
-                </p>
-                <p className="text-xs text-winelio-gray">
-                  {selectedNode.is_professional && selectedNode.company_category && (
-                    <span className="mr-2">{selectedNode.company_category}</span>
-                  )}
-                  {selectedNode.city && <span className="mr-2">{selectedNode.city}</span>}
-                  Niveau {selectedNode.level} · {selectedNode.childCount} membre{selectedNode.childCount !== 1 ? "s" : ""}
-                  {selectedNode.activeRecos > 0 && <span className="ml-2 text-winelio-orange font-medium">{selectedNode.activeRecos} en cours</span>}
-                  {selectedNode.completedRecos > 0 && <span className="ml-2 text-green-600 font-medium">{selectedNode.completedRecos} terminee{selectedNode.completedRecos > 1 ? "s" : ""}</span>}
-                </p>
-              </div>
-            </div>
-            <button onClick={() => setSelectedNode(null)} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
 // ── Node visual component ────────────────────────────
-function NodeView({ node, onClick, selectedId, rootLabel }: {
+function NodeView({ node, onClick, onClose, selectedId, rootLabel, events, eventsLoading }: {
   node: GraphNode;
   onClick: (node: GraphNode) => void;
+  onClose: () => void;
   selectedId: string | null;
   rootLabel?: string;
+  events: NodeEvent[] | null;
+  eventsLoading: boolean;
 }) {
   const color = LEVEL_COLORS[node.level] ?? "#9ca3af";
   const initials = [node.first_name, node.last_name].filter(Boolean).map(n => n![0]).join("").toUpperCase();
@@ -532,6 +532,102 @@ function NodeView({ node, onClick, selectedId, rootLabel }: {
             {node.expanded ? "−" : "+"}{node.childCount}
           </span>
         )}
+
+        {/* Popover attachée à la bulle sélectionnée */}
+        {isSelected && !isRoot && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="absolute left-1/2 top-full -translate-x-1/2 mt-2 w-60 rounded-xl bg-white border border-gray-200 shadow-xl cursor-default"
+            style={{ zIndex: 50 }}
+          >
+            {/* Arrow */}
+            <div
+              className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 bg-white border-l border-t border-gray-200"
+              style={{ transform: "translateX(-50%) rotate(45deg)" }}
+            />
+
+            {/* Header */}
+            <div className="flex items-start justify-between gap-1 px-3 pt-2.5 pb-1.5">
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold text-winelio-dark truncate leading-tight">
+                  {node.is_professional && node.company_alias
+                    ? node.company_alias
+                    : [node.first_name, node.last_name].filter(Boolean).join(" ") || "Sans nom"}
+                </p>
+                <p className="text-[9px] text-winelio-gray truncate">
+                  {node.is_professional && node.company_category && (
+                    <span>{node.company_category} · </span>
+                  )}
+                  {node.city && <span>{node.city} · </span>}
+                  N{node.level} · {node.childCount} filleul{node.childCount > 1 ? "s" : ""}
+                </p>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); onClose(); }}
+                className="shrink-0 w-5 h-5 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="border-t border-gray-100 px-3 py-2">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="inline-flex w-1 h-1 rounded-full bg-winelio-orange animate-pulse" />
+                <h4 className="text-[9px] font-bold text-winelio-dark uppercase tracking-wider">
+                  Actions en cours
+                </h4>
+                {events && events.length > 0 && (
+                  <span className="ml-auto text-[9px] font-bold text-winelio-orange">
+                    {events.length}
+                  </span>
+                )}
+              </div>
+
+              {eventsLoading ? (
+                <div className="flex items-center gap-1.5 py-1 text-[10px] text-winelio-gray">
+                  <div className="w-2.5 h-2.5 border border-winelio-orange border-t-transparent rounded-full animate-spin" />
+                  Chargement…
+                </div>
+              ) : !events || events.length === 0 ? (
+                <p className="text-[10px] text-winelio-gray italic py-0.5">
+                  Aucune action en cours.
+                </p>
+              ) : (
+                <ul className="space-y-1 max-h-40 overflow-y-auto pr-0.5">
+                  {events.map((ev) => {
+                    const title =
+                      ev.role === "referrer"
+                        ? ev.professional_name ?? "Recommandation"
+                        : ev.contact_name ?? "Prospect";
+                    return (
+                      <li key={ev.id} className="flex items-center gap-1.5 py-0.5">
+                        <div className="flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber text-white text-[8px] font-bold shrink-0">
+                          {ev.step_order}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[10px] font-medium text-winelio-dark truncate leading-tight">
+                            {title}
+                          </p>
+                          <p className="text-[9px] text-winelio-gray truncate leading-tight">
+                            {ev.step_label}
+                            {ev.amount != null && (
+                              <span className="ml-1 text-winelio-orange font-semibold">
+                                · {Number(ev.amount).toLocaleString("fr-FR")} €
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Children with connectors */}
@@ -548,7 +644,15 @@ function NodeView({ node, onClick, selectedId, rootLabel }: {
             {node.children.map(child => (
               <div key={child.id} className="flex flex-col items-center" style={{ padding: "0 4px" }}>
                 <div className="border-l-2 border-dashed border-gray-400" style={{ height: 12 }} />
-                <NodeView node={child} onClick={onClick} selectedId={selectedId} rootLabel={rootLabel} />
+                <NodeView
+                  node={child}
+                  onClick={onClick}
+                  onClose={onClose}
+                  selectedId={selectedId}
+                  rootLabel={rootLabel}
+                  events={events}
+                  eventsLoading={eventsLoading}
+                />
               </div>
             ))}
           </div>

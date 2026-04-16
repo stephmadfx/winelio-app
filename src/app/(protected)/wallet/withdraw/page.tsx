@@ -158,6 +158,19 @@ export default function WithdrawPage() {
         </div>
       </div>
 
+      {/* Beta test notice */}
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3">
+        <span className="shrink-0 w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center text-base">
+          🧪
+        </span>
+        <div className="text-sm text-amber-900 leading-snug">
+          <strong>Application en phase de test (bêta)</strong> — Les montants
+          affichés sont <strong>fictifs</strong> et ne correspondent en aucun
+          cas à de l&apos;argent réel. Les retraits sont{" "}
+          <strong>désactivés</strong> pendant cette phase.
+        </div>
+      </div>
+
       {/* Steps indicator */}
       <div className="flex items-center gap-2">
         {["Montant", "Confirmation", "Termine"].map((label, i) => {
