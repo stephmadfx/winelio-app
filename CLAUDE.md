@@ -10,7 +10,9 @@ Winelio (nom de marque) / Winelio (nom technique du repo) est une plateforme de 
 - **Base de données** : PostgreSQL via Supabase (self-hosted)
 - **Déploiement** : Coolify sur VPS Hostinger (31.97.152.195)
 - **Repo** : https://github.com/stephmadfx/winelio-app.git
-- **Branche de dev active** : `dev2` → déployée sur https://dev2.winelio.app
+- **Branche production** : `main` → déployée sur https://winelio.app (app Coolify UUID `e13u8cq02wlio12lfj7a165h`)
+- **Branche staging** : `dev2` → déployée sur https://dev2.winelio.app (app Coolify UUID `eo5jc02jc760apovne577bln`)
+- **Workflow** : développer sur `dev2`, puis `git push origin dev2:main --force` pour mettre en production
 
 ## Couleurs Winelio
 - Orange : #FF6B35 (`winelio-orange`)
