@@ -42,7 +42,13 @@ export async function POST(req: NextRequest) {
       const { data: signed } = await supabaseAdmin.storage
         .from("bug-screenshots")
         .createSignedUrl(path, 60 * 60 * 24 * 7); // 7 jours
-      screenshotSignedUrl = signed?.signedUrl ?? null;
+      if (signed?.signedUrl) {
+        // Remplace l'URL interne Docker (supabase-kong:8000) par l'URL publique
+        screenshotSignedUrl = signed.signedUrl.replace(
+          /https?:\/\/supabase-kong:\d+/,
+          "https://supabase.aide-multimedia.fr"
+        );
+      }
     } else {
       console.error("[bug/report] Storage upload error:", uploadError);
     }
@@ -110,8 +116,12 @@ function buildBugEmailHtml(
   const shortId = reportId.substring(0, 8);
   const screenshotHtml = screenshotSignedUrl
     ? `<table width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
-       <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="background:#F8F9FA;border-radius:8px;padding:10px 16px;">
-         <p style="margin:0;color:#636E72;font-size:12px;">📎 <a href="${esc(screenshotSignedUrl)}" style="color:#FF6B35;text-decoration:none;font-weight:600;">Voir le screenshot</a> (lien valide 7 jours)</p>
+       <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="background:#F8F9FA;border-radius:8px;padding:12px 16px;">
+         <p style="margin:0 0 10px;color:#636E72;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Screenshot</p>
+         <a href="${esc(screenshotSignedUrl)}" style="display:block;">
+           <img src="${esc(screenshotSignedUrl)}" alt="Screenshot" style="display:block;max-width:100%;width:100%;border-radius:6px;border:1px solid #E0E0E0;" />
+         </a>
+         <p style="margin:8px 0 0;color:#B2BAC0;font-size:11px;text-align:center;">Cliquez pour ouvrir en taille réelle (lien valide 7 jours)</p>
        </td></tr></table>`
     : "";
 
