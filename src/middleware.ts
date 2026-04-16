@@ -35,6 +35,26 @@ if (typeof globalThis !== "undefined") {
 }
 
 export async function middleware(request: NextRequest) {
+  // Protection mot de passe staging (actif si STAGING_PASSWORD est défini)
+  const stagingPassword = process.env.STAGING_PASSWORD;
+  if (stagingPassword) {
+    const path = request.nextUrl.pathname;
+    const isExempt =
+      path === "/staging-login" ||
+      path === "/api/staging-auth" ||
+      path.startsWith("/_next/") ||
+      path.startsWith("/favicon");
+
+    if (!isExempt) {
+      const cookie = request.cookies.get("staging_auth");
+      if (cookie?.value !== stagingPassword) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/staging-login";
+        return NextResponse.redirect(url);
+      }
+    }
+  }
+
   // Rate limiting on auth-sensitive API routes only.
   // Never rate-limit the auth pages themselves, otherwise the login screen can
   // return 429 instead of rendering the code-entry form.
