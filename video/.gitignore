@@ -1,0 +1,4 @@
+node_modules/
+out/
+output/
+public/assets/audio/*.mp3

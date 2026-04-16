@@ -3,6 +3,7 @@ import { WinelioLogo } from "@/components/winelio-logo";
 import { AppBackground } from "@/components/AppBackground";
 import { NetworkBackground } from "@/components/NetworkBackground";
 import { BetaBanner } from "@/components/BetaBanner";
+import { PromoVideo } from "@/components/PromoVideo";
 
 export default function Home() {
   return (
@@ -10,14 +11,22 @@ export default function Home() {
       <BetaBanner />
       <AppBackground />
       <NetworkBackground />
-      <main className="relative z-10 flex min-h-dvh items-center justify-center px-4 pt-7">
-        <div className="w-full max-w-xs text-center">
-          <WinelioLogo variant="color" height={64} />
+      <main className="relative z-10 flex min-h-dvh items-center justify-center px-4 py-12 pt-14">
+        <div className="w-full max-w-sm text-center">
+          {/* Logo + tagline */}
+          <WinelioLogo variant="color" height={56} />
           <p className="mt-3 text-sm text-winelio-gray">
             Recommandez. Connectez.{" "}
             <span className="text-winelio-orange font-semibold">Gagnez.</span>
           </p>
-          <div className="mt-8 flex flex-col gap-3">
+
+          {/* Vidéo promo */}
+          <div className="mt-6">
+            <PromoVideo />
+          </div>
+
+          {/* CTAs */}
+          <div className="mt-6 flex flex-col gap-3">
             <Link
               href="/auth/login"
               className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105"

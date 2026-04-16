@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Winelio — Éditeur vidéo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0f0f1a;color:#fff;height:100vh;display:grid;grid-template-rows:52px 1fr;overflow:hidden}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+header{background:#16162a;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;padding:0 20px;gap:16px}
+header h1{font-size:15px;font-weight:700;color:#fff}
+header .sub{font-size:12px;color:rgba(255,255,255,0.35)}
+.total-badge{margin-left:auto;background:rgba(255,107,53,0.15);border:1px solid rgba(255,107,53,0.35);border-radius:20px;padding:4px 14px;font-size:13px;font-weight:700;color:#FF6B35}
+#btn-save{background:linear-gradient(135deg,#FF6B35,#F7931E);color:#fff;border:none;border-radius:8px;padding:8px 22px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s}
+#btn-save:hover{opacity:.85}
+#btn-audio{background:linear-gradient(135deg,#8B5CF6,#6D28D9);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s}
+#btn-audio:hover{opacity:.85}
+#btn-audio:disabled{opacity:.5;cursor:not-allowed}
+#audio-log{position:fixed;bottom:0;left:0;right:0;background:#0d0d1a;border-top:2px solid #8B5CF6;padding:10px 16px;font-size:11px;font-family:monospace;color:#a5f3fc;max-height:180px;overflow-y:auto;z-index:1000;display:none}
+#audio-log.show{display:block}
+#audio-log-close{position:absolute;top:6px;right:12px;cursor:pointer;color:rgba(255,255,255,0.4);font-size:14px}
+
+/* ── Layout principal ────────────────────────────────────────────────────── */
+.main{display:grid;grid-template-columns:380px 1fr;overflow:hidden}
+
+/* ── Panneau gauche ──────────────────────────────────────────────────────── */
+.left-panel{background:#13132b;border-right:1px solid rgba(255,255,255,0.07);display:flex;flex-direction:column;overflow:hidden}
+.left-title{padding:12px 16px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.slides-list{flex:1;overflow-y:auto;padding:8px}
+
+.slide-card{border-radius:10px;margin-bottom:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);transition:border-color .2s}
+.slide-card.active{border-color:rgba(255,107,53,0.5)}
+.slide-header{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;user-select:none;background:rgba(255,255,255,0.03)}
+.slide-header:hover{background:rgba(255,255,255,0.06)}
+.color-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.slide-header-name{font-size:13px;font-weight:600;flex:1}
+.slide-dur{font-size:12px;color:rgba(255,255,255,0.4);font-variant-numeric:tabular-nums}
+.chevron{font-size:10px;color:rgba(255,255,255,0.3);transition:transform .2s}
+.slide-card.open .chevron{transform:rotate(90deg)}
+.slide-body{display:none;padding:10px 12px 14px;background:rgba(0,0,0,0.2)}
+.slide-card.open .slide-body{display:block}
+
+.field-label{font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;margin:10px 0 4px}
+.field-label:first-child{margin-top:0}
+textarea,input[type=text]{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;font-size:13px;padding:8px 10px;resize:vertical;font-family:inherit;transition:border-color .15s}
+textarea:focus,input[type=text]:focus{outline:none;border-color:rgba(255,107,53,0.6)}
+
+.dur-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)}
+.dur-label{font-size:11px;color:rgba(255,255,255,0.35);white-space:nowrap}
+input[type=range]{flex:1;-webkit-appearance:none;height:4px;border-radius:2px;background:rgba(255,255,255,0.12);cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:linear-gradient(135deg,#FF6B35,#F7931E);cursor:ew-resize}
+.dur-val{font-size:13px;font-weight:700;color:#FF6B35;min-width:52px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* ── Panneau droit ───────────────────────────────────────────────────────── */
+.right-panel{display:flex;flex-direction:column;overflow:hidden}
+
+/* Timeline */
+.timeline-wrap{background:#16162a;border-bottom:1px solid rgba(255,255,255,0.07);padding:12px 16px 10px;flex-shrink:0}
+.timeline-title{font-size:10px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.ruler{position:relative;height:16px;margin-bottom:6px}
+.ruler-tick{position:absolute;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.3);white-space:nowrap}
+.ruler-tick::before{content:"";display:block;width:1px;height:5px;background:rgba(255,255,255,0.15);margin:0 auto 2px}
+.timeline-bars{display:flex;gap:3px;height:44px;position:relative}
+.tbar{height:100%;border-radius:7px;position:relative;cursor:default;display:flex;align-items:center;padding:0 8px;transition:filter .15s;min-width:30px;overflow:hidden}
+.tbar:hover{filter:brightness(1.15)}
+.tbar-label{font-size:11px;font-weight:700;color:#fff;white-space:nowrap;pointer-events:none;overflow:hidden;text-overflow:ellipsis}
+.tbar-handle{position:absolute;right:3px;top:50%;transform:translateY(-50%);width:5px;height:28px;background:rgba(255,255,255,0.3);border-radius:3px;cursor:ew-resize;transition:background .15s;flex-shrink:0}
+.tbar-handle:hover{background:rgba(255,255,255,0.9)}
+
+/* Preview Remotion */
+.preview-wrap{flex:1;position:relative;background:#000;overflow:hidden}
+.preview-wrap iframe{width:100%;height:100%;border:none;display:block}
+.preview-overlay{position:absolute;bottom:12px;right:12px;background:rgba(0,0,0,0.65);border-radius:8px;padding:6px 14px;font-size:11px;color:rgba(255,255,255,0.5)}
+/* Bloquer les clics sur le panneau latéral Remotion Studio (Compositions/Assets/menus) */
+.remotion-nav-blocker{position:absolute;top:0;left:0;width:590px;height:100%;z-index:10;cursor:default}
+.remotion-menu-blocker{position:absolute;top:0;left:0;width:100%;height:35px;z-index:10;cursor:default}
+
+/* Toast */
+#toast{position:fixed;bottom:20px;right:20px;background:#22c55e;color:#fff;padding:11px 22px;border-radius:10px;font-weight:700;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
+#toast.show{opacity:1}
+#toast.err{background:#ef4444}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎬 Winelio — Éditeur vidéo</h1>
+  <span class="sub">Modifiez les textes et durées · Remotion se recharge automatiquement</span>
+  <span class="total-badge" id="total-badge">—</span>
+  <button id="btn-audio">🎙️ Générer l'audio</button>
+  <button id="btn-save">💾 Sauvegarder</button>
+</header>
+
+<div id="audio-log">
+  <span id="audio-log-close" title="Fermer">✕</span>
+  <div id="audio-log-content"></div>
+</div>
+
+<div class="main">
+  <!-- Panneau textes -->
+  <div class="left-panel">
+    <div class="left-title">Slides &amp; textes</div>
+    <div class="slides-list" id="slides-list"></div>
+  </div>
+
+  <!-- Timeline + Preview -->
+  <div class="right-panel">
+    <div class="timeline-wrap">
+      <div class="timeline-title">Timeline — glissez le bord droit des barres pour ajuster la durée</div>
+      <div class="ruler" id="ruler"></div>
+      <div class="timeline-bars" id="timeline-bars"></div>
+    </div>
+    <div class="preview-wrap">
+      <iframe id="remotion-iframe" src="http://localhost:3000/WinelioPromo" title="Remotion Studio"></iframe>
+      <!-- Bloqueurs de navigation Remotion pour éviter les clics accidentels -->
+      <div class="remotion-nav-blocker" title="Panneau Remotion — non interactif depuis l'éditeur"></div>
+      <div class="remotion-menu-blocker" title="Menu Remotion — non interactif depuis l'éditeur"></div>
+      <div class="preview-overlay">Aperçu — se met à jour automatiquement après Sauvegarder</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const COLORS = ["#FF6B35","#F7931E","#3B82F6","#8B5CF6","#10B981"];
+const MIN_F = 30, MAX_F = 900, TL_W = 800;
+let slides = [], original = [];
+
+// ── Chargement ────────────────────────────────────────────────────────────────
+async function load() {
+  const res = await fetch("/config");
+  slides = await res.json();
+  original = JSON.parse(JSON.stringify(slides));
+  render();
+}
+
+function totalFrames() { return slides.reduce((s,x) => s+x.frames, 0); }
+
+function render() {
+  renderTimeline();
+  renderSlideList();
+  updateBadge();
+}
+
+function updateBadge() {
+  const tf = totalFrames();
+  document.getElementById("total-badge").textContent = (tf/30).toFixed(1) + "s / " + tf + "f";
+}
+
+// ── Timeline ──────────────────────────────────────────────────────────────────
+function renderTimeline() {
+  const tf = totalFrames();
+  const ruler = document.getElementById("ruler");
+  const barsEl = document.getElementById("timeline-bars");
+  ruler.textContent = "";
+  barsEl.textContent = "";
+
+  // Règle
+  for (let s = 0; s <= Math.ceil(tf/30); s += 3) {
+    const tick = document.createElement("div");
+    tick.className = "ruler-tick";
+    tick.style.left = (s*30/tf*TL_W) + "px";
+    tick.textContent = s + "s";
+    ruler.appendChild(tick);
+  }
+
+  // Barres
+  slides.forEach((sl, i) => {
+    const bar = document.createElement("div");
+    bar.className = "tbar";
+    bar.style.width = (sl.frames/tf*TL_W) + "px";
+    bar.style.background = COLORS[i] + "bb";
+    bar.style.border = "2px solid " + COLORS[i];
+
+    const lbl = document.createElement("span");
+    lbl.className = "tbar-label";
+    lbl.textContent = sl.label;
+    bar.appendChild(lbl);
+
+    const handle = document.createElement("div");
+    handle.className = "tbar-handle";
+    handle.dataset.i = String(i);
+    handle.addEventListener("mousedown", startDrag);
+    bar.appendChild(handle);
+
+    barsEl.appendChild(bar);
+  });
+}
+
+function startDrag(e) {
+  e.preventDefault();
+  const i = parseInt(e.currentTarget.dataset.i, 10);
+  const x0 = e.clientX, f0 = slides[i].frames;
+  const pxPerF = TL_W / totalFrames();
+
+  function move(ev) {
+    slides[i].frames = Math.max(MIN_F, Math.min(MAX_F, Math.round(f0 + (ev.clientX-x0)/pxPerF)));
+    render();
+    syncSliderFromIndex(i);
+  }
+  function up() {
+    document.removeEventListener("mousemove", move);
+    document.removeEventListener("mouseup", up);
+  }
+  document.addEventListener("mousemove", move);
+  document.addEventListener("mouseup", up);
+}
+
+// ── Liste des slides (textes + sliders) ──────────────────────────────────────
+function renderSlideList() {
+  const list = document.getElementById("slides-list");
+  // Conserver les cartes ouvertes
+  const openIds = new Set([...list.querySelectorAll(".slide-card.open")].map(c => c.dataset.id));
+  list.textContent = "";
+
+  slides.forEach((sl, i) => {
+    const card = document.createElement("div");
+    card.className = "slide-card" + (openIds.has(sl.id) ? " open active" : "");
+    card.dataset.id = sl.id;
+
+    // Header
+    const hdr = document.createElement("div");
+    hdr.className = "slide-header";
+
+    const dot = document.createElement("span");
+    dot.className = "color-dot";
+    dot.style.background = COLORS[i];
+
+    const name = document.createElement("span");
+    name.className = "slide-header-name";
+    name.textContent = sl.label;
+
+    const dur = document.createElement("span");
+    dur.className = "slide-dur";
+    dur.dataset.durFor = sl.id;
+    dur.textContent = sl.frames + "f / " + (sl.frames/30).toFixed(1) + "s";
+
+    const chev = document.createElement("span");
+    chev.className = "chevron";
+    chev.textContent = "▶";
+
+    hdr.appendChild(dot);
+    hdr.appendChild(name);
+    hdr.appendChild(dur);
+    hdr.appendChild(chev);
+    hdr.addEventListener("click", () => {
+      card.classList.toggle("open");
+      card.classList.toggle("active", card.classList.contains("open"));
+    });
+
+    // Body
+    const body = document.createElement("div");
+    body.className = "slide-body";
+
+    // Champs texte
+    sl.texts.forEach((txt, ti) => {
+      const lbl = document.createElement("div");
+      lbl.className = "field-label";
+      lbl.textContent = "Ligne " + (ti+1);
+      body.appendChild(lbl);
+
+      const ta = document.createElement("textarea");
+      ta.rows = txt.length > 60 ? 3 : 2;
+      ta.value = txt;
+      ta.addEventListener("input", () => {
+        slides[i].texts[ti] = ta.value;
+      });
+      body.appendChild(ta);
+    });
+
+    // Slider durée
+    const durRow = document.createElement("div");
+    durRow.className = "dur-row";
+
+    const durLbl = document.createElement("span");
+    durLbl.className = "dur-label";
+    durLbl.textContent = "Durée";
+
+    const range = document.createElement("input");
+    range.type = "range";
+    range.min = String(MIN_F);
+    range.max = String(MAX_F);
+    range.value = String(sl.frames);
+    range.dataset.rangeFor = sl.id;
+
+    const valEl = document.createElement("span");
+    valEl.className = "dur-val";
+    valEl.dataset.valFor = sl.id;
+    valEl.textContent = sl.frames + "f";
+
+    range.addEventListener("input", () => {
+      slides[i].frames = parseInt(range.value, 10);
+      render();
+    });
+
+    durRow.appendChild(durLbl);
+    durRow.appendChild(range);
+    durRow.appendChild(valEl);
+    body.appendChild(durRow);
+
+    card.appendChild(hdr);
+    card.appendChild(body);
+    list.appendChild(card);
+  });
+}
+
+function syncSliderFromIndex(i) {
+  const sl = slides[i];
+  const range = document.querySelector(`[data-range-for="${sl.id}"]`);
+  const val = document.querySelector(`[data-val-for="${sl.id}"]`);
+  const dur = document.querySelector(`[data-dur-for="${sl.id}"]`);
+  if (range) range.value = String(sl.frames);
+  if (val) val.textContent = sl.frames + "f";
+  if (dur) dur.textContent = sl.frames + "f / " + (sl.frames/30).toFixed(1) + "s";
+}
+
+// ── Sauvegarde ────────────────────────────────────────────────────────────────
+const btnSave = document.getElementById("btn-save");
+btnSave.addEventListener("click", async () => {
+  btnSave.disabled = true;
+  btnSave.textContent = "⏳ Sauvegarde…";
+  try {
+    const res = await fetch("/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(slides),
+    });
+    if (res.ok) {
+      // Mettre à jour original = état sauvegardé
+      original = JSON.parse(JSON.stringify(slides));
+      showToast("✅ Sauvegardé — Remotion se recharge automatiquement (quelques secondes)");
+      // Ne pas recharger l'iframe — Remotion Studio fait son HMR tout seul
+    } else {
+      showToast("❌ Erreur serveur", true);
+    }
+  } catch {
+    showToast("❌ Serveur non joignable", true);
+  } finally {
+    btnSave.disabled = false;
+    btnSave.textContent = "💾 Sauvegarder";
+  }
+});
+
+function showToast(msg, err=false) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = err ? "show err" : "show";
+  setTimeout(() => { t.className = ""; }, 3000);
+}
+
+// ── Génération audio ──────────────────────────────────────────────────────────
+const btnAudio = document.getElementById("btn-audio");
+const audioLog = document.getElementById("audio-log");
+const audioLogContent = document.getElementById("audio-log-content");
+const audioLogClose = document.getElementById("audio-log-close");
+
+audioLogClose.addEventListener("click", () => audioLog.classList.remove("show"));
+
+btnAudio.addEventListener("click", async () => {
+  btnAudio.disabled = true;
+  btnAudio.textContent = "⏳ Génération…";
+  audioLog.classList.add("show");
+  audioLogContent.innerHTML = '<span style="color:#8B5CF6">🎙️ Démarrage Voxtral TTS…</span>\n';
+
+  const addLog = (msg, color = "#a5f3fc") => {
+    const line = document.createElement("div");
+    line.style.color = color;
+    line.textContent = msg;
+    audioLogContent.appendChild(line);
+    audioLog.scrollTop = audioLog.scrollHeight;
+  };
+
+  try {
+    const es = new EventSource("/generate-audio", { withCredentials: false });
+    // EventSource ne supporte pas POST natif — on utilise fetch + ReadableStream
+    es.close();
+
+    const res = await fetch("/generate-audio", { method: "POST" });
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop();
+      for (const part of parts) {
+        const line = part.replace(/^data: /, "").trim();
+        if (!line) continue;
+        try {
+          const evt = JSON.parse(line);
+          if (evt.type === "log") addLog(evt.message);
+          else if (evt.type === "error") addLog("❌ " + evt.message, "#f87171");
+          else if (evt.type === "result") {
+            addLog("", "#22c55e");
+            addLog("✅ Audio généré — rechargement des slides…", "#22c55e");
+            // Recharger les slides depuis le serveur (durées mises à jour)
+            await load();
+          }
+          else if (evt.type === "done" && evt.code !== 0) {
+            addLog("❌ Erreur lors de la génération (code " + evt.code + ")", "#f87171");
+          }
+        } catch { /* ignorer les lignes non-JSON */ }
+      }
+    }
+  } catch(err) {
+    addLog("❌ " + err.message, "#f87171");
+  } finally {
+    btnAudio.disabled = false;
+    btnAudio.textContent = "🎙️ Générer l'audio";
+  }
+});
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+[
+  {
+    "id": "slide1",
+    "label": "Accroche",
+    "frames": 215,
+    "texts": [
+      "Vous recommandez des pros",
+      "autour de vous tous les jours.",
+      "Le plombier, l'électricien, l'agent immobilier…"
+    ]
+  },
+  {
+    "id": "slide2",
+    "label": "Problème",
+    "frames": 167,
+    "texts": [
+      "Et vous le faites",
+      "GRATUITEMENT.",
+      "Pourtant, chaque recommandation que vous faites a de la vraie valeur."
+    ]
+  },
+  {
+    "id": "slide3",
+    "label": "Solution",
+    "frames": 217,
+    "texts": [
+      "c'est l'application qui vous",
+      "PAIE POUR ÇA.",
+      "Vous recommandez → le deal se conclut → vous touchez une commission."
+    ]
+  },
+  {
+    "id": "slide4",
+    "label": "Réseau",
+    "frames": 229,
+    "texts": [
+      "Et ce n'est pas tout.",
+      "Chaque personne que vous parrainez fait pareil.",
+      "Votre réseau génère aussi des commissions — 5 niveaux."
+    ]
+  },
+  {
+    "id": "slide5",
+    "label": "CTA final",
+    "frames": 244,
+    "texts": [
+      "Votre réseau existe déjà.",
+      "Il ne vous reste plus qu'à le monétiser.",
+      "Rejoignez Winelio →",
+      "winelio.app"
+    ]
+  }
+]
