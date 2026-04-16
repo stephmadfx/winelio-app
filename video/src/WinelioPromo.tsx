@@ -62,12 +62,14 @@ const AccentBar: React.FC<{p:number}> = ({p}) => (
 );
 
 // ── Fondu entre slides ────────────────────────────────────────────────────────
-const Fade: React.FC<{total:number}> = ({total}) => {
+const Fade: React.FC<{total:number; noFadeOut?:boolean}> = ({total, noFadeOut}) => {
   const f = useCurrentFrame();
+  const opacity = noFadeOut
+    ? interpolate(f,[0,12],[1,0],{extrapolateLeft:"clamp",extrapolateRight:"clamp"})
+    : interpolate(f,[0,12,total-12,total],[1,0,0,1],{extrapolateLeft:"clamp",extrapolateRight:"clamp"});
   return (
     <div style={{
-      position:"absolute", inset:0, background:"#111", pointerEvents:"none",
-      opacity: interpolate(f,[0,12,total-12,total],[1,0,0,1],{extrapolateLeft:"clamp",extrapolateRight:"clamp"}),
+      position:"absolute", inset:0, background:"#111", pointerEvents:"none", opacity,
     }}/>
   );
 };
@@ -277,7 +279,7 @@ export const WinelioPromo: React.FC<WinelioPromoProps> = ({slides}) => {
       <Sequence from={offsets[4]} durationInFrames={frames[4]}>
         <Audio src={staticFile("assets/audio/slide5.mp3")} startFrom={0}/>
         <Slide5 texts={slides[4].texts}/>
-        <Fade total={frames[4]}/>
+        <Fade total={frames[4]} noFadeOut/>
       </Sequence>
     </AbsoluteFill>
   );

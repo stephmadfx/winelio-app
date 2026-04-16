@@ -62,7 +62,7 @@ export function PromoVideo() {
         onEnded={() => {
           const video = videoRef.current;
           if (!video) return;
-          video.currentTime = video.duration - 0.05;
+          video.currentTime = video.duration - 0.5;
           video.pause();
           setEnded(true);
         }}
