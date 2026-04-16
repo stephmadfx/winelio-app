@@ -104,7 +104,8 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/bugs/imap-poll") &&
     !request.nextUrl.pathname.startsWith("/api/bugs/imap-debug") &&
     !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
-    !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders")
+    !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders") &&
+    !request.nextUrl.pathname.startsWith("/api/video/")
   ) {
     if (!user) {
       return NextResponse.json(
@@ -123,6 +124,7 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/bugs/imap-debug") &&
     !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
     !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders") &&
+    !request.nextUrl.pathname.startsWith("/api/video/") &&
     request.nextUrl.pathname !== "/"
   ) {
     const url = request.nextUrl.clone();
