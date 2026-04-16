@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const VIDEO_URL = "/api/video/promo";
+const VIDEO_URL = "https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/promo.mp4";
 
 export function PromoVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);

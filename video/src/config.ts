@@ -20,7 +20,7 @@ export const SLIDES: Slide[] = [
   {
     id: "slide2",
     label: "Problème",
-    frames: 167,
+    frames: 210,
     texts: [
       "Et vous le faites",
       "GRATUITEMENT.",
@@ -30,9 +30,9 @@ export const SLIDES: Slide[] = [
   {
     id: "slide3",
     label: "Solution",
-    frames: 217,
+    frames: 200,
     texts: [
-      "c'est l'application qui vous",
+      "Winelio, c'est l'application qui vous",
       "PAIE POUR ÇA.",
       "Vous recommandez → le deal se conclut → vous touchez une commission."
     ]
@@ -40,7 +40,7 @@ export const SLIDES: Slide[] = [
   {
     id: "slide4",
     label: "Réseau",
-    frames: 229,
+    frames: 245,
     texts: [
       "Et ce n'est pas tout.",
       "Chaque personne que vous parrainez fait pareil.",
@@ -50,7 +50,7 @@ export const SLIDES: Slide[] = [
   {
     id: "slide5",
     label: "CTA final",
-    frames: 244,
+    frames: 256,
     texts: [
       "Votre réseau existe déjà.",
       "Il ne vous reste plus qu'à le monétiser.",
