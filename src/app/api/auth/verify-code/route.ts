@@ -112,6 +112,10 @@ export async function POST(req: Request) {
       const cookieStore = await cookies();
       const supabaseForSession = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         db: { schema: "winelio" },
+        cookieOptions: {
+          name: "sb-winelio-auth-token",
+          sameSite: "lax",
+        },
         cookies: {
           getAll() { return cookieStore.getAll(); },
           setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {

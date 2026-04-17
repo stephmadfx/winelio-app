@@ -75,6 +75,10 @@ export async function middleware(request: NextRequest) {
     SUPABASE_URL,
     SUPABASE_ANON_KEY,
     {
+      cookieOptions: {
+        name: "sb-winelio-auth-token",
+        sameSite: "lax",
+      },
       cookies: {
         getAll() {
           return request.cookies.getAll();

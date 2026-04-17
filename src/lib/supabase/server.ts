@@ -10,6 +10,10 @@ export async function createClient() {
     SUPABASE_ANON_KEY,
     {
       db: { schema: "winelio" },
+      cookieOptions: {
+        name: "sb-winelio-auth-token",
+        sameSite: "lax",
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll();

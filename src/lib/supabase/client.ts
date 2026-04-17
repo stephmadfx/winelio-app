@@ -10,6 +10,7 @@ export function createClient() {
       autoRefreshToken: true,
     },
     cookieOptions: {
+      name: "sb-winelio-auth-token",
       lifetime: 60 * 60 * 24 * 365,
       sameSite: "lax",
     },
