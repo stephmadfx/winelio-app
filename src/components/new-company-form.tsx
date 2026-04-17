@@ -95,6 +95,10 @@ export function NewCompanyForm({
       setError("La catégorie est obligatoire.");
       return;
     }
+    if (form.siret && !sirenData) {
+      setError("Veuillez cliquer sur « Vérifier » pour valider votre SIRET avant de continuer.");
+      return;
+    }
 
     setSaving(true);
     setError(null);
@@ -116,6 +120,7 @@ export function NewCompanyForm({
       is_verified: !!sirenData?.actif,
       category_id: form.category_id || null,
       owner_id: userId,
+      source: "owner",
       alias,
     });
 

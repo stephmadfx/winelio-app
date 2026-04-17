@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
+import { DeleteCompanyButton } from "@/components/delete-company-button";
 
 export default async function CompaniesPage() {
   const supabase = await createClient();
@@ -15,8 +16,9 @@ export default async function CompaniesPage() {
 
   const { data: companies } = await supabase
     .from("companies")
-    .select("id, name, city, is_verified, category:categories(name)")
+    .select("id, name, city, is_verified, source, category:categories(name)")
     .eq("owner_id", user.id)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   return (
@@ -29,7 +31,7 @@ export default async function CompaniesPage() {
           href="/companies/new"
           className="px-5 py-2.5 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity text-center"
         >
-          Je suis professionnel
+          Ajouter une entreprise
         </Link>
       </div>
 
@@ -54,17 +56,14 @@ export default async function CompaniesPage() {
             <h3 className="text-lg font-semibold text-winelio-dark mb-2">
               Vous êtes actuellement enregistré comme particulier
             </h3>
-            <p className="text-muted-foreground mb-2">
+            <p className="text-muted-foreground mb-6">
               Si vous êtes un professionnel ou que vous possédez une entreprise, enregistrez-la ici pour commencer à recevoir des recommandations de la part du réseau Winelio.
-            </p>
-            <p className="text-sm text-muted-foreground mb-6">
-              Votre entreprise sera vérifiée par notre équipe avant d&apos;apparaître dans le réseau.
             </p>
             <Link
               href="/companies/new"
               className="inline-block px-6 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
             >
-              Enregistrer mon entreprise
+              Enregistrer ma ou mes entreprises
             </Link>
           </CardContent>
         </Card>
@@ -86,15 +85,22 @@ export default async function CompaniesPage() {
                     <h3 className="text-lg font-semibold text-winelio-dark">
                       {company.name}
                     </h3>
-                    {company.is_verified ? (
-                      <span className="px-2.5 py-1 text-xs font-medium bg-green-50 text-green-700 rounded-full border border-green-200">
-                        Vérifié
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-1 text-xs font-medium bg-yellow-50 text-yellow-700 rounded-full border border-yellow-200">
-                        En attente
-                      </span>
-                    )}
+                    <div className="flex flex-col items-end gap-1.5">
+                      {company.is_verified ? (
+                        <span className="px-2.5 py-1 text-xs font-medium bg-green-50 text-green-700 rounded-full border border-green-200">
+                          Vérifié
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 text-xs font-medium bg-yellow-50 text-yellow-700 rounded-full border border-yellow-200">
+                          En attente
+                        </span>
+                      )}
+                      {company.source === "scraped" && (
+                        <span className="px-2.5 py-1 text-xs font-medium bg-gray-50 text-gray-500 rounded-full border border-gray-200">
+                          Non inscrit
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {categoryName && (
                     <p className="text-sm text-winelio-orange font-medium mb-1">
@@ -104,6 +110,12 @@ export default async function CompaniesPage() {
                   {company.city && (
                     <p className="text-sm text-muted-foreground">{company.city}</p>
                   )}
+                  <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
+                    <DeleteCompanyButton
+                      companyId={company.id}
+                      companyName={company.name}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             );
