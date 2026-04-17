@@ -11,14 +11,16 @@ export async function assignSponsorIfNeeded(
   userId: string,
   sponsorCode?: string | null
 ): Promise<boolean> {
-  // Vérifier si l'utilisateur a déjà un parrain
+  // Vérifier si l'utilisateur a déjà un parrain, ou s'il est tête de lignée
   const { data: profile } = await supabaseAdmin
     .from("profiles")
-    .select("sponsor_id")
+    .select("sponsor_id, is_founder")
     .eq("id", userId)
     .single();
 
   if (profile?.sponsor_id) return false;
+  // Un fondateur reste tête de lignée, jamais rattaché à un parrain
+  if (profile?.is_founder) return false;
 
   let sponsorId: string | null = null;
 
