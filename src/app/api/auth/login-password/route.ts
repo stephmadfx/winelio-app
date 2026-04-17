@@ -22,13 +22,14 @@ export async function POST(req: Request) {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+          // Laisser @supabase/ssr gérer les options — ne pas forcer httpOnly:true
+          // (sinon le client browser ne peut pas lire le cookie → RLS cassée côté client).
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, {
-              ...options as Parameters<typeof response.cookies.set>[2],
-              httpOnly: true,
-              secure: process.env.NODE_ENV === "production",
-              sameSite: "lax",
-            });
+            response.cookies.set(
+              name,
+              value,
+              options as Parameters<typeof response.cookies.set>[2]
+            );
           });
         },
       },

@@ -115,13 +115,16 @@ export async function POST(req: Request) {
         cookies: {
           getAll() { return cookieStore.getAll(); },
           setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+            // Laisser @supabase/ssr gérer les options de cookies.
+            // ⚠ NE PAS forcer httpOnly:true — le client browser doit pouvoir lire
+            //   le cookie pour maintenir la session, sinon RLS renvoie "Non authentifié"
+            //   côté client (bug observé au recettage du 2026-04-17).
             cookiesToSet.forEach(({ name, value, options }) => {
-              response.cookies.set(name, value, {
-                ...options as Parameters<typeof response.cookies.set>[2],
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "lax",
-              });
+              response.cookies.set(
+                name,
+                value,
+                options as Parameters<typeof response.cookies.set>[2]
+              );
             });
           },
         },
