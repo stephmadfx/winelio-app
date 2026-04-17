@@ -3,8 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 
 const MIN_AMOUNT = 10;
 const MAX_AMOUNT = 10000;
+const FREE_THRESHOLD = 50;   // retraits ≥ 50 € → gratuit
+const STRIPE_FEE = 0.25;     // frais fixes SEPA Stripe pour retraits < 50 €
 const IBAN_REGEX = /^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
   try {
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { amount, payment_method, iban, paypal_email } = body;
+    const { amount, iban } = body;
 
     // Validate amount
     const parsedAmount = parseFloat(amount);
@@ -38,28 +39,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate payment method
-    if (!["bank_transfer", "paypal"].includes(payment_method)) {
-      return NextResponse.json(
-        { error: "Méthode de paiement invalide" },
-        { status: 400 }
-      );
-    }
-
-    // Validate payment details
-    if (payment_method === "bank_transfer") {
-      const cleanIban = (iban ?? "").replace(/\s/g, "").toUpperCase();
-      if (!IBAN_REGEX.test(cleanIban)) {
-        return NextResponse.json({ error: "IBAN invalide" }, { status: 400 });
-      }
-    }
-    if (payment_method === "paypal") {
-      if (!paypal_email || !EMAIL_REGEX.test(paypal_email)) {
-        return NextResponse.json(
-          { error: "Email PayPal invalide" },
-          { status: 400 }
-        );
-      }
+    // Validate IBAN
+    const cleanIban = (iban ?? "").replace(/\s/g, "").toUpperCase();
+    if (!IBAN_REGEX.test(cleanIban)) {
+      return NextResponse.json({ error: "IBAN invalide" }, { status: 400 });
     }
 
     // Fetch current balance SERVER-SIDE (source of truth)
@@ -83,17 +66,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const paymentDetails =
-      payment_method === "bank_transfer"
-        ? { iban: (iban ?? "").replace(/\s/g, "").toUpperCase() }
-        : { email: paypal_email.trim() };
+    const feeAmount = parsedAmount < FREE_THRESHOLD ? STRIPE_FEE : 0;
+    const paymentDetails = { iban: cleanIban };
 
     // Opération atomique via RPC (insert + update dans une seule transaction)
     const { data: rpcResult, error: rpcError } = await supabase.rpc("process_withdrawal", {
       p_user_id: user.id,
       p_amount: parsedAmount,
-      p_payment_method: payment_method,
+      p_payment_method: "bank_transfer",
       p_payment_details: paymentDetails,
+      p_fee_amount: feeAmount,
     });
 
     if (rpcError) {
@@ -111,7 +93,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Erreur lors du retrait" }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, fee_amount: feeAmount, net_amount: parsedAmount - feeAmount });
   } catch {
     return NextResponse.json(
       { error: "Erreur interne du serveur" },

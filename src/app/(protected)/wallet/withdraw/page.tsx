@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-type PaymentMethod = "bank_transfer" | "paypal";
+type PaymentMethod = "bank_transfer";
 
 type Step = "form" | "confirm" | "success";
 
@@ -19,12 +19,13 @@ export default function WithdrawPage() {
 
   // Form state
   const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState<PaymentMethod>("bank_transfer");
+  const method: PaymentMethod = "bank_transfer";
   const [iban, setIban] = useState("");
-  const [paypalEmail, setPaypalEmail] = useState("");
 
   const MIN_AMOUNT = 10;
   const MAX_AMOUNT = 10000;
+  const FREE_THRESHOLD = 50;
+  const STRIPE_FEE = 0.25;
 
   useEffect(() => {
     async function fetchBalance() {
@@ -50,6 +51,8 @@ export default function WithdrawPage() {
   }, []);
 
   const parsedAmount = parseFloat(amount) || 0;
+  const feeAmount = parsedAmount > 0 && parsedAmount < FREE_THRESHOLD ? STRIPE_FEE : 0;
+  const netAmount = parsedAmount - feeAmount;
 
   function validate(): string | null {
     if (!amount || parsedAmount <= 0) return "Veuillez saisir un montant.";
@@ -59,15 +62,8 @@ export default function WithdrawPage() {
       return `Le montant maximum est de ${MAX_AMOUNT} EUR.`;
     if (parsedAmount > available)
       return "Le montant depasse votre solde disponible.";
-    if (method === "bank_transfer" && !iban.trim())
+    if (!iban.trim())
       return "Veuillez saisir votre IBAN.";
-    if (method === "paypal" && !paypalEmail.trim())
-      return "Veuillez saisir votre email PayPal.";
-    if (
-      method === "paypal" &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paypalEmail)
-    )
-      return "L'email PayPal n'est pas valide.";
     return null;
   }
 
@@ -92,8 +88,7 @@ export default function WithdrawPage() {
         body: JSON.stringify({
           amount: parsedAmount,
           payment_method: method,
-          iban: method === "bank_transfer" ? iban.trim() : undefined,
-          paypal_email: method === "paypal" ? paypalEmail.trim() : undefined,
+          iban: iban.trim(),
         }),
       });
 
@@ -236,111 +231,54 @@ export default function WithdrawPage() {
                 currency: "EUR",
               }).format(Math.min(MAX_AMOUNT, available))}
             </p>
-          </div>
 
-          {/* Payment Method */}
-          <div>
-            <label className="block text-sm font-medium text-winelio-dark mb-2">
-              Methode de paiement
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setMethod("bank_transfer")}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-colors ${
-                  method === "bank_transfer"
-                    ? "border-winelio-orange bg-winelio-orange/5"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <svg
-                  className={`w-6 h-6 ${
-                    method === "bank_transfer"
-                      ? "text-winelio-orange"
-                      : "text-winelio-gray"
-                  }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"
-                  />
-                </svg>
-                <span
-                  className={`text-xs font-medium ${
-                    method === "bank_transfer"
-                      ? "text-winelio-dark"
-                      : "text-winelio-gray"
-                  }`}
-                >
-                  Virement bancaire
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setMethod("paypal")}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-colors ${
-                  method === "paypal"
-                    ? "border-winelio-orange bg-winelio-orange/5"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <svg
-                  className={`w-6 h-6 ${
-                    method === "paypal"
-                      ? "text-winelio-orange"
-                      : "text-winelio-gray"
-                  }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M3 8l4 12h2l1-4h4c3 0 5-2 5-5s-2-5-5-5H7L3 8z"
-                  />
-                </svg>
-                <span
-                  className={`text-xs font-medium ${
-                    method === "paypal"
-                      ? "text-winelio-dark"
-                      : "text-winelio-gray"
-                  }`}
-                >
-                  PayPal
-                </span>
-              </button>
-            </div>
-          </div>
-
-          {/* Payment Details */}
-          <div>
-            <label className="block text-sm font-medium text-winelio-dark mb-2">
-              {method === "bank_transfer" ? "IBAN" : "Email PayPal"}
-            </label>
-            {method === "bank_transfer" ? (
-              <input
-                type="text"
-                value={iban}
-                onChange={(e) => setIban(e.target.value.toUpperCase())}
-                placeholder="FR76 1234 5678 9012 3456 7890 123"
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-winelio-dark font-mono focus:outline-none focus:ring-2 focus:ring-winelio-orange/30 focus:border-winelio-orange"
-              />
-            ) : (
-              <input
-                type="email"
-                value={paypalEmail}
-                onChange={(e) => setPaypalEmail(e.target.value)}
-                placeholder="votre@email.com"
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/30 focus:border-winelio-orange"
-              />
+            {/* Bloc frais */}
+            {parsedAmount > 0 && (
+              <div className={`mt-3 rounded-xl px-4 py-3 text-sm space-y-1.5 ${
+                feeAmount > 0
+                  ? "bg-amber-50 border border-amber-200"
+                  : "bg-green-50 border border-green-200"
+              }`}>
+                {feeAmount > 0 ? (
+                  <>
+                    <div className="flex justify-between text-amber-800">
+                      <span>Frais de traitement Stripe</span>
+                      <span className="font-semibold">
+                        − {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(feeAmount)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-amber-900 font-semibold border-t border-amber-200 pt-1.5">
+                      <span>Vous recevrez</span>
+                      <span>
+                        {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(netAmount)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-700 pt-0.5">
+                      Les retraits à partir de {FREE_THRESHOLD} € sont gratuits.
+                    </p>
+                  </>
+                ) : (
+                  <div className="flex justify-between text-green-800 font-medium">
+                    <span>Frais de traitement</span>
+                    <span>Gratuit</span>
+                  </div>
+                )}
+              </div>
             )}
+          </div>
+
+          {/* IBAN */}
+          <div>
+            <label className="block text-sm font-medium text-winelio-dark mb-2">
+              IBAN
+            </label>
+            <input
+              type="text"
+              value={iban}
+              onChange={(e) => setIban(e.target.value.toUpperCase())}
+              placeholder="FR76 1234 5678 9012 3456 7890 123"
+              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-winelio-dark font-mono focus:outline-none focus:ring-2 focus:ring-winelio-orange/30 focus:border-winelio-orange"
+            />
           </div>
 
           {error && (
@@ -367,39 +305,37 @@ export default function WithdrawPage() {
 
           <div className="space-y-4">
             <div className="flex justify-between py-3 border-b border-gray-100">
-              <span className="text-sm text-winelio-gray">Montant</span>
+              <span className="text-sm text-winelio-gray">Montant demandé</span>
               <span className="text-sm font-semibold text-winelio-dark">
-                {new Intl.NumberFormat("fr-FR", {
-                  style: "currency",
-                  currency: "EUR",
-                }).format(parsedAmount)}
+                {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(parsedAmount)}
+              </span>
+            </div>
+            {feeAmount > 0 && (
+              <div className="flex justify-between py-3 border-b border-gray-100">
+                <span className="text-sm text-amber-700">Frais de traitement Stripe</span>
+                <span className="text-sm font-semibold text-amber-700">
+                  − {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(feeAmount)}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between py-3 border-b border-gray-100">
+              <span className="text-sm font-semibold text-winelio-dark">Vous recevrez</span>
+              <span className="text-sm font-bold text-winelio-dark">
+                {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(netAmount)}
               </span>
             </div>
             <div className="flex justify-between py-3 border-b border-gray-100">
-              <span className="text-sm text-winelio-gray">Methode</span>
-              <span className="text-sm font-semibold text-winelio-dark">
-                {method === "bank_transfer"
-                  ? "Virement bancaire"
-                  : "PayPal"}
-              </span>
+              <span className="text-sm text-winelio-gray">Méthode</span>
+              <span className="text-sm font-semibold text-winelio-dark">Virement bancaire</span>
             </div>
             <div className="flex justify-between py-3 border-b border-gray-100">
-              <span className="text-sm text-winelio-gray">
-                {method === "bank_transfer" ? "IBAN" : "Email PayPal"}
-              </span>
-              <span className="text-sm font-semibold text-winelio-dark">
-                {method === "bank_transfer" ? iban : paypalEmail}
-              </span>
+              <span className="text-sm text-winelio-gray">IBAN</span>
+              <span className="text-sm font-semibold text-winelio-dark">{iban}</span>
             </div>
             <div className="flex justify-between py-3">
-              <span className="text-sm text-winelio-gray">
-                Solde apres retrait
-              </span>
+              <span className="text-sm text-winelio-gray">Solde après retrait</span>
               <span className="text-sm font-semibold text-winelio-orange">
-                {new Intl.NumberFormat("fr-FR", {
-                  style: "currency",
-                  currency: "EUR",
-                }).format(available - parsedAmount)}
+                {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(available - parsedAmount)}
               </span>
             </div>
           </div>
@@ -453,15 +389,14 @@ export default function WithdrawPage() {
             Demande envoyee
           </h2>
           <p className="text-sm text-winelio-gray max-w-sm mx-auto">
-            Votre demande de retrait de{" "}
+            Votre demande de retrait a été enregistrée. Vous recevrez{" "}
             <span className="font-semibold text-winelio-dark">
-              {new Intl.NumberFormat("fr-FR", {
-                style: "currency",
-                currency: "EUR",
-              }).format(parsedAmount)}
-            </span>{" "}
-            a ete enregistree. Vous serez notifie une fois le traitement
-            effectue.
+              {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(netAmount)}
+            </span>
+            {feeAmount > 0 && (
+              <span> (après déduction de {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(feeAmount)} de frais)</span>
+            )}
+            . Vous serez notifié une fois le traitement effectué.
           </p>
           <button
             onClick={() => router.push("/wallet")}

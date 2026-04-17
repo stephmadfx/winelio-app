@@ -22,6 +22,8 @@ export default async function AdminRetraits() {
   const others  = (withdrawals ?? []).filter((w) => w.status !== "PENDING");
 
   const totalPending = pending.reduce((s, w) => s + (w.amount ?? 0), 0);
+  const totalFees    = pending.reduce((s, w) => s + (w.fee_amount ?? 0), 0);
+  const totalNet     = totalPending - totalFees;
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -35,8 +37,11 @@ export default async function AdminRetraits() {
         </div>
         {pending.length > 0 && (
           <div className="text-right">
-            <p className="text-xs text-muted-foreground">Total à verser</p>
-            <p className="text-lg font-bold text-emerald-400">{totalPending.toLocaleString("fr-FR")} €</p>
+            <p className="text-xs text-muted-foreground">Total à verser (net)</p>
+            <p className="text-lg font-bold text-emerald-400">{totalNet.toLocaleString("fr-FR")} €</p>
+            {totalFees > 0 && (
+              <p className="text-xs text-amber-400">{totalFees.toLocaleString("fr-FR")} € de frais retenus</p>
+            )}
           </div>
         )}
       </div>
@@ -74,9 +79,16 @@ export default async function AdminRetraits() {
                         Demande du {new Date(w.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                       </p>
                     </div>
-                    <p className="text-xl font-bold text-emerald-400 shrink-0">
-                      {w.amount?.toLocaleString("fr-FR")} €
-                    </p>
+                    <div className="text-right shrink-0">
+                      <p className="text-xl font-bold text-emerald-400">
+                        {((w.amount ?? 0) - (w.fee_amount ?? 0)).toLocaleString("fr-FR")} €
+                      </p>
+                      {(w.fee_amount ?? 0) > 0 && (
+                        <p className="text-xs text-amber-400">
+                          ({w.amount?.toLocaleString("fr-FR")} € − {(w.fee_amount ?? 0).toLocaleString("fr-FR")} € frais)
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   {/* Actions */}
