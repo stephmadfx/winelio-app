@@ -7,7 +7,7 @@ import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
 
 export async function POST(req: Request) {
   try {
-    const { email, code } = await req.json();
+    const { email, code, sponsorCode } = await req.json();
 
     if (!email || !code) {
       return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
@@ -131,11 +131,12 @@ export async function POST(req: Request) {
         refresh_token: refreshToken || "",
       });
 
-      // Assigner un parrain si nécessaire (auto-rotation fondateurs)
+      // Assigner un parrain : priorité au sponsorCode fourni (invitation),
+      // sinon rotation round-robin parmi les fondateurs.
       try {
         const { data: { user: sessionUser } } = await supabaseForSession.auth.getUser();
         if (sessionUser?.id) {
-          await assignSponsorIfNeeded(sessionUser.id);
+          await assignSponsorIfNeeded(sessionUser.id, sponsorCode ?? null);
         }
       } catch (e) {
         console.error("assign-sponsor in verify-code error:", e);

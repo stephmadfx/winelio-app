@@ -6,7 +6,7 @@ import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
 
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const { email, password, sponsorCode } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     }
 
     try {
-      await assignSponsorIfNeeded(data.user.id);
+      await assignSponsorIfNeeded(data.user.id, sponsorCode ?? null);
     } catch (e) {
       console.error("assign-sponsor in login-password error:", e);
     }
