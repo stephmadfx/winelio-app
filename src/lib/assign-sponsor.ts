@@ -51,6 +51,11 @@ export async function assignSponsorIfNeeded(
   return true;
 }
 
+/**
+ * Rotation séquentielle pure entre les fondateurs (têtes de lignée).
+ * Chacun son tour dans l'ordre de création, indépendamment du nombre de filleuls.
+ * L'état est persisté dans winelio.founder_rotation (1 seule ligne).
+ */
 async function getNextFounderSponsor(excludeUserId: string): Promise<string | null> {
   const { data: founders } = await supabaseAdmin
     .from("profiles")
@@ -61,16 +66,26 @@ async function getNextFounderSponsor(excludeUserId: string): Promise<string | nu
 
   if (!founders || founders.length === 0) return null;
 
-  const counts = await Promise.all(
-    founders.map(async (f) => {
-      const { count } = await supabaseAdmin
-        .from("profiles")
-        .select("id", { count: "exact", head: true })
-        .eq("sponsor_id", f.id);
-      return { id: f.id, count: count ?? 0 };
-    })
-  );
+  const { data: state } = await supabaseAdmin
+    .from("founder_rotation")
+    .select("last_founder_id")
+    .eq("id", 1)
+    .maybeSingle();
 
-  counts.sort((a, b) => a.count - b.count);
-  return counts[0].id;
+  const lastIdx = state?.last_founder_id
+    ? founders.findIndex((f) => f.id === state.last_founder_id)
+    : -1;
+  const nextIdx = (lastIdx + 1) % founders.length;
+  const nextFounder = founders[nextIdx];
+
+  // Persiste l'état — pas de lock, race condition bénigne en phase bêta
+  await supabaseAdmin
+    .from("founder_rotation")
+    .update({
+      last_founder_id: nextFounder.id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+
+  return nextFounder.id;
 }
