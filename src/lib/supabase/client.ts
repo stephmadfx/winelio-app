@@ -8,6 +8,7 @@ export function createClient() {
       flowType: "pkce",
       persistSession: true,
       autoRefreshToken: true,
+      storageKey: "sb-winelio-auth-token",
     },
     cookieOptions: {
       name: "sb-winelio-auth-token",
