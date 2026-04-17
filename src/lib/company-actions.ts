@@ -45,7 +45,11 @@ export async function createCompany(payload: {
   if (error) return { error: error.message };
 
   if (payload.city || payload.postal_code) {
-    const coords = await geocodeAddress(payload.address, payload.city, payload.postal_code);
+    const coords = await geocodeAddress(
+      payload.address ?? "",
+      payload.city ?? "",
+      payload.postal_code ?? ""
+    );
     if (coords) {
       await supabase.from("profiles").update({
         latitude: coords.latitude,
