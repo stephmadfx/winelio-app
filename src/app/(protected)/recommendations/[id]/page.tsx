@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { StepTimeline } from "@/components/step-timeline";
+import { SavePaymentMethodDialog } from "@/components/save-payment-method-dialog";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -102,10 +103,19 @@ export default function RecommendationDetailPage() {
   const [completing, setCompleting] = useState(false);
   const [quoteAmount, setQuoteAmount] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setUserId(data.user.id);
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return;
+      setUserId(data.user.id);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("stripe_payment_method_id")
+        .eq("id", data.user.id)
+        .single();
+      setHasPaymentMethod(!!profile?.stripe_payment_method_id);
     });
   }, [supabase]);
 
@@ -256,12 +266,32 @@ export default function RecommendationDetailPage() {
               <Avatar name={contactName} />
               <div className="flex-1 min-w-0">
                 <h1 className="text-xl font-black text-white truncate sm:text-2xl">{contactName}</h1>
-                {recommendation.contact?.email && (
-                  <p className={`mt-0.5 text-sm truncate ${cfg.heroText}`}>
-                    {recommendation.contact.email}
-                    {recommendation.contact.phone ? ` · ${recommendation.contact.phone}` : ""}
-                  </p>
-                )}
+                {recommendation.contact?.email && (() => {
+                  const isPro = userId === recommendation.professional_id;
+                  const shouldMask = isPro && hasPaymentMethod === false;
+                  if (shouldMask) {
+                    return (
+                      <div className="mt-1 inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-2.5 py-1 rounded-lg">
+                        <span className="text-sm select-none blur-sm">
+                          ••••••@••••.com · 06 •• •• •• ••
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentDialogOpen(true)}
+                          className="text-[10px] font-bold uppercase tracking-wider bg-white text-winelio-orange px-2 py-1 rounded-md hover:bg-winelio-light transition-colors"
+                        >
+                          💳 Accéder
+                        </button>
+                      </div>
+                    );
+                  }
+                  return (
+                    <p className={`mt-0.5 text-sm truncate ${cfg.heroText}`}>
+                      {recommendation.contact.email}
+                      {recommendation.contact.phone ? ` · ${recommendation.contact.phone}` : ""}
+                    </p>
+                  );
+                })()}
                 <p className={`mt-1 text-xs ${cfg.heroText} opacity-70`}>
                   {new Date(recommendation.created_at).toLocaleDateString("fr-FR", {
                     day: "numeric", month: "long", year: "numeric",
@@ -478,6 +508,15 @@ export default function RecommendationDetailPage() {
           )}
         </div>
       </div>
+
+      <SavePaymentMethodDialog
+        open={paymentDialogOpen}
+        onClose={() => setPaymentDialogOpen(false)}
+        onSaved={() => {
+          setHasPaymentMethod(true);
+          setPaymentDialogOpen(false);
+        }}
+      />
     </div>
   );
 }
