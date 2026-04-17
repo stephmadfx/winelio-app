@@ -27,12 +27,14 @@ export default async function CompaniesPage() {
         <h2 className="text-xl sm:text-2xl font-bold text-winelio-dark">
           Mes entreprises
         </h2>
-        <Link
-          href="/companies/new"
-          className="px-5 py-2.5 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity text-center"
-        >
-          Ajouter une entreprise
-        </Link>
+        {companies && companies.length > 0 && (
+          <Link
+            href="/companies/new"
+            className="px-5 py-2.5 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity text-center"
+          >
+            Ajouter une entreprise
+          </Link>
+        )}
       </div>
 
       {!companies || companies.length === 0 ? (

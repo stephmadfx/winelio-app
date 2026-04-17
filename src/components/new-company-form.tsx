@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { geocodeAddress } from "@/lib/geocode";
-import { generateUniqueAlias } from "@/lib/generate-alias";
 import { useRouter } from "next/navigation";
 import { verifySiren, isValidSirenOrSiret, type SirenVerification } from "@/lib/siren";
+import { createCompany } from "@/lib/company-actions";
 
 interface Category {
   id: string;
@@ -102,52 +101,26 @@ export function NewCompanyForm({
 
     setSaving(true);
     setError(null);
-    const supabase = createClient();
 
-    const alias = await generateUniqueAlias(supabase);
-
-    const { error: insertError } = await supabase.from("companies").insert({
+    const result = await createCompany({
       name: form.name,
-      legal_name: form.legal_name || null,
-      email: form.email || null,
-      phone: form.phone || null,
-      website: form.website || null,
-      address: form.address || null,
-      city: form.city || null,
-      postal_code: form.postal_code || null,
-      siret: form.siret || null,
-      siren: sirenData?.siren || null,
+      legal_name: form.legal_name || undefined,
+      email: form.email,
+      phone: form.phone,
+      website: form.website || undefined,
+      address: form.address || undefined,
+      city: form.city || undefined,
+      postal_code: form.postal_code || undefined,
+      siret: form.siret || undefined,
+      siren: sirenData?.siren || undefined,
       is_verified: !!sirenData?.actif,
-      category_id: form.category_id || null,
-      owner_id: userId,
-      source: "owner",
-      alias,
+      category_id: form.category_id,
     });
 
-    if (insertError) {
+    if (result.error) {
       setError("Erreur lors de la création. Veuillez réessayer.");
       setSaving(false);
       return;
-    }
-
-    // Auto-geocode address and update profile with coordinates
-    if (form.city || form.postal_code) {
-      const coords = await geocodeAddress(
-        form.address,
-        form.city,
-        form.postal_code
-      );
-      if (coords) {
-        await supabase
-          .from("profiles")
-          .update({
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-            city: form.city || undefined,
-            postal_code: form.postal_code || undefined,
-          })
-          .eq("id", userId);
-      }
     }
 
     router.push("/companies");
