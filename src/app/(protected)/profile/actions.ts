@@ -149,6 +149,13 @@ export async function completeProOnboarding(data: {
   work_mode: "remote" | "onsite" | "both";
   category_id: string;
   siret: string | null;
+  verified?: {
+    siren: string;
+    legal_name: string | null;
+    address: string | null;
+    city: string | null;
+    postal_code: string | null;
+  } | null;
 }): Promise<{ error?: string }> {
   const user = await getUser();
   if (!user) return { error: "Non authentifié" };
@@ -188,8 +195,18 @@ export async function completeProOnboarding(data: {
     .limit(1)
     .maybeSingle();
 
+  const verifiedPatch: Record<string, string | boolean | null> = {};
+  if (data.verified) {
+    verifiedPatch.siren = data.verified.siren;
+    verifiedPatch.is_verified = true;
+    if (data.verified.legal_name) verifiedPatch.legal_name = data.verified.legal_name;
+    if (data.verified.address) verifiedPatch.address = data.verified.address;
+    if (data.verified.city) verifiedPatch.city = data.verified.city;
+    if (data.verified.postal_code) verifiedPatch.postal_code = data.verified.postal_code;
+  }
+
   if (existingCompany) {
-    const patch: Record<string, string | null> = {};
+    const patch: Record<string, string | boolean | null> = { ...verifiedPatch };
     if (data.category_id) patch.category_id = data.category_id;
     if (data.siret !== null) patch.siret = data.siret;
     if (Object.keys(patch).length > 0) {
@@ -204,10 +221,11 @@ export async function completeProOnboarding(data: {
     const alias = await generateUniqueAlias(supabase);
     const { error: companyError } = await supabase.from("companies").insert({
       owner_id: user.id,
-      name: fallbackName,
+      name: data.verified?.legal_name || fallbackName,
       category_id: data.category_id || null,
       siret: data.siret || null,
       alias,
+      ...verifiedPatch,
     });
     if (companyError) return { error: "Erreur lors de la création de l'entreprise." };
   }
