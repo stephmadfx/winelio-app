@@ -388,7 +388,15 @@ export function NetworkGraph({ userId, userName, rootLabel, maxLevel = 5 }: { us
             className="flex items-start justify-center pt-8"
             style={{ transformOrigin: "center top", minWidth: "100%", minHeight: "100%" }}
           >
-            <NodeView node={tree} onClick={handleNodeClick} selectedId={selectedNode?.id ?? null} rootLabel={rootLabel} />
+            <NodeView
+              node={tree}
+              onClick={handleNodeClick}
+              onClose={() => setSelectedNode(null)}
+              events={events}
+              eventsLoading={eventsLoading}
+              selectedId={selectedNode?.id ?? null}
+              rootLabel={rootLabel}
+            />
           </div>
         ) : null}
       </div>
@@ -398,10 +406,12 @@ export function NetworkGraph({ userId, userName, rootLabel, maxLevel = 5 }: { us
 }
 
 // ── Node visual component ────────────────────────────
-function NodeView({ node, onClick, selectedId, rootLabel }: {
+function NodeView({ node, onClick, onClose, events, eventsLoading, selectedId, rootLabel }: {
   node: GraphNode;
   onClick: (node: GraphNode) => void;
   onClose: () => void;
+  events?: NodeEvent[] | null;
+  eventsLoading?: boolean;
   selectedId: string | null;
   rootLabel?: string;
 }) {
@@ -622,7 +632,15 @@ function NodeView({ node, onClick, selectedId, rootLabel }: {
             {node.children.map(child => (
               <div key={child.id} className="flex flex-col items-center" style={{ padding: "0 4px" }}>
                 <div className="border-l-2 border-dashed border-gray-400" style={{ height: 12 }} />
-                <NodeView node={child} onClick={onClick} selectedId={selectedId} rootLabel={rootLabel} />
+                <NodeView
+                  node={child}
+                  onClick={onClick}
+                  onClose={onClose}
+                  events={events}
+                  eventsLoading={eventsLoading}
+                  selectedId={selectedId}
+                  rootLabel={rootLabel}
+                />
               </div>
             ))}
           </div>

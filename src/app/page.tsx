@@ -3,6 +3,7 @@ import { WinelioLogo } from "@/components/winelio-logo";
 import { AppBackground } from "@/components/AppBackground";
 import { NetworkBackground } from "@/components/NetworkBackground";
 import { BetaBanner } from "@/components/BetaBanner";
+import { PromoVideo } from "@/components/PromoVideo";
 
 export default function Home() {
   return (
