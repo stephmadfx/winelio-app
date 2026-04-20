@@ -22,8 +22,26 @@ export default async function AdminLayout({
     .select("id, title, status")
     .order("created_at", { ascending: true });
 
+  const { count: openBugCount } = await supabaseAdmin
+    .from("bug_reports")
+    .select("id", { count: "exact", head: true })
+    .neq("tracking_status", "done");
+
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("is_founder")
+    .eq("id", user.id)
+    .single();
+
+  const bugDeleteAllowed = Boolean(profile?.is_founder);
+
   return (
-    <AdminLayoutShell userEmail={user.email ?? ""} documents={documents ?? []}>
+    <AdminLayoutShell
+      userEmail={user.email ?? ""}
+      documents={documents ?? []}
+      bugCount={openBugCount ?? 0}
+      bugDeleteAllowed={bugDeleteAllowed}
+    >
       {children}
     </AdminLayoutShell>
   );
