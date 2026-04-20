@@ -1,6 +1,9 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { AdminNetworkContent } from "./AdminNetworkContent";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function AdminReseau() {
   // 1. Identifier les super_admin (= têtes de réseau)
   // On pagine toutes les pages car il peut y avoir des milliers d'auth.users (comptes test inclus)
