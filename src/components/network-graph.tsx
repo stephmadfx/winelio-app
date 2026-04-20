@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { ProfileAvatar } from "@/components/profile-avatar";
 interface GraphNode {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  avatar: string | null;
   city: string | null;
   is_professional: boolean;
   is_demo: boolean;
@@ -37,7 +39,7 @@ const LEVEL_COLORS = [
   "#FF6B35", "#F7931E", "#FBBF24", "#34D399", "#60A5FA", "#A78BFA",
 ];
 
-export function NetworkGraph({ userId, userName, rootLabel, maxLevel = 5 }: { userId: string; userName: string; rootLabel?: string; maxLevel?: number }) {
+export function NetworkGraph({ userId, userName, userAvatar, rootLabel, maxLevel = 5 }: { userId: string; userName: string; userAvatar?: string | null; rootLabel?: string; maxLevel?: number }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({ dragging: false, startX: 0, startY: 0, tx: 0, ty: 0, scale: 1 });
@@ -217,6 +219,7 @@ export function NetworkGraph({ userId, userName, rootLabel, maxLevel = 5 }: { us
       id: string;
       first_name: string | null;
       last_name: string | null;
+      avatar: string | null;
       city: string | null;
       is_professional: boolean;
       is_demo: boolean;
@@ -229,6 +232,7 @@ export function NetworkGraph({ userId, userName, rootLabel, maxLevel = 5 }: { us
       id: c.id,
       first_name: c.first_name,
       last_name: c.last_name,
+      avatar: c.avatar ?? null,
       city: c.city,
       is_professional: c.is_professional,
       is_demo: c.is_demo,
@@ -254,6 +258,7 @@ export function NetworkGraph({ userId, userName, rootLabel, maxLevel = 5 }: { us
         id: userId,
         first_name: userName.split(" ")[0] ?? "Moi",
         last_name: userName.split(" ").slice(1).join(" ") ?? "",
+        avatar: userAvatar ?? null,
         city: null,
         is_professional: false,
         is_demo: false,
@@ -416,7 +421,6 @@ function NodeView({ node, onClick, onClose, events, eventsLoading, selectedId, r
   rootLabel?: string;
 }) {
   const color = LEVEL_COLORS[node.level] ?? "#9ca3af";
-  const initials = [node.first_name, node.last_name].filter(Boolean).map(n => n![0]).join("").toUpperCase();
   const isRoot = node.level === 0;
   const isSelected = node.id === selectedId;
   const size = isRoot ? 56 : node.level <= 2 ? 44 : 36;
@@ -451,17 +455,32 @@ function NodeView({ node, onClick, onClose, events, eventsLoading, selectedId, r
         )}
 
         {/* Main circle */}
-        <div className="relative rounded-full flex items-center justify-center text-white font-bold shadow-lg" style={{
-          backgroundColor: color, width: size, height: size,
-          fontSize: isRoot ? 16 : node.level <= 2 ? 13 : 11,
-          outline: isSelected ? `3px solid ${color}` : undefined, outlineOffset: 3,
-          animation: hasCompleted ? "winelio-glow 2.5s ease-in-out infinite" : undefined,
-          zIndex: 1,
-        }}>
-          <svg className="absolute inset-0 w-full h-full opacity-15" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-          </svg>
-          <span className="relative z-10">{initials}</span>
+        <div
+          className="relative overflow-hidden rounded-full shadow-lg"
+          style={{
+            backgroundColor: color,
+            width: size,
+            height: size,
+            outline: isSelected ? `3px solid ${color}` : undefined,
+            outlineOffset: 3,
+            animation: hasCompleted ? "winelio-glow 2.5s ease-in-out infinite" : undefined,
+            zIndex: 1,
+          }}
+        >
+          <ProfileAvatar
+            name={
+              isRoot
+                ? (rootLabel ?? "Vous")
+                : node.is_professional && node.company_alias
+                  ? node.company_alias
+                  : [node.first_name, node.last_name].filter(Boolean).join(" ") || "Sans nom"
+            }
+            avatar={node.avatar}
+            className="h-full w-full"
+            imageClassName="h-full w-full object-cover"
+            initialsClassName="text-white font-bold"
+            fallbackClassName="bg-transparent"
+          />
 
           {/* Badge Demo */}
           {node.is_demo && !isRoot && (

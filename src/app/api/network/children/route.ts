@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 
   const { data: children } = await supabaseAdmin
     .from("profiles")
-    .select("id, first_name, last_name, city, is_professional, is_demo, companies!owner_id(alias, category:categories(name))")
+    .select("id, first_name, last_name, avatar, city, is_professional, is_demo, companies!owner_id(alias, category:categories(name))")
     .eq("sponsor_id", parentId);
 
   if (!children) {
@@ -77,6 +77,7 @@ export async function GET(request: Request) {
         id: child.id,
         first_name: child.first_name,
         last_name: child.last_name,
+        avatar: (child as { avatar?: string | null }).avatar ?? null,
         city: child.city,
         is_professional: (child as { is_professional?: boolean }).is_professional ?? false,
         is_demo: (child as { is_demo?: boolean }).is_demo ?? false,

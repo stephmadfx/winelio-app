@@ -2,11 +2,13 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ProfileAvatar } from "@/components/profile-avatar";
 
 interface TreeNode {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  avatar: string | null;
   city: string | null;
   is_professional: boolean;
   is_demo: boolean;
@@ -43,7 +45,7 @@ export function NetworkTree({ userId, maxLevel = 5 }: { userId: string; maxLevel
     async (parentId: string): Promise<TreeNode[]> => {
       const { data: children } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name, city, is_professional, is_demo, companies!owner_id(alias, category:categories(name))")
+        .select("id, first_name, last_name, avatar, city, is_professional, is_demo, companies!owner_id(alias, category:categories(name))")
         .eq("sponsor_id", parentId);
 
       if (!children || children.length === 0) return [];
@@ -73,6 +75,7 @@ export function NetworkTree({ userId, maxLevel = 5 }: { userId: string; maxLevel
             id: child.id,
             first_name: child.first_name,
             last_name: child.last_name,
+            avatar: (child as { avatar?: string | null }).avatar ?? null,
             city: child.city,
             is_professional: (child as { is_professional?: boolean }).is_professional ?? false,
             is_demo: (child as { is_demo?: boolean }).is_demo ?? false,
@@ -225,11 +228,6 @@ function TreeNodeRow({
   isLast: boolean;
   maxLevel?: number;
 }) {
-  const initials = [node.first_name, node.last_name]
-    .filter(Boolean)
-    .map((n) => n![0])
-    .join("")
-    .toUpperCase();
   const isPro = node.is_professional && node.company_alias;
 
   const displayName = isPro
@@ -284,9 +282,12 @@ function TreeNodeRow({
           )}
 
           {/* Avatar */}
-          <div className={`w-9 h-9 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm`}>
-            {initials || "?"}
-          </div>
+          <ProfileAvatar
+            name={displayName}
+            avatar={node.avatar}
+            className="h-9 w-9"
+            initialsClassName="text-[11px]"
+          />
 
           {/* Name + level badge */}
           <div className="min-w-0">

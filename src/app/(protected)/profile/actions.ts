@@ -20,6 +20,7 @@ export async function updateProfile(data: {
   postal_code?: string;
   birth_date?: string;
   is_professional?: boolean;
+  avatar?: string | null;
 }): Promise<{ error?: string; firstCompletion?: boolean }> {
   const user = await getUser();
   if (!user) return { error: "Non authentifié" };
@@ -69,6 +70,10 @@ export async function updateProfile(data: {
   }
   if ("is_professional" in data) {
     patch.is_professional = !!data.is_professional;
+  }
+  if ("avatar" in data) {
+    const v = typeof data.avatar === "string" ? data.avatar.trim().slice(0, 512) : null;
+    patch.avatar = v || null;
   }
 
   const supabase = await createClient();

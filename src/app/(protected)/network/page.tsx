@@ -5,6 +5,7 @@ import { NetworkTree } from "@/components/network-tree";
 import { NetworkGraph } from "@/components/network-graph";
 import { CopyButton, ShareButton, EmailInviteButton } from "@/components/referral-buttons";
 import { Card, CardContent } from "@/components/ui/card";
+import { ProfileAvatar } from "@/components/profile-avatar";
 
 export default async function NetworkPage() {
   const supabase = await createClient();
@@ -18,7 +19,7 @@ export default async function NetworkPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, first_name, last_name, sponsor_code")
+    .select("id, first_name, last_name, avatar, sponsor_code")
     .eq("id", user.id)
     .single();
 
@@ -194,7 +195,6 @@ export default async function NetworkPage() {
           ) : (
             <div className="space-y-2">
               {referralsWithStats.map((ref) => {
-                const initials = [ref.first_name, ref.last_name].filter(Boolean).map((n: string) => n[0]).join("").toUpperCase() || "?";
                 const isPro = ref.is_professional && ref.company?.alias;
                 const displayName = isPro
                   ? ref.company!.alias!
@@ -205,9 +205,12 @@ export default async function NetworkPage() {
                 return (
                   <div key={ref.id} className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-r from-winelio-orange to-winelio-amber flex items-center justify-center text-white font-bold text-xs shrink-0">
-                        {initials}
-                      </div>
+                      <ProfileAvatar
+                        name={displayName}
+                        avatar={ref.avatar}
+                        className="h-9 w-9"
+                        initialsClassName="text-[11px]"
+                      />
                       <div className="min-w-0">
                         <p className={`font-semibold text-sm truncate ${isPro ? "font-mono text-winelio-orange" : "text-winelio-dark"}`}>
                           {displayName}
@@ -251,6 +254,7 @@ export default async function NetworkPage() {
           <NetworkGraph
             userId={user.id}
             userName={`${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim()}
+            userAvatar={profile?.avatar ?? null}
           />
         </CardContent>
       </Card>

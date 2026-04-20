@@ -151,7 +151,7 @@ async function enqueueBugStatusEmail(input: BugStatusNotificationInput) {
       message: input.message,
       kind: input.kind,
     }),
-    text:
+    text_body:
       input.kind === "in_progress"
         ? `Bonjour ${input.firstName ?? "Membre"},\n\nVotre demande Winelio a été prise en charge. Notre équipe est dessus.\n\nRéf. #${input.reportId.substring(0, 8)}\nPage : ${input.pageUrl ?? "/"}\n\n© 2026 Winelio`
         : `Bonjour ${input.firstName ?? "Membre"},\n\nVotre demande Winelio a été clôturée.\n\nRéf. #${input.reportId.substring(0, 8)}\nPage : ${input.pageUrl ?? "/"}\n\n© 2026 Winelio`,

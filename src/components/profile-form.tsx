@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { assignSponsor, updateProfile } from "@/app/(protected)/profile/actions";
 import { triggerDemoSeed } from "@/components/DemoSeedBanner";
+import { resolveProfileAvatarUrl } from "@/lib/profile-avatar";
+import { ProfileAvatar } from "@/components/profile-avatar";
 
 interface Profile {
   id: string;
@@ -14,6 +16,7 @@ interface Profile {
   city: string | null;
   postal_code: string | null;
   birth_date: string | null;
+  avatar: string | null;
   is_professional: boolean;
   pro_engagement_accepted: boolean;
   sponsor_code: string | null;
@@ -41,6 +44,7 @@ function isComplete(data: Record<string, unknown>) {
 
 export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmail: string }) {
   const router = useRouter();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     first_name: profile.first_name ?? "",
     last_name: profile.last_name ?? "",
@@ -60,6 +64,8 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(resolveProfileAvatarUrl(profile.avatar));
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const formRef = useRef(form);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -89,6 +95,9 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
 
   // Garde formRef toujours à jour
   useEffect(() => { formRef.current = form; }, [form]);
+  useEffect(() => {
+    setAvatarPreview(resolveProfileAvatarUrl(profile.avatar));
+  }, [profile.avatar]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -157,6 +166,68 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
     }
   };
 
+  const uploadAvatar = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setMessage({ type: "error", text: "Merci de choisir une image valide." });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: "error", text: "L'image ne doit pas dépasser 5 Mo." });
+      return;
+    }
+
+    setAvatarUploading(true);
+    setMessage(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/profile/avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setMessage({ type: "error", text: data.error || "Impossible d'envoyer la photo. Réessayez." });
+        return;
+      }
+
+      setAvatarPreview(data.publicUrl ?? null);
+
+      setMessage({ type: "success", text: "Photo de profil mise à jour." });
+      router.refresh();
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
+
+  const removeAvatar = async () => {
+    setAvatarUploading(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/profile/avatar", {
+        method: "DELETE",
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setMessage({ type: "error", text: data.error || "Impossible de supprimer la photo." });
+        return;
+      }
+
+      setAvatarPreview(null);
+      setMessage({ type: "success", text: "Photo de profil supprimée." });
+      router.refresh();
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Message */}
@@ -171,6 +242,54 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
           {message.text}
         </div>
       )}
+
+      {/* Photo de profil */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <ProfileAvatar
+            name={`${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() || userEmail}
+            avatar={avatarPreview}
+            className="h-20 w-20 ring-4 ring-winelio-orange/10"
+            initialsClassName="text-lg font-extrabold"
+          />
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-semibold text-winelio-dark">Photo de profil</h3>
+            <p className="text-sm text-winelio-gray mt-1">
+              Ajoutez une photo pour être plus facilement identifié dans votre réseau.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarUploading}
+                className="px-4 py-2.5 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {avatarUploading ? "Envoi..." : (profile.avatar ? "Changer la photo" : "Ajouter une photo")}
+              </button>
+              {profile.avatar && (
+                <button
+                  type="button"
+                  onClick={removeAvatar}
+                  disabled={avatarUploading}
+                  className="px-4 py-2.5 rounded-xl border border-red-200 text-red-700 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
+                >
+                  Supprimer
+                </button>
+              )}
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void uploadAvatar(file);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Sponsor code (read-only) */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6">
