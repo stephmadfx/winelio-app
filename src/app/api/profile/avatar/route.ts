@@ -1,9 +1,13 @@
-"use server";
-
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { extractProfileAvatarPath, PROFILE_AVATAR_BUCKET, resolveProfileAvatarUrl } from "@/lib/profile-avatar";
+import {
+  extractProfileAvatarPath,
+  PROFILE_AVATAR_BUCKET,
+  resolveProfileAvatarUrl,
+} from "@/lib/profile-avatar";
+
+const MAX_SIZE = 5 * 1024 * 1024;
 
 function buildAvatarPath(userId: string, filename?: string) {
   const ext = filename?.split(".").pop()?.toLowerCase() || "jpg";
@@ -18,6 +22,20 @@ async function readCurrentAvatarPath(userId: string) {
     .maybeSingle();
 
   return extractProfileAvatarPath(data?.avatar);
+}
+
+async function ensureBucketExists() {
+  const { data } = await supabaseAdmin.storage.getBucket(PROFILE_AVATAR_BUCKET);
+  if (data) return;
+
+  const { error } = await supabaseAdmin.storage.createBucket(PROFILE_AVATAR_BUCKET, {
+    public: true,
+    fileSizeLimit: MAX_SIZE,
+  });
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function POST(req: Request) {
@@ -37,12 +55,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Merci de choisir une image valide." }, { status: 400 });
   }
 
-  if (file.size > 5 * 1024 * 1024) {
+  if (file.size > MAX_SIZE) {
     return NextResponse.json({ error: "L'image ne doit pas dépasser 5 Mo." }, { status: 400 });
   }
 
   const avatarPath = buildAvatarPath(user.id, file.name);
   const previousAvatarPath = await readCurrentAvatarPath(user.id);
+
+  await ensureBucketExists();
 
   const { error: uploadError } = await supabaseAdmin.storage
     .from(PROFILE_AVATAR_BUCKET)
