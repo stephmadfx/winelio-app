@@ -1,40 +1,48 @@
 "use client";
 
+import { useState } from "react";
 import { getProfileInitials, resolveProfileAvatarUrl } from "@/lib/profile-avatar";
 
 type ProfileAvatarProps = {
   name: string;
   avatar?: string | null;
   className?: string;
+  imageClassName?: string;
   initialsClassName?: string;
+  fallbackClassName?: string;
 };
 
 export function ProfileAvatar({
   name,
   avatar,
-  className = "",
-  initialsClassName = "",
+  className = "h-10 w-10",
+  imageClassName = "h-full w-full object-cover",
+  initialsClassName = "text-white font-bold",
+  fallbackClassName = "bg-gradient-to-br from-winelio-orange to-winelio-amber",
 }: ProfileAvatarProps) {
+  const [failed, setFailed] = useState(false);
   const avatarUrl = resolveProfileAvatarUrl(avatar);
   const initials = getProfileInitials(name);
 
   return (
     <div
       className={[
-        "relative flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber text-white shadow-sm",
+        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full text-white shadow-sm",
+        fallbackClassName,
         className,
       ].join(" ")}
     >
-      {avatarUrl ? (
+      {avatarUrl && !failed ? (
         <img
           src={avatarUrl}
           alt={name}
-          className="h-full w-full object-cover"
+          className={imageClassName}
           loading="lazy"
           referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
         />
       ) : (
-        <span className={["select-none font-bold", initialsClassName].join(" ")}>
+        <span className={["select-none text-xs", initialsClassName].join(" ")}>
           {initials}
         </span>
       )}
