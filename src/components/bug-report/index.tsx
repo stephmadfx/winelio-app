@@ -53,6 +53,19 @@ export const BugReportButton = ({ userId, allBugReports = [], variant = "floatin
     setHasUnread(true);
   }, [userId, allBugReports]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const searchParams = new URLSearchParams(window.location.search);
+    const shouldOpenHistory = searchParams.get("bugHistory") === "1" || searchParams.get("openBugHistory") === "1";
+    if (!shouldOpenHistory) return;
+
+    setHistoryOpen(true);
+    searchParams.delete("bugHistory");
+    searchParams.delete("openBugHistory");
+    const nextUrl = `${window.location.pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}${window.location.hash}`;
+    window.history.replaceState({}, "", nextUrl);
+  }, []);
+
   // Supabase Realtime — nouvelles réponses du support en temps réel
   useEffect(() => {
     const supabase = createClient();
@@ -147,7 +160,6 @@ export const BugReportButton = ({ userId, allBugReports = [], variant = "floatin
         reports={reports}
         deletingId={deletingId}
         onDelete={handleDelete}
-        onSelectReport={(report) => { setSelectedReport(report); setHistoryOpen(false); setReplyOpen(true); }}
         onNewReport={() => { setHistoryOpen(false); setFormOpen(true); }}
       />
 

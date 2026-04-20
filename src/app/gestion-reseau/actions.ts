@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { recalculateWallet } from "@/lib/wallet";
 import { COMMISSION_TYPE, COMMISSION_STATUS, WITHDRAWAL_STATUS } from "@/lib/constants";
 import { createStripeCheckoutSession } from "@/lib/stripe-checkout";
+import { notifyBugStatusChange } from "@/lib/notify-bug-status";
 
 async function assertSuperAdmin() {
   const supabase = await createClient();
@@ -16,6 +17,42 @@ async function assertSuperAdmin() {
     throw new Error("Accès refusé");
   }
   return user;
+}
+
+async function assertBugDeletePermission() {
+  const user = await assertSuperAdmin();
+  const { data: profile, error } = await supabaseAdmin
+    .from("profiles")
+    .select("is_founder, email")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (error) throw new Error(`Erreur lecture profil: ${error.message}`);
+
+  const canDelete =
+    Boolean(profile?.is_founder) ||
+    user.email?.toLowerCase() === "contact@aide-multimedia.fr";
+
+  if (!canDelete) {
+    throw new Error("Accès refusé");
+  }
+  return user;
+}
+
+async function getBugReporterContact(userId: string) {
+  const [{ data: profile }, authResult] = await Promise.all([
+    supabaseAdmin
+      .from("profiles")
+      .select("first_name, email")
+      .eq("id", userId)
+      .maybeSingle(),
+    supabaseAdmin.auth.admin.getUserById(userId),
+  ]);
+
+  const email = profile?.email ?? authResult.data?.user?.email ?? null;
+  const firstName = profile?.first_name ?? authResult.data?.user?.user_metadata?.first_name ?? null;
+
+  return { email, firstName };
 }
 
 // ─── Recommandations ──────────────────────────────────────────────────────────
@@ -61,6 +98,10 @@ const VALID_STATUSES = [
   "QUOTE_SUBMITTED", "QUOTE_VALIDATED", "PAYMENT_RECEIVED", "COMPLETED", "CANCELLED",
 ] as const;
 
+const BUG_TRACKING_STATUSES = ["todo", "in_progress", "blocked", "done"] as const;
+const BUG_TICKET_TYPES = ["bug", "improvement", "site_change"] as const;
+const BUG_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
+
 export async function toggleRecommendationStatus(
   recommendationId: string,
   newStatus: string
@@ -78,6 +119,164 @@ export async function toggleRecommendationStatus(
 
   revalidatePath(`/gestion-reseau/recommandations/${recommendationId}`);
   revalidatePath("/gestion-reseau/recommandations");
+}
+
+// ─── Bugs / idées ───────────────────────────────────────────────────────────
+
+export async function updateBugReportBoard(
+  reportId: string,
+  data: {
+    trackingStatus?: string;
+    ticketType?: string;
+    priority?: string;
+    internalNote?: string;
+  }
+) {
+  await assertSuperAdmin();
+
+  const { data: currentReport, error: currentError } = await supabaseAdmin
+    .from("bug_reports")
+    .select("id, user_id, message, page_url, tracking_status, in_progress_notified_at, done_notified_at")
+    .eq("id", reportId)
+    .maybeSingle();
+
+  if (currentError) throw new Error(`Erreur lecture bug: ${currentError.message}`);
+  if (!currentReport) throw new Error("Carte introuvable");
+  const reporterContact = await getBugReporterContact(currentReport.user_id);
+
+  if (data.trackingStatus && !BUG_TRACKING_STATUSES.includes(data.trackingStatus as typeof BUG_TRACKING_STATUSES[number])) {
+    throw new Error(`Statut de suivi invalide: ${data.trackingStatus}`);
+  }
+
+  if (data.ticketType && !BUG_TICKET_TYPES.includes(data.ticketType as typeof BUG_TICKET_TYPES[number])) {
+    throw new Error(`Type de ticket invalide: ${data.ticketType}`);
+  }
+
+  if (data.priority && !BUG_PRIORITIES.includes(data.priority as typeof BUG_PRIORITIES[number])) {
+    throw new Error(`Priorité invalide: ${data.priority}`);
+  }
+
+  const payload: Record<string, string> = {};
+  if (data.trackingStatus) payload.tracking_status = data.trackingStatus;
+  if (data.ticketType) payload.ticket_type = data.ticketType;
+  if (data.priority) payload.priority = data.priority;
+  if (typeof data.internalNote === "string") payload.internal_note = data.internalNote.trim();
+
+  const { error } = await supabaseAdmin
+    .from("bug_reports")
+    .update(payload)
+    .eq("id", reportId);
+
+  if (error) throw new Error(`Erreur mise à jour bug: ${error.message}`);
+
+  const nextStatus = data.trackingStatus ?? currentReport.tracking_status;
+  const notificationUpdates: Record<string, string> = {};
+
+  if (
+    nextStatus === "in_progress" &&
+    !currentReport.in_progress_notified_at &&
+    currentReport.tracking_status !== "in_progress"
+  ) {
+    const sent = await notifyBugStatusChange({
+      userId: currentReport.user_id,
+      reportId,
+      firstName: reporterContact.firstName,
+      email: reporterContact.email,
+      pageUrl: currentReport.page_url,
+      message: currentReport.message,
+      kind: "in_progress",
+    });
+
+    if (sent) {
+      notificationUpdates.in_progress_notified_at = new Date().toISOString();
+    }
+  }
+
+  if (
+    nextStatus === "done" &&
+    !currentReport.done_notified_at &&
+    currentReport.tracking_status !== "done"
+  ) {
+    const sent = await notifyBugStatusChange({
+      userId: currentReport.user_id,
+      reportId,
+      firstName: reporterContact.firstName,
+      email: reporterContact.email,
+      pageUrl: currentReport.page_url,
+      message: currentReport.message,
+      kind: "done",
+    });
+
+    if (sent) {
+      notificationUpdates.done_notified_at = new Date().toISOString();
+    }
+  }
+
+  if (Object.keys(notificationUpdates).length > 0) {
+    const { error: flagError } = await supabaseAdmin
+      .from("bug_reports")
+      .update(notificationUpdates)
+      .eq("id", reportId);
+
+    if (flagError) {
+      console.error("[bug/status] Notification flag update error:", flagError.message);
+    }
+  }
+
+  revalidatePath("/gestion-reseau/bugs");
+  revalidatePath("/gestion-reseau");
+}
+
+export async function deleteBugReport(reportId: string): Promise<
+  { ok: true } | { ok: false; error: string }
+> {
+  try {
+    await assertBugDeletePermission();
+
+    const { data: report, error: fetchError } = await supabaseAdmin
+      .from("bug_reports")
+      .select("id, screenshot_url")
+      .eq("id", reportId)
+      .maybeSingle();
+
+    if (fetchError) throw new Error(`Erreur lecture bug: ${fetchError.message}`);
+    if (!report) {
+      revalidatePath("/gestion-reseau/bugs");
+      revalidatePath("/gestion-reseau");
+      return { ok: true };
+    }
+
+    if (report.screenshot_url) {
+      const { error: storageError } = await supabaseAdmin.storage
+        .from("bug-screenshots")
+        .remove([report.screenshot_url]);
+
+      if (storageError) {
+        console.error("[bug/delete] Storage delete error:", storageError);
+      }
+    }
+
+    const { error } = await supabaseAdmin
+      .from("bug_reports")
+      .delete()
+      .eq("id", reportId);
+
+    if (error?.message?.includes("0 rows")) {
+      revalidatePath("/gestion-reseau/bugs");
+      revalidatePath("/gestion-reseau");
+      return { ok: true };
+    }
+
+    if (error) throw new Error(`Erreur suppression bug: ${error.message}`);
+
+    revalidatePath("/gestion-reseau/bugs");
+    revalidatePath("/gestion-reseau");
+    return { ok: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Impossible de supprimer la carte";
+    console.error("[bug/delete] Failed:", err);
+    return { ok: false, error: message };
+  }
 }
 
 // ─── Commissions ──────────────────────────────────────────────────────────────

@@ -4,11 +4,13 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignOutButton } from "@/components/sign-out-button";
+import { BugDeleteAccessProvider } from "@/components/admin/bug-delete-access";
 
 type NavItem = {
   label: string;
   href: string;
   icon: string;
+  badge?: number;
   children?: { label: string; href: string }[];
 };
 
@@ -22,6 +24,11 @@ const navItems: NavItem[] = [
     label: "Recommandations",
     href: "/gestion-reseau/recommandations",
     icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
+  },
+  {
+    label: "Bugs & idées",
+    href: "/gestion-reseau/bugs",
+    icon: "M4 6h6v6H4zM14 6h6v12h-6zM4 14h6v4H4z",
   },
   {
     label: "Réseau MLM",
@@ -54,10 +61,14 @@ export function AdminLayoutShell({
   children,
   userEmail,
   documents = [],
+  bugCount = 0,
+  bugDeleteAllowed = false,
 }: {
   children: React.ReactNode;
   userEmail: string;
   documents?: { id: string; title: string; status: string }[];
+  bugCount?: number;
+  bugDeleteAllowed?: boolean;
 }) {
   const pathname = usePathname();
 
@@ -195,7 +206,12 @@ export function AdminLayoutShell({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
               </svg>
               {(!collapsed || mobile) && (
-                <span className="text-sm font-medium truncate">{item.label}</span>
+                <span className="flex-1 text-sm font-medium truncate">{item.label}</span>
+              )}
+              {item.href === "/gestion-reseau/bugs" && bugCount > 0 && (!collapsed || mobile) && (
+                <span className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-winelio-orange text-white text-[10px] font-bold">
+                  {bugCount > 99 ? "99+" : bugCount}
+                </span>
               )}
             </Link>
           );
@@ -214,66 +230,68 @@ export function AdminLayoutShell({
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
-      {/* Sidebar desktop */}
-      <aside
-        className={`hidden md:flex fixed left-0 top-0 h-screen flex-col bg-card border-r border-border z-50 transition-all duration-300 ${
-          collapsed ? "w-16" : "w-64"
-        }`}
-      >
-        {sidebarContent(false)}
-      </aside>
+      <BugDeleteAccessProvider canDelete={bugDeleteAllowed}>
+        {/* Sidebar desktop */}
+        <aside
+          className={`hidden md:flex fixed left-0 top-0 h-screen flex-col bg-card border-r border-border z-50 transition-all duration-300 ${
+            collapsed ? "w-16" : "w-64"
+          }`}
+        >
+          {sidebarContent(false)}
+        </aside>
 
-      {/* Drawer mobile overlay */}
-      {mobileOpen && (
+        {/* Drawer mobile overlay */}
+        {mobileOpen && (
+          <div
+            className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
+        <aside
+          className={`md:hidden fixed left-0 top-0 h-screen w-72 bg-card border-r border-border z-50 transition-transform duration-300 ${
+            mobileOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          {sidebarContent(true)}
+        </aside>
+
+        {/* Contenu principal */}
         <div
-          className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-      <aside
-        className={`md:hidden fixed left-0 top-0 h-screen w-72 bg-card border-r border-border z-50 transition-transform duration-300 ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {sidebarContent(true)}
-      </aside>
+          className={`flex flex-col min-h-dvh transition-all duration-300 ${
+            collapsed ? "md:ml-16" : "md:ml-64"
+          }`}
+        >
+          {/* Topbar */}
+          <header className="h-12 bg-card border-b border-border flex items-center px-4 gap-3 sticky top-0 z-30">
+            <button
+              className="md:hidden p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              onClick={() => setMobileOpen((p) => !p)}
+              aria-label="Ouvrir le menu"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <span className="text-xs font-semibold uppercase tracking-widest text-winelio-orange">
+              Super Admin
+            </span>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-sm text-foreground">Winelio</span>
+            <Link
+              href="/dashboard"
+              className="ml-auto flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              App
+            </Link>
+            <span className="text-xs text-muted-foreground hidden sm:block">{userEmail}</span>
+          </header>
 
-      {/* Contenu principal */}
-      <div
-        className={`flex flex-col min-h-dvh transition-all duration-300 ${
-          collapsed ? "md:ml-16" : "md:ml-64"
-        }`}
-      >
-        {/* Topbar */}
-        <header className="h-12 bg-card border-b border-border flex items-center px-4 gap-3 sticky top-0 z-30">
-          <button
-            className="md:hidden p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            onClick={() => setMobileOpen((p) => !p)}
-            aria-label="Ouvrir le menu"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-          <span className="text-xs font-semibold uppercase tracking-widest text-winelio-orange">
-            Super Admin
-          </span>
-          <span className="text-muted-foreground">·</span>
-          <span className="text-sm text-foreground">Winelio</span>
-          <Link
-            href="/dashboard"
-            className="ml-auto flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            App
-          </Link>
-          <span className="text-xs text-muted-foreground hidden sm:block">{userEmail}</span>
-        </header>
-
-        <main className="flex-1 p-4 md:p-6">{children}</main>
-      </div>
+          <main className="flex-1 p-4 md:p-6">{children}</main>
+        </div>
+      </BugDeleteAccessProvider>
     </div>
   );
 }

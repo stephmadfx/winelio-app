@@ -13,13 +13,27 @@ interface Profile {
   address: string | null;
   city: string | null;
   postal_code: string | null;
+  birth_date: string | null;
   is_professional: boolean;
   pro_engagement_accepted: boolean;
   sponsor_code: string | null;
   sponsor_id: string | null;
 }
 
-const REQUIRED_FIELDS = ["first_name", "last_name", "phone", "postal_code", "city", "address"] as const;
+const REQUIRED_FIELDS = ["first_name", "last_name", "phone", "postal_code", "city", "address", "birth_date"] as const;
+
+function isAdult(dateStr: string): boolean {
+  const birth = new Date(dateStr);
+  const limit = new Date();
+  limit.setFullYear(limit.getFullYear() - 18);
+  return birth <= limit;
+}
+
+function maxBirthDate(): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 18);
+  return d.toISOString().split("T")[0];
+}
 
 function isComplete(data: Record<string, unknown>) {
   return REQUIRED_FIELDS.every((f) => typeof data[f] === "string" && (data[f] as string).trim() !== "");
@@ -34,8 +48,10 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
     address: profile.address ?? "",
     city: profile.city ?? "",
     postal_code: profile.postal_code ?? "",
+    birth_date: profile.birth_date ?? "",
     is_professional: profile.is_professional ?? false,
   });
+  const [birthDateError, setBirthDateError] = useState<string | null>(null);
   const [showEmailTooltip, setShowEmailTooltip] = useState(false);
   const [sponsorInput, setSponsorInput] = useState("");
   const [saving, setSaving] = useState(false);
@@ -48,6 +64,11 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const saveToDb = async (data: typeof form) => {
+    if (data.birth_date && !isAdult(data.birth_date)) {
+      setBirthDateError("Vous devez avoir au moins 18 ans pour utiliser Winelio.");
+      return;
+    }
+    setBirthDateError(null);
     setAutoSaveStatus("saving");
     const result = await updateProfile(data);
     if (!result.error) {
@@ -236,6 +257,24 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
             )}
           </div>
           <Field label="Adresse" name="address" value={form.address} onChange={handleChange} onBlur={handleBlur} required />
+          {/* Date de naissance — vérification d'âge 18+ */}
+          <div>
+            <label className="block text-sm font-medium text-winelio-gray mb-1">
+              Date de naissance <span className="text-winelio-orange">*</span>
+            </label>
+            <input
+              type="date"
+              name="birth_date"
+              value={form.birth_date}
+              max={maxBirthDate()}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
+            />
+            {birthDateError && (
+              <p className="mt-1 text-xs text-red-500">{birthDateError}</p>
+            )}
+          </div>
         </div>
 
         {/* Toggle is_professional */}

@@ -10,7 +10,6 @@ interface HistoryDialogProps {
   reports: BugReport[];
   deletingId: string | null;
   onDelete: (id: string) => void;
-  onSelectReport: (report: BugReport) => void;
   onNewReport: () => void;
 }
 
@@ -38,7 +37,7 @@ const DeleteButton = ({ id, deleting, onDelete }: { id: string; deleting: boolea
   </button>
 );
 
-export const HistoryDialog = ({ open, onOpenChange, reports, deletingId, onDelete, onSelectReport, onNewReport }: HistoryDialogProps) => (
+export const HistoryDialog = ({ open, onOpenChange, reports, deletingId, onDelete, onNewReport }: HistoryDialogProps) => (
   <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
       <DialogHeader>
@@ -59,10 +58,12 @@ export const HistoryDialog = ({ open, onOpenChange, reports, deletingId, onDelet
             <p className="text-xs text-winelio-gray">{report.page_url}</p>
             <p className="text-sm text-winelio-dark line-clamp-2">{report.message}</p>
             {report.status === "replied" && report.admin_reply && (
-              <button type="button" onClick={() => onSelectReport(report)}
-                className="text-xs text-winelio-orange underline underline-offset-2 hover:text-winelio-amber transition-colors">
-                Voir la réponse →
-              </button>
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">Réponse reçue</p>
+                <p className="mt-1 text-xs leading-5 text-emerald-900 line-clamp-3 whitespace-pre-wrap">
+                  {report.admin_reply}
+                </p>
+              </div>
             )}
           </div>
         ))}

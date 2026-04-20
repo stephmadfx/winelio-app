@@ -18,6 +18,7 @@ export async function updateProfile(data: {
   address?: string;
   city?: string;
   postal_code?: string;
+  birth_date?: string;
   is_professional?: boolean;
 }): Promise<{ error?: string; firstCompletion?: boolean }> {
   const user = await getUser();
@@ -51,6 +52,20 @@ export async function updateProfile(data: {
   if ("address" in data) {
     const v = (data.address ?? "").trim().slice(0, 200);
     patch.address = v || null;
+  }
+  if ("birth_date" in data) {
+    const v = (data.birth_date ?? "").trim();
+    if (v) {
+      const birth = new Date(v);
+      const limit = new Date();
+      limit.setFullYear(limit.getFullYear() - 18);
+      if (isNaN(birth.getTime()) || birth > limit) {
+        return { error: "Vous devez avoir au moins 18 ans pour utiliser Winelio." };
+      }
+      patch.birth_date = v;
+    } else {
+      patch.birth_date = null;
+    }
   }
   if ("is_professional" in data) {
     patch.is_professional = !!data.is_professional;
