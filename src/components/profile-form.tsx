@@ -4,6 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { assignSponsor, updateProfile } from "@/app/(protected)/profile/actions";
 import { triggerDemoSeed } from "@/components/DemoSeedBanner";
+import { resolveProfileAvatarUrl } from "@/lib/profile-avatar";
+import { ProfileAvatar } from "@/components/profile-avatar";
+import { isAtLeastAge, maxBirthDate } from "@/lib/age";
 
 interface Profile {
   id: string;
@@ -14,26 +17,16 @@ interface Profile {
   city: string | null;
   postal_code: string | null;
   birth_date: string | null;
+  terms_accepted: boolean;
+  terms_accepted_at: string | null;
+  avatar: string | null;
   is_professional: boolean;
   pro_engagement_accepted: boolean;
   sponsor_code: string | null;
   sponsor_id: string | null;
 }
 
-const REQUIRED_FIELDS = ["first_name", "last_name", "phone", "postal_code", "city", "address", "birth_date"] as const;
-
-function isAdult(dateStr: string): boolean {
-  const birth = new Date(dateStr);
-  const limit = new Date();
-  limit.setFullYear(limit.getFullYear() - 18);
-  return birth <= limit;
-}
-
-function maxBirthDate(): string {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - 18);
-  return d.toISOString().split("T")[0];
-}
+const REQUIRED_FIELDS = ["first_name", "last_name", "phone", "postal_code", "city", "address", "birth_date", "terms_accepted"] as const;
 
 function isComplete(data: Record<string, unknown>) {
   return REQUIRED_FIELDS.every((f) => typeof data[f] === "string" && (data[f] as string).trim() !== "");
@@ -41,6 +34,7 @@ function isComplete(data: Record<string, unknown>) {
 
 export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmail: string }) {
   const router = useRouter();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     first_name: profile.first_name ?? "",
     last_name: profile.last_name ?? "",
@@ -49,6 +43,7 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
     city: profile.city ?? "",
     postal_code: profile.postal_code ?? "",
     birth_date: profile.birth_date ?? "",
+    terms_accepted: profile.terms_accepted ?? false,
     is_professional: profile.is_professional ?? false,
   });
   const [birthDateError, setBirthDateError] = useState<string | null>(null);
@@ -60,13 +55,15 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(resolveProfileAvatarUrl(profile.avatar));
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const formRef = useRef(form);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const saveToDb = async (data: typeof form) => {
-    if (data.birth_date && !isAdult(data.birth_date)) {
+    if (data.birth_date && !isAtLeastAge(data.birth_date)) {
       setBirthDateError("Vous devez avoir au moins 18 ans pour utiliser Winelio.");
-      return;
+      return false;
     }
     setBirthDateError(null);
     setAutoSaveStatus("saving");
@@ -83,12 +80,17 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
       }
     } else {
       setAutoSaveStatus("error");
+      return false;
     }
     setTimeout(() => setAutoSaveStatus("idle"), 3000);
+    return !result.error;
   };
 
   // Garde formRef toujours à jour
   useEffect(() => { formRef.current = form; }, [form]);
+  useEffect(() => {
+    setAvatarPreview(resolveProfileAvatarUrl(profile.avatar));
+  }, [profile.avatar]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -130,8 +132,10 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
   const handleSave = async () => {
     setSaving(true);
     setMessage(null);
-    await saveToDb(form);
-    setMessage({ type: "success", text: "Profil mis à jour avec succès." });
+    const saved = await saveToDb(form);
+    if (saved) {
+      setMessage({ type: "success", text: "Profil mis à jour avec succès." });
+    }
     setSaving(false);
   };
 
@@ -157,6 +161,68 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
     }
   };
 
+  const uploadAvatar = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setMessage({ type: "error", text: "Merci de choisir une image valide." });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: "error", text: "L'image ne doit pas dépasser 5 Mo." });
+      return;
+    }
+
+    setAvatarUploading(true);
+    setMessage(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/profile/avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setMessage({ type: "error", text: data.error || "Impossible d'envoyer la photo. Réessayez." });
+        return;
+      }
+
+      setAvatarPreview(data.publicUrl ?? null);
+
+      setMessage({ type: "success", text: "Photo de profil mise à jour." });
+      router.refresh();
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
+
+  const removeAvatar = async () => {
+    setAvatarUploading(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/profile/avatar", {
+        method: "DELETE",
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setMessage({ type: "error", text: data.error || "Impossible de supprimer la photo." });
+        return;
+      }
+
+      setAvatarPreview(null);
+      setMessage({ type: "success", text: "Photo de profil supprimée." });
+      router.refresh();
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Message */}
@@ -171,6 +237,54 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
           {message.text}
         </div>
       )}
+
+      {/* Photo de profil */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <ProfileAvatar
+            name={`${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() || userEmail}
+            avatar={avatarPreview}
+            className="h-20 w-20 ring-4 ring-winelio-orange/10"
+            initialsClassName="text-lg font-extrabold"
+          />
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-semibold text-winelio-dark">Photo de profil</h3>
+            <p className="text-sm text-winelio-gray mt-1">
+              Ajoutez une photo pour être plus facilement identifié dans votre réseau.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarUploading}
+                className="px-4 py-2.5 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {avatarUploading ? "Envoi..." : (profile.avatar ? "Changer la photo" : "Ajouter une photo")}
+              </button>
+              {profile.avatar && (
+                <button
+                  type="button"
+                  onClick={removeAvatar}
+                  disabled={avatarUploading}
+                  className="px-4 py-2.5 rounded-xl border border-red-200 text-red-700 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
+                >
+                  Supprimer
+                </button>
+              )}
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void uploadAvatar(file);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Sponsor code (read-only) */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6">
@@ -226,7 +340,55 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
           <Field label="Prénom" name="first_name" value={form.first_name} onChange={handleChange} onBlur={handleBlur} required />
           <Field label="Nom" name="last_name" value={form.last_name} onChange={handleChange} onBlur={handleBlur} required />
           <Field label="Téléphone" name="phone" value={form.phone} onChange={handleChange} onBlur={handleBlur} required />
+          {/* Date de naissance — vérification d'âge 18+ */}
+          <div>
+            <label className="block text-sm font-medium text-winelio-gray mb-1">
+              Date de naissance <span className="text-winelio-orange">*</span>
+            </label>
+            <input
+              type="date"
+              name="birth_date"
+              value={form.birth_date}
+              max={maxBirthDate()}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              required
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
+            />
+            <p className="mt-1 text-xs text-winelio-gray">
+              La date de naissance sert à vérifier que l'accès est réservé aux personnes majeures.
+            </p>
+            {birthDateError && (
+              <p className="mt-1 text-xs text-red-500">{birthDateError}</p>
+            )}
+          </div>
           <Field label="Code postal" name="postal_code" value={form.postal_code} onChange={handlePostalCodeChange} onBlur={handleBlur} required />
+          <label className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4 sm:col-span-2">
+            <input
+              type="checkbox"
+              name="terms_accepted"
+              checked={form.terms_accepted}
+              onChange={(e) => {
+                const updated = { ...formRef.current, terms_accepted: e.target.checked };
+                formRef.current = updated;
+                setForm(updated);
+                saveToDb(updated);
+              }}
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-winelio-orange focus:ring-winelio-orange"
+            />
+            <span className="text-sm leading-6 text-winelio-gray">
+              J&apos;ai lu et j&apos;accepte les{" "}
+              <a
+                href="/conditions-generales-utilisation"
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-winelio-orange underline underline-offset-2"
+              >
+                Conditions Générales d&apos;Utilisation Winelio
+              </a>
+              , y compris les règles d&apos;utilisation de la plateforme, la protection des données et les conditions d&apos;accès aux fonctionnalités de mise en relation et de gains.
+            </span>
+          </label>
           {/* Ville avec autocomplétion */}
           <div className="relative">
             <label className="block text-sm font-medium text-winelio-gray mb-1">
@@ -257,24 +419,6 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
             )}
           </div>
           <Field label="Adresse" name="address" value={form.address} onChange={handleChange} onBlur={handleBlur} required />
-          {/* Date de naissance — vérification d'âge 18+ */}
-          <div>
-            <label className="block text-sm font-medium text-winelio-gray mb-1">
-              Date de naissance <span className="text-winelio-orange">*</span>
-            </label>
-            <input
-              type="date"
-              name="birth_date"
-              value={form.birth_date}
-              max={maxBirthDate()}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
-            />
-            {birthDateError && (
-              <p className="mt-1 text-xs text-red-500">{birthDateError}</p>
-            )}
-          </div>
         </div>
 
         {/* Toggle is_professional */}
@@ -318,11 +462,16 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
         <div className="mt-6 flex items-center gap-4">
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || !form.terms_accepted}
             className="px-6 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {saving ? "Sauvegarde..." : "Sauvegarder"}
           </button>
+          {!form.terms_accepted && (
+            <span className="text-xs font-medium text-red-500">
+              Vous devez accepter les CGU pour finaliser votre profil.
+            </span>
+          )}
           {autoSaveStatus === "saving" && (
             <span className="text-xs text-winelio-gray animate-pulse">Sauvegarde...</span>
           )}

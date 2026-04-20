@@ -25,7 +25,8 @@ export default async function BugsPage() {
         priority,
         internal_note,
         updated_at,
-        screenshot_url
+        screenshot_url,
+        source
       `
     )
     .order("updated_at", { ascending: false })

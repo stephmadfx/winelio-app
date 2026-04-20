@@ -23,6 +23,7 @@ export const ReportFormDialog = ({ open, loading, historyCount, onClose, onReope
   const [capturing, setCapturing] = useState(false);
   const [captureFailed, setCaptureFailed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messageRef = useRef<HTMLTextAreaElement>(null);
 
   const reset = () => {
     setMessage("");
@@ -68,8 +69,27 @@ export const ReportFormDialog = ({ open, loading, historyCount, onClose, onReope
     reader.readAsDataURL(file);
   };
 
+  const handlePasteMessage = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        toast.error("Le presse-papiers est vide.");
+        return;
+      }
+
+      setMessage(text);
+      requestAnimationFrame(() => {
+        messageRef.current?.focus();
+        messageRef.current?.setSelectionRange(text.length, text.length);
+      });
+      toast.success("Texte collé");
+    } catch {
+      toast.error("Impossible d'accéder au presse-papiers. Utilise Ctrl/Cmd+V.");
+    }
+  };
+
   const handleSubmit = async () => {
-    if (!message.trim()) { toast.error("Décris le problème avant d'envoyer."); return; }
+    if (!message.trim()) { toast.error("Décris le problème ou l'idée avant d'envoyer."); return; }
     setSubmitting(true);
     try {
       const formData = new FormData();
@@ -90,7 +110,7 @@ export const ReportFormDialog = ({ open, loading, historyCount, onClose, onReope
       if (!res.ok) throw new Error();
       reset();
       onSubmitSuccess();
-      toast.success("Signalement envoyé !", { description: "Notre équipe va analyser le problème. Vous recevrez une réponse ici." });
+      toast.success("Signalement envoyé !", { description: "Notre équipe va analyser votre message. Vous recevrez une réponse ici." });
     } catch {
       toast.error("Échec de l'envoi", { description: "Vérifie ta connexion et réessaie." });
     } finally {
@@ -102,7 +122,10 @@ export const ReportFormDialog = ({ open, loading, historyCount, onClose, onReope
     <Dialog open={open} onOpenChange={(v) => { if (!v && !submitting) handleClose(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><span className="text-winelio-orange">🐛</span>Signaler un problème</DialogTitle>
+          <DialogTitle className="flex items-center gap-2"><span className="text-winelio-orange">🐛</span>Bugs & idées</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Décrivez un problème, un blocage, ou partagez une idée d'amélioration.
+          </p>
         </DialogHeader>
         <div className="space-y-4">
           {screenshot ? (
@@ -140,8 +163,18 @@ export const ReportFormDialog = ({ open, loading, historyCount, onClose, onReope
             </div>
           )}
           <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleFileChange} />
-          <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Décris le problème rencontré…" rows={4}
-            className="w-full rounded-lg border border-black/10 bg-gray-50 p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-winelio-orange/50" />
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Message</span>
+              <button
+                type="button"
+                onClick={handlePasteMessage}
+                className="text-[11px] font-semibold text-winelio-orange underline underline-offset-2 transition-colors hover:text-winelio-amber"
+              >
+                Coller
+              </button>
+            </div>
+            <textarea ref={messageRef} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Décris le problème, le blocage ou l'idée à proposer…" rows={4}
+              className="w-full rounded-lg border border-black/10 bg-gray-50 p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-winelio-orange/50" />
           <div className="flex gap-2 justify-between">
             {historyCount > 0 ? (
               <button type="button" onClick={() => { handleClose(); onOpenHistory(); }}

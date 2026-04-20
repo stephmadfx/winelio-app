@@ -43,7 +43,7 @@ async function getBugReporterContact(userId: string) {
   const [{ data: profile }, authResult] = await Promise.all([
     supabaseAdmin
       .from("profiles")
-      .select("first_name, email")
+      .select("first_name, last_name, email")
       .eq("id", userId)
       .maybeSingle(),
     supabaseAdmin.auth.admin.getUserById(userId),
@@ -51,8 +51,9 @@ async function getBugReporterContact(userId: string) {
 
   const email = profile?.email ?? authResult.data?.user?.email ?? null;
   const firstName = profile?.first_name ?? authResult.data?.user?.user_metadata?.first_name ?? null;
+  const lastName = profile?.last_name ?? authResult.data?.user?.user_metadata?.last_name ?? null;
 
-  return { email, firstName };
+  return { email, firstName, lastName };
 }
 
 // ─── Recommandations ──────────────────────────────────────────────────────────
@@ -101,6 +102,18 @@ const VALID_STATUSES = [
 const BUG_TRACKING_STATUSES = ["todo", "in_progress", "blocked", "done"] as const;
 const BUG_TICKET_TYPES = ["bug", "improvement", "site_change"] as const;
 const BUG_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
+
+function validateBugTrackingStatus(value?: string) {
+  return !value || BUG_TRACKING_STATUSES.includes(value as typeof BUG_TRACKING_STATUSES[number]);
+}
+
+function validateBugTicketType(value?: string) {
+  return !value || BUG_TICKET_TYPES.includes(value as typeof BUG_TICKET_TYPES[number]);
+}
+
+function validateBugPriority(value?: string) {
+  return !value || BUG_PRIORITIES.includes(value as typeof BUG_PRIORITIES[number]);
+}
 
 export async function toggleRecommendationStatus(
   recommendationId: string,
@@ -225,6 +238,112 @@ export async function updateBugReportBoard(
 
   revalidatePath("/gestion-reseau/bugs");
   revalidatePath("/gestion-reseau");
+}
+
+export async function createBugReportCard(
+  data: {
+    message: string;
+    pageUrl?: string;
+    trackingStatus?: string;
+    ticketType?: string;
+    priority?: string;
+    internalNote?: string;
+  }
+): Promise<
+  | { ok: true; report: {
+      id: string;
+      user_id: string;
+      message: string;
+      page_url: string | null;
+      status: string;
+      admin_reply: string | null;
+      reply_images: string[] | null;
+      created_at: string;
+      replied_at: string | null;
+      tracking_status: string;
+      ticket_type: string;
+      priority: string;
+      internal_note: string | null;
+      updated_at: string | null;
+      screenshot_url: string | null;
+      screenshot_signed_url: string | null;
+      reporter: { first_name: string | null; last_name: string | null; email: string | null } | null;
+      source: string;
+    } }
+  | { ok: false; error: string }
+> {
+  try {
+    const user = await assertSuperAdmin();
+
+    const message = data.message.trim();
+    if (!message) return { ok: false, error: "Le message est requis." };
+
+    if (!validateBugTrackingStatus(data.trackingStatus)) {
+      return { ok: false, error: "Statut de suivi invalide." };
+    }
+    if (!validateBugTicketType(data.ticketType)) {
+      return { ok: false, error: "Type de ticket invalide." };
+    }
+    if (!validateBugPriority(data.priority)) {
+      return { ok: false, error: "Priorité invalide." };
+    }
+
+    const reporterContact = await getBugReporterContact(user.id);
+    const reportId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const source = "manual" as const;
+
+    const { error } = await supabaseAdmin
+      .from("bug_reports")
+      .insert({
+        id: reportId,
+        user_id: user.id,
+        message,
+        page_url: data.pageUrl?.trim() || null,
+        tracking_status: data.trackingStatus ?? "todo",
+        ticket_type: data.ticketType ?? "bug",
+        priority: data.priority ?? "medium",
+        internal_note: data.internalNote?.trim() || null,
+        source,
+        created_at: now,
+        updated_at: now,
+      });
+
+    if (error) return { ok: false, error: `Erreur création carte: ${error.message}` };
+
+    revalidatePath("/gestion-reseau/bugs");
+    revalidatePath("/gestion-reseau");
+
+    return {
+      ok: true,
+      report: {
+        id: reportId,
+        user_id: user.id,
+        message,
+        page_url: data.pageUrl?.trim() || null,
+        status: "pending",
+        admin_reply: null,
+        reply_images: null,
+        created_at: now,
+        replied_at: null,
+        tracking_status: data.trackingStatus ?? "todo",
+        ticket_type: data.ticketType ?? "bug",
+        priority: data.priority ?? "medium",
+        internal_note: data.internalNote?.trim() || null,
+        updated_at: now,
+        screenshot_url: null,
+        screenshot_signed_url: null,
+        reporter: {
+          first_name: reporterContact.firstName,
+          last_name: reporterContact.lastName,
+          email: reporterContact.email,
+        },
+        source,
+      },
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Impossible de créer la carte" };
+  }
 }
 
 export async function deleteBugReport(reportId: string): Promise<
