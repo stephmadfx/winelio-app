@@ -23,7 +23,7 @@ export function ProfileIncompleteModal() {
           Complétez votre profil
         </h2>
         <p className="text-sm text-winelio-gray leading-relaxed mb-6">
-          Avant d'accéder à la plateforme, vous devez renseigner vos informations personnelles : prénom, nom, téléphone, adresse, code postal et ville.
+          Avant d'accéder à la plateforme, vous devez renseigner vos informations personnelles : prénom, nom, téléphone, date de naissance, adresse, code postal et ville, puis accepter les Conditions Générales d'Utilisation Winelio.
         </p>
 
         <Link

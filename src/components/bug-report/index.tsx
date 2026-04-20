@@ -111,22 +111,22 @@ export const BugReportButton = ({ userId, allBugReports = [], variant = "floatin
       {variant === "inline" ? (
         <button onClick={handleFloatingButtonClick}
           className={`relative flex items-center gap-1 rounded-full px-2.5 py-1 min-h-7 text-white active:opacity-80 transition-all ${hasUnread ? "bg-gradient-to-br from-winelio-orange to-winelio-amber" : "bg-gradient-to-br from-violet-500 to-purple-500"}`}
-          aria-label="Signaler un bug">
+          aria-label="Bugs et idées">
           {hasUnread && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-white" />}
           <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M5.07 5.07A9 9 0 1 0 18.93 18.93 9 9 0 0 0 5.07 5.07z" />
           </svg>
-          <span className="text-[10px] font-bold leading-tight text-center">Signaler<br />un bug</span>
+          <span className="text-[10px] font-bold leading-tight text-center">Bugs<br />& idées</span>
         </button>
       ) : (
         <button onClick={handleFloatingButtonClick}
           className="fixed bottom-16 right-4 z-50 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber shadow-lg shadow-winelio-orange/30 hidden lg:flex items-center gap-1.5 px-3 h-8 text-white text-xs font-semibold hover:scale-105 active:scale-95 transition-transform lg:bottom-4"
-          aria-label="Signaler un bug">
+          aria-label="Bugs et idées">
           {hasUnread && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white" />}
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M5.07 5.07A9 9 0 1 0 18.93 18.93 9 9 0 0 0 5.07 5.07z" />
           </svg>
-          <span>Signaler un bug</span>
+          <span>Bugs & idées</span>
         </button>
       )}
 

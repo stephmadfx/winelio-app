@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -11,7 +18,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { deleteBugReport, updateBugReportBoard } from "@/app/gestion-reseau/actions";
+import { createBugReportCard, deleteBugReport, updateBugReportBoard } from "@/app/gestion-reseau/actions";
 import { useBugDeleteAccess } from "@/components/admin/bug-delete-access";
 
 type Reporter = {
@@ -37,6 +44,7 @@ export type BugBoardReport = {
   screenshot_url: string | null;
   screenshot_signed_url: string | null;
   reporter: Reporter | Reporter[] | null;
+  source: string;
 };
 
 const BOARD_COLUMNS = [
@@ -86,6 +94,12 @@ const QUICK_TARGETS = [
   { value: "done", label: "Terminé" },
 ] as const;
 
+const CREATE_STATUS_OPTIONS = [
+  { value: "todo", label: "À faire" },
+  { value: "in_progress", label: "En cours" },
+  { value: "blocked", label: "Bloqué" },
+] as const;
+
 const STATUS_CARD_STYLES: Record<string, string> = {
   todo: "border-amber-200/80 bg-amber-50/55 hover:border-amber-300/80",
   in_progress: "border-blue-200/80 bg-blue-50/55 hover:border-blue-300/80",
@@ -124,14 +138,29 @@ function createDraft(report: BugBoardReport | null) {
   };
 }
 
+function createEmptyManualDraft() {
+  return {
+    message: "",
+    pageUrl: "",
+    trackingStatus: "todo",
+    ticketType: "bug",
+    priority: "medium",
+    internalNote: "",
+  };
+}
+
 export function BugTrackerBoard({ reports }: { reports: BugBoardReport[] }) {
   const router = useRouter();
   const canDelete = useBugDeleteAccess();
   const [bugReports, setBugReports] = useState(reports);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState(() => createDraft(null));
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createDraftState, setCreateDraftState] = useState(() => createEmptyManualDraft());
   const [isPending, startTransition] = useTransition();
   const [sheetSide, setSheetSide] = useState<"right" | "bottom">("right");
+  const [creating, setCreating] = useState(false);
+  const createMessageRef = useRef<HTMLTextAreaElement>(null);
 
   const selectedReport = useMemo(
     () => bugReports.find((report) => report.id === selectedId) ?? null,
@@ -191,6 +220,63 @@ export function BugTrackerBoard({ reports }: { reports: BugBoardReport[] }) {
     });
   };
 
+  const resetCreateForm = () => setCreateDraftState(createEmptyManualDraft());
+
+  const pasteIntoCreateMessage = async () => {
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      if (!clipboardText.trim()) {
+        toast.error("Le presse-papiers est vide.");
+        return;
+      }
+
+      setCreateDraftState((prev) => ({ ...prev, message: clipboardText }));
+      requestAnimationFrame(() => {
+        createMessageRef.current?.focus();
+        createMessageRef.current?.setSelectionRange(clipboardText.length, clipboardText.length);
+      });
+      toast.success("Texte collé");
+    } catch {
+      toast.error("Impossible d'accéder au presse-papiers. Utilise Ctrl/Cmd+V.");
+    }
+  };
+
+  const createManualCard = () => {
+    if (!createDraftState.message.trim()) {
+      toast.error("Le message est requis pour créer une carte.");
+      return;
+    }
+
+    setCreating(true);
+    startTransition(async () => {
+      try {
+        const result = await createBugReportCard({
+          message: createDraftState.message,
+          pageUrl: createDraftState.pageUrl,
+          trackingStatus: createDraftState.trackingStatus,
+          ticketType: createDraftState.ticketType,
+          priority: createDraftState.priority,
+          internalNote: createDraftState.internalNote,
+        });
+
+        if (!result.ok) {
+          toast.error(result.error || "Impossible de créer la carte");
+          return;
+        }
+
+        setBugReports((prev) => [result.report, ...prev]);
+        setSelectedId(result.report.id);
+        setCreateOpen(false);
+        resetCreateForm();
+        toast.success("Carte créée");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Impossible de créer la carte");
+      } finally {
+        setCreating(false);
+      }
+    });
+  };
+
   const removeReport = (report: BugBoardReport) => {
     const label = getReporterName(report.reporter);
     const confirmed = window.confirm(
@@ -220,6 +306,16 @@ export function BugTrackerBoard({ reports }: { reports: BugBoardReport[] }) {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3 rounded-3xl border border-border bg-card px-4 py-3 sm:px-5">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Création rapide</p>
+          <p className="text-xs text-muted-foreground">Ajoutez une carte manuellement sans passer par un signalement utilisateur.</p>
+        </div>
+        <Button onClick={() => setCreateOpen(true)} className="bg-gradient-to-r from-winelio-orange to-winelio-amber text-white">
+          Nouvelle carte
+        </Button>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {BOARD_COLUMNS.map((column) => {
           const count = groupedReports[column.id]?.length ?? 0;
@@ -261,6 +357,7 @@ export function BugTrackerBoard({ reports }: { reports: BugBoardReport[] }) {
                 groupedReports[column.id].map((report) => {
                   const reporterName = getReporterName(report.reporter);
                   const reporterEmail = getReporterEmail(report.reporter);
+                  const cardOrigin = report.source === "manual" ? "Carte interne" : reporterName;
                   const isSelected = report.id === selectedId;
                   const statusTone = STATUS_CARD_STYLES[report.tracking_status] ?? "border-border bg-background hover:border-winelio-orange/40";
                   return (
@@ -276,12 +373,17 @@ export function BugTrackerBoard({ reports }: { reports: BugBoardReport[] }) {
                       >
                         <div className="flex items-start justify-between gap-2 sm:gap-3">
                           <div className="min-w-0">
-                            <p className="truncate text-[13px] font-semibold text-foreground sm:text-sm">{reporterName}</p>
-                            {reporterEmail && (
+                            <p className="truncate text-[13px] font-semibold text-foreground sm:text-sm">{cardOrigin}</p>
+                            {report.source !== "manual" && reporterEmail && (
                               <p className="truncate text-[11px] text-muted-foreground sm:text-[11px]">{reporterEmail}</p>
                             )}
                           </div>
                           <div className="flex shrink-0 items-center gap-2">
+                            {report.source === "manual" && (
+                              <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+                                Interne
+                              </span>
+                            )}
                             <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                               {report.status}
                             </span>
@@ -388,8 +490,10 @@ export function BugTrackerBoard({ reports }: { reports: BugBoardReport[] }) {
               <SheetHeader className="border-b border-border px-4 py-4 sm:px-6 sm:py-5">
                 <SheetTitle className="text-lg sm:text-xl">Suivi du ticket</SheetTitle>
                 <SheetDescription>
-                  {getReporterName(selectedReport.reporter)}
-                  {getReporterEmail(selectedReport.reporter) ? ` · ${getReporterEmail(selectedReport.reporter)}` : ""}
+                  {selectedReport.source === "manual"
+                    ? "Carte interne créée manuellement"
+                    : getReporterName(selectedReport.reporter)}
+                  {selectedReport.source !== "manual" && getReporterEmail(selectedReport.reporter) ? ` · ${getReporterEmail(selectedReport.reporter)}` : ""}
                 </SheetDescription>
               </SheetHeader>
 
@@ -399,6 +503,11 @@ export function BugTrackerBoard({ reports }: { reports: BugBoardReport[] }) {
                     <span className="rounded-full bg-background px-3 py-1 text-xs font-semibold text-foreground">
                       Statut public: {selectedReport.status}
                     </span>
+                    {selectedReport.source === "manual" && (
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                        Carte interne
+                      </span>
+                    )}
                     <span className="rounded-full bg-background px-3 py-1 text-xs font-semibold text-foreground">
                       {selectedReport.page_url ?? "/"}
                     </span>
@@ -529,6 +638,126 @@ export function BugTrackerBoard({ reports }: { reports: BugBoardReport[] }) {
           )}
         </SheetContent>
       </Sheet>
+
+      <Dialog open={createOpen} onOpenChange={(open) => {
+        setCreateOpen(open);
+        if (!open && !creating) resetCreateForm();
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Créer une carte manuelle</DialogTitle>
+            <DialogDescription>
+              Ajoutez une idée, un correctif ou une tâche interne directement dans le tableau.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="space-y-1.5 text-sm sm:col-span-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Message</span>
+                  <button
+                    type="button"
+                    onClick={pasteIntoCreateMessage}
+                    className="text-[11px] font-semibold text-winelio-orange underline underline-offset-2 transition-colors hover:text-winelio-amber"
+                  >
+                    Coller
+                  </button>
+                </div>
+                <textarea
+                  ref={createMessageRef}
+                  value={createDraftState.message}
+                  onChange={(e) => setCreateDraftState((prev) => ({ ...prev, message: e.target.value }))}
+                  rows={4}
+                  placeholder="Décris le problème, l'idée ou la modification à planifier…"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none"
+                />
+              </label>
+
+              <label className="space-y-1.5 text-sm sm:col-span-2">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Page concernée</span>
+                <input
+                  value={createDraftState.pageUrl}
+                  onChange={(e) => setCreateDraftState((prev) => ({ ...prev, pageUrl: e.target.value }))}
+                  placeholder="/dashboard"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none"
+                />
+              </label>
+
+              <label className="space-y-1.5 text-sm">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Suivi</span>
+                <select
+                  value={createDraftState.trackingStatus}
+                  onChange={(e) => setCreateDraftState((prev) => ({ ...prev, trackingStatus: e.target.value }))}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none"
+                >
+                  {CREATE_STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-1.5 text-sm">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Type</span>
+                <select
+                  value={createDraftState.ticketType}
+                  onChange={(e) => setCreateDraftState((prev) => ({ ...prev, ticketType: e.target.value }))}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none"
+                >
+                  {Object.entries(TYPE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-1.5 text-sm">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Priorité</span>
+                <select
+                  value={createDraftState.priority}
+                  onChange={(e) => setCreateDraftState((prev) => ({ ...prev, priority: e.target.value }))}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none"
+                >
+                  {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-1.5 text-sm sm:col-span-2">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Suggestion de correction / note interne
+                </span>
+                <textarea
+                  value={createDraftState.internalNote}
+                  onChange={(e) => setCreateDraftState((prev) => ({ ...prev, internalNote: e.target.value }))}
+                  rows={3}
+                  placeholder="Optionnel: contexte, action à faire, lien vers une piste..."
+                  className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none"
+                />
+              </label>
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating} className="w-full sm:w-auto">
+                Annuler
+              </Button>
+              <Button
+                onClick={createManualCard}
+                disabled={creating || !createDraftState.message.trim()}
+                className="w-full bg-gradient-to-r from-winelio-orange to-winelio-amber text-white sm:w-auto"
+              >
+                {creating ? "Création..." : "Créer la carte"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
