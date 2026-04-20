@@ -39,9 +39,16 @@ export async function middleware(request: NextRequest) {
   const stagingPassword = process.env.STAGING_PASSWORD;
   if (stagingPassword) {
     const path = request.nextUrl.pathname;
+    const isCronApi =
+      path.startsWith("/api/bugs/imap-poll") ||
+      path.startsWith("/api/bugs/imap-debug") ||
+      path.startsWith("/api/email/process-queue") ||
+      path.startsWith("/api/stripe/cron-reminders") ||
+      path.startsWith("/api/video/");
     const isExempt =
       path === "/staging-login" ||
       path === "/api/staging-auth" ||
+      isCronApi ||
       path.startsWith("/_next/") ||
       path.startsWith("/favicon");
 
