@@ -38,40 +38,21 @@ export default function NewRecommendationPage() {
   const [urgency, setUrgency] = useState<Urgency>("normal");
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-        if (!session?.user?.id) {
-          setError("Session perdue — veuillez vous reconnecter");
-          return;
+    const loadProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.id) {
+        setUserId(user.id);
+        const { data: profile } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", user.id).single();
+        if (profile) {
+          setSelfProfile({ first_name: profile.first_name ?? "", last_name: profile.last_name ?? "", email: user.email ?? "", phone: profile.phone ?? "" });
         }
-        setError(null);
-        setUserId(session.user.id);
-        try {
-          const { data: profile, error: profileError } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", session.user.id).single();
-          if (profileError) {
-            console.error("[profile-load]", profileError);
-            return;
-          }
-          setSelfProfile({ first_name: profile?.first_name ?? "", last_name: profile?.last_name ?? "", email: session.user.email ?? "", phone: profile?.phone ?? "" });
-        } catch (err) {
-          console.error("[profile-error]", err);
-        }
-      } else if (event === "SIGNED_OUT") {
-        setError("Session perdue — veuillez vous reconnecter");
-        setUserId(null);
-        setSelfProfile(null);
       }
-    });
+    };
+    loadProfile().catch(() => {});
 
-    supabase.from("contacts").select("id, first_name, last_name, email, phone").order("last_name").then(({ data, error }) => {
-      if (error) {
-        console.error("[contacts]", error);
-        return;
-      }
+    supabase.from("contacts").select("id, first_name, last_name, email, phone").order("last_name").then(({ data }) => {
       setContacts(data ?? []);
-    });
-
-    return () => subscription?.unsubscribe();
+    }).catch(() => {});
   }, []);
 
   const validateContact = (): boolean => {
