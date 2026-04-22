@@ -39,21 +39,27 @@ export default function NewRecommendationPage() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!session?.user?.id) {
-        setError("Session perdue — veuillez vous reconnecter");
-        return;
-      }
-      setError(null);
-      setUserId(session.user.id);
-      try {
-        const { data: profile, error: profileError } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", session.user.id).single();
-        if (profileError) {
-          console.error("[profile-load]", profileError);
+      if (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        if (!session?.user?.id) {
+          setError("Session perdue — veuillez vous reconnecter");
           return;
         }
-        setSelfProfile({ first_name: profile?.first_name ?? "", last_name: profile?.last_name ?? "", email: session.user.email ?? "", phone: profile?.phone ?? "" });
-      } catch (err) {
-        console.error("[profile-error]", err);
+        setError(null);
+        setUserId(session.user.id);
+        try {
+          const { data: profile, error: profileError } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", session.user.id).single();
+          if (profileError) {
+            console.error("[profile-load]", profileError);
+            return;
+          }
+          setSelfProfile({ first_name: profile?.first_name ?? "", last_name: profile?.last_name ?? "", email: session.user.email ?? "", phone: profile?.phone ?? "" });
+        } catch (err) {
+          console.error("[profile-error]", err);
+        }
+      } else if (event === "SIGNED_OUT") {
+        setError("Session perdue — veuillez vous reconnecter");
+        setUserId(null);
+        setSelfProfile(null);
       }
     });
 
