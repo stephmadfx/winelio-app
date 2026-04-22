@@ -64,7 +64,7 @@ export default function NewRecommendationPage() {
       setContacts(data ?? []);
     });
 
-    return () => unsub?.data?.subscription?.unsubscribe();
+    return () => unsub?.();
   }, []);
 
   const validateContact = (): boolean => {
