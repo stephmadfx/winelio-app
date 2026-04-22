@@ -42,7 +42,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
   useEffect(() => {
     let query = supabase
       .from("profiles")
-      .select("id, first_name, last_name, city, latitude, longitude, companies(name, alias, categories(name))")
+      .select("id, first_name, last_name, city, latitude, longitude, companies(name, alias, source, categories(name))")
       .eq("is_professional", true)
       .order("last_name");
     if (userId) query = query.neq("id", userId);
@@ -52,6 +52,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
         const company = Array.isArray(p.companies) ? p.companies[0] : p.companies;
         const cat = company?.categories;
         const catName = Array.isArray(cat) ? cat[0]?.name ?? null : (cat as { name: string } | null)?.name ?? null;
+        const source = (company as { source?: string | null } | null)?.source ?? null;
         return {
           id: p.id, first_name: p.first_name, last_name: p.last_name,
           company_name: company?.name ?? null,
@@ -60,6 +61,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
           distance: userLocation && p.latitude && p.longitude ? haversineKm(userLocation.lat, userLocation.lng, p.latitude, p.longitude) : null,
           avg_rating: null,
           review_count: 0,
+          is_claimed: source === "owner",
         };
       });
       if (proSearch.length >= 2) {

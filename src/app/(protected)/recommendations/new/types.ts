@@ -19,6 +19,7 @@ export interface Professional {
   distance: number | null;
   avg_rating: number | null;
   review_count: number;
+  is_claimed: boolean;
 }
 
 export interface Category {

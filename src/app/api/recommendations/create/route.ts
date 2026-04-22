@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { notifyNewRecommendation } from "@/lib/notify-new-recommendation";
 
 type SelfProfile = {
   first_name: string;
@@ -104,6 +105,10 @@ export async function POST(req: Request) {
   if (recError) {
     return NextResponse.json({ error: `Erreur création recommandation: ${recError.message}` }, { status: 500 });
   }
+
+  notifyNewRecommendation(recommendation.id).catch((err) => {
+    console.error("[create-recommendation] notify failed:", err);
+  });
 
   return NextResponse.json({ recommendation });
 }

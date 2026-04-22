@@ -107,32 +107,24 @@ export default function RecommendationDetailPage() {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) return;
-      setUserId(data.user.id);
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("stripe_payment_method_id")
-        .eq("id", data.user.id)
-        .single();
-      setHasPaymentMethod(!!profile?.stripe_payment_method_id);
+    fetch("/api/auth/whoami").then(async (res) => {
+      if (!res.ok) return;
+      const { user } = await res.json();
+      if (!user?.id) return;
+      setUserId(user.id);
+      const profileRes = await fetch(`/api/profile/payment-method-status`);
+      if (profileRes.ok) {
+        const { hasPaymentMethod: hpm } = await profileRes.json();
+        setHasPaymentMethod(!!hpm);
+      }
     });
-  }, [supabase]);
+  }, []);
 
   const fetchData = async () => {
     setLoading(true);
-    const { data: rec } = await supabase
-      .from("recommendations")
-      .select(
-        `id, status, amount, project_description, urgency_level, created_at, referrer_id, professional_id,
-         contact:contacts(first_name, last_name, email, phone),
-         professional:profiles!recommendations_professional_id_fkey(first_name, last_name, company:companies(name)),
-         referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name)`
-      )
-      .eq("id", id)
-      .single();
-
-    if (rec) {
+    const res = await fetch(`/api/recommendations/${id}`);
+    if (res.ok) {
+      const { recommendation: rec, steps: recSteps } = await res.json();
       const normalize = (v: unknown) => (Array.isArray(v) ? v[0] ?? null : v);
       setRecommendation({
         ...rec,
@@ -140,22 +132,13 @@ export default function RecommendationDetailPage() {
         professional: normalize(rec.professional) as RecommendationDetail["professional"],
         referrer: normalize(rec.referrer) as RecommendationDetail["referrer"],
       });
-    }
-
-    const { data: recSteps } = await supabase
-      .from("recommendation_steps")
-      .select("id, step_id, completed_at, data, step:steps(name, description, completion_role, order_index)")
-      .eq("recommendation_id", id);
-
-    if (recSteps) {
-      const mapped = recSteps.map((s) => ({
+      const mapped = (recSteps as StepRow[]).map((s) => ({
         ...s,
         step: Array.isArray(s.step) ? s.step[0] ?? null : s.step,
       })) as StepRow[];
       mapped.sort((a, b) => (a.step?.order_index ?? 0) - (b.step?.order_index ?? 0));
       setSteps(mapped);
     }
-
     setLoading(false);
   };
 
