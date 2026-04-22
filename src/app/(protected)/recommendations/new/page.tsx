@@ -38,17 +38,22 @@ export default function NewRecommendationPage() {
   const [urgency, setUrgency] = useState<Urgency>("normal");
 
   useEffect(() => {
+    setError(null);
     const loadProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.id) {
-        setUserId(user.id);
-        const { data: profile } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", user.id).single();
-        if (profile) {
-          setSelfProfile({ first_name: profile.first_name ?? "", last_name: profile.last_name ?? "", email: user.email ?? "", phone: profile.phone ?? "" });
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) {
+          setUserId(user.id);
+          const { data: profile } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", user.id).single();
+          if (profile) {
+            setSelfProfile({ first_name: profile.first_name ?? "", last_name: profile.last_name ?? "", email: user.email ?? "", phone: profile.phone ?? "" });
+          }
         }
+      } catch (err) {
+        // Silently ignore auth errors on initial load - middleware has already verified session
       }
     };
-    loadProfile().catch(() => {});
+    loadProfile();
 
     supabase.from("contacts").select("id, first_name, last_name, email, phone").order("last_name").then(({ data }) => {
       setContacts(data ?? []);
