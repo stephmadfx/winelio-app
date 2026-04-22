@@ -48,17 +48,19 @@ export const ProfessionalList = ({ professionals, selectedProId, onSelect, geoGr
   return (
     <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
       {professionals.map((p) => {
-        const label = p.company_alias ?? (p.first_name ?? "Professionnel");
+        const personName = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+        const primaryLabel = p.company_name || personName || p.company_alias || "Professionnel";
+        const secondaryLabel = p.company_name && personName ? personName : null;
         const isSelected = selectedProId === p.id;
         return (
           <button key={p.id} onClick={() => onSelect(p.id)}
             className={`w-full flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all cursor-pointer ${
               isSelected ? "border-winelio-orange bg-winelio-orange/5 shadow-sm shadow-winelio-orange/10" : "border-transparent bg-white hover:border-winelio-orange/20 shadow-sm"
             }`}>
-            <ProInitials name={label} />
+            <ProInitials name={primaryLabel} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <p className="font-semibold text-winelio-dark text-sm font-mono">{label}</p>
+                <p className="font-semibold text-winelio-dark text-sm truncate max-w-full">{primaryLabel}</p>
                 {p.is_claimed && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide bg-green-50 text-green-700 ring-1 ring-green-200 px-1.5 py-0.5 rounded-full">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
@@ -66,10 +68,16 @@ export const ProfessionalList = ({ professionals, selectedProId, onSelect, geoGr
                   </span>
                 )}
               </div>
+              {secondaryLabel && (
+                <p className="text-xs text-winelio-gray mt-0.5 truncate">{secondaryLabel}</p>
+              )}
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                 {p.avg_rating !== null && <StarRating avg={p.avg_rating} count={p.review_count} />}
                 {p.category_name && <span className="text-xs bg-winelio-orange/10 text-winelio-orange px-2 py-0.5 rounded-full font-medium">{p.category_name}</span>}
                 {p.city && <span className="text-xs text-winelio-gray/70">{p.city}</span>}
+                {p.company_alias && (
+                  <span className="text-[10px] font-mono text-winelio-gray/60">{p.company_alias}</span>
+                )}
               </div>
             </div>
             <div className="flex flex-col items-end gap-2">
