@@ -41,16 +41,24 @@ export default function NewRecommendationPage() {
     setError(null);
     const loadProfile = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const res = await fetch("/api/auth/whoami");
+        if (!res.ok) {
+          setError("Erreur authentification: session introuvable");
+          return;
+        }
+        const { user } = await res.json();
         if (user?.id) {
           setUserId(user.id);
           const { data: profile } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", user.id).single();
           if (profile) {
             setSelfProfile({ first_name: profile.first_name ?? "", last_name: profile.last_name ?? "", email: user.email ?? "", phone: profile.phone ?? "" });
           }
+        } else {
+          setError("Erreur authentification: Aucun utilisateur trouvé");
         }
       } catch (err) {
-        // Silently ignore auth errors on initial load - middleware has already verified session
+        const msg = err instanceof Error ? err.message : String(err);
+        setError(`Erreur lors du chargement du profil: ${msg}`);
       }
     };
     loadProfile();
@@ -90,52 +98,27 @@ export default function NewRecommendationPage() {
     setSubmitting(true);
     setError(null);
     try {
-      console.log("[handleSubmit] Starting submission", { cachedUserId: userId, selectedContactId, selectedProId });
-
-      // Use cached userId if available, otherwise fetch current user
-      const currentUserId = userId || (await supabase.auth.getUser()).data?.user?.id;
-      console.log("[handleSubmit] currentUserId resolved to:", currentUserId);
-
-      if (!currentUserId) throw new Error("Session expirée — veuillez vous reconnecter");
-
-      let contactId = selectedContactId;
-
-      if (selfForMe && selfProfile) {
-        const { data: existing } = await supabase.schema("winelio").from("contacts").select("id").eq("user_id", currentUserId).eq("email", selfProfile.email).maybeSingle();
-        if (existing) {
-          contactId = existing.id;
-        } else {
-          const { data: newContact, error: err } = await supabase.schema("winelio").from("contacts").insert({ ...selfProfile, user_id: currentUserId, address: "", city: "", postal_code: "", country: "FR" }).select("id").single();
-          if (err) throw new Error("Erreur création contact");
-          contactId = newContact.id;
-        }
-      } else if (createContact) {
-        const { country_code, ...contactData } = contactForm;
-        const { data: newContact, error: err } = await supabase.schema("winelio").from("contacts").insert({ ...contactData, user_id: currentUserId, country: "FR" }).select("id").single();
-        if (err) throw new Error("Erreur création contact");
-        contactId = newContact.id;
-      }
-
-      if (!contactId || !selectedProId) throw new Error("Contact et professionnel requis");
-
-      console.log("[handleSubmit] About to insert recommendation", {
-        referrer_id: currentUserId,
-        professional_id: selectedProId,
-        contact_id: contactId,
-        project_description: description,
-        urgency_level: urgency,
+      const { country_code, ...contactFormClean } = contactForm;
+      const res = await fetch("/api/recommendations/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          selectedContactId,
+          selectedProId,
+          description,
+          urgency,
+          selfForMe,
+          createContact,
+          selfProfile,
+          contactForm: createContact ? contactFormClean : null,
+        }),
       });
 
-      const { data: recommendation, error: recError } = await supabase.schema("winelio").from("recommendations").insert({
-        referrer_id: currentUserId, professional_id: selectedProId, contact_id: contactId,
-        project_description: description, urgency_level: urgency, status: "PENDING",
-      }).select("id").single();
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || "Erreur lors de la création");
 
-      console.log("[handleSubmit] Recommendation insert response:", { data: recommendation, error: recError });
+      const recommendation = payload.recommendation;
 
-      if (recError) throw new Error(`Erreur création recommandation: ${recError.message}`);
-
-      // Envoi invitation Winelio si demandé (fire & forget)
       if (wantsToJoin && !selfForMe) {
         const contactEmail = createContact
           ? contactForm.email
@@ -145,11 +128,10 @@ export default function NewRecommendationPage() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ to: contactEmail }),
-          }).catch((err) => console.error("[send-invite]", err));
+          }).catch(() => undefined);
         }
       }
 
-      console.log("[handleSubmit] Success! Redirecting to:", `/recommendations/${recommendation.id}`);
       router.push(`/recommendations/${recommendation.id}`);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Erreur inconnue";
