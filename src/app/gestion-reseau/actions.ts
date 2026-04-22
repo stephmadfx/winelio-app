@@ -190,22 +190,18 @@ export async function updateBugReportBoard(
     !currentReport.in_progress_notified_at &&
     currentReport.tracking_status !== "in_progress"
   ) {
-    try {
-      const sent = await notifyBugStatusChange({
-        userId: currentReport.user_id,
-        reportId,
-        firstName: reporterContact.firstName,
-        email: reporterContact.email,
-        pageUrl: currentReport.page_url,
-        message: currentReport.message,
-        kind: "in_progress",
-      });
+    const sent = await notifyBugStatusChange({
+      userId: currentReport.user_id,
+      reportId,
+      firstName: reporterContact.firstName,
+      email: reporterContact.email,
+      pageUrl: currentReport.page_url,
+      message: currentReport.message,
+      kind: "in_progress",
+    });
 
-      if (sent) {
-        notificationUpdates.in_progress_notified_at = new Date().toISOString();
-      }
-    } catch (err) {
-      console.error("[bug/status] Notification in_progress failed:", err);
+    if (sent) {
+      notificationUpdates.in_progress_notified_at = new Date().toISOString();
     }
   }
 
@@ -214,22 +210,18 @@ export async function updateBugReportBoard(
     !currentReport.done_notified_at &&
     currentReport.tracking_status !== "done"
   ) {
-    try {
-      const sent = await notifyBugStatusChange({
-        userId: currentReport.user_id,
-        reportId,
-        firstName: reporterContact.firstName,
-        email: reporterContact.email,
-        pageUrl: currentReport.page_url,
-        message: currentReport.message,
-        kind: "done",
-      });
+    const sent = await notifyBugStatusChange({
+      userId: currentReport.user_id,
+      reportId,
+      firstName: reporterContact.firstName,
+      email: reporterContact.email,
+      pageUrl: currentReport.page_url,
+      message: currentReport.message,
+      kind: "done",
+    });
 
-      if (sent) {
-        notificationUpdates.done_notified_at = new Date().toISOString();
-      }
-    } catch (err) {
-      console.error("[bug/status] Notification done failed:", err);
+    if (sent) {
+      notificationUpdates.done_notified_at = new Date().toISOString();
     }
   }
 

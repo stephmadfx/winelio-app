@@ -38,14 +38,31 @@ export default function NewRecommendationPage() {
   const [urgency, setUrgency] = useState<Urgency>("normal");
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
+    supabase.auth.getUser().then(async ({ data, error: authError }) => {
+      if (authError) {
+        setError(`Erreur authentification: ${authError.message}`);
+        return;
+      }
       const uid = data.user?.id ?? null;
       setUserId(uid);
-      if (!uid) return;
-      const { data: profile } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", uid).single();
+      if (!uid) {
+        setError("Session perdue — veuillez vous reconnecter");
+        return;
+      }
+      const { data: profile, error: profileError } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", uid).single();
+      if (profileError) {
+        setError(`Erreur chargement profil: ${profileError.message}`);
+        return;
+      }
       setSelfProfile({ first_name: profile?.first_name ?? "", last_name: profile?.last_name ?? "", email: data.user?.email ?? "", phone: profile?.phone ?? "" });
-    });
-    supabase.from("contacts").select("id, first_name, last_name, email, phone").order("last_name").then(({ data }) => setContacts(data ?? []));
+    }).catch((err) => setError(`Erreur inattendue: ${err.message}`));
+    supabase.from("contacts").select("id, first_name, last_name, email, phone").order("last_name").then(({ data, error }) => {
+      if (error) {
+        console.error("[contacts]", error);
+        return;
+      }
+      setContacts(data ?? []);
+    }).catch((err) => console.error("[contacts-load]", err));
   }, []);
 
   const validateContact = (): boolean => {
@@ -75,8 +92,9 @@ export default function NewRecommendationPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw new Error(`Erreur authentification: ${authError.message}`);
+      if (!user) throw new Error("Session expirée — veuillez vous reconnecter");
 
       let contactId = selectedContactId;
 
