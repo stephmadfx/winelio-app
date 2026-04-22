@@ -90,22 +90,24 @@ export default function NewRecommendationPage() {
     setSubmitting(true);
     setError(null);
     try {
-      if (!userId) throw new Error("Session expirée — veuillez vous reconnecter");
+      // Use cached userId if available, otherwise fetch current user
+      const currentUserId = userId || (await supabase.auth.getUser()).data?.user?.id;
+      if (!currentUserId) throw new Error("Session expirée — veuillez vous reconnecter");
 
       let contactId = selectedContactId;
 
       if (selfForMe && selfProfile) {
-        const { data: existing } = await supabase.schema("winelio").from("contacts").select("id").eq("user_id", userId).eq("email", selfProfile.email).maybeSingle();
+        const { data: existing } = await supabase.schema("winelio").from("contacts").select("id").eq("user_id", currentUserId).eq("email", selfProfile.email).maybeSingle();
         if (existing) {
           contactId = existing.id;
         } else {
-          const { data: newContact, error: err } = await supabase.schema("winelio").from("contacts").insert({ ...selfProfile, user_id: userId, address: "", city: "", postal_code: "", country: "FR" }).select("id").single();
+          const { data: newContact, error: err } = await supabase.schema("winelio").from("contacts").insert({ ...selfProfile, user_id: currentUserId, address: "", city: "", postal_code: "", country: "FR" }).select("id").single();
           if (err) throw new Error("Erreur création contact");
           contactId = newContact.id;
         }
       } else if (createContact) {
         const { country_code, ...contactData } = contactForm;
-        const { data: newContact, error: err } = await supabase.schema("winelio").from("contacts").insert({ ...contactData, user_id: userId, country: "FR" }).select("id").single();
+        const { data: newContact, error: err } = await supabase.schema("winelio").from("contacts").insert({ ...contactData, user_id: currentUserId, country: "FR" }).select("id").single();
         if (err) throw new Error("Erreur création contact");
         contactId = newContact.id;
       }
@@ -113,7 +115,7 @@ export default function NewRecommendationPage() {
       if (!contactId || !selectedProId) throw new Error("Contact et professionnel requis");
 
       const { data: recommendation, error: recError } = await supabase.from("recommendations").insert({
-        referrer_id: userId, professional_id: selectedProId, contact_id: contactId,
+        referrer_id: currentUserId, professional_id: selectedProId, contact_id: contactId,
         project_description: description, urgency_level: urgency, status: "PENDING",
       }).select("id").single();
 
