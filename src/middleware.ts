@@ -134,6 +134,8 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/bugs/imap-debug") &&
     !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
     !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders") &&
+    !request.nextUrl.pathname.startsWith("/claim") &&
+    !request.nextUrl.pathname.startsWith("/conditions-generales-utilisation") &&
     request.nextUrl.pathname !== "/"
   ) {
     const url = request.nextUrl.clone();

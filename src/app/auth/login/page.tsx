@@ -147,7 +147,8 @@ function LoginForm() {
 
     if (data.success) {
       await applyReferral();
-      router.push("/dashboard");
+      const returnTo = searchParams.get("returnTo");
+      router.push(returnTo && returnTo.startsWith("/") ? returnTo : "/dashboard");
       return;
     }
 
@@ -177,7 +178,8 @@ function LoginForm() {
 
     if (data.success) {
       await applyReferral();
-      router.push("/dashboard");
+      const returnTo = searchParams.get("returnTo");
+      router.push(returnTo && returnTo.startsWith("/") ? returnTo : "/dashboard");
       return;
     }
 
