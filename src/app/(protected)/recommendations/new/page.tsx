@@ -38,21 +38,12 @@ export default function NewRecommendationPage() {
   const [urgency, setUrgency] = useState<Urgency>("normal");
 
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session?.user?.id) {
-        setError("Session perdue — veuillez vous reconnecter");
-        return;
-      }
-      setUserId(session.user.id);
-    });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!session?.user?.id) {
         setError("Session perdue — veuillez vous reconnecter");
         return;
       }
+      setError(null);
       setUserId(session.user.id);
       try {
         const { data: profile, error: profileError } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", session.user.id).single();
