@@ -12,7 +12,7 @@ function buildInviteEmail(
   referralCode: string,
   personalMessage?: string
 ): string {
-  const referralUrl = `${SITE_URL}/auth/login?mode=register&ref=${referralCode}`;
+  const referralUrl = `${SITE_URL}/auth/login?mode=register&ref=${referralCode}&email=${encodeURIComponent(recipientEmail)}`;
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -296,7 +296,7 @@ export async function POST(req: Request) {
     }
 
     const senderName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Un membre Winelio";
-    const referralUrl = `${SITE_URL}/auth/login?mode=register&ref=${profile.sponsor_code}`;
+    const referralUrl = `${SITE_URL}/auth/login?mode=register&ref=${profile.sponsor_code}&email=${encodeURIComponent(to)}`;
 
     // Version texte brut (obligatoire pour éviter les filtres spam)
     const textBody = [

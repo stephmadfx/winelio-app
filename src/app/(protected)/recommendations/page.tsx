@@ -1,6 +1,5 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -108,50 +107,34 @@ export default function RecommendationsPage() {
   // allRecommendations: always the full unfiltered list for the current tab
   const [allRecommendations, setAllRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
 
-  const supabase = createClient();
-
+  // Fetch ALL recommendations for current tab via server API
+  // (client-side supabase.from() can't see session cookies → empty results)
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setUserId(data.user.id);
-    });
-  }, [supabase]);
-
-  // Fetch ALL recommendations for current tab — no status filter in query
-  useEffect(() => {
-    if (!userId) return;
-
     async function fetchRecommendations() {
       setLoading(true);
-      const column = tab === "sent" ? "referrer_id" : "professional_id";
-      const { data } = await supabase
-        .from("recommendations")
-        .select(
-          `id, status, amount, created_at,
- contact:contacts(first_name, last_name),
- professional:profiles!recommendations_professional_id_fkey(
-   first_name, last_name,
-   companies!owner_id(alias, city, category:categories(name))
- )`
-        )
-        .eq(column, userId!)
-        .order("created_at", { ascending: false });
-
+      const res = await fetch(`/api/recommendations/list?tab=${tab}`);
+      if (!res.ok) {
+        setAllRecommendations([]);
+        setLoading(false);
+        return;
+      }
+      const { recommendations } = await res.json();
       setAllRecommendations(
-        (data ?? []).map((r) => {
+        (recommendations ?? []).map((r: Record<string, unknown>) => {
           const pro = Array.isArray(r.professional) ? r.professional[0] ?? null : r.professional;
-          const rawCompany = pro ? (Array.isArray(pro.companies) ? pro.companies[0] ?? null : pro.companies) : null;
-          const rawCat = rawCompany?.category;
-          const companyNormalized = rawCompany ? {
-            alias: rawCompany.alias ?? null,
-            city: rawCompany.city ?? null,
+          const rawCompany = pro ? (Array.isArray((pro as Record<string, unknown>).companies) ? ((pro as Record<string, unknown>).companies as unknown[])[0] ?? null : (pro as Record<string, unknown>).companies) : null;
+          const rawCompanyTyped = rawCompany as { alias: string | null; city: string | null; category: unknown } | null;
+          const rawCat = rawCompanyTyped?.category;
+          const companyNormalized = rawCompanyTyped ? {
+            alias: rawCompanyTyped.alias ?? null,
+            city: rawCompanyTyped.city ?? null,
             category: Array.isArray(rawCat) ? (rawCat[0] ?? null) : (rawCat ?? null),
           } : null;
           return {
             ...r,
             contact: Array.isArray(r.contact) ? r.contact[0] ?? null : r.contact,
-            professional: pro ? { ...pro, companies: companyNormalized } : null,
+            professional: pro ? { ...(pro as Record<string, unknown>), companies: companyNormalized } : null,
           };
         }) as Recommendation[]
       );
@@ -159,7 +142,7 @@ export default function RecommendationsPage() {
     }
 
     fetchRecommendations();
-  }, [userId, tab, supabase]);
+  }, [tab]);
 
   // Counts always derived from the full unfiltered list
   const counts = useMemo(() => ({

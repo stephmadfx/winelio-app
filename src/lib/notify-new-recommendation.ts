@@ -12,7 +12,9 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.app";
+const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.app").replace(/\/$/, "");
+const trackClick = (rid: string) => `${SITE_URL}/api/email-track/click?rid=${encodeURIComponent(rid)}`;
+const trackOpen = (rid: string) => `${SITE_URL}/api/email-track/open?rid=${encodeURIComponent(rid)}`;
 
 type Urgency = "urgent" | "normal" | "flexible" | string | null;
 
@@ -24,7 +26,8 @@ function urgencyLabel(u: Urgency): string {
 
 /** Template destiné aux pros déjà inscrits sur Winelio (source='owner') */
 function buildOwnerEmail(proFirstName: string, referrerName: string, contactName: string, projectDescription: string, urgency: string, recommendationId: string): string {
-  const ctaUrl = `${SITE_URL}/recommendations/${recommendationId}`;
+  const ctaUrl = trackClick(recommendationId);
+  const pixelUrl = trackOpen(recommendationId);
   const greeting = proFirstName ? `Bonjour <strong style="color:#2D3436;">${he(proFirstName)}</strong>,` : "Bonjour,";
   return `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><title>Nouvelle recommandation Winelio</title></head>
@@ -61,12 +64,14 @@ function buildOwnerEmail(proFirstName: string, referrerName: string, contactName
       <tr><td align="center" style="padding:24px 0;"><p style="margin:0;color:#B2BAC0;font-size:12px;">© 2026 Winelio</p><p style="margin:4px 0 0;color:#FF6B35;font-size:12px;font-weight:600;">Recommandez. Gagnez.</p></td></tr>
     </table>
   </td></tr></table>
+  <img src="${pixelUrl}" width="1" height="1" alt="" style="display:block;border:0;width:1px;height:1px;" />
 </body></html>`;
 }
 
 /** Template destiné aux pros simplement scrappés (source='scraped'), qui ne connaissent pas Winelio */
 function buildScrapedEmail(companyName: string, referrerName: string, contactName: string, projectDescription: string, urgency: string, recommendationId: string): string {
-  const ctaUrl = `${SITE_URL}/claim?recommendation=${recommendationId}`;
+  const ctaUrl = trackClick(recommendationId);
+  const pixelUrl = trackOpen(recommendationId);
   return `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><title>Un client veut travailler avec vous</title></head>
 <body style="margin:0;padding:0;background:#F0F2F4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
@@ -104,6 +109,7 @@ function buildScrapedEmail(companyName: string, referrerName: string, contactNam
       <tr><td align="center" style="padding:24px 0;"><p style="margin:0;color:#B2BAC0;font-size:12px;">© 2026 Winelio · La plateforme française de recommandations</p><p style="margin:4px 0 0;color:#FF6B35;font-size:12px;font-weight:600;">Recommandez. Gagnez.</p></td></tr>
     </table>
   </td></tr></table>
+  <img src="${pixelUrl}" width="1" height="1" alt="" style="display:block;border:0;width:1px;height:1px;" />
 </body></html>`;
 }
 

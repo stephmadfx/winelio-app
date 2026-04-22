@@ -3,9 +3,11 @@
  * - Si sponsorCode fourni → utilise ce code
  * - Sinon → rotation round-robin parmi les fondateurs (is_founder = true)
  * Retourne true si un sponsor a été assigné, false sinon.
+ *
+ * Note : l'email de notification au parrain N'EST PAS envoyé ici.
+ * Il est envoyé lors de la première complétion de profil (voir updateProfile).
  */
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { notifyNewReferral } from "@/lib/notify-new-referral";
 
 export async function assignSponsorIfNeeded(
   userId: string,
@@ -42,11 +44,6 @@ export async function assignSponsorIfNeeded(
     .from("profiles")
     .update({ sponsor_id: sponsorId })
     .eq("id", userId);
-
-  // Notification non bloquante
-  notifyNewReferral(userId).catch((err) =>
-    console.error("notify-new-referral error:", err)
-  );
 
   return true;
 }

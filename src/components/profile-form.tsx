@@ -363,32 +363,6 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
             )}
           </div>
           <Field label="Code postal" name="postal_code" value={form.postal_code} onChange={handlePostalCodeChange} onBlur={handleBlur} required />
-          <label className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4 sm:col-span-2">
-            <input
-              type="checkbox"
-              name="terms_accepted"
-              checked={form.terms_accepted}
-              onChange={(e) => {
-                const updated = { ...formRef.current, terms_accepted: e.target.checked };
-                formRef.current = updated;
-                setForm(updated);
-                saveToDb(updated);
-              }}
-              className="mt-1 h-4 w-4 rounded border-gray-300 text-winelio-orange focus:ring-winelio-orange"
-            />
-            <span className="text-sm leading-6 text-winelio-gray">
-              J&apos;ai lu et j&apos;accepte les{" "}
-              <a
-                href="/conditions-generales-utilisation"
-                target="_blank"
-                rel="noreferrer"
-                className="font-semibold text-winelio-orange underline underline-offset-2"
-              >
-                Conditions Générales d&apos;Utilisation Winelio
-              </a>
-              , y compris les règles d&apos;utilisation de la plateforme, la protection des données et les conditions d&apos;accès aux fonctionnalités de mise en relation et de gains.
-            </span>
-          </label>
           {/* Ville avec autocomplétion */}
           <div className="relative">
             <label className="block text-sm font-medium text-winelio-gray mb-1">
@@ -458,6 +432,34 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
             Compte professionnel
           </span>
         </div>
+
+        {/* CGU — placée juste avant le bouton Sauvegarder pour un flow de lecture naturel */}
+        <label className="mt-6 flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4">
+          <input
+            type="checkbox"
+            name="terms_accepted"
+            checked={form.terms_accepted}
+            onChange={(e) => {
+              const updated = { ...formRef.current, terms_accepted: e.target.checked };
+              formRef.current = updated;
+              setForm(updated);
+              saveToDb(updated);
+            }}
+            className="mt-1 h-4 w-4 rounded border-gray-300 text-winelio-orange focus:ring-winelio-orange"
+          />
+          <span className="text-sm leading-6 text-winelio-gray">
+            J&apos;ai lu et j&apos;accepte les{" "}
+            <a
+              href="/conditions-generales-utilisation"
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold text-winelio-orange underline underline-offset-2"
+            >
+              Conditions Générales d&apos;Utilisation Winelio
+            </a>
+            , y compris les règles d&apos;utilisation de la plateforme, la protection des données et les conditions d&apos;accès aux fonctionnalités de mise en relation et de gains.
+          </span>
+        </label>
 
         <div className="mt-6 flex items-center gap-4">
           <button

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export function ProfileIncompleteModal() {
@@ -23,15 +22,17 @@ export function ProfileIncompleteModal() {
           Complétez votre profil
         </h2>
         <p className="text-sm text-winelio-gray leading-relaxed mb-6">
-          Avant d'accéder à la plateforme, vous devez renseigner vos informations personnelles : prénom, nom, téléphone, date de naissance, adresse, code postal et ville, puis accepter les Conditions Générales d'Utilisation Winelio.
+          Avant d&apos;accéder à la plateforme, vous devez renseigner vos informations personnelles : prénom, nom, téléphone, date de naissance, adresse, code postal et ville, puis accepter les Conditions Générales d&apos;Utilisation Winelio.
         </p>
 
-        <Link
+        {/* Full reload volontaire : force le middleware à relire les cookies fraichement
+            posés par /api/auth/verify-code, évite les allers-retours vers /auth/login */}
+        <a
           href="/profile"
           className="w-full py-3 rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold text-sm shadow-md hover:opacity-90 transition-opacity text-center"
         >
           Compléter mon profil →
-        </Link>
+        </a>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getAuditContext, getDocumentHash, logOnboardingEvent } from "@/lib/audit";
 import { isAtLeastAge } from "@/lib/age";
+import { notifyNewReferral } from "@/lib/notify-new-referral";
 
 const POSTAL_CODE_RE = /^\d{5}$/;
 const PHONE_RE = /^[+\d\s()\-]{6,20}$/;
@@ -109,6 +110,15 @@ export async function updateProfile(data: {
   const isNewAccount = accountCreatedAt !== null && accountCreatedAt >= DEMO_SEED_LAUNCH;
 
   const firstCompletion = !!(wasIncomplete && willBeComplete && isNewAccount);
+
+  // Envoyer l'email au parrain UNIQUEMENT à la première complétion,
+  // pas au moment de l'inscription (un user peut abandonner entre les deux).
+  if (firstCompletion) {
+    notifyNewReferral(user.id).catch((err) =>
+      console.error("notify-new-referral error:", err)
+    );
+  }
+
   return { firstCompletion };
 }
 

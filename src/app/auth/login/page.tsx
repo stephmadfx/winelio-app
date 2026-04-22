@@ -24,7 +24,14 @@ function LoginForm() {
   const [authMethod, setAuthMethod] = useState<"code" | "password">("password");
 
   // Restaure le dernier email utilisé (sessionStorage : effacé en fin de session)
+  // ou pré-remplit depuis le query param (invitation par email)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const prefilled = new URLSearchParams(window.location.search).get("email");
+    if (prefilled) {
+      setEmail(prefilled);
+      return;
+    }
     const saved = sessionStorage.getItem("winelio_last_email");
     if (saved) setEmail(saved);
   }, []);
@@ -438,6 +445,10 @@ function LoginForm() {
                 <p className="mt-2 text-sm leading-6 text-winelio-gray">
                   Un code à 6 chiffres a été envoyé à{" "}
                   <span className="font-semibold text-winelio-orange">{email}</span>.
+                </p>
+                <p className="mt-2 flex items-start gap-1.5 text-xs leading-5 text-winelio-gray/80">
+                  <svg className="w-3.5 h-3.5 shrink-0 mt-0.5 text-winelio-orange/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <span>La réception peut prendre de quelques secondes à quelques minutes. Pensez à vérifier vos spams.</span>
                 </p>
               </div>
 
