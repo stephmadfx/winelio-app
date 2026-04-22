@@ -99,12 +99,12 @@ Stocké dans `auth.users.app_metadata.role` (JWT). Jamais dans `profiles`.
 Pour attribuer : `PUT /auth/v1/admin/users/{id}` avec `{"app_metadata": {"role": "super_admin"}}`
 
 ### Schéma des tables — IMPORTANT
-**Les tables Winelio sont TOUTES dans le schéma `public`** (schéma par défaut PostgreSQL). Ne **pas** utiliser `.schema("winelio")` dans les requêtes Supabase.
+**Les tables Winelio sont TOUTES dans le schéma `winelio`** (pas le schéma `public` par défaut). Toujours utiliser `.schema("winelio")` dans les requêtes Supabase.
 ```typescript
-// ❌ FAUX — cherche les tables dans un schéma inexistant
+// ✅ CORRECT — utilise le schéma winelio
 await supabase.schema("winelio").from("recommendations").insert(...)
 
-// ✅ CORRECT — utilise le schéma public (par défaut)
+// ❌ FAUX — cherche dans le schéma public qui ne contient pas les tables Winelio
 await supabase.from("recommendations").insert(...)
 ```
 
