@@ -174,7 +174,7 @@ export default async function ClaimPage({
                 <ul className="text-xs leading-5 text-winelio-gray space-y-1.5">
                   <li className="flex gap-2">
                     <span className="text-winelio-orange font-bold">1.</span>
-                    <span>Créez gratuitement votre compte Winelio (2 minutes, sans carte bancaire).</span>
+                    <span>Créez gratuitement votre compte Winelio en 2 minutes.</span>
                   </li>
                   <li className="flex gap-2">
                     <span className="text-winelio-orange font-bold">2.</span>
