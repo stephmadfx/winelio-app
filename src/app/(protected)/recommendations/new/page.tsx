@@ -52,7 +52,7 @@ export default function NewRecommendationPage() {
 
     supabase.from("contacts").select("id, first_name, last_name, email, phone").order("last_name").then(({ data }) => {
       setContacts(data ?? []);
-    }).catch(() => {});
+    });
   }, []);
 
   const validateContact = (): boolean => {
