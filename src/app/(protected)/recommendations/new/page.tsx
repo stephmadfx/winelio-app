@@ -38,30 +38,23 @@ export default function NewRecommendationPage() {
   const [urgency, setUrgency] = useState<Urgency>("normal");
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        const { data, error: authError } = await supabase.auth.getUser();
-        if (authError) {
-          setError(`Erreur authentification: ${authError.message}`);
-          return;
-        }
-        const uid = data.user?.id ?? null;
-        setUserId(uid);
-        if (!uid) {
-          setError("Session perdue — veuillez vous reconnecter");
-          return;
-        }
-        const { data: profile, error: profileError } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", uid).single();
-        if (profileError) {
-          setError(`Erreur chargement profil: ${profileError.message}`);
-          return;
-        }
-        setSelfProfile({ first_name: profile?.first_name ?? "", last_name: profile?.last_name ?? "", email: data.user?.email ?? "", phone: profile?.phone ?? "" });
-      } catch (err) {
-        setError(`Erreur inattendue: ${err instanceof Error ? err.message : "inconnue"}`);
+    const unsub = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!session?.user?.id) {
+        setError("Session perdue — veuillez vous reconnecter");
+        return;
       }
-    };
-    init();
+      setUserId(session.user.id);
+      try {
+        const { data: profile, error: profileError } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", session.user.id).single();
+        if (profileError) {
+          console.error("[profile-load]", profileError);
+          return;
+        }
+        setSelfProfile({ first_name: profile?.first_name ?? "", last_name: profile?.last_name ?? "", email: session.user.email ?? "", phone: profile?.phone ?? "" });
+      } catch (err) {
+        console.error("[profile-error]", err);
+      }
+    });
 
     supabase.from("contacts").select("id, first_name, last_name, email, phone").order("last_name").then(({ data, error }) => {
       if (error) {
@@ -70,6 +63,8 @@ export default function NewRecommendationPage() {
       }
       setContacts(data ?? []);
     });
+
+    return () => unsub?.data?.subscription?.unsubscribe();
   }, []);
 
   const validateContact = (): boolean => {
