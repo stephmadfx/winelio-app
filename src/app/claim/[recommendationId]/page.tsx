@@ -24,7 +24,7 @@ export default async function ClaimPage({
     .from("recommendations")
     .select(
       `id, project_description, urgency_level, created_at, professional_id,
-       professional:profiles!recommendations_professional_id_fkey(id, companies(id, name, city, owner_id, source)),
+       professional:profiles!recommendations_professional_id_fkey(id, email, companies(id, name, city, email, owner_id, source)),
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name, sponsor_code),
        contact:contacts(first_name, last_name)`
     )
@@ -56,11 +56,12 @@ export default async function ClaimPage({
   const normalize = <T,>(v: unknown): T | null =>
     Array.isArray(v) ? (v[0] ?? null) : (v as T | null);
 
-  const pro = normalize<{ id: string; companies: unknown }>(rec.professional);
+  const pro = normalize<{ id: string; email: string | null; companies: unknown }>(rec.professional);
   const company = normalize<{
     id: string;
     name: string | null;
     city: string | null;
+    email: string | null;
     owner_id: string | null;
     source: string | null;
   }>(pro?.companies);
@@ -88,10 +89,22 @@ export default async function ClaimPage({
     company?.source === "owner" && company.owner_id !== user?.id;
 
   const sponsorCode = referrer?.sponsor_code ?? "";
+
+  // Pré-remplir l'email du pro (priorité au mail company, fallback profile),
+  // en ignorant les placeholders de seeding.
+  const isPlaceholder = (e: string | null | undefined) =>
+    !!e && /@(kiparlo-pro\.fr|winelio-scraped\.local|winko)/i.test(e);
+  const prefillEmail = !isPlaceholder(company?.email)
+    ? company?.email
+    : !isPlaceholder(pro?.email)
+    ? pro?.email
+    : null;
+
+  const emailParam = prefillEmail ? `&email=${encodeURIComponent(prefillEmail)}` : "";
   const registerHref = `/auth/login?mode=register&ref=${encodeURIComponent(
     sponsorCode
-  )}&returnTo=${encodeURIComponent(`/claim/${recommendationId}`)}`;
-  const loginHref = `/auth/login?returnTo=${encodeURIComponent(`/claim/${recommendationId}`)}`;
+  )}&returnTo=${encodeURIComponent(`/claim/${recommendationId}`)}${emailParam}`;
+  const loginHref = `/auth/login?returnTo=${encodeURIComponent(`/claim/${recommendationId}`)}${emailParam}`;
 
   return (
     <div className="relative min-h-dvh bg-winelio-light">
@@ -151,12 +164,37 @@ export default async function ClaimPage({
               </p>
             </div>
           ) : (
-            <div className="mt-6 space-y-3">
+            <div className="mt-6 space-y-4">
+              {/* Bloc d'explication pour les pros qui ne connaissent pas Winelio */}
+              <div className="rounded-2xl bg-winelio-light/60 border border-winelio-gray/10 p-4">
+                <p className="text-sm font-bold text-winelio-dark mb-2 flex items-center gap-2">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-winelio-orange to-winelio-amber text-white text-xs">ⓘ</span>
+                  Pour accéder à cette recommandation
+                </p>
+                <ul className="text-xs leading-5 text-winelio-gray space-y-1.5">
+                  <li className="flex gap-2">
+                    <span className="text-winelio-orange font-bold">1.</span>
+                    <span>Créez gratuitement votre compte Winelio (2 minutes, sans carte bancaire).</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-winelio-orange font-bold">2.</span>
+                    <span>Revendiquez votre fiche pro en un clic.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-winelio-orange font-bold">3.</span>
+                    <span>Contactez le client et transformez ce lead en devis.</span>
+                  </li>
+                </ul>
+                <p className="mt-3 text-[11px] text-winelio-gray/80 leading-5">
+                  Winelio est la plateforme française de recommandations entre particuliers et professionnels. L&apos;inscription est <strong className="text-winelio-dark">100&nbsp;% gratuite</strong> et sans engagement.
+                </p>
+              </div>
+
               <Link
                 href={registerHref}
                 className="block w-full rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber py-4 text-center text-sm font-bold text-white shadow-md shadow-winelio-orange/25 transition-all hover:-translate-y-0.5"
               >
-                Récupérer ma fiche gratuitement →
+                Créer mon compte gratuit →
               </Link>
               <p className="text-center text-xs text-winelio-gray">
                 Déjà inscrit ?{" "}
