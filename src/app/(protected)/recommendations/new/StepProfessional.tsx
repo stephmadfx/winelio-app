@@ -34,10 +34,18 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
   const [postalCommunes, setPostalCommunes] = useState<string[]>([]);
   const [selectedCommune, setSelectedCommune] = useState<string | null>(null);
   const [postalLoading, setPostalLoading] = useState(false);
+  const [isPro, setIsPro] = useState(false);
 
   useEffect(() => {
     supabase.from("categories").select("id, name").order("name").then(({ data }) => setCategories(data ?? []));
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from("profiles").select("is_professional").eq("id", userId).maybeSingle().then(({ data }) => {
+      setIsPro(!!data?.is_professional);
+    });
+  }, [userId]);
 
   useEffect(() => {
     let query = supabase
@@ -161,6 +169,13 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
         {selectedCommune && ` · ${selectedCommune}`}
         {geoStatus === "granted" && radius < 99999 && ` · ${radius} km`}
       </p>
+
+      {isPro && (
+        <div className="mb-3 flex items-start gap-2 rounded-xl bg-winelio-light border border-winelio-gray/10 px-3 py-2 text-xs text-winelio-gray">
+          <svg className="w-4 h-4 shrink-0 mt-0.5 text-winelio-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <span>Votre propre fiche pro n&apos;apparaît pas dans cette liste — vous ne pouvez pas vous recommander vous-même.</span>
+        </div>
+      )}
 
       <ProfessionalList
         professionals={professionals}
