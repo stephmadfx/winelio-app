@@ -26,7 +26,7 @@ export default function NewRecommendationPage() {
   // Step 1
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [createContact, setCreateContact] = useState(false);
-  const [contactForm, setContactForm] = useState<ContactFormData>({ first_name: "", last_name: "", email: "", phone: "", country_code: "+33" });
+  const [contactForm, setContactForm] = useState<ContactFormData>({ first_name: "", last_name: "", email: "", phone: "", country_code: "+33", address: "", city: "", postal_code: "" });
   const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
   const [wantsToJoin, setWantsToJoin] = useState(false);
 
@@ -38,31 +38,38 @@ export default function NewRecommendationPage() {
   const [urgency, setUrgency] = useState<Urgency>("normal");
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data, error: authError }) => {
-      if (authError) {
-        setError(`Erreur authentification: ${authError.message}`);
-        return;
+    const init = async () => {
+      try {
+        const { data, error: authError } = await supabase.auth.getUser();
+        if (authError) {
+          setError(`Erreur authentification: ${authError.message}`);
+          return;
+        }
+        const uid = data.user?.id ?? null;
+        setUserId(uid);
+        if (!uid) {
+          setError("Session perdue — veuillez vous reconnecter");
+          return;
+        }
+        const { data: profile, error: profileError } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", uid).single();
+        if (profileError) {
+          setError(`Erreur chargement profil: ${profileError.message}`);
+          return;
+        }
+        setSelfProfile({ first_name: profile?.first_name ?? "", last_name: profile?.last_name ?? "", email: data.user?.email ?? "", phone: profile?.phone ?? "" });
+      } catch (err) {
+        setError(`Erreur inattendue: ${err instanceof Error ? err.message : "inconnue"}`);
       }
-      const uid = data.user?.id ?? null;
-      setUserId(uid);
-      if (!uid) {
-        setError("Session perdue — veuillez vous reconnecter");
-        return;
-      }
-      const { data: profile, error: profileError } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", uid).single();
-      if (profileError) {
-        setError(`Erreur chargement profil: ${profileError.message}`);
-        return;
-      }
-      setSelfProfile({ first_name: profile?.first_name ?? "", last_name: profile?.last_name ?? "", email: data.user?.email ?? "", phone: profile?.phone ?? "" });
-    }).catch((err) => setError(`Erreur inattendue: ${err.message}`));
+    };
+    init();
+
     supabase.from("contacts").select("id, first_name, last_name, email, phone").order("last_name").then(({ data, error }) => {
       if (error) {
         console.error("[contacts]", error);
         return;
       }
       setContacts(data ?? []);
-    }).catch((err) => console.error("[contacts-load]", err));
+    });
   }, []);
 
   const validateContact = (): boolean => {
@@ -73,12 +80,15 @@ export default function NewRecommendationPage() {
     else if (!EMAIL_REGEX.test(contactForm.email)) errors.email = "Format d'email invalide";
     if (!contactForm.phone.trim()) errors.phone = "Téléphone obligatoire";
     else if (!PHONE_REGEX.test(contactForm.phone)) errors.phone = "Format de téléphone invalide";
+    if (!contactForm.address.trim()) errors.address = "Adresse obligatoire";
+    if (!contactForm.city.trim()) errors.city = "Ville obligatoire";
+    if (!contactForm.postal_code.trim()) errors.postal_code = "Code postal obligatoire";
     setContactErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const canProceed = (): boolean => {
-    if (step === 1) return selfForMe || !!selectedContactId || (createContact && !!(contactForm.first_name.trim() && contactForm.last_name.trim() && contactForm.email.trim() && contactForm.phone.trim()));
+    if (step === 1) return selfForMe || !!selectedContactId || (createContact && !!(contactForm.first_name.trim() && contactForm.last_name.trim() && contactForm.email.trim() && contactForm.phone.trim() && contactForm.address.trim() && contactForm.city.trim() && contactForm.postal_code.trim()));
     if (step === 2) return !!selectedProId;
     return description.length > 0;
   };
@@ -103,12 +113,13 @@ export default function NewRecommendationPage() {
         if (existing) {
           contactId = existing.id;
         } else {
-          const { data: newContact, error: err } = await supabase.schema("winelio").from("contacts").insert({ ...selfProfile, user_id: user.id }).select("id").single();
+          const { data: newContact, error: err } = await supabase.schema("winelio").from("contacts").insert({ ...selfProfile, user_id: user.id, address: "", city: "", postal_code: "", country: "FR" }).select("id").single();
           if (err) throw new Error("Erreur création contact");
           contactId = newContact.id;
         }
       } else if (createContact) {
-        const { data: newContact, error: err } = await supabase.schema("winelio").from("contacts").insert({ ...contactForm, user_id: user.id }).select("id").single();
+        const { country_code, ...contactData } = contactForm;
+        const { data: newContact, error: err } = await supabase.schema("winelio").from("contacts").insert({ ...contactData, user_id: user.id, country: "FR" }).select("id").single();
         if (err) throw new Error("Erreur création contact");
         contactId = newContact.id;
       }

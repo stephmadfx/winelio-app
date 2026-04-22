@@ -90,7 +90,7 @@ export const StepContact = ({
   const resetContactForm = () => {
     setCreateContact(false);
     setContactErrors({});
-    setContactForm({ first_name: "", last_name: "", email: "", phone: "", country_code: "+33" });
+    setContactForm({ first_name: "", last_name: "", email: "", phone: "", country_code: "+33", address: "", city: "", postal_code: "" });
   };
 
   const setField = (field: keyof ContactFormData, value: string) => {
@@ -194,6 +194,20 @@ export const StepContact = ({
                 placeholder="6 12 34 56 78" className={inputCls(!!contactErrors.phone)} />
             </div>
           </Field>
+          <Field label="Adresse" error={contactErrors.address}>
+            <input type="text" value={contactForm.address} onChange={(e) => setField("address", e.target.value)}
+              placeholder="123 rue de la Paix" className={inputCls(!!contactErrors.address)} />
+          </Field>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Ville" error={contactErrors.city}>
+              <input type="text" value={contactForm.city} onChange={(e) => setField("city", e.target.value)}
+                placeholder="Paris" className={inputCls(!!contactErrors.city)} />
+            </Field>
+            <Field label="Code postal" error={contactErrors.postal_code}>
+              <input type="text" value={contactForm.postal_code} onChange={(e) => setField("postal_code", e.target.value)}
+                placeholder="75000" className={inputCls(!!contactErrors.postal_code)} />
+            </Field>
+          </div>
           <JoinNetworkCheckbox checked={wantsToJoin} onChange={setWantsToJoin} />
         </div>
       )}

@@ -39,6 +39,9 @@ export interface ContactFormData {
   email: string;
   phone: string;
   country_code: string;
+  address: string;
+  city: string;
+  postal_code: string;
 }
 
 export type Urgency = "urgent" | "normal" | "flexible";
