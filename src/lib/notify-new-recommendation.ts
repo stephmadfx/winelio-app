@@ -136,7 +136,12 @@ export async function notifyNewRecommendation(recommendationId: string) {
 
   const company = normalize<{ name: string | null; email: string | null; source: string | null }>(pro.companies);
 
-  const recipientEmail = company?.email || pro.email;
+  // Priorité à l'email de la company, fallback sur celui du profile.
+  // On ignore les emails factices générés pour les pros scrapés (format pro.xxx@kiparlo-pro.fr).
+  const isPlaceholderEmail = (e: string | null) => !!e && /@kiparlo-pro\.fr$/i.test(e);
+  const candidate = company?.email && !isPlaceholderEmail(company.email) ? company.email : null;
+  const fallback = pro.email && !isPlaceholderEmail(pro.email) ? pro.email : null;
+  const recipientEmail = candidate || fallback;
   if (!recipientEmail) return;
 
   const referrerName = [referrer?.first_name, referrer?.last_name].filter(Boolean).join(" ") || "Un membre Winelio";
