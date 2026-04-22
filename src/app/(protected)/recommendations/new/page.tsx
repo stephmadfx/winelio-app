@@ -114,7 +114,7 @@ export default function NewRecommendationPage() {
 
       if (!contactId || !selectedProId) throw new Error("Contact et professionnel requis");
 
-      const { data: recommendation, error: recError } = await supabase.from("recommendations").insert({
+      const { data: recommendation, error: recError } = await supabase.schema("winelio").from("recommendations").insert({
         referrer_id: currentUserId, professional_id: selectedProId, contact_id: contactId,
         project_description: description, urgency_level: urgency, status: "PENDING",
       }).select("id").single();
