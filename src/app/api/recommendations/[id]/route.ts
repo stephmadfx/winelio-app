@@ -2,6 +2,18 @@ import { NextResponse } from "next/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
+// Statuts où le pro a accepté (ou plus loin dans le workflow)
+// → le referrer peut voir l'identité complète du pro.
+const ACCEPTED_OR_LATER = new Set([
+  "ACCEPTED",
+  "CONTACT_MADE",
+  "MEETING_SCHEDULED",
+  "QUOTE_SUBMITTED",
+  "QUOTE_VALIDATED",
+  "PAYMENT_RECEIVED",
+  "COMPLETED",
+]);
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -19,7 +31,7 @@ export async function GET(
     .select(
       `id, status, amount, project_description, urgency_level, created_at, referrer_id, professional_id,
        contact:contacts(first_name, last_name, email, phone),
-       professional:profiles!recommendations_professional_id_fkey(first_name, last_name, company:companies(name)),
+       professional:profiles!recommendations_professional_id_fkey(first_name, last_name, company:companies(name, alias)),
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name)`
     )
     .eq("id", id)
@@ -30,10 +42,30 @@ export async function GET(
   }
 
   // Access control: only referrer, professional, or super_admin can read
-  const isParty = rec.referrer_id === user.id || rec.professional_id === user.id;
+  const isReferrer = rec.referrer_id === user.id;
+  const isPro = rec.professional_id === user.id;
   const isAdmin = user.app_metadata?.role === "super_admin";
-  if (!isParty && !isAdmin) {
+  if (!isReferrer && !isPro && !isAdmin) {
     return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+  }
+
+  // Règle anti-court-circuit :
+  // Tant que le pro n'a pas explicitement accepté, le referrer ne voit
+  // que l'alias. Le pro lui-même et les super_admin voient toujours tout.
+  const shouldAnonymizePro = isReferrer && !isPro && !isAdmin && !ACCEPTED_OR_LATER.has(rec.status);
+  if (shouldAnonymizePro) {
+    const proArr = Array.isArray(rec.professional) ? rec.professional : rec.professional ? [rec.professional] : [];
+    const pro = proArr[0] as { first_name?: string | null; last_name?: string | null; company?: unknown } | undefined;
+    const companyRaw = pro?.company;
+    const company = Array.isArray(companyRaw) ? companyRaw[0] : companyRaw;
+    const alias = (company as { alias?: string | null } | undefined)?.alias ?? null;
+    rec.professional = {
+      // Masquer le nom : afficher l'alias à la place
+      first_name: alias,
+      last_name: null,
+      company: { name: alias, alias },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
   }
 
   const { data: recSteps } = await supabaseAdmin
