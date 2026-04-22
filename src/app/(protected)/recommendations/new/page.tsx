@@ -90,36 +90,50 @@ export default function NewRecommendationPage() {
     setSubmitting(true);
     setError(null);
     try {
+      console.log("[handleSubmit] Starting submission", { cachedUserId: userId, selectedContactId, selectedProId });
+
       // Use cached userId if available, otherwise fetch current user
       const currentUserId = userId || (await supabase.auth.getUser()).data?.user?.id;
+      console.log("[handleSubmit] currentUserId resolved to:", currentUserId);
+
       if (!currentUserId) throw new Error("Session expirée — veuillez vous reconnecter");
 
       let contactId = selectedContactId;
 
       if (selfForMe && selfProfile) {
-        const { data: existing } = await supabase.schema("winelio").from("contacts").select("id").eq("user_id", currentUserId).eq("email", selfProfile.email).maybeSingle();
+        const { data: existing } = await supabase.from("contacts").select("id").eq("user_id", currentUserId).eq("email", selfProfile.email).maybeSingle();
         if (existing) {
           contactId = existing.id;
         } else {
-          const { data: newContact, error: err } = await supabase.schema("winelio").from("contacts").insert({ ...selfProfile, user_id: currentUserId, address: "", city: "", postal_code: "", country: "FR" }).select("id").single();
+          const { data: newContact, error: err } = await supabase.from("contacts").insert({ ...selfProfile, user_id: currentUserId, address: "", city: "", postal_code: "", country: "FR" }).select("id").single();
           if (err) throw new Error("Erreur création contact");
           contactId = newContact.id;
         }
       } else if (createContact) {
         const { country_code, ...contactData } = contactForm;
-        const { data: newContact, error: err } = await supabase.schema("winelio").from("contacts").insert({ ...contactData, user_id: currentUserId, country: "FR" }).select("id").single();
+        const { data: newContact, error: err } = await supabase.from("contacts").insert({ ...contactData, user_id: currentUserId, country: "FR" }).select("id").single();
         if (err) throw new Error("Erreur création contact");
         contactId = newContact.id;
       }
 
       if (!contactId || !selectedProId) throw new Error("Contact et professionnel requis");
 
-      const { data: recommendation, error: recError } = await supabase.schema("winelio").from("recommendations").insert({
+      console.log("[handleSubmit] About to insert recommendation", {
+        referrer_id: currentUserId,
+        professional_id: selectedProId,
+        contact_id: contactId,
+        project_description: description,
+        urgency_level: urgency,
+      });
+
+      const { data: recommendation, error: recError } = await supabase.from("recommendations").insert({
         referrer_id: currentUserId, professional_id: selectedProId, contact_id: contactId,
         project_description: description, urgency_level: urgency, status: "PENDING",
       }).select("id").single();
 
-      if (recError) throw new Error("Erreur création recommandation");
+      console.log("[handleSubmit] Recommendation insert response:", { data: recommendation, error: recError });
+
+      if (recError) throw new Error(`Erreur création recommandation: ${recError.message}`);
 
       // Envoi invitation Winelio si demandé (fire & forget)
       if (wantsToJoin && !selfForMe) {
@@ -135,9 +149,12 @@ export default function NewRecommendationPage() {
         }
       }
 
+      console.log("[handleSubmit] Success! Redirecting to:", `/recommendations/${recommendation.id}`);
       router.push(`/recommendations/${recommendation.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur inconnue");
+      const errorMsg = err instanceof Error ? err.message : "Erreur inconnue";
+      console.error("[handleSubmit] Error occurred:", errorMsg, err);
+      setError(errorMsg);
       setSubmitting(false);
     }
   };
