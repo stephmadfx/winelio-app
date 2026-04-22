@@ -2,6 +2,24 @@ import { NextResponse } from "next/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
+const ALIAS_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+async function generateAlias(): Promise<string> {
+  for (let i = 0; i < 10; i++) {
+    const suffix = Array.from({ length: 6 }, () =>
+      ALIAS_CHARS[Math.floor(Math.random() * ALIAS_CHARS.length)]
+    ).join("");
+    const alias = `#${suffix}`;
+    const { data } = await supabaseAdmin
+      .schema("winelio")
+      .from("companies")
+      .select("id")
+      .eq("alias", alias)
+      .maybeSingle();
+    if (!data) return alias;
+  }
+  throw new Error("Impossible de générer un alias unique");
+}
+
 /**
  * Import batch de companies scrapées.
  * Body: { rows: Array<{ name, email?, phone?, city?, postal_code?, address?, category_name? }> }
@@ -94,12 +112,14 @@ export async function POST(req: Request) {
       ? catMap.get(row.category_name.toLowerCase().trim()) ?? null
       : null;
 
+    const alias = await generateAlias();
     const { error: companyErr } = await supabaseAdmin
       .schema("winelio")
       .from("companies")
       .insert({
         owner_id: userId,
         name: row.name.trim(),
+        alias,
         email: row.email?.toLowerCase().trim() || null,
         phone: row.phone?.trim() || null,
         city: row.city ?? null,
