@@ -38,7 +38,17 @@ export default function NewRecommendationPage() {
   const [urgency, setUrgency] = useState<Urgency>("normal");
 
   useEffect(() => {
-    const unsub = supabase.auth.onAuthStateChange(async (event, session) => {
+    let unsubscribe: (() => void) | undefined;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user?.id) {
+        setError("Session perdue — veuillez vous reconnecter");
+        return;
+      }
+      setUserId(session.user.id);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!session?.user?.id) {
         setError("Session perdue — veuillez vous reconnecter");
         return;
@@ -64,7 +74,7 @@ export default function NewRecommendationPage() {
       setContacts(data ?? []);
     });
 
-    return () => unsub?.();
+    return () => subscription?.unsubscribe();
   }, []);
 
   const validateContact = (): boolean => {
