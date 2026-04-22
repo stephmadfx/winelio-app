@@ -98,6 +98,16 @@ sshpass -p '04660466aA@@@' ssh root@31.97.152.195 \
 Stocké dans `auth.users.app_metadata.role` (JWT). Jamais dans `profiles`.
 Pour attribuer : `PUT /auth/v1/admin/users/{id}` avec `{"app_metadata": {"role": "super_admin"}}`
 
+### Schéma des tables — IMPORTANT
+**Les tables Winelio sont TOUTES dans le schéma `public`** (schéma par défaut PostgreSQL). Ne **pas** utiliser `.schema("winelio")` dans les requêtes Supabase.
+```typescript
+// ❌ FAUX — cherche les tables dans un schéma inexistant
+await supabase.schema("winelio").from("recommendations").insert(...)
+
+// ✅ CORRECT — utilise le schéma public (par défaut)
+await supabase.from("recommendations").insert(...)
+```
+
 ### Tables de la base de données
 | Table | Description |
 |-------|-------------|
