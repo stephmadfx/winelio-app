@@ -6,22 +6,6 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config";
 import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
 
-// URL GoTrue directe (sans PostgREST, pas de statement_timeout)
-const GOTRUE_URL = (process.env.SUPABASE_URL || "https://supabase.aide-multimedia.fr").replace(/\/$/, "");
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-
-async function gotrueRequest(path: string, method: string, body?: object) {
-  return fetch(`${GOTRUE_URL}/auth/v1${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": SERVICE_ROLE_KEY,
-      "Authorization": `Bearer ${SERVICE_ROLE_KEY}`,
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
-}
-
 export async function POST(req: Request) {
   try {
     const { email, code, sponsorCode } = await req.json();
@@ -58,53 +42,48 @@ export async function POST(req: Request) {
     // 2. Delete used code immediately
     await supabaseAdmin.from("otp_codes").delete().eq("email", email);
 
-    // 3. Créer l'utilisateur si nécessaire via GoTrue admin (pas PostgREST)
-    let userId: string | null = null;
-    const createResp = await gotrueRequest("/admin/users", "POST", {
-      email,
-      email_confirm: true,
-    });
+    // 3. Créer l'utilisateur si nécessaire (bypass GoTrue via RPC SQL directe)
+    //    La RPC utilise SET LOCAL statement_timeout = 0 pour contourner PostgREST timeout
+    const { data: userId, error: createErr } = await supabaseAdmin
+      .schema("winelio")
+      .rpc("create_auth_user_if_not_exists", { p_email: email });
 
-    if (createResp.ok) {
-      const created = await createResp.json();
-      userId = created.id ?? null;
-    } else if (createResp.status === 422) {
-      // Utilisateur existant — récupérer son ID
-      const listResp = await gotrueRequest(`/admin/users?email=${encodeURIComponent(email)}`, "GET");
-      if (listResp.ok) {
-        const { users } = await listResp.json();
-        userId = users?.[0]?.id ?? null;
-      }
-    }
-
-    if (!userId) {
-      console.error("verify-code: impossible de trouver/créer l'utilisateur");
+    if (createErr || !userId) {
+      console.error("create_auth_user_if_not_exists error:", createErr);
       return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
     }
 
-    // 4. Définir un mot de passe temporaire via GoTrue admin (pas PostgREST)
+    // 4. Définir un mot de passe temporaire via RPC SQL (bypass GoTrue)
     const tempPassword = randomBytes(32).toString("hex");
-    const pwResp = await gotrueRequest(`/admin/users/${userId}`, "PUT", {
-      password: tempPassword,
-    });
+    const { error: pwErr } = await supabaseAdmin
+      .schema("winelio")
+      .rpc("set_user_temp_password", { p_email: email, p_password: tempPassword });
 
-    if (!pwResp.ok) {
-      console.error("verify-code: set temp password failed", await pwResp.text());
+    if (pwErr) {
+      console.error("set_user_temp_password error:", pwErr);
       return NextResponse.json({ error: "Erreur de connexion." }, { status: 500 });
     }
 
     // 5. Créer la session via signInWithPassword (endpoint non-admin, rapide)
-    const tokenResp = await gotrueRequest("/token?grant_type=password", "POST", {
-      email,
-      password: tempPassword,
+    const supabaseBaseUrl = (process.env.SUPABASE_URL || "https://supabase.aide-multimedia.fr").replace(/\/$/, "");
+    const tokenResp = await fetch(`${supabaseBaseUrl}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+      },
+      body: JSON.stringify({ email, password: tempPassword }),
     });
 
     // 6. Effacer le mot de passe temporaire (fire-and-forget)
-    gotrueRequest(`/admin/users/${userId}`, "PUT", { password: null })
-      .catch((e) => console.error("clear temp password error:", e));
+    supabaseAdmin
+      .schema("winelio")
+      .rpc("clear_user_temp_password", { p_email: email })
+      .then(({ error: e }) => { if (e) console.error("clear_user_temp_password error:", e); });
 
     if (!tokenResp.ok) {
-      console.error("verify-code: signInWithPassword failed", await tokenResp.text().catch(() => ""));
+      const errData = await tokenResp.json().catch(() => ({}));
+      console.error("signInWithPassword error:", errData);
       return NextResponse.json({ error: "Erreur de connexion, réessayez." }, { status: 500 });
     }
 
