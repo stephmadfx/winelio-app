@@ -20,6 +20,7 @@ export async function POST(req: Request) {
       cookieOptions: {
         name: "sb-winelio-auth-token",
         sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 365,
       },
       cookies: {
         getAll() {
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
               httpOnly: true,
               secure: process.env.NODE_ENV === "production",
               sameSite: "lax",
+              maxAge: 60 * 60 * 24 * 365,
             });
           });
         },

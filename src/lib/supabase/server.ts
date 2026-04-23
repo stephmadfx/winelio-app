@@ -13,6 +13,7 @@ export async function createClient() {
       cookieOptions: {
         name: "sb-winelio-auth-token",
         sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 365,
       },
       cookies: {
         getAll() {

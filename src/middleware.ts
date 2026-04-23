@@ -85,6 +85,7 @@ export async function middleware(request: NextRequest) {
       cookieOptions: {
         name: "sb-winelio-auth-token",
         sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 365,
       },
       cookies: {
         getAll() {
@@ -97,7 +98,7 @@ export async function middleware(request: NextRequest) {
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            supabaseResponse.cookies.set(name, value, (options ?? {}) as any)
+            supabaseResponse.cookies.set(name, value, { maxAge: 60 * 60 * 24 * 365, ...(options ?? {}) } as any)
           );
         },
       },
