@@ -11,7 +11,12 @@ import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
 let pgPool: Pool | null = null;
 function getPool(): Pool {
   if (!pgPool && process.env.SUPABASE_DB_URL) {
-    pgPool = new Pool({ connectionString: process.env.SUPABASE_DB_URL, max: 3 });
+    pgPool = new Pool({
+      connectionString: process.env.SUPABASE_DB_URL,
+      max: 3,
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 30000,
+    });
   }
   return pgPool!;
 }
