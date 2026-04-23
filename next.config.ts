@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // pg doit rester en require() natif — le bundler webpack le transforme incorrectement
+  serverExternalPackages: ["pg", "pg-pool"],
   async headers() {
     return [
       {
