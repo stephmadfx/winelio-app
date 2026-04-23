@@ -92,10 +92,19 @@ const LEGEND_ITEMS = [
 
 // ── Composant principal ───────────────────────────────────────────────────────
 
-export function RecoFlowchart({ annotations }: { annotations: FlowAnnotation[] }) {
+export function RecoFlowchart({ annotations: initialAnnotations }: { annotations: FlowAnnotation[] }) {
+  const [annotations, setAnnotations] = useState<FlowAnnotation[]>(initialAnnotations);
   const [dialog, setDialog] = useState<{ nodeId: string; label: string } | null>(null);
   const ann = new Set(annotations.map((a) => a.node_id));
   const click: ClickHandler = (id, label) => setDialog({ nodeId: id, label });
+
+  function handleAnnotationAdded(annotation: FlowAnnotation) {
+    setAnnotations((prev) => [annotation, ...prev]);
+  }
+
+  function handleAnnotationDeleted(annotationId: string) {
+    setAnnotations((prev) => prev.filter((a) => a.id !== annotationId));
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -360,6 +369,8 @@ export function RecoFlowchart({ annotations }: { annotations: FlowAnnotation[] }
           nodeId={dialog.nodeId}
           nodeLabel={dialog.label}
           annotations={annotations}
+          onAnnotationAdded={handleAnnotationAdded}
+          onAnnotationDeleted={handleAnnotationDeleted}
         />
       )}
     </div>

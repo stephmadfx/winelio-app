@@ -23,16 +23,26 @@ type Props = {
   nodeId: string;
   nodeLabel: string;
   annotations: FlowAnnotation[];
+  onAnnotationAdded: (annotation: FlowAnnotation) => void;
+  onAnnotationDeleted: (annotationId: string) => void;
 };
 
-export function FlowAnnotationDialog({ open, onClose, nodeId, nodeLabel, annotations }: Props) {
+export function FlowAnnotationDialog({ open, onClose, nodeId, nodeLabel, annotations, onAnnotationAdded, onAnnotationDeleted }: Props) {
   const [text, setText] = useState("");
   const [isPending, startTransition] = useTransition();
 
   function handleSave() {
     if (!text.trim()) return;
+    const content = text.trim();
     startTransition(async () => {
-      await addFlowAnnotation(nodeId, text.trim());
+      await addFlowAnnotation(nodeId, content);
+      onAnnotationAdded({
+        id: crypto.randomUUID(),
+        node_id: nodeId,
+        content,
+        created_at: new Date().toISOString(),
+        author: null,
+      });
       setText("");
     });
   }
@@ -40,6 +50,7 @@ export function FlowAnnotationDialog({ open, onClose, nodeId, nodeLabel, annotat
   function handleDelete(id: string) {
     startTransition(async () => {
       await deleteFlowAnnotation(id);
+      onAnnotationDeleted(id);
     });
   }
 
