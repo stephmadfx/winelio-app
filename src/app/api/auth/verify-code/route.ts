@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { randomBytes } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config";
 import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
@@ -33,7 +34,6 @@ export async function POST(req: Request) {
     const isInvalid = !otp || otp.code !== code;
 
     if (isExpired || isBruteForced || isInvalid) {
-      // Supprimer le code si trop de tentatives ou expiré
       if (otp && (isBruteForced || isExpired)) {
         await supabaseAdmin.from("otp_codes").delete().eq("email", email);
       }
@@ -46,116 +46,87 @@ export async function POST(req: Request) {
     // 2. Delete used code immediately (one-time use)
     await supabaseAdmin.from("otp_codes").delete().eq("email", email);
 
-    // 3. Ensure user exists in Supabase Auth (ignore error if already exists)
-    await supabaseAdmin.auth.admin.createUser({
-      email,
-      email_confirm: true,
-    });
+    // 3. Créer l'utilisateur s'il n'existe pas via RPC SQL (bypass GoTrue admin)
+    const { error: createErr } = await supabaseAdmin
+      .schema("winelio")
+      .rpc("create_auth_user_if_not_exists", { p_email: email });
 
-    // 4. Generate admin magic link (does NOT send email)
-    // Utiliser exclusivement NEXT_PUBLIC_APP_URL — ne jamais faire confiance au header Origin client (C-2 SSRF fix)
-    const siteUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3001").replace(/\/$/, "");
-    const { data: linkData, error: linkError } =
-      await supabaseAdmin.auth.admin.generateLink({
-        type: "magiclink",
-        email,
-        options: { redirectTo: `${siteUrl}/auth/callback` },
-      });
-
-    if (linkError || !linkData?.properties?.action_link) {
-      console.error("generateLink error:", linkError);
-      return NextResponse.json({ error: "Erreur de génération du lien." }, { status: 500 });
+    if (createErr) {
+      console.error("create_auth_user_if_not_exists error:", createErr);
+      return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
     }
 
-    const actionLink = linkData.properties.action_link;
+    // 4. Définir un mot de passe temporaire aléatoire en DB (bypass GoTrue admin)
+    const tempPassword = randomBytes(32).toString("hex");
+    const { error: pwErr } = await supabaseAdmin
+      .schema("winelio")
+      .rpc("set_user_temp_password", { p_email: email, p_password: tempPassword });
 
-    // 5. Follow the action_link server-side (no redirect) to get session tokens
-    // GoTrue verifies the token and returns a redirect with tokens in the Location header
-    // Replace the external URL (API_EXTERNAL_URL may be misconfigured) with the actual SUPABASE_URL
+    if (pwErr) {
+      console.error("set_user_temp_password error:", pwErr);
+      return NextResponse.json({ error: "Erreur de connexion." }, { status: 500 });
+    }
+
+    // 5. Créer la session via signInWithPassword (ne dépend pas de GoTrue admin)
     const supabaseBaseUrl = (process.env.SUPABASE_URL || "https://supabase.aide-multimedia.fr").replace(/\/$/, "");
-    const internalActionLink = actionLink.replace(/^https?:\/\/[^/]+/, supabaseBaseUrl);
-    const verifyResp = await fetch(internalActionLink, {
-      redirect: "manual",
-      headers: { "User-Agent": "WinelioServer/1.0" },
+    const tokenResp = await fetch(`${supabaseBaseUrl}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+      },
+      body: JSON.stringify({ email, password: tempPassword }),
     });
 
-    const location = verifyResp.headers.get("location") || "";
-    console.log("GoTrue redirect location:", location);
+    // 6. Effacer le mot de passe temporaire immédiatement (l'user reste sans mdp)
+    supabaseAdmin
+      .schema("winelio")
+      .rpc("clear_user_temp_password", { p_email: email })
+      .then(({ error: e }) => { if (e) console.error("clear_user_temp_password error:", e); });
 
-    // Parse tokens from the Location header
-    let accessToken: string | null = null;
-    let refreshToken: string | null = null;
+    if (!tokenResp.ok) {
+      const errData = await tokenResp.json().catch(() => ({}));
+      console.error("signInWithPassword error:", errData);
+      return NextResponse.json({ error: "Erreur de connexion, réessayez." }, { status: 500 });
+    }
 
+    const { access_token, refresh_token } = await tokenResp.json();
+
+    // 7. Définir la session via cookies HttpOnly côté serveur
+    const response = NextResponse.json({ success: true });
+    const cookieStore = await cookies();
+    const supabaseForSession = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      db: { schema: "winelio" },
+      cookieOptions: {
+        name: "sb-winelio-auth-token",
+        sameSite: "lax",
+      },
+      cookies: {
+        getAll() { return cookieStore.getAll(); },
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(
+              name,
+              value,
+              options as Parameters<typeof response.cookies.set>[2]
+            );
+          });
+        },
+      },
+    });
+    await supabaseForSession.auth.setSession({ access_token, refresh_token });
+
+    // 8. Assigner un parrain si nécessaire
     try {
-      const locUrl = new URL(location);
-
-      // Case 1: Implicit flow → tokens in URL hash (location may look like http://.../#access_token=...)
-      const hashStr = locUrl.hash.replace("#", "");
-      if (hashStr) {
-        const hashParams = new URLSearchParams(hashStr);
-        accessToken = hashParams.get("access_token");
-        refreshToken = hashParams.get("refresh_token");
+      const { data: { user: sessionUser } } = await supabaseForSession.auth.getUser();
+      if (sessionUser?.id) {
+        await assignSponsorIfNeeded(sessionUser.id, sponsorCode ?? null);
       }
-
-      // Case 2: Tokens in query params (some GoTrue versions)
-      if (!accessToken) {
-        accessToken = locUrl.searchParams.get("access_token");
-        refreshToken = locUrl.searchParams.get("refresh_token");
-      }
-    } catch {
-      console.error("Could not parse location URL:", location);
+    } catch (e) {
+      console.error("assign-sponsor in verify-code error:", e);
     }
 
-    if (accessToken) {
-      // Définit la session via cookies HttpOnly côté serveur — le token n'est pas exposé au client
-      const response = NextResponse.json({ success: true });
-      const cookieStore = await cookies();
-      const supabaseForSession = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        db: { schema: "winelio" },
-        cookieOptions: {
-          name: "sb-winelio-auth-token",
-          sameSite: "lax",
-        },
-        cookies: {
-          getAll() { return cookieStore.getAll(); },
-          setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-            // Laisser @supabase/ssr gérer les options de cookies.
-            // ⚠ NE PAS forcer httpOnly:true — le client browser doit pouvoir lire
-            //   le cookie pour maintenir la session, sinon RLS renvoie "Non authentifié"
-            //   côté client (bug observé au recettage du 2026-04-17).
-            cookiesToSet.forEach(({ name, value, options }) => {
-              response.cookies.set(
-                name,
-                value,
-                options as Parameters<typeof response.cookies.set>[2]
-              );
-            });
-          },
-        },
-      });
-      await supabaseForSession.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken || "",
-      });
-
-      // Assigner un parrain : priorité au sponsorCode fourni (invitation),
-      // sinon rotation round-robin parmi les fondateurs.
-      try {
-        const { data: { user: sessionUser } } = await supabaseForSession.auth.getUser();
-        if (sessionUser?.id) {
-          await assignSponsorIfNeeded(sessionUser.id, sponsorCode ?? null);
-        }
-      } catch (e) {
-        console.error("assign-sponsor in verify-code error:", e);
-      }
-
-      return response;
-    }
-
-    // GoTrue uses PKCE code flow — tokens not extractable server-side
-    console.warn("Could not extract tokens from GoTrue redirect (PKCE flow)");
-    return NextResponse.json({ error: "Erreur de connexion, réessayez." }, { status: 500 });
-
+    return response;
   } catch (err) {
     console.error("verify-code error:", err);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
