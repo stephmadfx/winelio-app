@@ -7,18 +7,9 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config";
 import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
 
-// Pool pg — connexion directe PostgreSQL (bypass GoTrue + PostgREST timeouts)
-let pgPool: Pool | null = null;
-function getPool(): Pool {
-  if (!pgPool && process.env.SUPABASE_DB_URL) {
-    pgPool = new Pool({
-      connectionString: process.env.SUPABASE_DB_URL,
-      max: 3,
-      connectionTimeoutMillis: 5000,
-      idleTimeoutMillis: 30000,
-    });
-  }
-  return pgPool!;
+// Connexion pg directe par requête (pas de pool singleton — évite l'état d'erreur au démarrage)
+function getDbUrl(): string | null {
+  return process.env.SUPABASE_DB_URL ?? null;
 }
 
 export async function POST(req: Request) {
@@ -59,14 +50,14 @@ export async function POST(req: Request) {
 
     // 3. Créer/trouver l'utilisateur + définir un mot de passe temporaire
     //    via connexion PostgreSQL directe (bypass GoTrue admin + PostgREST timeouts)
-    const pool = getPool();
-    if (!pool) {
+    const dbUrl = getDbUrl();
+    if (!dbUrl) {
       console.error("verify-code: SUPABASE_DB_URL manquant");
       return NextResponse.json({ error: "Configuration serveur manquante." }, { status: 500 });
     }
 
     const tempPassword = randomBytes(32).toString("hex");
-    const pgClient = await pool.connect();
+    const pgClient = new Pool({ connectionString: dbUrl, max: 1, connectionTimeoutMillis: 8000 });
     let userId: string | null = null;
 
     try {
@@ -106,7 +97,7 @@ export async function POST(req: Request) {
       console.error("verify-code pg error:", pgErr);
       return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
     } finally {
-      pgClient.release();
+      pgClient.end().catch(() => {});
     }
 
     // 4. Créer la session via signInWithPassword (rapide, ne dépend pas de GoTrue admin)
@@ -120,8 +111,9 @@ export async function POST(req: Request) {
       body: JSON.stringify({ email, password: tempPassword }),
     });
 
-    // 5. Effacer le mot de passe temporaire (fire-and-forget via pg)
-    pool.query("UPDATE auth.users SET encrypted_password = NULL WHERE email = $1", [email])
+    // 5. Effacer le mot de passe temporaire (fire-and-forget)
+    new Pool({ connectionString: dbUrl, max: 1 })
+      .query("UPDATE auth.users SET encrypted_password = NULL WHERE email = $1", [email])
       .catch((e) => console.error("clear temp password error:", e));
 
     if (!tokenResp.ok) {
