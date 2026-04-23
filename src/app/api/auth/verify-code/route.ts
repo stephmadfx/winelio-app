@@ -69,9 +69,9 @@ export async function POST(req: Request) {
 
       // Créer l'utilisateur s'il n'existe pas (trigger corrigé vers winelio.profiles)
       const upsertRes = await pgClient.query<{ id: string }>(`
-        INSERT INTO auth.users (id, aud, role, email, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_super_admin)
-        VALUES (gen_random_uuid(), 'authenticated', 'authenticated', $1, now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', false)
-        ON CONFLICT (email) DO UPDATE SET updated_at = now()
+        INSERT INTO auth.users (id, aud, role, email, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_super_admin, is_sso_user)
+        VALUES (gen_random_uuid(), 'authenticated', 'authenticated', $1, now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', false, false)
+        ON CONFLICT (email) WHERE is_sso_user = false DO UPDATE SET updated_at = now()
         RETURNING id
       `, [email]);
 
