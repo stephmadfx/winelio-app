@@ -64,3 +64,37 @@ export async function updateDocumentStatus(
 
   revalidatePath("/gestion-reseau/documents", "layout");
 }
+
+export async function createDocument(input: {
+  title: string;
+  version: string;
+  sections: { article_number: string; title: string; content: string; order_index: number }[];
+}): Promise<string> {
+  await assertSuperAdmin();
+
+  const { data: doc, error } = await supabaseAdmin
+    .from("legal_documents")
+    .insert({ title: input.title, version: input.version, status: "draft" })
+    .select("id")
+    .single();
+
+  if (error || !doc) throw new Error(error?.message ?? "Erreur création document");
+
+  if (input.sections.length > 0) {
+    const { error: secErr } = await supabaseAdmin
+      .from("document_sections")
+      .insert(
+        input.sections.map((s) => ({
+          document_id: doc.id,
+          article_number: s.article_number,
+          title: s.title,
+          content: s.content,
+          order_index: s.order_index,
+        }))
+      );
+    if (secErr) throw new Error(`Erreur sections : ${secErr.message}`);
+  }
+
+  revalidatePath("/gestion-reseau/documents");
+  return doc.id;
+}

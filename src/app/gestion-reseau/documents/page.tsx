@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import Link from "next/link";
 
+
 const STATUS_LABELS = {
   draft: { label: "Brouillon", classes: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
   reviewing: { label: "En révision", classes: "bg-orange-100 text-winelio-orange dark:bg-orange-950/30" },
@@ -61,16 +62,15 @@ export default async function DocumentsPage() {
             Documents légaux à réviser et valider
           </p>
         </div>
-        <button
-          disabled
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted text-muted-foreground text-sm font-medium cursor-not-allowed opacity-50"
-          title="Disponible prochainement"
+        <Link
+          href="/gestion-reseau/documents/new"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-winelio-orange text-white text-sm font-medium hover:opacity-90 transition-opacity"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Nouveau document
-        </button>
+        </Link>
       </div>
 
       {(!documents || documents.length === 0) ? (
