@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { FlowAnnotationDialog, type FlowAnnotation } from "./FlowAnnotationDialog";
 
 export type { FlowAnnotation };
@@ -98,11 +99,29 @@ export function RecoFlowchart({ annotations }: { annotations: FlowAnnotation[] }
 
   return (
     <div className="flex flex-col h-full">
-      {/* Canvas scrollable */}
-      <div className="flex-1 overflow-auto bg-[#FAFBFC] p-6">
-        <svg
+      {/* Canvas avec zoom/pan */}
+      <div className="flex-1 overflow-hidden bg-[#FAFBFC] relative" style={{ minHeight: 500 }}>
+        <TransformWrapper
+          initialScale={0.75}
+          minScale={0.2}
+          maxScale={2}
+          wheel={{ step: 0.08 }}
+          centerOnInit
+        >
+          {({ zoomIn, zoomOut, resetTransform }) => (
+            <>
+              {/* Boutons de contrôle */}
+              <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-1">
+                <button onClick={() => zoomIn()} className="w-8 h-8 bg-white border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 text-lg font-bold shadow-sm flex items-center justify-center">+</button>
+                <button onClick={() => zoomOut()} className="w-8 h-8 bg-white border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 text-lg font-bold shadow-sm flex items-center justify-center">−</button>
+                <button onClick={() => resetTransform()} title="Réinitialiser" className="w-8 h-8 bg-white border border-gray-200 rounded-md text-gray-500 hover:bg-gray-50 text-xs shadow-sm flex items-center justify-center">⊙</button>
+              </div>
+
+              <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
+                <div className="p-8">
+                  <svg
           viewBox="0 0 1000 1240"
-          style={{ minWidth: 920, width: "100%", display: "block" }}
+          style={{ width: 920, display: "block" }}
           xmlns="http://www.w3.org/2000/svg"
           fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
         >
@@ -304,6 +323,11 @@ export function RecoFlowchart({ annotations }: { annotations: FlowAnnotation[] }
             label="✅ Étape 8 — Affaire terminée" onClick={click} hasBadge={ann.has("fin")} />
 
         </svg>
+                </div>
+              </TransformComponent>
+            </>
+          )}
+        </TransformWrapper>
       </div>
 
       {/* Légende */}
