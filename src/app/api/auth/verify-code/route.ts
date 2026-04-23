@@ -2,9 +2,19 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { randomBytes } from "crypto";
+import { Pool } from "pg";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config";
 import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
+
+// Pool pg — connexion directe PostgreSQL (bypass GoTrue + PostgREST timeouts)
+let pgPool: Pool | null = null;
+function getPool(): Pool {
+  if (!pgPool && process.env.SUPABASE_DB_URL) {
+    pgPool = new Pool({ connectionString: process.env.SUPABASE_DB_URL, max: 3 });
+  }
+  return pgPool!;
+}
 
 export async function POST(req: Request) {
   try {
@@ -42,29 +52,59 @@ export async function POST(req: Request) {
     // 2. Delete used code immediately
     await supabaseAdmin.from("otp_codes").delete().eq("email", email);
 
-    // 3. Créer l'utilisateur si nécessaire (bypass GoTrue via RPC SQL directe)
-    //    La RPC utilise SET LOCAL statement_timeout = 0 pour contourner PostgREST timeout
-    const { data: userId, error: createErr } = await supabaseAdmin
-      .schema("winelio")
-      .rpc("create_auth_user_if_not_exists", { p_email: email });
-
-    if (createErr || !userId) {
-      console.error("create_auth_user_if_not_exists error:", createErr);
-      return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
+    // 3. Créer/trouver l'utilisateur + définir un mot de passe temporaire
+    //    via connexion PostgreSQL directe (bypass GoTrue admin + PostgREST timeouts)
+    const pool = getPool();
+    if (!pool) {
+      console.error("verify-code: SUPABASE_DB_URL manquant");
+      return NextResponse.json({ error: "Configuration serveur manquante." }, { status: 500 });
     }
 
-    // 4. Définir un mot de passe temporaire via RPC SQL (bypass GoTrue)
     const tempPassword = randomBytes(32).toString("hex");
-    const { error: pwErr } = await supabaseAdmin
-      .schema("winelio")
-      .rpc("set_user_temp_password", { p_email: email, p_password: tempPassword });
+    const pgClient = await pool.connect();
+    let userId: string | null = null;
 
-    if (pwErr) {
-      console.error("set_user_temp_password error:", pwErr);
-      return NextResponse.json({ error: "Erreur de connexion." }, { status: 500 });
+    try {
+      await pgClient.query("BEGIN");
+
+      // Créer l'utilisateur s'il n'existe pas (trigger corrigé vers winelio.profiles)
+      const upsertRes = await pgClient.query<{ id: string }>(`
+        INSERT INTO auth.users (id, aud, role, email, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_super_admin)
+        VALUES (gen_random_uuid(), 'authenticated', 'authenticated', $1, now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', false)
+        ON CONFLICT (email) DO UPDATE SET updated_at = now()
+        RETURNING id
+      `, [email]);
+
+      userId = upsertRes.rows[0]?.id ?? null;
+
+      if (!userId) {
+        // Si ON CONFLICT ne retourne pas l'id (vieux PostgreSQL), on le récupère
+        const selectRes = await pgClient.query<{ id: string }>(
+          "SELECT id FROM auth.users WHERE email = $1 LIMIT 1", [email]
+        );
+        userId = selectRes.rows[0]?.id ?? null;
+      }
+
+      if (!userId) {
+        throw new Error("Impossible de trouver l'utilisateur après upsert");
+      }
+
+      // Définir le mot de passe temporaire
+      await pgClient.query(
+        "UPDATE auth.users SET encrypted_password = crypt($1, gen_salt('bf')) WHERE id = $2",
+        [tempPassword, userId]
+      );
+
+      await pgClient.query("COMMIT");
+    } catch (pgErr) {
+      await pgClient.query("ROLLBACK").catch(() => {});
+      console.error("verify-code pg error:", pgErr);
+      return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
+    } finally {
+      pgClient.release();
     }
 
-    // 5. Créer la session via signInWithPassword (endpoint non-admin, rapide)
+    // 4. Créer la session via signInWithPassword (rapide, ne dépend pas de GoTrue admin)
     const supabaseBaseUrl = (process.env.SUPABASE_URL || "https://supabase.aide-multimedia.fr").replace(/\/$/, "");
     const tokenResp = await fetch(`${supabaseBaseUrl}/auth/v1/token?grant_type=password`, {
       method: "POST",
@@ -75,11 +115,9 @@ export async function POST(req: Request) {
       body: JSON.stringify({ email, password: tempPassword }),
     });
 
-    // 6. Effacer le mot de passe temporaire (fire-and-forget)
-    supabaseAdmin
-      .schema("winelio")
-      .rpc("clear_user_temp_password", { p_email: email })
-      .then(({ error: e }) => { if (e) console.error("clear_user_temp_password error:", e); });
+    // 5. Effacer le mot de passe temporaire (fire-and-forget via pg)
+    pool.query("UPDATE auth.users SET encrypted_password = NULL WHERE email = $1", [email])
+      .catch((e) => console.error("clear temp password error:", e));
 
     if (!tokenResp.ok) {
       const errData = await tokenResp.json().catch(() => ({}));
@@ -89,7 +127,7 @@ export async function POST(req: Request) {
 
     const { access_token, refresh_token } = await tokenResp.json();
 
-    // 7. Définir la session via cookies HttpOnly
+    // 6. Définir la session via cookies HttpOnly
     const response = NextResponse.json({ success: true });
     const cookieStore = await cookies();
     const supabaseForSession = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -106,7 +144,7 @@ export async function POST(req: Request) {
     });
     await supabaseForSession.auth.setSession({ access_token, refresh_token });
 
-    // 8. Assigner un parrain si nécessaire
+    // 7. Assigner un parrain si nécessaire
     try {
       const { data: { user: sessionUser } } = await supabaseForSession.auth.getUser();
       if (sessionUser?.id) {
