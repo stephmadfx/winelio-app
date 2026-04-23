@@ -53,7 +53,7 @@ export function AdminSidebar({ userEmail }: { userEmail: string }) {
       </Link>
 
       {/* Navigation icônes */}
-      <nav className="flex-1 flex flex-col gap-1 w-full px-2">
+      <nav className="flex-1 flex flex-col gap-1 w-full px-2 overflow-y-auto">
         {navItems.map((item) => {
           const isActive =
             item.href === "/gestion-reseau"
