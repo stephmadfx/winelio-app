@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Professional, Category } from "./types";
 import { ProfessionalList } from "./ProfessionalList";
 import { GeoStatusBanner, GeoStatus } from "./GeoStatusBanner";
+import { fakeLastActive } from "@/lib/fake-last-active";
 
 interface StepProfessionalProps {
   userId: string | null;
@@ -74,6 +75,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
           avg_rating: null,
           review_count: 0,
           is_claimed: source === "owner",
+          last_active_at: fakeLastActive(p.id),
         };
       });
       if (proSearch.length >= 2) {
@@ -87,6 +89,8 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
       if (userLocation && sortBy === "distance") {
         results = results.filter((p) => p.distance === null || p.distance <= radius);
         results.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+      } else {
+        results.sort((a, b) => new Date(b.last_active_at).getTime() - new Date(a.last_active_at).getTime());
       }
       if (selectedCommune) results = results.filter((p) => (p.city ?? "").toLowerCase().includes(selectedCommune.toLowerCase()));
       setProfessionals(results);

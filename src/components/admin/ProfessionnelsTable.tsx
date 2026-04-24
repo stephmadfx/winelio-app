@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useTransition } from "react";
+import { formatRelativeTime } from "@/lib/fake-last-active";
 
 type OwnerRow = { id: string; first_name: string | null; last_name: string | null; email: string | null };
 type CategoryRow = { name: string };
@@ -22,7 +23,7 @@ type Company = {
   siret: string | null;
   is_verified: boolean;
   created_at: string;
-  last_sign_in_at: string | null;
+  last_sign_in_at: string;
   finalized_recos_count: number;
   owner: OwnerRow | OwnerRow[] | null;
   category: CategoryRow | CategoryRow[] | null;
@@ -42,19 +43,6 @@ function formatSiret(siret: string) {
   return siret.replace(/(\d{3})(\d{3})(\d{3})(\d{5})/, "$1 $2 $3 $4");
 }
 
-function formatRelativeTime(iso: string | null): string {
-  if (!iso) return "Jamais";
-  const diff = Date.now() - new Date(iso).getTime();
-  const minutes = Math.floor(diff / 60_000);
-  if (minutes < 60) return minutes <= 1 ? "À l'instant" : `il y a ${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `il y a ${hours} h`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `il y a ${days} j`;
-  const months = Math.floor(days / 30);
-  if (months < 12) return `il y a ${months} mois`;
-  return `il y a ${Math.floor(months / 12)} an${Math.floor(months / 12) > 1 ? "s" : ""}`;
-}
 
 type Category = { id: string; name: string };
 
@@ -312,7 +300,7 @@ export function ProfessionnelsTable({
                     )}
                     {/* Dernière connexion */}
                     <td className="px-4 py-3">
-                      <span className={`text-xs whitespace-nowrap ${c.last_sign_in_at ? "text-gray-300" : "text-gray-600 italic"}`}>
+                      <span className="text-xs whitespace-nowrap text-gray-300">
                         {formatRelativeTime(c.last_sign_in_at)}
                       </span>
                     </td>
@@ -440,9 +428,7 @@ export function ProfessionnelsTable({
                   )}
                   <div>
                     <p className="text-gray-600 uppercase text-[10px] tracking-wide">Connexion</p>
-                    <p className={c.last_sign_in_at ? "text-gray-300" : "text-gray-600 italic"}>
-                      {formatRelativeTime(c.last_sign_in_at)}
-                    </p>
+                    <p className="text-gray-300">{formatRelativeTime(c.last_sign_in_at)}</p>
                   </div>
                   <div>
                     <p className="text-gray-600 uppercase text-[10px] tracking-wide">Recos finalisées</p>

@@ -1,4 +1,5 @@
 import { Professional } from "./types";
+import { formatRelativeTime } from "@/lib/fake-last-active";
 
 interface ProfessionalListProps {
   professionals: Professional[];
@@ -74,6 +75,7 @@ export const ProfessionalList = ({ professionals, selectedProId, onSelect, geoGr
                 {p.avg_rating !== null && <StarRating avg={p.avg_rating} count={p.review_count} />}
                 {p.category_name && <span className="text-xs bg-winelio-orange/10 text-winelio-orange px-2 py-0.5 rounded-full font-medium">{p.category_name}</span>}
                 {p.city && <span className="text-xs text-winelio-gray/70">{p.city}</span>}
+                <span className="text-[10px] text-winelio-gray/50">· {formatRelativeTime(p.last_active_at)}</span>
               </div>
             </div>
             <div className="flex flex-col items-end gap-2">

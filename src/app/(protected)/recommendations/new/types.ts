@@ -20,6 +20,7 @@ export interface Professional {
   avg_rating: number | null;
   review_count: number;
   is_claimed: boolean;
+  last_active_at: string;
 }
 
 export interface Category {
