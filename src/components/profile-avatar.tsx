@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getProfileInitials, resolveProfileAvatarUrl } from "@/lib/profile-avatar";
 
 type ProfileAvatarProps = {
@@ -22,6 +22,8 @@ export function ProfileAvatar({
 }: ProfileAvatarProps) {
   const [failed, setFailed] = useState(false);
   const avatarUrl = resolveProfileAvatarUrl(avatar);
+
+  useEffect(() => { setFailed(false); }, [avatar]);
   const initials = getProfileInitials(name);
 
   return (

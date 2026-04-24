@@ -179,7 +179,7 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
         setMessage({ type: "error", text: data.error || "Impossible d'envoyer la photo. Réessayez." });
         return;
       }
-      setAvatarPreview(data.publicUrl ?? null);
+      setAvatarPreview(resolveProfileAvatarUrl(data.key));
       setMessage({ type: "success", text: "Photo de profil mise à jour." });
       router.refresh();
     } finally {
