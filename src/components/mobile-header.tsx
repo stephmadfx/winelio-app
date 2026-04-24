@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { SignOutButton } from "./sign-out-button";
 import { WinelioLogo } from "./winelio-logo";
 import { BugReportButton } from "./bug-report";
+import { ProfileAvatar } from "./profile-avatar";
 import type { BugReport } from "./bug-report/types";
 
 const navItems = [
@@ -51,6 +52,7 @@ const ANIM_DURATION = 500;
 export function MobileHeader({
   userEmail,
   firstName,
+  avatar,
   isSuperAdmin,
   demoBanner = false,
   userId,
@@ -58,6 +60,7 @@ export function MobileHeader({
 }: {
   userEmail: string;
   firstName?: string;
+  avatar?: string | null;
   isSuperAdmin?: boolean;
   demoBanner?: boolean;
   userId: string;
@@ -110,14 +113,22 @@ export function MobileHeader({
             <WinelioLogo variant="color" height={28} gradientId="wGrad-mheader" />
           </Link>
 
-          {/* Centre : greeting */}
-          <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center leading-none">
-            <span className="text-[10px] uppercase tracking-widest text-winelio-gray font-bold">
-              {greeting}
-            </span>
-            <span className="font-bold text-base text-winelio-orange tracking-tight">
-              {displayName} 👋
-            </span>
+          {/* Centre : avatar + greeting */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+            <ProfileAvatar
+              name={displayName}
+              avatar={avatar}
+              className="h-[30px] w-[30px] ring-2 ring-winelio-orange/20"
+              initialsClassName="text-[10px] font-bold"
+            />
+            <div className="flex flex-col items-start leading-none">
+              <span className="text-[10px] uppercase tracking-widest text-winelio-gray font-bold">
+                {greeting}
+              </span>
+              <span className="font-bold text-sm text-winelio-orange tracking-tight">
+                {displayName} 👋
+              </span>
+            </div>
           </div>
 
           {/* Droite : bug + hamburger */}
@@ -171,9 +182,12 @@ export function MobileHeader({
                 </button>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center shadow-sm shrink-0">
-                  <span className="text-white font-bold">{initials}</span>
-                </div>
+                <ProfileAvatar
+                  name={displayName}
+                  avatar={avatar}
+                  className="h-11 w-11 ring-2 ring-winelio-orange/20 shadow-sm"
+                  initialsClassName="font-bold"
+                />
                 <div>
                   <p className="font-bold text-winelio-dark text-sm leading-tight">{displayName}</p>
                   <p className="text-xs text-winelio-gray truncate max-w-[180px]">{userEmail}</p>

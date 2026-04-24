@@ -46,10 +46,10 @@ export default async function ProtectedLayout({
 
   const { data: profileData } = await supabase
     .from("profiles")
-    .select("first_name, last_name, phone, postal_code, city, address, birth_date, terms_accepted")
+    .select("first_name, last_name, phone, postal_code, city, address, birth_date, terms_accepted, avatar")
     .eq("id", user.id)
     .single();
-  const profile = profileData as ProfileCompletionRecord | null;
+  const profile = profileData as (ProfileCompletionRecord & { avatar?: string | null }) | null;
 
   const isProfileComplete = !!(
     profile?.first_name?.trim() &&
@@ -119,6 +119,7 @@ export default async function ProtectedLayout({
       <MobileHeader
         userEmail={user.email ?? ""}
         firstName={profile?.first_name ?? undefined}
+        avatar={profile?.avatar ?? undefined}
         isSuperAdmin={isSuperAdmin}
         demoBanner={DEMO_MODE}
         userId={user.id}
