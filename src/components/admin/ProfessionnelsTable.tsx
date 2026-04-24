@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useTransition } from "react";
 
-type OwnerRow = { first_name: string | null; last_name: string | null; email: string | null };
+type OwnerRow = { id: string; first_name: string | null; last_name: string | null; email: string | null };
 type CategoryRow = { name: string };
 
 type Company = {
@@ -22,6 +22,8 @@ type Company = {
   siret: string | null;
   is_verified: boolean;
   created_at: string;
+  last_sign_in_at: string | null;
+  finalized_recos_count: number;
   owner: OwnerRow | OwnerRow[] | null;
   category: CategoryRow | CategoryRow[] | null;
 };
@@ -38,6 +40,20 @@ function getCategory(c: Company): CategoryRow | null {
 
 function formatSiret(siret: string) {
   return siret.replace(/(\d{3})(\d{3})(\d{3})(\d{5})/, "$1 $2 $3 $4");
+}
+
+function formatRelativeTime(iso: string | null): string {
+  if (!iso) return "Jamais";
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 60) return minutes <= 1 ? "À l'instant" : `il y a ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `il y a ${hours} h`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `il y a ${days} j`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `il y a ${months} mois`;
+  return `il y a ${Math.floor(months / 12)} an${Math.floor(months / 12) > 1 ? "s" : ""}`;
 }
 
 type Category = { id: string; name: string };
@@ -219,13 +235,15 @@ export function ProfessionnelsTable({
               <th className="text-left px-4 py-3">Catégorie</th>
               <th className="text-left px-4 py-3">Contact &amp; Ville</th>
               {geocoded && <th className="text-left px-4 py-3">Distance</th>}
+              <th className="text-left px-4 py-3">Connexion</th>
+              <th className="text-left px-4 py-3">Recos</th>
               <th className="text-left px-4 py-3">Statut</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
             {paginated.length === 0 ? (
               <tr>
-                <td colSpan={geocoded ? 6 : 5} className="px-4 py-8 text-center text-gray-600">
+                <td colSpan={geocoded ? 8 : 7} className="px-4 py-8 text-center text-gray-600">
                   Aucun professionnel trouvé
                 </td>
               </tr>
@@ -292,6 +310,22 @@ export function ProfessionnelsTable({
                         {c._distance != null ? `${c._distance.toFixed(0)} km` : <span className="text-gray-600">N/A</span>}
                       </td>
                     )}
+                    {/* Dernière connexion */}
+                    <td className="px-4 py-3">
+                      <span className={`text-xs whitespace-nowrap ${c.last_sign_in_at ? "text-gray-300" : "text-gray-600 italic"}`}>
+                        {formatRelativeTime(c.last_sign_in_at)}
+                      </span>
+                    </td>
+                    {/* Recos finalisées */}
+                    <td className="px-4 py-3">
+                      {c.finalized_recos_count > 0 ? (
+                        <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold">
+                          {c.finalized_recos_count}
+                        </span>
+                      ) : (
+                        <span className="text-gray-600 text-xs">0</span>
+                      )}
+                    </td>
                     {/* Statut */}
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-1.5">
@@ -404,6 +438,20 @@ export function ProfessionnelsTable({
                       <p className="text-gray-300 truncate">{c.email}</p>
                     </div>
                   )}
+                  <div>
+                    <p className="text-gray-600 uppercase text-[10px] tracking-wide">Connexion</p>
+                    <p className={c.last_sign_in_at ? "text-gray-300" : "text-gray-600 italic"}>
+                      {formatRelativeTime(c.last_sign_in_at)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 uppercase text-[10px] tracking-wide">Recos finalisées</p>
+                    {c.finalized_recos_count > 0 ? (
+                      <span className="text-emerald-400 font-semibold">{c.finalized_recos_count}</span>
+                    ) : (
+                      <span className="text-gray-600">0</span>
+                    )}
+                  </div>
                   {geocoded && c._distance != null && (
                     <div>
                       <p className="text-gray-600 uppercase text-[10px] tracking-wide">Distance</p>
