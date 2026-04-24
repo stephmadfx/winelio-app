@@ -6,6 +6,7 @@ import { assignSponsor, updateProfile } from "@/app/(protected)/profile/actions"
 import { triggerDemoSeed } from "@/components/DemoSeedBanner";
 import { resolveProfileAvatarUrl } from "@/lib/profile-avatar";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { AvatarCropModal } from "@/components/avatar-crop-modal";
 import { isAtLeastAge, maxBirthDate } from "@/lib/age";
 
 interface Profile {
@@ -57,6 +58,7 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
   const [copied, setCopied] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(resolveProfileAvatarUrl(profile.avatar));
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const formRef = useRef(form);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -161,37 +163,23 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
     }
   };
 
-  const uploadAvatar = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      setMessage({ type: "error", text: "Merci de choisir une image valide." });
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setMessage({ type: "error", text: "L'image ne doit pas dépasser 5 Mo." });
-      return;
-    }
-
+  const uploadAvatar = async (blob: Blob) => {
+    setCropSrc(null);
     setAvatarUploading(true);
     setMessage(null);
-
     try {
       const formData = new FormData();
-      formData.append("file", file);
-
+      formData.append("file", blob, "avatar.webp");
       const res = await fetch("/api/profile/avatar", {
         method: "POST",
         body: formData,
       });
-
       const data = await res.json().catch(() => ({}));
-
       if (!res.ok) {
         setMessage({ type: "error", text: data.error || "Impossible d'envoyer la photo. Réessayez." });
         return;
       }
-
       setAvatarPreview(data.publicUrl ?? null);
-
       setMessage({ type: "success", text: "Photo de profil mise à jour." });
       router.refresh();
     } finally {
@@ -240,17 +228,30 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
 
       {/* Photo de profil */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <ProfileAvatar
-            name={`${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() || userEmail}
-            avatar={avatarPreview}
-            className="h-20 w-20 ring-4 ring-winelio-orange/10"
-            initialsClassName="text-lg font-extrabold"
-          />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          {/* Avatar cliquable avec badge ✏️ */}
+          <button
+            type="button"
+            onClick={() => avatarInputRef.current?.click()}
+            disabled={avatarUploading}
+            className="relative h-20 w-20 shrink-0 self-center cursor-pointer rounded-full disabled:opacity-50"
+            aria-label="Changer la photo de profil"
+          >
+            <ProfileAvatar
+              name={`${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() || userEmail}
+              avatar={avatarPreview}
+              className="h-20 w-20 ring-4 ring-winelio-orange/10"
+              initialsClassName="text-lg font-extrabold"
+            />
+            <span className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-winelio-orange to-winelio-amber text-xs">
+              ✏️
+            </span>
+          </button>
+
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-semibold text-winelio-dark">Photo de profil</h3>
             <p className="text-sm text-winelio-gray mt-1">
-              Ajoutez une photo pour être plus facilement identifié dans votre réseau.
+              Recadrée en carré et optimisée automatiquement.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <button
@@ -259,9 +260,9 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
                 disabled={avatarUploading}
                 className="px-4 py-2.5 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                {avatarUploading ? "Envoi..." : (profile.avatar ? "Changer la photo" : "Ajouter une photo")}
+                {avatarUploading ? "Envoi..." : (avatarPreview ? "Changer la photo" : "Ajouter une photo")}
               </button>
-              {profile.avatar && (
+              {avatarPreview && (
                 <button
                   type="button"
                   onClick={removeAvatar}
@@ -271,20 +272,40 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
                   Supprimer
                 </button>
               )}
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) void uploadAvatar(file);
-                }}
-              />
             </div>
           </div>
         </div>
+
+        <input
+          ref={avatarInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            if (!file.type.startsWith("image/")) {
+              setMessage({ type: "error", text: "Merci de choisir une image valide." });
+              return;
+            }
+            const reader = new FileReader();
+            reader.addEventListener("load", () => {
+              setCropSrc(reader.result as string);
+            });
+            reader.readAsDataURL(file);
+            if (avatarInputRef.current) avatarInputRef.current.value = "";
+          }}
+        />
       </div>
+
+      {/* Modal de recadrage */}
+      {cropSrc && (
+        <AvatarCropModal
+          imageSrc={cropSrc}
+          onComplete={uploadAvatar}
+          onCancel={() => setCropSrc(null)}
+        />
+      )}
 
       {/* Sponsor code (read-only) */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6">
