@@ -42,7 +42,6 @@ export function ProOnboardingWizard({
   const [workMode, setWorkMode] = useState<WorkMode | null>(null);
   const [categoryId, setCategoryId] = useState(defaultCategoryId);
   const [siret, setSiret] = useState(defaultSiret);
-  const [siretSkipped, setSiretSkipped] = useState(false);
   const [engagementChecked, setEngagementChecked] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +55,7 @@ export function ProOnboardingWizard({
     const result = await completeProOnboarding({
       work_mode: workMode!,
       category_id: categoryId,
-      siret: siretSkipped ? null : siret.trim() || null,
+      siret: siret.trim() || null,
     });
     if (result.error) {
       setError(result.error);
@@ -121,8 +120,6 @@ export function ProOnboardingWizard({
           setCategoryId={setCategoryId}
           siret={siret}
           setSiret={setSiret}
-          siretSkipped={siretSkipped}
-          setSiretSkipped={setSiretSkipped}
           onBack={() => setStep(1)}
           onNext={() => setStep(3)}
         />
@@ -193,16 +190,13 @@ function StepBar({ current }: { current: number }) {
 
 /* ── Étape 2 ── */
 function Step2({
-  categories, categoryId, setCategoryId, siret, setSiret,
-  siretSkipped, setSiretSkipped, onBack, onNext,
+  categories, categoryId, setCategoryId, siret, setSiret, onBack, onNext,
 }: {
   categories: Category[];
   categoryId: string;
   setCategoryId: (v: string) => void;
   siret: string;
   setSiret: (v: string) => void;
-  siretSkipped: boolean;
-  setSiretSkipped: (v: boolean) => void;
   onBack: () => void;
   onNext: () => void;
 }) {
@@ -230,24 +224,18 @@ function Step2({
         </div>
         <div>
           <label className="block text-sm font-medium text-winelio-gray mb-1">
-            Numéro SIRET{" "}
-            <span className="text-gray-400 text-xs font-normal">(fortement recommandé)</span>
+            Numéro SIRET <span className="text-winelio-orange">*</span>
           </label>
           <input
             type="text"
             value={siret}
             onChange={(e) => setSiret(e.target.value)}
-            disabled={siretSkipped}
             placeholder="123 456 789 00012"
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange disabled:bg-gray-50 disabled:text-gray-400"
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
           />
-          <button
-            type="button"
-            onClick={() => { setSiretSkipped(!siretSkipped); setSiret(""); }}
-            className="mt-1.5 text-xs text-winelio-orange hover:underline"
-          >
-            {siretSkipped ? "← Renseigner mon SIRET" : "Je n'ai pas encore de SIRET →"}
-          </button>
+          <p className="mt-1.5 text-xs text-winelio-gray">
+            Un numéro SIRET est obligatoire pour activer un compte professionnel.
+          </p>
         </div>
       </div>
       <div className="mt-6 flex justify-between">
@@ -260,7 +248,7 @@ function Step2({
         </button>
         <button
           type="button"
-          disabled={!categoryId}
+          disabled={!categoryId || !siret.trim()}
           onClick={onNext}
           className="px-6 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40"
         >

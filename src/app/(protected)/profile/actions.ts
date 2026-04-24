@@ -187,6 +187,10 @@ export async function completeProOnboarding(data: {
   const user = await getUser();
   if (!user) return { error: "Non authentifié" };
 
+  if (!data.siret) {
+    return { error: "Un numéro SIRET est obligatoire pour activer un compte professionnel." };
+  }
+
   const supabase = await createClient();
   const { ip, userAgent } = await getAuditContext();
 
