@@ -83,6 +83,7 @@ const LEGEND_ITEMS = [
   { color: "#FF6B35", label: "Départ / Fin", pill: true },
   { color: "#fff", stroke: "#2D3436", label: "Étape / Action" },
   { color: "#F7931E", label: "Email automatique" },
+  { color: "#F59E0B", label: "Relance automatique (cron)" },
   { color: "#EBF5FB", stroke: "#2980B9", dashed: true, label: "Suivi automatique" },
   { color: "#EBF5FB", stroke: "#2980B9", label: "Décision (losange)" },
   { color: "#2D3436", label: "Commissions" },
@@ -253,23 +254,26 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           {/* Email inscrit → suivi ouverture gauche */}
           <line x1="180" y1="262" x2="180" y2="304" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Email non inscrit → suivi ouverture droite */}
-          <line x1="780" y1="262" x2="780" y2="304" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          {/* Email non inscrit → relance auto */}
+          <line x1="780" y1="262" x2="780" y2="280" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+
+          {/* Relance auto → suivi ouverture droite */}
+          <line x1="780" y1="324" x2="780" y2="342" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Suivi ouverture gauche → suivi clic gauche */}
           <line x1="180" y1="344" x2="180" y2="386" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Suivi ouverture droite → revendication */}
-          <line x1="780" y1="344" x2="780" y2="386" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="780" y1="382" x2="780" y2="400" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Revendication → suivi clic droite */}
-          <line x1="780" y1="430" x2="780" y2="472" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="780" y1="444" x2="780" y2="462" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Inscrit (clic-inscrit) → losange — descente directe (losange sous la colonne gauche) */}
           <line x1="180" y1="426" x2="180" y2="450" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Non-inscrit (clic-non-inscrit) → Étape 2 — descend puis rejoint le centre par le haut */}
-          <line x1="820" y1="512" x2="820" y2="574" stroke="#636E72" strokeWidth={1.5} />
+          <line x1="820" y1="502" x2="820" y2="574" stroke="#636E72" strokeWidth={1.5} />
           <line x1="820" y1="574" x2="500" y2="574" stroke="#636E72" strokeWidth={1.5} />
           <line x1="500" y1="574" x2="500" y2="592" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
           <text x="660" y="566" textAnchor="middle" fontSize={10} fontWeight="700" fill="#27AE60">✅ Revendication = Acceptation</text>
@@ -342,8 +346,14 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
             label="👁 Email ouvert" sublabel="email_opened_at enregistré (1ère fois)"
             labelColor="#2980B9" onClick={click} hasBadge={ann.has("ouverture-inscrit")} />
 
+          {/* Relance automatique — 12h après si email non ouvert */}
+          <RectNode id="relance-scraped" x={690} y={280} w={260} h={44} fill="#F59E0B" stroke="#F59E0B"
+            label="⏱ Relance automatique — 12h"
+            sublabel="Si email_opened_at null · 1 envoi max (cron)"
+            labelColor="white" onClick={click} hasBadge={ann.has("relance-scraped")} />
+
           {/* Suivi ouverture non inscrit */}
-          <RectNode id="ouverture-non-inscrit" x={690} y={304} w={260} h={40} fill="#EBF5FB" stroke="#2980B9" dashed
+          <RectNode id="ouverture-non-inscrit" x={690} y={342} w={260} h={40} fill="#EBF5FB" stroke="#2980B9" dashed
             label="👁 Email ouvert" sublabel="email_opened_at enregistré (1ère fois)"
             labelColor="#2980B9" onClick={click} hasBadge={ann.has("ouverture-non-inscrit")} />
 
@@ -353,12 +363,12 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
             labelColor="#2980B9" onClick={click} hasBadge={ann.has("clic-inscrit")} />
 
           {/* Revendication de fiche */}
-          <RectNode id="revendication" x={690} y={386} w={260} h={44} fill="white" stroke="#2D3436"
+          <RectNode id="revendication" x={690} y={400} w={260} h={44} fill="white" stroke="#2D3436"
             label="🔗 Revendication de fiche" sublabel="Le professionnel s'inscrit et valide sa fiche"
             onClick={click} hasBadge={ann.has("revendication")} />
 
           {/* Suivi clic non inscrit */}
-          <RectNode id="clic-non-inscrit" x={690} y={472} w={260} h={40} fill="#EBF5FB" stroke="#2980B9" dashed
+          <RectNode id="clic-non-inscrit" x={690} y={462} w={260} h={40} fill="#EBF5FB" stroke="#2980B9" dashed
             label="👆 Bouton cliqué dans l'email" sublabel="email_clicked_at · déclenche la revendication"
             labelColor="#2980B9" onClick={click} hasBadge={ann.has("clic-non-inscrit")} />
 
