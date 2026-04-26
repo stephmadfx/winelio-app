@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { notifyScrapedReminder } from "@/lib/notify-scraped-reminder";
+import { notifyReferrerNoResponse } from "@/lib/notify-referrer-no-response";
 
-const DELAY_MS = 12 * 60 * 60 * 1000; // 12h après l'envoi du premier email
+const REMINDER_DELAY_MS     = 12 * 60 * 60 * 1000; // 12h après création → relance pro
+const NO_RESPONSE_DELAY_MS  = 24 * 60 * 60 * 1000; // 24h après relance  → alerte referrer
 
 export async function GET(req: Request) {
   const auth = req.headers.get("authorization") ?? "";
@@ -11,51 +13,72 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const cutoff = new Date(Date.now() - DELAY_MS).toISOString();
+  const now = new Date();
+  const nowIso = now.toISOString();
 
-  // Recos PENDING pour pros scrappés, premier email non ouvert, relance pas encore envoyée
-  const { data: recos, error } = await supabaseAdmin
+  // ── 1. Relance pro (H+12) ─────────────────────────────────────────────────
+  const reminderCutoff = new Date(now.getTime() - REMINDER_DELAY_MS).toISOString();
+  const { data: toRemind, error: remindErr } = await supabaseAdmin
     .schema("winelio")
     .from("recommendations")
-    .select(
-      `id, created_at,
-       professional:profiles!recommendations_professional_id_fkey(companies(source))`
-    )
+    .select(`id, professional:profiles!recommendations_professional_id_fkey(companies(source))`)
     .eq("status", "PENDING")
     .is("email_opened_at", null)
     .is("scraped_reminder_sent_at", null)
-    .lt("created_at", cutoff);
+    .lt("created_at", reminderCutoff);
 
-  if (error) {
-    console.error("[cron-scraped-reminder] Erreur requête:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (remindErr) {
+    console.error("[cron-scraped-reminder] Erreur relances:", remindErr);
+    return NextResponse.json({ error: remindErr.message }, { status: 500 });
   }
 
-  let sent = 0;
-  const now = new Date().toISOString();
-
-  for (const rec of recos ?? []) {
+  let reminders = 0;
+  for (const rec of toRemind ?? []) {
     try {
       const pro = Array.isArray(rec.professional) ? rec.professional[0] : rec.professional;
       const company = Array.isArray(pro?.companies) ? pro.companies[0] : pro?.companies;
       if ((company as { source?: string | null } | null)?.source !== "scraped") continue;
 
       await notifyScrapedReminder(rec.id);
-
-      await supabaseAdmin
-        .schema("winelio")
-        .from("recommendations")
-        .update({ scraped_reminder_sent_at: now })
-        .eq("id", rec.id);
-
-      sent++;
+      await supabaseAdmin.schema("winelio").from("recommendations")
+        .update({ scraped_reminder_sent_at: nowIso }).eq("id", rec.id);
+      reminders++;
     } catch (err) {
-      console.error(`[cron-scraped-reminder] Erreur reco ${rec.id}:`, err);
+      console.error(`[cron-scraped-reminder] Erreur relance reco ${rec.id}:`, err);
     }
   }
 
-  // Déclencher le process-queue email si des relances ont été mises en file
-  if (sent > 0) {
+  // ── 2. Alerte referrer (H+36 = 24h après la relance) ────────────────────
+  const noResponseCutoff = new Date(now.getTime() - NO_RESPONSE_DELAY_MS).toISOString();
+  const { data: toAlert, error: alertErr } = await supabaseAdmin
+    .schema("winelio")
+    .from("recommendations")
+    .select(`id`)
+    .eq("status", "PENDING")
+    .is("email_opened_at", null)
+    .not("scraped_reminder_sent_at", "is", null)
+    .lt("scraped_reminder_sent_at", noResponseCutoff)
+    .is("referrer_no_response_notified_at", null);
+
+  if (alertErr) {
+    console.error("[cron-scraped-reminder] Erreur alertes referrer:", alertErr);
+    return NextResponse.json({ error: alertErr.message }, { status: 500 });
+  }
+
+  let alerts = 0;
+  for (const rec of toAlert ?? []) {
+    try {
+      await notifyReferrerNoResponse(rec.id);
+      await supabaseAdmin.schema("winelio").from("recommendations")
+        .update({ referrer_no_response_notified_at: nowIso }).eq("id", rec.id);
+      alerts++;
+    } catch (err) {
+      console.error(`[cron-scraped-reminder] Erreur alerte referrer reco ${rec.id}:`, err);
+    }
+  }
+
+  // Déclencher le process-queue si des emails ont été mis en file
+  if (reminders + alerts > 0) {
     const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://winelio.app";
     fetch(`${base}/api/email/process-queue`, {
       method: "POST",
@@ -63,5 +86,5 @@ export async function GET(req: Request) {
     }).catch(() => undefined);
   }
 
-  return NextResponse.json({ sent, timestamp: now });
+  return NextResponse.json({ reminders, alerts, timestamp: nowIso });
 }

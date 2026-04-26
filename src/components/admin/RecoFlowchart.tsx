@@ -219,8 +219,8 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
         >
           <g transform={`translate(${pan.x} ${pan.y}) scale(${scale})`}>
           <svg
-          viewBox="0 0 1060 1310"
-          style={{ width: 980, display: "block" }}
+          viewBox="0 0 1200 1310"
+          style={{ width: 1100, display: "block" }}
           xmlns="http://www.w3.org/2000/svg"
           fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
         >
@@ -257,32 +257,39 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           {/* Email non inscrit → losange "Ouvert après 12h ?" */}
           <line x1="820" y1="262" x2="820" y2="276" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Losange → OUI (déjà ouvert) — descend vers suivi ouverture */}
-          <line x1="820" y1="356" x2="820" y2="396" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
-          <text x="836" y="380" fontSize={11} fontWeight="700" fill="#27AE60">✅ Oui</text>
+          {/* Losange 1 → OUI (ouvert) — descend vers suivi ouverture */}
+          <line x1="820" y1="356" x2="820" y2="408" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <text x="836" y="386" fontSize={11} fontWeight="700" fill="#27AE60">✅ Oui</text>
 
-          {/* Losange → NON (pas ouvert après 12h) — va vers relance à droite */}
+          {/* Losange 1 → NON (pas ouvert 12h) — va vers relance à droite */}
           <line x1="860" y1="316" x2="873" y2="316" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
           <text x="870" y="308" textAnchor="start" fontSize={10} fontWeight="700" fill="#E74C3C">❌ Non ouvert</text>
 
-          {/* Relance → merge → rejoint suivi ouverture */}
-          <line x1="957" y1="336" x2="957" y2="396" stroke="#636E72" strokeWidth={1.5} />
-          <line x1="957" y1="396" x2="820" y2="396" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          {/* Relance → losange 2 "Ouvert après la relance ?" */}
+          <line x1="957" y1="336" x2="957" y2="358" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+
+          {/* Losange 2 → OUI (ouvert après relance) — rejoint flux principal */}
+          <line x1="923" y1="392" x2="820" y2="392" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <text x="872" y="386" textAnchor="middle" fontSize={10} fontWeight="700" fill="#27AE60">✅ Oui</text>
+
+          {/* Losange 2 → NON (toujours pas ouvert 24h après relance) — alerte referrer */}
+          <line x1="991" y1="392" x2="1001" y2="392" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
+          <text x="1050" y="366" textAnchor="middle" fontSize={10} fontWeight="700" fill="#E74C3C">❌ Toujours non</text>
 
           {/* Suivi ouverture droite → revendication */}
-          <line x1="780" y1="436" x2="780" y2="454" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="780" y1="448" x2="780" y2="466" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Suivi ouverture gauche → suivi clic gauche */}
           <line x1="180" y1="344" x2="180" y2="386" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Revendication → suivi clic droite */}
-          <line x1="780" y1="498" x2="780" y2="516" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="780" y1="510" x2="780" y2="528" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Inscrit (clic-inscrit) → losange — descente directe (losange sous la colonne gauche) */}
           <line x1="180" y1="426" x2="180" y2="450" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Non-inscrit (clic-non-inscrit) → Étape 2 — descend puis rejoint le centre par le haut */}
-          <line x1="820" y1="556" x2="820" y2="574" stroke="#636E72" strokeWidth={1.5} />
+          <line x1="820" y1="568" x2="820" y2="574" stroke="#636E72" strokeWidth={1.5} />
           <line x1="820" y1="574" x2="500" y2="574" stroke="#636E72" strokeWidth={1.5} />
           <line x1="500" y1="574" x2="500" y2="592" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
           <text x="660" y="566" textAnchor="middle" fontSize={10} fontWeight="700" fill="#27AE60">✅ Revendication = Acceptation</text>
@@ -360,14 +367,25 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
             stroke="#2980B9" label="Ouvert après" line2="12h ?"
             onClick={click} hasBadge={ann.has("ouverture-12h")} />
 
-          {/* Relance automatique — branche NON, à droite du losange */}
+          {/* Relance automatique — branche NON du losange 1 */}
           <RectNode id="relance-scraped" x={875} y={296} w={165} h={40} fill="#F59E0B" stroke="#F59E0B"
             label="⏱ Relance auto — 12h"
             sublabel="1 envoi max (cron)"
             labelColor="white" onClick={click} hasBadge={ann.has("relance-scraped")} />
 
-          {/* Suivi ouverture non inscrit — point de fusion des deux branches */}
-          <RectNode id="ouverture-non-inscrit" x={690} y={396} w={260} h={40} fill="#EBF5FB" stroke="#2980B9" dashed
+          {/* Losange 2 : encore ouvert après la relance ? (24h après relance = H+36) */}
+          <DiamondNode id="ouverture-post-relance" cx={957} cy={392} r={34}
+            stroke="#E74C3C" label="Ouvert après" line2="la relance ?"
+            labelColor="#E74C3C" onClick={click} hasBadge={ann.has("ouverture-post-relance")} />
+
+          {/* Alerte referrer — branche NON du losange 2 (H+36, aucune réponse) */}
+          <RectNode id="alerte-referrer" x={1001} y={372} w={190} h={44} fill="#F7931E" stroke="#F7931E"
+            label="📭 Alerte referrer"
+            sublabel="Pro injoignable · recommander un autre pro"
+            labelColor="white" onClick={click} hasBadge={ann.has("alerte-referrer")} />
+
+          {/* Suivi ouverture non inscrit — point de fusion OUI des deux losanges */}
+          <RectNode id="ouverture-non-inscrit" x={690} y={408} w={260} h={40} fill="#EBF5FB" stroke="#2980B9" dashed
             label="👁 Email ouvert" sublabel="email_opened_at enregistré (1ère fois)"
             labelColor="#2980B9" onClick={click} hasBadge={ann.has("ouverture-non-inscrit")} />
 
@@ -377,12 +395,12 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
             labelColor="#2980B9" onClick={click} hasBadge={ann.has("clic-inscrit")} />
 
           {/* Revendication de fiche */}
-          <RectNode id="revendication" x={690} y={454} w={260} h={44} fill="white" stroke="#2D3436"
+          <RectNode id="revendication" x={690} y={466} w={260} h={44} fill="white" stroke="#2D3436"
             label="🔗 Revendication de fiche" sublabel="Le professionnel s'inscrit et valide sa fiche"
             onClick={click} hasBadge={ann.has("revendication")} />
 
           {/* Suivi clic non inscrit */}
-          <RectNode id="clic-non-inscrit" x={690} y={516} w={260} h={40} fill="#EBF5FB" stroke="#2980B9" dashed
+          <RectNode id="clic-non-inscrit" x={690} y={528} w={260} h={40} fill="#EBF5FB" stroke="#2980B9" dashed
             label="👆 Bouton cliqué dans l'email" sublabel="email_clicked_at · déclenche la revendication"
             labelColor="#2980B9" onClick={click} hasBadge={ann.has("clic-non-inscrit")} />
 
