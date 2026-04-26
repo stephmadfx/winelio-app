@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { FlowAnnotationDialog, type FlowAnnotation } from "./FlowAnnotationDialog";
 
 export type { FlowAnnotation };
@@ -92,11 +91,88 @@ const LEGEND_ITEMS = [
 
 // ── Composant principal ───────────────────────────────────────────────────────
 
+const SVG_W = 1060;
+const SVG_H = 1310;
+const MIN_SCALE = 0.15;
+const MAX_SCALE = 3;
+const DRAG_THRESHOLD = 4;
+
 export function RecoFlowchart({ annotations: initialAnnotations }: { annotations: FlowAnnotation[] }) {
   const [annotations, setAnnotations] = useState<FlowAnnotation[]>(initialAnnotations);
   const [dialog, setDialog] = useState<{ nodeId: string; label: string } | null>(null);
   const ann = new Set(annotations.map((a) => a.node_id));
-  const click: ClickHandler = (id, label) => setDialog({ nodeId: id, label });
+
+  // Pan/zoom state
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [pan, setPan] = useState({ x: 20, y: 20 });
+  const [scale, setScale] = useState(0.65);
+  const scaleRef = useRef(0.65);
+  const panRef = useRef({ x: 20, y: 20 });
+  const dragging = useRef(false);
+  const lastPos = useRef({ x: 0, y: 0 });
+  const moved = useRef(false);
+
+  // Sync refs with state (for use in event callbacks)
+  useEffect(() => { scaleRef.current = scale; }, [scale]);
+  useEffect(() => { panRef.current = pan; }, [pan]);
+
+  // Centre automatiquement au premier rendu
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const { width, height } = el.getBoundingClientRect();
+    const s = Math.min(width / SVG_W, height / SVG_H, 0.75);
+    const x = (width - SVG_W * s) / 2;
+    const y = (height - SVG_H * s) / 2;
+    setPan({ x, y });
+    setScale(s);
+  }, []);
+
+  const applyZoom = useCallback((factor: number, cx: number, cy: number) => {
+    const s = scaleRef.current;
+    const p = panRef.current;
+    const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, s * factor));
+    const ratio = newScale / s;
+    setPan({ x: cx - (cx - p.x) * ratio, y: cy - (cy - p.y) * ratio });
+    setScale(newScale);
+  }, []);
+
+  const onWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    // deltaY négatif = scroll vers le haut = zoom avant
+    const factor = e.deltaY < 0 ? 1.06 : 1 / 1.06;
+    applyZoom(factor, e.clientX - rect.left, e.clientY - rect.top);
+  }, [applyZoom]);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    dragging.current = true;
+    moved.current = false;
+    lastPos.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragging.current) return;
+    const dx = e.clientX - lastPos.current.x;
+    const dy = e.clientY - lastPos.current.y;
+    if (!moved.current && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+      moved.current = true;
+    }
+    if (moved.current) {
+      setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+    }
+    lastPos.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  const onMouseUp = useCallback(() => { dragging.current = false; }, []);
+
+  // Seul déclenchement si pas de drag
+  const click: ClickHandler = (id, label) => {
+    if (moved.current) return;
+    setDialog({ nodeId: id, label });
+  };
 
   function handleAnnotationAdded(annotation: FlowAnnotation) {
     setAnnotations((prev) => [annotation, ...prev]);
@@ -106,29 +182,42 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
     setAnnotations((prev) => prev.filter((a) => a.id !== annotationId));
   }
 
+  const reset = () => {
+    const el = containerRef.current;
+    if (!el) return;
+    const { width, height } = el.getBoundingClientRect();
+    const s = Math.min(width / SVG_W, height / SVG_H, 0.75);
+    setPan({ x: (width - SVG_W * s) / 2, y: (height - SVG_H * s) / 2 });
+    setScale(s);
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Canvas avec zoom/pan */}
-      <div className="flex-1 overflow-hidden bg-[#FAFBFC] relative" style={{ minHeight: 500 }}>
-        <TransformWrapper
-          initialScale={0.75}
-          minScale={0.2}
-          maxScale={2}
-          wheel={{ step: 0.08 }}
-          centerOnInit
-        >
-          {({ zoomIn, zoomOut, resetTransform }) => (
-            <>
-              {/* Boutons de contrôle */}
-              <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-1">
-                <button onClick={() => zoomIn()} className="w-8 h-8 bg-white border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 text-lg font-bold shadow-sm flex items-center justify-center">+</button>
-                <button onClick={() => zoomOut()} className="w-8 h-8 bg-white border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 text-lg font-bold shadow-sm flex items-center justify-center">−</button>
-                <button onClick={() => resetTransform()} title="Réinitialiser" className="w-8 h-8 bg-white border border-gray-200 rounded-md text-gray-500 hover:bg-gray-50 text-xs shadow-sm flex items-center justify-center">⊙</button>
-              </div>
+      <div
+        ref={containerRef}
+        className="flex-1 bg-[#FAFBFC] relative overflow-hidden select-none"
+        style={{ minHeight: 500, cursor: dragging.current ? "grabbing" : "grab", touchAction: "none" }}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+        onWheel={onWheel}
+      >
+        {/* Boutons de contrôle */}
+        <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-1">
+          <button onMouseDown={e => e.stopPropagation()} onClick={() => { const rect = containerRef.current?.getBoundingClientRect(); if (rect) applyZoom(1.2, rect.width / 2, rect.height / 2); }} className="w-8 h-8 bg-white border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 text-lg font-bold shadow-sm flex items-center justify-center">+</button>
+          <button onMouseDown={e => e.stopPropagation()} onClick={() => { const rect = containerRef.current?.getBoundingClientRect(); if (rect) applyZoom(1 / 1.2, rect.width / 2, rect.height / 2); }} className="w-8 h-8 bg-white border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 text-lg font-bold shadow-sm flex items-center justify-center">−</button>
+          <button onMouseDown={e => e.stopPropagation()} onClick={reset} title="Réinitialiser" className="w-8 h-8 bg-white border border-gray-200 rounded-md text-gray-500 hover:bg-gray-50 text-xs shadow-sm flex items-center justify-center">⊙</button>
+        </div>
 
-              <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
-                <div className="p-8">
-                  <svg
+        <svg
+          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", overflow: "visible" }}
+          xmlns="http://www.w3.org/2000/svg"
+          fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+        >
+          <g transform={`translate(${pan.x} ${pan.y}) scale(${scale})`}>
+          <svg
           viewBox="0 0 1060 1310"
           style={{ width: 980, display: "block" }}
           xmlns="http://www.w3.org/2000/svg"
@@ -357,12 +446,9 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           <PillNode id="fin" x={300} y={1260} w={400} h={42} fill="#27AE60"
             label="✅ Étape 8 — Affaire terminée" onClick={click} hasBadge={ann.has("fin")} />
 
+          </svg>
+          </g>
         </svg>
-                </div>
-              </TransformComponent>
-            </>
-          )}
-        </TransformWrapper>
       </div>
 
       {/* Légende */}
