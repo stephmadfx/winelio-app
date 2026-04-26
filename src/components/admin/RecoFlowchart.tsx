@@ -218,8 +218,8 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
         >
           <g transform={`translate(${pan.x} ${pan.y}) scale(${scale})`}>
           <svg
-          viewBox="0 0 1280 1310"
-          style={{ width: 1180, display: "block" }}
+          viewBox="0 0 1060 1310"
+          style={{ width: 980, display: "block" }}
           xmlns="http://www.w3.org/2000/svg"
           fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
         >
@@ -265,29 +265,29 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           {/* Revendication → suivi clic droite */}
           <line x1="780" y1="430" x2="780" y2="472" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Inscrit (clic-inscrit) → losange — L : descend puis va à droite */}
-          <line x1="180" y1="426" x2="180" y2="455" stroke="#636E72" strokeWidth={1.5} />
-          <line x1="180" y1="455" x2="438" y2="455" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          {/* Inscrit (clic-inscrit) → losange — descente directe (losange sous la colonne gauche) */}
+          <line x1="180" y1="426" x2="180" y2="450" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Non-inscrit (clic-non-inscrit) → Étape 2 directement (revendication = acceptation implicite) */}
+          {/* Non-inscrit (clic-non-inscrit) → Étape 2 — descend puis rejoint le centre par le haut */}
           <line x1="820" y1="512" x2="820" y2="574" stroke="#636E72" strokeWidth={1.5} />
-          <line x1="820" y1="574" x2="680" y2="574" stroke="#636E72" strokeWidth={1.5} />
-          <line x1="680" y1="574" x2="680" y2="592" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
-          <text x="758" y="567" textAnchor="middle" fontSize={10} fontWeight="700" fill="#27AE60">✅ Revendication = Acceptation</text>
+          <line x1="820" y1="574" x2="500" y2="574" stroke="#636E72" strokeWidth={1.5} />
+          <line x1="500" y1="574" x2="500" y2="592" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <text x="660" y="566" textAnchor="middle" fontSize={10} fontWeight="700" fill="#27AE60">✅ Revendication = Acceptation</text>
 
-          {/* Losange acceptation → étape 2 (OUI) */}
-          <line x1="500" y1="517" x2="500" y2="592" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
-          <text x="516" y="549" fontSize={11} fontWeight="700" fill="#27AE60">✅ OUI</text>
+          {/* Losange acceptation → étape 2 (OUI) — va à droite puis descend au bord gauche d'Étape 2 */}
+          <line x1="242" y1="512" x2="300" y2="512" stroke="#636E72" strokeWidth={1.5} />
+          <line x1="300" y1="512" x2="300" y2="592" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <text x="258" y="504" fontSize={11} fontWeight="700" fill="#27AE60">✅ OUI</text>
 
-          {/* Losange acceptation → rejetée (NON) — ligne droite dans le gap entre revendication et clic-non-inscrit */}
-          <line x1="562" y1="455" x2="960" y2="455" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
-          <text x="760" y="447" textAnchor="middle" fontSize={11} fontWeight="700" fill="#E74C3C">❌ NON</text>
+          {/* Losange acceptation → rejetée (NON) — descend dans la colonne gauche */}
+          <line x1="180" y1="574" x2="180" y2="644" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
+          <text x="196" y="614" fontSize={11} fontWeight="700" fill="#E74C3C">❌ NON</text>
 
           {/* Rejetée → email refus */}
-          <line x1="1050" y1="475" x2="1050" y2="499" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
+          <line x1="110" y1="684" x2="110" y2="706" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
 
           {/* Email refus → nouvelle reco possible */}
-          <line x1="1050" y1="543" x2="1050" y2="567" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="110" y1="750" x2="110" y2="772" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Étapes 2 → 3 → 4 → 5 */}
           <line x1="500" y1="636" x2="500" y2="666" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
@@ -362,21 +362,21 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
             label="👆 Bouton cliqué dans l'email" sublabel="email_clicked_at · déclenche la revendication"
             labelColor="#2980B9" onClick={click} hasBadge={ann.has("clic-non-inscrit")} />
 
-          {/* Losange : acceptation — chemin inscrit uniquement */}
-          <DiamondNode id="acceptation" cx={500} cy={455} r={62}
-            stroke="#2980B9" label="Le professionnel" line2="accepte ?" onClick={click} hasBadge={ann.has("acceptation")} />
+          {/* Losange : acceptation — dans la colonne gauche, sous clic-inscrit */}
+          <DiamondNode id="acceptation" cx={180} cy={512} r={62}
+            stroke="#2980B9" label="Le pro" line2="accepte ?" onClick={click} hasBadge={ann.has("acceptation")} />
 
-          {/* Rejetée — alignée sur le gap entre revendication et clic-non-inscrit */}
-          <NegNode id="rejetee" x={960} y={435} w={180} h={40} label="❌ Rejetée" onClick={click} hasBadge={ann.has("rejetee")} />
+          {/* Rejetée — descend sous le losange, colonne gauche */}
+          <NegNode id="rejetee" x={10} y={644} w={200} h={40} label="❌ Rejetée" onClick={click} hasBadge={ann.has("rejetee")} />
 
           {/* Email refus → referrer */}
-          <RectNode id="email-refus" x={940} y={499} w={220} h={44} fill="#F7931E" stroke="#F7931E"
-            label='📧 "Reco déclinée" → Referrer'
+          <RectNode id="email-refus" x={10} y={706} w={200} h={44} fill="#F7931E" stroke="#F7931E"
+            label='📧 Reco déclinée → Referrer'
             sublabel='CTA "Recommander un autre pro"'
             labelColor="white" onClick={click} hasBadge={ann.has("email-refus")} />
 
           {/* Nouvelle reco possible */}
-          <PillNode id="nouvelle-reco" x={940} y={567} w={220} h={36} fill="#FF6B35"
+          <PillNode id="nouvelle-reco" x={10} y={772} w={200} h={36} fill="#FF6B35"
             label="↩ Nouvelle reco possible" onClick={click} hasBadge={ann.has("nouvelle-reco")} />
 
           {/* Étape 2 */}
