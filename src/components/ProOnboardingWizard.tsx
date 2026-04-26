@@ -42,6 +42,7 @@ export function ProOnboardingWizard({
   const [workMode, setWorkMode] = useState<WorkMode | null>(null);
   const [categoryId, setCategoryId] = useState(defaultCategoryId);
   const [siret, setSiret] = useState(defaultSiret);
+  const [proEmail, setProEmail] = useState("");
   const [engagementChecked, setEngagementChecked] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +57,7 @@ export function ProOnboardingWizard({
       work_mode: workMode!,
       category_id: categoryId,
       siret: siret.trim() || null,
+      email: proEmail.trim() || null,
     });
     if (result.error) {
       setError(result.error);
@@ -120,6 +122,8 @@ export function ProOnboardingWizard({
           setCategoryId={setCategoryId}
           siret={siret}
           setSiret={setSiret}
+          proEmail={proEmail}
+          setProEmail={setProEmail}
           onBack={() => setStep(1)}
           onNext={() => setStep(3)}
         />
@@ -190,13 +194,15 @@ function StepBar({ current }: { current: number }) {
 
 /* ── Étape 2 ── */
 function Step2({
-  categories, categoryId, setCategoryId, siret, setSiret, onBack, onNext,
+  categories, categoryId, setCategoryId, siret, setSiret, proEmail, setProEmail, onBack, onNext,
 }: {
   categories: Category[];
   categoryId: string;
   setCategoryId: (v: string) => void;
   siret: string;
   setSiret: (v: string) => void;
+  proEmail: string;
+  setProEmail: (v: string) => void;
   onBack: () => void;
   onNext: () => void;
 }) {
@@ -235,6 +241,21 @@ function Step2({
           />
           <p className="mt-1.5 text-xs text-winelio-gray">
             Un numéro SIRET est obligatoire pour activer un compte professionnel.
+          </p>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-winelio-gray mb-1">
+            Email professionnel <span className="text-winelio-gray/50 text-xs font-normal">(optionnel)</span>
+          </label>
+          <input
+            type="email"
+            value={proEmail}
+            onChange={(e) => setProEmail(e.target.value)}
+            placeholder="contact@monentreprise.fr"
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
+          />
+          <p className="mt-1.5 text-xs text-winelio-gray">
+            C&apos;est l&apos;adresse où tu seras contacté lors d&apos;une nouvelle recommandation. Si non renseigné, ton email de connexion Winelio est utilisé.
           </p>
         </div>
       </div>

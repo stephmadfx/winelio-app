@@ -173,16 +173,49 @@ export async function assignSponsor(sponsorCode: string): Promise<{ error?: stri
   return {};
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Met à jour l'email professionnel de la company principale de l'utilisateur.
+ */
+export async function updateCompanyEmail(email: string | null): Promise<{ error?: string }> {
+  const user = await getUser();
+  if (!user) return { error: "Non authentifié" };
+
+  const val = (email ?? "").trim().slice(0, 254) || null;
+  if (val && !EMAIL_RE.test(val)) return { error: "Adresse email invalide." };
+
+  const supabase = await createClient();
+  const { data: company } = await supabase
+    .from("companies")
+    .select("id")
+    .eq("owner_id", user.id)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (!company) return { error: "Aucune fiche professionnelle trouvée." };
+
+  const { error } = await supabase
+    .from("companies")
+    .update({ email: val })
+    .eq("id", company.id);
+
+  if (error) return { error: "Erreur lors de la sauvegarde." };
+  return {};
+}
+
 /**
  * Finalise l'onboarding Pro :
  * 1. Met à jour profiles (is_professional, work_mode, pro_engagement_accepted)
- * 2. Crée ou met à jour la company principale (siret, category_id)
+ * 2. Crée ou met à jour la company principale (siret, category_id, email)
  * 3. Envoie un email de confirmation au pro
  */
 export async function completeProOnboarding(data: {
   work_mode: "remote" | "onsite" | "both";
   category_id: string;
   siret: string | null;
+  email?: string | null;
 }): Promise<{ error?: string }> {
   const user = await getUser();
   if (!user) return { error: "Non authentifié" };
@@ -226,10 +259,13 @@ export async function completeProOnboarding(data: {
     .limit(1)
     .maybeSingle();
 
+  const proEmail = (data.email ?? "").trim().slice(0, 254) || null;
+
   if (existingCompany) {
     const patch: Record<string, string | null> = {};
     if (data.category_id) patch.category_id = data.category_id;
     if (data.siret !== null) patch.siret = data.siret;
+    if (proEmail !== null) patch.email = proEmail;
     if (Object.keys(patch).length > 0) {
       const { error: companyError } = await supabase
         .from("companies")
@@ -245,6 +281,7 @@ export async function completeProOnboarding(data: {
       name: fallbackName,
       category_id: data.category_id || null,
       siret: data.siret || null,
+      email: proEmail,
       alias,
     });
     if (companyError) return { error: "Erreur lors de la création de l'entreprise." };

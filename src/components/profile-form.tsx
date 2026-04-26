@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { assignSponsor, updateProfile } from "@/app/(protected)/profile/actions";
+import { assignSponsor, updateProfile, updateCompanyEmail } from "@/app/(protected)/profile/actions";
 import { triggerDemoSeed } from "@/components/DemoSeedBanner";
 import { resolveProfileAvatarUrl } from "@/lib/profile-avatar";
 import { ProfileAvatar } from "@/components/profile-avatar";
@@ -33,7 +33,7 @@ function isComplete(data: Record<string, unknown>) {
   return REQUIRED_FIELDS.every((f) => typeof data[f] === "string" && (data[f] as string).trim() !== "");
 }
 
-export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmail: string }) {
+export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Profile; userEmail: string; companyEmail?: string | null }) {
   const router = useRouter();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
@@ -47,6 +47,8 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
     terms_accepted: profile.terms_accepted ?? false,
     is_professional: profile.is_professional ?? false,
   });
+  const [proEmailInput, setProEmailInput] = useState(companyEmail ?? "");
+  const [proEmailSaving, setProEmailSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [birthDateError, setBirthDateError] = useState<string | null>(null);
   const [showEmailTooltip, setShowEmailTooltip] = useState(false);
   const [sponsorInput, setSponsorInput] = useState("");
@@ -328,6 +330,45 @@ export function ProfileForm({ profile, userEmail }: { profile: Profile; userEmai
         </div>
       </div>
 
+
+      {/* Email professionnel — visible uniquement pour les pros */}
+      {profile.is_professional && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-winelio-dark mb-1">Email professionnel</h3>
+          <p className="text-sm text-winelio-gray mb-4">
+            Optionnel. C&apos;est l&apos;adresse où vous serez notifié lors d&apos;une nouvelle recommandation,
+            en plus de votre email de connexion Winelio.
+          </p>
+          <div className="flex gap-3 items-start">
+            <input
+              type="email"
+              value={proEmailInput}
+              onChange={(e) => setProEmailInput(e.target.value)}
+              placeholder="contact@monentreprise.fr"
+              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
+            />
+            <button
+              type="button"
+              disabled={proEmailSaving === "saving"}
+              onClick={async () => {
+                setProEmailSaving("saving");
+                const result = await updateCompanyEmail(proEmailInput.trim() || null);
+                setProEmailSaving(result.error ? "error" : "saved");
+                setTimeout(() => setProEmailSaving("idle"), 3000);
+              }}
+              className="px-5 py-2.5 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 whitespace-nowrap"
+            >
+              {proEmailSaving === "saving" ? "…" : "Enregistrer"}
+            </button>
+          </div>
+          {proEmailSaving === "saved" && (
+            <p className="mt-2 text-xs text-green-600 font-medium">✓ Email professionnel sauvegardé</p>
+          )}
+          {proEmailSaving === "error" && (
+            <p className="mt-2 text-xs text-red-500 font-medium">⚠ Adresse email invalide</p>
+          )}
+        </div>
+      )}
 
       {/* Profile form */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6">

@@ -142,26 +142,28 @@ export async function notifyNewRecommendation(recommendationId: string) {
 
   const company = normalize<{ name: string | null; email: string | null; source: string | null }>(pro.companies);
 
-  // Priorité à l'email de la company, fallback sur celui du profile.
-  // On ignore les emails factices générés pour les pros scrapés (format pro.xxx@kiparlo-pro.fr).
+  // Collecter les adresses valides. On ignore les emails factices (@kiparlo-pro.fr).
   const isPlaceholderEmail = (e: string | null) => !!e && /@kiparlo-pro\.fr$/i.test(e);
-  const candidate = company?.email && !isPlaceholderEmail(company.email) ? company.email : null;
-  const fallback = pro.email && !isPlaceholderEmail(pro.email) ? pro.email : null;
-  const recipientEmail = candidate || fallback;
-  if (!recipientEmail) return;
+  const companyMailValid = company?.email && !isPlaceholderEmail(company.email) ? company.email : null;
+  const profileMailValid = pro.email && !isPlaceholderEmail(pro.email) ? pro.email : null;
+
+  // Envoyer aux deux si différents, sinon au seul disponible.
+  const recipients = [...new Set([companyMailValid, profileMailValid].filter(Boolean) as string[])];
+  if (recipients.length === 0) return;
 
   const referrerName = [referrer?.first_name, referrer?.last_name].filter(Boolean).join(" ") || "Un membre Winelio";
   const contactName = [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || "Un contact";
   const urgency = urgencyLabel(rec.urgency_level);
   const isScraped = company?.source === "scraped";
 
-  const html = isScraped
-    ? buildScrapedEmail(company?.name || "votre entreprise", referrerName, contactName, rec.project_description || "", urgency, recommendationId)
-    : buildOwnerEmail(pro.first_name || "", referrerName, contactName, rec.project_description || "", urgency, recommendationId);
-
   const subject = isScraped
     ? `${referrerName} a recommandé ${company?.name || "votre entreprise"} à un client`
     : `Nouvelle recommandation de ${referrerName}`;
 
-  await queueEmail({ to: recipientEmail, subject, html });
+  for (const to of recipients) {
+    const html = isScraped
+      ? buildScrapedEmail(company?.name || "votre entreprise", referrerName, contactName, rec.project_description || "", urgency, recommendationId)
+      : buildOwnerEmail(pro.first_name || "", referrerName, contactName, rec.project_description || "", urgency, recommendationId);
+    await queueEmail({ to, subject, html });
+  }
 }
