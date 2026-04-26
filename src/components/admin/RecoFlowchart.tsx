@@ -218,8 +218,8 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
         >
           <g transform={`translate(${pan.x} ${pan.y}) scale(${scale})`}>
           <svg
-          viewBox="0 0 1060 1310"
-          style={{ width: 980, display: "block" }}
+          viewBox="0 0 1280 1310"
+          style={{ width: 1180, display: "block" }}
           xmlns="http://www.w3.org/2000/svg"
           fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
         >
@@ -277,15 +277,17 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           <line x1="500" y1="572" x2="500" y2="592" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
           <text x="516" y="586" fontSize={11} fontWeight="700" fill="#27AE60">✅ OUI</text>
 
-          {/* Losange acceptation → rejetée (NON) — vers la droite */}
-          <line x1="562" y1="510" x2="808" y2="510" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
-          <text x="698" y="502" textAnchor="middle" fontSize={11} fontWeight="700" fill="#E74C3C">❌ NON</text>
+          {/* Losange acceptation → rejetée (NON) — contourne la colonne droite par le bas */}
+          <line x1="562" y1="510" x2="680" y2="510" stroke="#E74C3C" strokeWidth={1.5} />
+          <line x1="680" y1="510" x2="680" y2="538" stroke="#E74C3C" strokeWidth={1.5} />
+          <line x1="680" y1="538" x2="978" y2="538" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
+          <text x="620" y="502" textAnchor="middle" fontSize={11} fontWeight="700" fill="#E74C3C">❌ NON</text>
 
           {/* Rejetée → email refus */}
-          <line x1="883" y1="530" x2="883" y2="558" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
+          <line x1="1068" y1="578" x2="1068" y2="604" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
 
           {/* Email refus → nouvelle reco possible */}
-          <line x1="883" y1="602" x2="883" y2="626" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="1068" y1="648" x2="1068" y2="672" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Étapes 2 → 3 → 4 → 5 */}
           <line x1="500" y1="636" x2="500" y2="666" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
@@ -364,18 +366,18 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           <DiamondNode id="acceptation" cx={500} cy={510} r={62}
             stroke="#2980B9" label="Le professionnel" line2="accepte ?" onClick={click} hasBadge={ann.has("acceptation")} />
 
-          {/* Rejetée (pro a refusé) */}
-          <NegNode id="rejetee" x={808} y={490} w={150} h={40} label="❌ Rejetée" onClick={click} hasBadge={ann.has("rejetee")} />
+          {/* Rejetée (pro a refusé) — colonne isolée à droite */}
+          <NegNode id="rejetee" x={978} y={518} w={180} h={40} label="❌ Rejetée" onClick={click} hasBadge={ann.has("rejetee")} />
 
           {/* Email refus → referrer */}
-          <RectNode id="email-refus" x={763} y={558} w={240} h={44} fill="#F7931E" stroke="#F7931E"
+          <RectNode id="email-refus" x={958} y={604} w={220} h={44} fill="#F7931E" stroke="#F7931E"
             label='📧 "Reco déclinée" → Referrer'
             sublabel='CTA "Recommander un autre pro"'
             labelColor="white" onClick={click} hasBadge={ann.has("email-refus")} />
 
           {/* Nouvelle reco possible */}
-          <PillNode id="nouvelle-reco" x={763} y={626} w={240} h={36} fill="#FF6B35"
-            label="↩ Nouvelle recommandation possible" onClick={click} hasBadge={ann.has("nouvelle-reco")} />
+          <PillNode id="nouvelle-reco" x={958} y={672} w={220} h={36} fill="#FF6B35"
+            label="↩ Nouvelle reco possible" onClick={click} hasBadge={ann.has("nouvelle-reco")} />
 
           {/* Étape 2 */}
           <RectNode id="etape-2" x={300} y={592} w={400} h={44} fill="white" stroke="#2D3436"
