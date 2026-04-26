@@ -101,6 +101,7 @@ export default function RecommendationDetailPage() {
   const [steps, setSteps] = useState<StepRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
+  const [refusing, setRefusing] = useState(false);
   const [quoteAmount, setQuoteAmount] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
@@ -181,6 +182,18 @@ export default function RecommendationDetailPage() {
     await fetchData();
     setCompleting(false);
     setQuoteAmount("");
+  };
+
+  const handleRefuse = async () => {
+    if (!recommendation) return;
+    setRefusing(true);
+    try {
+      await fetch(`/api/recommendations/${recommendation.id}/refuse`, { method: "POST" });
+    } catch (err) {
+      console.error("Erreur refus:", err);
+    }
+    await fetchData();
+    setRefusing(false);
   };
 
   if (loading) {
@@ -456,7 +469,7 @@ export default function RecommendationDetailPage() {
               <div className="px-5 pb-5 flex items-center gap-3">
                 <button
                   onClick={handleCompleteStep}
-                  disabled={completing || ((currentStep?.step?.order_index ?? 0) === 5 && !quoteAmount)}
+                  disabled={completing || refusing || ((currentStep?.step?.order_index ?? 0) === 5 && !quoteAmount)}
                   className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-winelio-orange px-5 py-3 text-sm font-bold text-white shadow-md shadow-winelio-orange/25 transition-all hover:bg-winelio-amber hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none cursor-pointer"
                 >
                   {completing ? (
@@ -473,12 +486,60 @@ export default function RecommendationDetailPage() {
                     </>
                   )}
                 </button>
+
+                {/* Bouton Refuser — visible pour le pro à l'étape d'acceptation (étape 2) */}
+                {recommendation && userId === recommendation.professional_id && (currentStep?.step?.order_index ?? 0) === 2 && (
+                  <button
+                    onClick={handleRefuse}
+                    disabled={refusing || completing}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {refusing ? (
+                      <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                    Refuser
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Refusée par le pro — visible pour le referrer */}
+          {recommendation?.status === "CANCELLED" && userId === recommendation.referrer_id && (
+            <div className="mt-8 overflow-hidden rounded-2xl border border-red-100 bg-red-50">
+              <div className="px-6 py-5 flex items-start gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-100">
+                  <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-red-700 text-sm">Le professionnel a décliné cette recommandation</p>
+                  <p className="mt-1 text-xs text-red-500">
+                    Vous pouvez recommander un autre professionnel pour ce même contact.
+                  </p>
+                </div>
+              </div>
+              <div className="px-6 pb-5">
+                <button
+                  onClick={() => router.push("/recommendations/new")}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-winelio-orange/20 hover:opacity-90 transition-opacity cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Recommander un autre pro
+                </button>
               </div>
             </div>
           )}
 
           {/* All done state */}
-          {steps.length > 0 && !currentStep && (
+          {steps.length > 0 && !currentStep && recommendation?.status !== "CANCELLED" && (
             <div className="mt-8 flex flex-col items-center rounded-2xl bg-green-50 py-8 px-6 text-center ring-1 ring-green-100">
               <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-green-500 shadow-lg shadow-green-500/30">
                 <svg className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
