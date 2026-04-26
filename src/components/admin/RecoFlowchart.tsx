@@ -129,8 +129,8 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
               <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
                 <div className="p-8">
                   <svg
-          viewBox="0 0 1000 1310"
-          style={{ width: 920, display: "block" }}
+          viewBox="0 0 1060 1310"
+          style={{ width: 980, display: "block" }}
           xmlns="http://www.w3.org/2000/svg"
           fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
         >
@@ -176,49 +176,55 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           {/* Revendication → suivi clic droite */}
           <line x1="780" y1="430" x2="780" y2="472" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Suivi clic gauche → losange acceptation */}
+          {/* Suivi clic gauche → losange acceptation (via bord gauche) */}
           <line x1="180" y1="426" x2="180" y2="510" stroke="#636E72" strokeWidth={1.5} />
           <line x1="180" y1="510" x2="436" y2="510" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Suivi clic droite → losange acceptation */}
-          <line x1="780" y1="512" x2="780" y2="510" stroke="#636E72" strokeWidth={1.5} />
-          <line x1="780" y1="510" x2="564" y2="510" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          {/* Suivi clic droite → losange acceptation (via bord droit) */}
+          <line x1="820" y1="512" x2="820" y2="510" stroke="#636E72" strokeWidth={1.5} />
+          <line x1="820" y1="510" x2="564" y2="510" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Losange acceptation → étape 2 */}
-          <line x1="500" y1="572" x2="500" y2="578" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
-          <text x="516" y="570" fontSize={11} fontWeight="700" fill="#27AE60">✅ OUI</text>
+          {/* Losange acceptation → étape 2 (OUI) */}
+          <line x1="500" y1="572" x2="500" y2="592" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <text x="516" y="586" fontSize={11} fontWeight="700" fill="#27AE60">✅ OUI</text>
 
-          {/* Losange acceptation → rejetée */}
+          {/* Losange acceptation → rejetée (NON) — vers la droite */}
           <line x1="562" y1="510" x2="808" y2="510" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
           <text x="698" y="502" textAnchor="middle" fontSize={11} fontWeight="700" fill="#E74C3C">❌ NON</text>
 
+          {/* Rejetée → email refus */}
+          <line x1="883" y1="530" x2="883" y2="558" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
+
+          {/* Email refus → nouvelle reco possible */}
+          <line x1="883" y1="602" x2="883" y2="626" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+
           {/* Étapes 2 → 3 → 4 → 5 */}
-          <line x1="500" y1="622" x2="500" y2="652" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
-          <line x1="500" y1="696" x2="500" y2="726" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
-          <line x1="500" y1="770" x2="500" y2="800" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="636" x2="500" y2="666" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="710" x2="500" y2="740" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="784" x2="500" y2="814" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Étape 5 → losange devis */}
-          <line x1="500" y1="844" x2="500" y2="852" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="858" x2="500" y2="866" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Losange devis → étape 6 (OUI) */}
-          <line x1="500" y1="978" x2="500" y2="1004" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
-          <text x="516" y="994" fontSize={11} fontWeight="700" fill="#27AE60">✅ OUI</text>
+          <line x1="500" y1="992" x2="500" y2="1018" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <text x="516" y="1008" fontSize={11} fontWeight="700" fill="#27AE60">✅ OUI</text>
 
           {/* Losange devis → annulée (NON) */}
-          <line x1="562" y1="916" x2="808" y2="916" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
-          <text x="698" y="908" textAnchor="middle" fontSize={11} fontWeight="700" fill="#E74C3C">❌ NON</text>
+          <line x1="562" y1="930" x2="808" y2="930" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
+          <text x="698" y="922" textAnchor="middle" fontSize={11} fontWeight="700" fill="#E74C3C">❌ NON</text>
 
           {/* Étape 6 → commissions */}
-          <line x1="500" y1="1052" x2="500" y2="1076" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="1066" x2="500" y2="1090" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Commissions → email commission */}
-          <line x1="500" y1="1112" x2="500" y2="1130" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="1126" x2="500" y2="1144" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Email commission → étape 7 */}
-          <line x1="500" y1="1164" x2="500" y2="1184" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="1178" x2="500" y2="1198" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Étape 7 → fin */}
-          <line x1="500" y1="1226" x2="500" y2="1246" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="1240" x2="500" y2="1260" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* ══ NŒUDS ══ */}
 
@@ -269,76 +275,86 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           <DiamondNode id="acceptation" cx={500} cy={510} r={62}
             stroke="#2980B9" label="Le professionnel" line2="accepte ?" onClick={click} hasBadge={ann.has("acceptation")} />
 
-          {/* Rejetée */}
+          {/* Rejetée (pro a refusé) */}
           <NegNode id="rejetee" x={808} y={490} w={150} h={40} label="❌ Rejetée" onClick={click} hasBadge={ann.has("rejetee")} />
 
+          {/* Email refus → referrer */}
+          <RectNode id="email-refus" x={763} y={558} w={240} h={44} fill="#F7931E" stroke="#F7931E"
+            label='📧 "Reco déclinée" → Referrer'
+            sublabel='CTA "Recommander un autre pro"'
+            labelColor="white" onClick={click} hasBadge={ann.has("email-refus")} />
+
+          {/* Nouvelle reco possible */}
+          <PillNode id="nouvelle-reco" x={763} y={626} w={240} h={36} fill="#FF6B35"
+            label="↩ Nouvelle recommandation possible" onClick={click} hasBadge={ann.has("nouvelle-reco")} />
+
           {/* Étape 2 */}
-          <RectNode id="etape-2" x={300} y={578} w={400} h={44} fill="white" stroke="#2D3436"
+          <RectNode id="etape-2" x={300} y={592} w={400} h={44} fill="white" stroke="#2D3436"
             label="Étape 2 — Recommandation acceptée"
             sublabel="Identité du professionnel dévoilée au recommandeur"
             onClick={click} hasBadge={ann.has("etape-2")} />
 
           {/* Étape 3 */}
-          <RectNode id="etape-3" x={300} y={652} w={400} h={44} fill="white" stroke="#2D3436"
+          <RectNode id="etape-3" x={300} y={666} w={400} h={44} fill="white" stroke="#2D3436"
             label="Étape 3 — Contact établi"
             sublabel="Le professionnel contacte le client"
             onClick={click} hasBadge={ann.has("etape-3")} />
 
           {/* Étape 4 */}
-          <RectNode id="etape-4" x={300} y={726} w={400} h={44} fill="white" stroke="#2D3436"
+          <RectNode id="etape-4" x={300} y={740} w={400} h={44} fill="white" stroke="#2D3436"
             label="Étape 4 — Rendez-vous fixé"
             sublabel="Le professionnel fixe un rendez-vous avec le client"
             onClick={click} hasBadge={ann.has("etape-4")} />
 
           {/* Étape 5 */}
-          <RectNode id="etape-5" x={300} y={800} w={400} h={44} fill="white" stroke="#FF6B35"
+          <RectNode id="etape-5" x={300} y={814} w={400} h={44} fill="white" stroke="#FF6B35"
             label="Étape 5 — Devis soumis"
             sublabel="Le professionnel renseigne le montant du devis"
             labelColor="#FF6B35" onClick={click} hasBadge={ann.has("etape-5")} />
 
           {/* Losange : devis validé */}
-          <DiamondNode id="devis" cx={500} cy={916} r={62}
+          <DiamondNode id="devis" cx={500} cy={930} r={62}
             stroke="#FF6B35" label="Le recommandeur" line2="valide le devis ?"
             labelColor="#FF6B35" onClick={click} hasBadge={ann.has("devis")} />
 
           {/* Annulée */}
-          <NegNode id="annulee" x={808} y={896} w={150} h={40} label="⏸ Annulée" onClick={click} hasBadge={ann.has("annulee")} />
+          <NegNode id="annulee" x={808} y={910} w={150} h={40} label="⏸ Annulée" onClick={click} hasBadge={ann.has("annulee")} />
 
           {/* Étape 6 */}
-          <RectNode id="etape-6" x={300} y={1004} w={400} h={48} fill="#F0FFF4" stroke="#27AE60"
+          <RectNode id="etape-6" x={300} y={1018} w={400} h={48} fill="#F0FFF4" stroke="#27AE60"
             label="Étape 6 — Devis validé"
             sublabel="Le recommandeur confirme · commissions PENDING → EARNED"
             labelColor="#27AE60" onClick={click} hasBadge={ann.has("etape-6")} />
 
           {/* Commissions */}
           <g style={{ cursor: "pointer" }} onClick={() => click("commissions", "💰 Commissions créées automatiquement — 5 niveaux MLM")}>
-            <rect x={100} y={1076} width={800} height={36} rx={8} fill="#2D3436" filter="url(#sh)" />
-            <text x={500} y={1090} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
+            <rect x={80} y={1090} width={840} height={36} rx={8} fill="#2D3436" filter="url(#sh)" />
+            <text x={500} y={1104} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
               💰 Commissions déclenchées automatiquement — 5 niveaux MLM
             </text>
-            <text x={500} y={1105} textAnchor="middle" fontSize={10} fill="rgba(255,255,255,0.65)">
+            <text x={500} y={1119} textAnchor="middle" fontSize={10} fill="rgba(255,255,255,0.65)">
               Recommandeur 60% · Niveaux 1–5 : 4% chacun (20%) · Affiliation 1% · Cashback pro 1% (Gains) · Winelio 14%
             </text>
-            {ann.has("commissions") && <Badge x={894} y={1082} />}
+            {ann.has("commissions") && <Badge x={914} y={1096} />}
           </g>
 
           {/* Email commission */}
           <g style={{ cursor: "pointer" }} onClick={() => click("email-commission", '📧 Email "Commission à régler" → Professionnel')}>
-            <rect x={170} y={1130} width={660} height={34} rx={8} fill="#F7931E" filter="url(#sh)" />
-            <text x={500} y={1144} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
+            <rect x={170} y={1144} width={660} height={34} rx={8} fill="#F7931E" filter="url(#sh)" />
+            <text x={500} y={1158} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
               📧 Email &quot;Commission à régler&quot; → Professionnel (J+0 · Relance J+2 · Alerte J+4)
             </text>
-            {ann.has("email-commission") && <Badge x={824} y={1136} />}
+            {ann.has("email-commission") && <Badge x={824} y={1150} />}
           </g>
 
           {/* Étape 7 */}
-          <RectNode id="etape-7" x={300} y={1184} w={400} h={42} fill="white" stroke="#2D3436"
+          <RectNode id="etape-7" x={300} y={1198} w={400} h={42} fill="white" stroke="#2D3436"
             label="Étape 7 — Paiement reçu"
             sublabel="Le client règle le professionnel pour la prestation"
             onClick={click} hasBadge={ann.has("etape-7")} />
 
           {/* Fin */}
-          <PillNode id="fin" x={300} y={1246} w={400} h={42} fill="#27AE60"
+          <PillNode id="fin" x={300} y={1260} w={400} h={42} fill="#27AE60"
             label="✅ Étape 8 — Affaire terminée" onClick={click} hasBadge={ann.has("fin")} />
 
         </svg>
