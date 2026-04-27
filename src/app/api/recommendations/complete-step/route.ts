@@ -2,16 +2,18 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createCommissions } from "@/lib/commission";
 import { RECOMMENDATION_STATUS } from "@/lib/constants";
+import { notifyReferrerStep } from "@/lib/notify-referrer-step";
 
+// Étape 6 = "Travaux terminés + Paiement reçu" → commissions déclenchées
+// Étape 7 = "Affaire terminée" (ancienne étape 8 renumérotée)
 const STATUS_BY_STEP: Record<number, string> = {
   1: RECOMMENDATION_STATUS.PENDING,
   2: RECOMMENDATION_STATUS.ACCEPTED,
   3: RECOMMENDATION_STATUS.CONTACT_MADE,
   4: RECOMMENDATION_STATUS.MEETING_SCHEDULED,
   5: RECOMMENDATION_STATUS.QUOTE_SUBMITTED,
-  6: RECOMMENDATION_STATUS.QUOTE_VALIDATED,
-  7: RECOMMENDATION_STATUS.PAYMENT_RECEIVED,
-  8: RECOMMENDATION_STATUS.COMPLETED,
+  6: RECOMMENDATION_STATUS.PAYMENT_RECEIVED,
+  7: RECOMMENDATION_STATUS.COMPLETED,
 };
 
 export async function POST(request: Request) {
@@ -96,9 +98,7 @@ export async function POST(request: Request) {
       })
       .eq("id", stepRow.id);
 
-    // Étape 6 : déclencher les commissions MLM
-    // createCommissions est idempotente et utilise supabaseAdmin (bypass RLS)
-    // Le trigger DB `on_commission_change` met à jour user_wallet_summaries automatiquement
+    // Étape 6 : "Travaux terminés + Paiement reçu" → commissions MLM
     if (stepIndex === 6 && rec.amount) {
       await createCommissions(
         rec.id,
@@ -115,6 +115,11 @@ export async function POST(request: Request) {
       .from("recommendations")
       .update({ status: newStatus })
       .eq("id", rec.id);
+
+    // Notifier le referrer à chaque avancement pro (étapes 2–6)
+    notifyReferrerStep(rec.id, stepIndex).catch((err) =>
+      console.error("[complete-step] notifyReferrerStep error:", err)
+    );
 
     return NextResponse.json({ success: true });
   } catch {

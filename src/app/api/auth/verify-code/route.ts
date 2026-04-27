@@ -134,7 +134,8 @@ export async function POST(req: Request) {
         getAll() { return cookieStore.getAll(); },
         setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2]);
+            // maxAge EN DERNIER pour override le TTL court (3600s) que Supabase fixe sur l'access token
+            response.cookies.set(name, value, { ...(options ?? {}), maxAge: 60 * 60 * 24 * 365 } as Parameters<typeof response.cookies.set>[2]);
           });
         },
       },
