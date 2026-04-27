@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { FlowAnnotationDialog, type FlowAnnotation } from "./FlowAnnotationDialog";
+import { EmailPreviewDialog } from "./EmailPreviewDialog";
 
 export type { FlowAnnotation };
 
@@ -92,8 +93,23 @@ const LEGEND_ITEMS = [
 
 // ── Composant principal ───────────────────────────────────────────────────────
 
-const SVG_W = 1060;
-const SVG_H = 1310;
+const SVG_W = 1200;
+const SVG_H = 1240;
+
+// Nœuds email → type de preview
+const EMAIL_NODE_TYPES: Record<string, string> = {
+  "email-inscrit":    "new-reco-inscrit",
+  "email-non-inscrit":"new-reco-scraped",
+  "cron-relance":     "relance-scraped",
+  "cron-alerte":      "alerte-recommandeur",
+  "email-refus":      "reco-refusee",
+  "email-commission": "commission",
+  "etape-2":          "step-2",
+  "etape-3":          "step-3",
+  "etape-4":          "step-4",
+  "etape-5":          "step-5",
+  "etape-6":          "step-6",
+};
 const MIN_SCALE = 0.15;
 const MAX_SCALE = 3;
 const DRAG_THRESHOLD = 4;
@@ -101,6 +117,7 @@ const DRAG_THRESHOLD = 4;
 export function RecoFlowchart({ annotations: initialAnnotations }: { annotations: FlowAnnotation[] }) {
   const [annotations, setAnnotations] = useState<FlowAnnotation[]>(initialAnnotations);
   const [dialog, setDialog] = useState<{ nodeId: string; label: string } | null>(null);
+  const [emailPreview, setEmailPreview] = useState<string | null>(null);
   const ann = new Set(annotations.map((a) => a.node_id));
 
   // Pan/zoom state
@@ -169,10 +186,15 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
 
   const onMouseUp = useCallback(() => { dragging.current = false; }, []);
 
-  // Seul déclenchement si pas de drag
+  // Clic sur un nœud : email → preview, sinon → annotation
   const click: ClickHandler = (id, label) => {
     if (moved.current) return;
-    setDialog({ nodeId: id, label });
+    const emailType = EMAIL_NODE_TYPES[id];
+    if (emailType) {
+      setEmailPreview(emailType);
+    } else {
+      setDialog({ nodeId: id, label });
+    }
   };
 
   function handleAnnotationAdded(annotation: FlowAnnotation) {
@@ -219,7 +241,7 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
         >
           <g transform={`translate(${pan.x} ${pan.y}) scale(${scale})`}>
           <svg
-          viewBox="0 0 1200 1310"
+          viewBox="0 0 1200 1240"
           style={{ width: 1100, display: "block" }}
           xmlns="http://www.w3.org/2000/svg"
           fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
@@ -254,49 +276,33 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           {/* Email inscrit → suivi ouverture gauche */}
           <line x1="180" y1="262" x2="180" y2="304" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Email non inscrit → losange "Ouvert après 12h ?" */}
-          <line x1="820" y1="262" x2="820" y2="276" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          {/* Email non inscrit → suivi ouverture (flux principal linéaire) */}
+          <line x1="780" y1="262" x2="780" y2="304" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Losange 1 → OUI (ouvert) — descend vers suivi ouverture */}
-          <line x1="820" y1="356" x2="820" y2="408" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
-          <text x="836" y="386" fontSize={11} fontWeight="700" fill="#27AE60">✅ Oui</text>
-
-          {/* Losange 1 → NON (pas ouvert 12h) — va vers relance à droite */}
-          <line x1="860" y1="316" x2="873" y2="316" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
-          <text x="870" y="308" textAnchor="start" fontSize={10} fontWeight="700" fill="#E74C3C">❌ Non ouvert</text>
-
-          {/* Relance → losange 2 "Ouvert après la relance ?" */}
-          <line x1="957" y1="336" x2="957" y2="358" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
-
-          {/* Losange 2 → OUI (ouvert après relance) — rejoint flux principal */}
-          <line x1="923" y1="392" x2="820" y2="392" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
-          <text x="872" y="386" textAnchor="middle" fontSize={10} fontWeight="700" fill="#27AE60">✅ Oui</text>
-
-          {/* Losange 2 → NON (toujours pas ouvert 24h après relance) — alerte referrer */}
-          <line x1="991" y1="392" x2="1001" y2="392" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
-          <text x="1050" y="366" textAnchor="middle" fontSize={10} fontWeight="700" fill="#E74C3C">❌ Toujours non</text>
+          {/* Note cron → email non inscrit (trait pointillé) */}
+          <line x1="950" y1="250" x2="962" y2="250" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4,3" />
 
           {/* Suivi ouverture droite → revendication */}
-          <line x1="780" y1="448" x2="780" y2="466" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="780" y1="344" x2="780" y2="386" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Suivi ouverture gauche → suivi clic gauche */}
           <line x1="180" y1="344" x2="180" y2="386" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Revendication → suivi clic droite */}
-          <line x1="780" y1="510" x2="780" y2="528" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="780" y1="430" x2="780" y2="472" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Inscrit (clic-inscrit) → losange — descente directe (losange sous la colonne gauche) */}
           <line x1="180" y1="426" x2="180" y2="450" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Non-inscrit (clic-non-inscrit) → Étape 2 — descend puis rejoint le centre par le haut */}
-          <line x1="820" y1="568" x2="820" y2="574" stroke="#636E72" strokeWidth={1.5} />
+          <line x1="820" y1="512" x2="820" y2="574" stroke="#636E72" strokeWidth={1.5} />
           <line x1="820" y1="574" x2="500" y2="574" stroke="#636E72" strokeWidth={1.5} />
-          <line x1="500" y1="574" x2="500" y2="592" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="574" x2="500" y2="638" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
           <text x="660" y="566" textAnchor="middle" fontSize={10} fontWeight="700" fill="#27AE60">✅ Revendication = Acceptation</text>
 
           {/* Losange acceptation → étape 2 (OUI) — va à droite puis descend au bord gauche d'Étape 2 */}
           <line x1="242" y1="512" x2="300" y2="512" stroke="#636E72" strokeWidth={1.5} />
-          <line x1="300" y1="512" x2="300" y2="592" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="300" y1="512" x2="300" y2="638" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
           <text x="258" y="504" fontSize={11} fontWeight="700" fill="#27AE60">✅ OUI</text>
 
           {/* Losange acceptation → rejetée (NON) — descend dans la colonne gauche */}
@@ -310,32 +316,24 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           <line x1="110" y1="750" x2="110" y2="772" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Étapes 2 → 3 → 4 → 5 */}
-          <line x1="500" y1="636" x2="500" y2="666" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
-          <line x1="500" y1="710" x2="500" y2="740" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
-          <line x1="500" y1="784" x2="500" y2="814" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="682" x2="500" y2="712" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="756" x2="500" y2="786" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="830" x2="500" y2="860" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Étape 5 → losange devis */}
-          <line x1="500" y1="858" x2="500" y2="866" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
-
-          {/* Losange devis → étape 6 (OUI) */}
-          <line x1="500" y1="992" x2="500" y2="1018" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
-          <text x="516" y="1008" fontSize={11} fontWeight="700" fill="#27AE60">✅ OUI</text>
-
-          {/* Losange devis → annulée (NON) */}
-          <line x1="562" y1="930" x2="808" y2="930" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
-          <text x="698" y="922" textAnchor="middle" fontSize={11} fontWeight="700" fill="#E74C3C">❌ NON</text>
+          {/* Étape 5 → étape 6 (direct, plus de losange) */}
+          <line x1="500" y1="904" x2="500" y2="930" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Étape 6 → commissions */}
-          <line x1="500" y1="1066" x2="500" y2="1090" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="978" x2="500" y2="1002" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Commissions → email commission */}
-          <line x1="500" y1="1126" x2="500" y2="1144" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="1038" x2="500" y2="1056" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Email commission → étape 7 */}
-          <line x1="500" y1="1178" x2="500" y2="1198" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="1090" x2="500" y2="1110" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* Étape 7 → fin */}
-          <line x1="500" y1="1240" x2="500" y2="1260" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="1152" x2="500" y2="1172" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* ══ NŒUDS ══ */}
 
@@ -362,30 +360,44 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
             label="👁 Email ouvert" sublabel="email_opened_at enregistré (1ère fois)"
             labelColor="#2980B9" onClick={click} hasBadge={ann.has("ouverture-inscrit")} />
 
-          {/* Losange : email ouvert après 12h ? */}
-          <DiamondNode id="ouverture-12h" cx={820} cy={316} r={40}
-            stroke="#2980B9" label="Ouvert après" line2="12h ?"
-            onClick={click} hasBadge={ann.has("ouverture-12h")} />
+          {/* ── Chaîne cron automatique (à droite de la colonne non-inscrit) ── */}
 
-          {/* Relance automatique — branche NON du losange 1 */}
-          <RectNode id="relance-scraped" x={875} y={296} w={165} h={40} fill="#F59E0B" stroke="#F59E0B"
-            label="⏱ Relance auto — 12h"
-            sublabel="1 envoi max (cron)"
-            labelColor="white" onClick={click} hasBadge={ann.has("relance-scraped")} />
+          {/* Connecteur depuis l'email non-inscrit */}
+          <line x1="950" y1="240" x2="962" y2="240" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4,3" />
 
-          {/* Losange 2 : encore ouvert après la relance ? (24h après relance = H+36) */}
-          <DiamondNode id="ouverture-post-relance" cx={957} cy={392} r={34}
-            stroke="#E74C3C" label="Ouvert après" line2="la relance ?"
-            labelColor="#E74C3C" onClick={click} hasBadge={ann.has("ouverture-post-relance")} />
+          {/* Étape cron 1 : condition timing H+12 */}
+          <RectNode id="cron-condition-1" x={962} y={218} w={210} h={32} fill="#FFFBEB" stroke="#F59E0B" dashed
+            label="⏱ H+12 · si email non ouvert"
+            labelColor="#92400E" onClick={click} hasBadge={ann.has("cron-condition-1")} />
 
-          {/* Alerte referrer — branche NON du losange 2 (H+36, aucune réponse) */}
-          <RectNode id="alerte-referrer" x={1001} y={372} w={190} h={44} fill="#F7931E" stroke="#F7931E"
-            label="📭 Alerte referrer"
-            sublabel="Pro injoignable · recommander un autre pro"
-            labelColor="white" onClick={click} hasBadge={ann.has("alerte-referrer")} />
+          {/* Flèche → relance */}
+          <line x1="1067" y1="250" x2="1067" y2="268" stroke="#F59E0B" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Suivi ouverture non inscrit — point de fusion OUI des deux losanges */}
-          <RectNode id="ouverture-non-inscrit" x={690} y={408} w={260} h={40} fill="#EBF5FB" stroke="#2980B9" dashed
+          {/* Étape cron 2 : email de relance → pro */}
+          <RectNode id="cron-relance" x={962} y={268} w={210} h={42} fill="#F59E0B" stroke="#F59E0B"
+            label="📧 Relance → pro scrappé"
+            sublabel="1 envoi max · scraped_reminder_sent_at"
+            labelColor="white" onClick={click} hasBadge={ann.has("cron-relance")} />
+
+          {/* Flèche → condition H+36 */}
+          <line x1="1067" y1="310" x2="1067" y2="328" stroke="#F59E0B" strokeWidth={1.5} markerEnd="url(#arr)" />
+
+          {/* Étape cron 3 : condition timing H+36 */}
+          <RectNode id="cron-condition-2" x={962} y={328} w={210} h={32} fill="#FFFBEB" stroke="#F59E0B" dashed
+            label="⏱ H+36 · si toujours non ouvert"
+            labelColor="#92400E" onClick={click} hasBadge={ann.has("cron-condition-2")} />
+
+          {/* Flèche → alerte recommandeur */}
+          <line x1="1067" y1="360" x2="1067" y2="378" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
+
+          {/* Étape cron 4 : alerte recommandeur */}
+          <RectNode id="cron-alerte" x={962} y={378} w={210} h={44} fill="#F7931E" stroke="#F7931E"
+            label="📭 Alerte → recommandeur"
+            sublabel='CTA "Recommander un autre pro"'
+            labelColor="white" onClick={click} hasBadge={ann.has("cron-alerte")} />
+
+          {/* Suivi ouverture non inscrit */}
+          <RectNode id="ouverture-non-inscrit" x={690} y={304} w={260} h={40} fill="#EBF5FB" stroke="#2980B9" dashed
             label="👁 Email ouvert" sublabel="email_opened_at enregistré (1ère fois)"
             labelColor="#2980B9" onClick={click} hasBadge={ann.has("ouverture-non-inscrit")} />
 
@@ -395,12 +407,12 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
             labelColor="#2980B9" onClick={click} hasBadge={ann.has("clic-inscrit")} />
 
           {/* Revendication de fiche */}
-          <RectNode id="revendication" x={690} y={466} w={260} h={44} fill="white" stroke="#2D3436"
+          <RectNode id="revendication" x={690} y={386} w={260} h={44} fill="white" stroke="#2D3436"
             label="🔗 Revendication de fiche" sublabel="Le professionnel s'inscrit et valide sa fiche"
             onClick={click} hasBadge={ann.has("revendication")} />
 
           {/* Suivi clic non inscrit */}
-          <RectNode id="clic-non-inscrit" x={690} y={528} w={260} h={40} fill="#EBF5FB" stroke="#2980B9" dashed
+          <RectNode id="clic-non-inscrit" x={690} y={472} w={260} h={40} fill="#EBF5FB" stroke="#2980B9" dashed
             label="👆 Bouton cliqué dans l'email" sublabel="email_clicked_at · déclenche la revendication"
             labelColor="#2980B9" onClick={click} hasBadge={ann.has("clic-non-inscrit")} />
 
@@ -411,9 +423,9 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           {/* Rejetée — descend sous le losange, colonne gauche */}
           <NegNode id="rejetee" x={10} y={644} w={200} h={40} label="❌ Rejetée" onClick={click} hasBadge={ann.has("rejetee")} />
 
-          {/* Email refus → referrer */}
+          {/* Email refus → recommandeur */}
           <RectNode id="email-refus" x={10} y={706} w={200} h={44} fill="#F7931E" stroke="#F7931E"
-            label='📧 Reco déclinée → Referrer'
+            label='📧 Reco déclinée → Recommandeur'
             sublabel='CTA "Recommander un autre pro"'
             labelColor="white" onClick={click} hasBadge={ann.has("email-refus")} />
 
@@ -422,73 +434,65 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
             label="↩ Nouvelle reco possible" onClick={click} hasBadge={ann.has("nouvelle-reco")} />
 
           {/* Étape 2 */}
-          <RectNode id="etape-2" x={300} y={592} w={400} h={44} fill="white" stroke="#2D3436"
+          <RectNode id="etape-2" x={300} y={638} w={400} h={44} fill="white" stroke="#2D3436"
             label="Étape 2 — Recommandation acceptée"
-            sublabel="Identité du professionnel dévoilée au recommandeur"
+            sublabel="Identité du pro dévoilée · ✉️ email recommandeur"
             onClick={click} hasBadge={ann.has("etape-2")} />
 
           {/* Étape 3 */}
-          <RectNode id="etape-3" x={300} y={666} w={400} h={44} fill="white" stroke="#2D3436"
+          <RectNode id="etape-3" x={300} y={712} w={400} h={44} fill="white" stroke="#2D3436"
             label="Étape 3 — Contact établi"
-            sublabel="Le professionnel contacte le client"
+            sublabel="Le pro contacte le client · ✉️ email recommandeur"
             onClick={click} hasBadge={ann.has("etape-3")} />
 
           {/* Étape 4 */}
-          <RectNode id="etape-4" x={300} y={740} w={400} h={44} fill="white" stroke="#2D3436"
+          <RectNode id="etape-4" x={300} y={786} w={400} h={44} fill="white" stroke="#2D3436"
             label="Étape 4 — Rendez-vous fixé"
-            sublabel="Le professionnel fixe un rendez-vous avec le client"
+            sublabel="Le pro fixe un rendez-vous · ✉️ email recommandeur"
             onClick={click} hasBadge={ann.has("etape-4")} />
 
           {/* Étape 5 */}
-          <RectNode id="etape-5" x={300} y={814} w={400} h={44} fill="white" stroke="#FF6B35"
+          <RectNode id="etape-5" x={300} y={860} w={400} h={44} fill="white" stroke="#2D3436"
             label="Étape 5 — Devis soumis"
-            sublabel="Le professionnel renseigne le montant du devis"
-            labelColor="#FF6B35" onClick={click} hasBadge={ann.has("etape-5")} />
+            sublabel="Le pro renseigne le montant · ✉️ email recommandeur"
+            onClick={click} hasBadge={ann.has("etape-5")} />
 
-          {/* Losange : devis validé */}
-          <DiamondNode id="devis" cx={500} cy={930} r={62}
-            stroke="#FF6B35" label="Le recommandeur" line2="valide le devis ?"
-            labelColor="#FF6B35" onClick={click} hasBadge={ann.has("devis")} />
-
-          {/* Annulée */}
-          <NegNode id="annulee" x={808} y={910} w={150} h={40} label="⏸ Annulée" onClick={click} hasBadge={ann.has("annulee")} />
-
-          {/* Étape 6 */}
-          <RectNode id="etape-6" x={300} y={1018} w={400} h={48} fill="#F0FFF4" stroke="#27AE60"
-            label="Étape 6 — Devis validé"
-            sublabel="Le recommandeur confirme · commissions PENDING → EARNED"
-            labelColor="#27AE60" onClick={click} hasBadge={ann.has("etape-6")} />
+          {/* Étape 6 — Travaux terminés + Paiement reçu */}
+          <RectNode id="etape-6" x={300} y={930} w={400} h={48} fill="#FFF5F0" stroke="#FF6B35"
+            label="Étape 6 — Travaux terminés + Paiement reçu"
+            sublabel="Le pro confirme · commissions déclenchées · recommandeur notifié"
+            labelColor="#FF6B35" onClick={click} hasBadge={ann.has("etape-6")} />
 
           {/* Commissions */}
           <g style={{ cursor: "pointer" }} onClick={() => click("commissions", "💰 Commissions créées automatiquement — 5 niveaux MLM")}>
-            <rect x={80} y={1090} width={840} height={36} rx={8} fill="#2D3436" filter="url(#sh)" />
-            <text x={500} y={1104} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
+            <rect x={80} y={1002} width={840} height={36} rx={8} fill="#2D3436" filter="url(#sh)" />
+            <text x={500} y={1016} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
               💰 Commissions déclenchées automatiquement — 5 niveaux MLM
             </text>
-            <text x={500} y={1119} textAnchor="middle" fontSize={10} fill="rgba(255,255,255,0.65)">
+            <text x={500} y={1031} textAnchor="middle" fontSize={10} fill="rgba(255,255,255,0.65)">
               Recommandeur 60% · Niveaux 1–5 : 4% chacun (20%) · Affiliation 1% · Cashback pro 1% (Gains) · Winelio 14%
             </text>
-            {ann.has("commissions") && <Badge x={914} y={1096} />}
+            {ann.has("commissions") && <Badge x={914} y={1008} />}
           </g>
 
           {/* Email commission */}
           <g style={{ cursor: "pointer" }} onClick={() => click("email-commission", '📧 Email "Commission à régler" → Professionnel')}>
-            <rect x={170} y={1144} width={660} height={34} rx={8} fill="#F7931E" filter="url(#sh)" />
-            <text x={500} y={1158} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
+            <rect x={170} y={1056} width={660} height={34} rx={8} fill="#F7931E" filter="url(#sh)" />
+            <text x={500} y={1070} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
               📧 Email &quot;Commission à régler&quot; → Professionnel (J+0 · Relance J+2 · Alerte J+4)
             </text>
-            {ann.has("email-commission") && <Badge x={824} y={1150} />}
+            {ann.has("email-commission") && <Badge x={824} y={1062} />}
           </g>
 
-          {/* Étape 7 */}
-          <RectNode id="etape-7" x={300} y={1198} w={400} h={42} fill="white" stroke="#2D3436"
-            label="Étape 7 — Paiement reçu"
-            sublabel="Le client règle le professionnel pour la prestation"
+          {/* Étape 7 — Affaire terminée */}
+          <RectNode id="etape-7" x={300} y={1110} w={400} h={42} fill="white" stroke="#2D3436"
+            label="Étape 7 — Affaire terminée"
+            sublabel="Clôture de la recommandation"
             onClick={click} hasBadge={ann.has("etape-7")} />
 
           {/* Fin */}
-          <PillNode id="fin" x={300} y={1260} w={400} h={42} fill="#27AE60"
-            label="✅ Étape 8 — Affaire terminée" onClick={click} hasBadge={ann.has("fin")} />
+          <PillNode id="fin" x={300} y={1172} w={400} h={42} fill="#27AE60"
+            label="✅ Recommandation complétée" onClick={click} hasBadge={ann.has("fin")} />
 
           </svg>
           </g>
@@ -516,6 +520,14 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           </span>
         </div>
       </div>
+
+      {/* Dialog preview email */}
+      {emailPreview && (
+        <EmailPreviewDialog
+          emailType={emailPreview}
+          onClose={() => setEmailPreview(null)}
+        />
+      )}
 
       {/* Dialog annotations */}
       {dialog && (
