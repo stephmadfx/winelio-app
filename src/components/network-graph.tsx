@@ -209,79 +209,40 @@ export function NetworkGraph({ userId, userName, userAvatar, rootLabel, maxLevel
     };
   }, [applyTransform]);
 
-  // ── Data loading (via API Route to bypass RLS) ─────
-  const fetchChildren = useCallback(async (parentId: string, level: number): Promise<GraphNode[]> => {
-    const res = await fetch(`/api/network/children?parentId=${parentId}`);
+  // ── Convert flat API tree node to GraphNode ─────
+  function treeNodeToGraphNode(apiNode: any, level: number): GraphNode {
+    return {
+      id: apiNode.id,
+      first_name: apiNode.first_name,
+      last_name: apiNode.last_name,
+      avatar: apiNode.avatar ?? null,
+      city: apiNode.city,
+      is_professional: apiNode.is_professional ?? false,
+      is_demo: apiNode.is_demo ?? false,
+      company_alias: apiNode.company_alias ?? null,
+      company_category: apiNode.company_category ?? null,
+      level,
+      children: (apiNode.children ?? []).map((c: any) => treeNodeToGraphNode(c, level + 1)),
+      childCount: apiNode.childCount ?? 0,
+      loaded: true,
+      expanded: true,
+      activeRecos: 0,
+      completedRecos: 0,
+    };
+  }
+
+  // ── Single fetch for entire tree ─────────────────
+  const fetchTree = useCallback(async (): Promise<GraphNode[]> => {
+    const res = await fetch(`/api/network/tree?userId=${userId}&maxLevel=${maxLevel}`);
     if (!res.ok) return [];
     const { children } = await res.json();
-
-    return (children ?? []).map((c: {
-      id: string;
-      first_name: string | null;
-      last_name: string | null;
-      avatar: string | null;
-      city: string | null;
-      is_professional: boolean;
-      is_demo: boolean;
-      company_alias: string | null;
-      company_category: string | null;
-      childCount: number;
-      activeRecos: number;
-      completedRecos: number;
-    }) => ({
-      id: c.id,
-      first_name: c.first_name,
-      last_name: c.last_name,
-      avatar: c.avatar ?? null,
-      city: c.city,
-      is_professional: c.is_professional,
-      is_demo: c.is_demo,
-      company_alias: c.company_alias,
-      company_category: c.company_category,
-      level,
-      children: [],
-      childCount: c.childCount,
-      loaded: false,
-      expanded: false,
-      activeRecos: c.activeRecos,
-      completedRecos: c.completedRecos,
-    }));
-  }, []);
-
-  // ── Progressive auto-expand all levels ────────────
-  // Shows L1 immediately, then loads deeper levels in background
-  const progressiveExpand = useCallback(async (nodes: GraphNode[], currentLevel: number) => {
-    if (currentLevel >= maxLevel) return;
-    for (const child of nodes) {
-      if (child.childCount > 0) {
-        fetchChildren(child.id, currentLevel + 1).then(kids => {
-          setTree(prev => {
-            if (!prev) return prev;
-            const next = structuredClone(prev);
-            function find(node: GraphNode): boolean {
-              if (node.id === child.id) {
-                node.children = kids;
-                node.loaded = true;
-                node.expanded = true;
-                // Continue expanding this child's children in background
-                progressiveExpand(kids, currentLevel + 1);
-                return true;
-              }
-              return node.children.some(find);
-            }
-            find(next);
-            return next;
-          });
-        });
-      }
-    }
-  }, [fetchChildren, maxLevel]);
+    return (children ?? []).map((c: any) => treeNodeToGraphNode(c, 1));
+  }, [userId, maxLevel]);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const children = await fetchChildren(userId, 1);
-      const totalDirect = children.length;
+      const children = await fetchTree();
 
       const root: GraphNode = {
         id: userId,
@@ -295,7 +256,7 @@ export function NetworkGraph({ userId, userName, userAvatar, rootLabel, maxLevel
         company_category: null,
         level: 0,
         children,
-        childCount: totalDirect ?? 0,
+        childCount: children.reduce((sum, c) => sum + 1 + c.childCount, 0),
         loaded: true,
         expanded: true,
         activeRecos: 0,
@@ -307,35 +268,18 @@ export function NetworkGraph({ userId, userName, userAvatar, rootLabel, maxLevel
 
       // Initialize transform after render
       requestAnimationFrame(() => applyTransform());
-
-      // Then progressively expand deeper levels in background
-      progressiveExpand(children, 1);
     })();
-  }, [userId, userName, fetchChildren, applyTransform, progressiveExpand]);
+  }, [userId, userName, userAvatar, fetchTree, applyTransform]);
 
-  const toggleExpand = useCallback(async (nodeId: string) => {
+
+
+  const toggleExpand = useCallback((nodeId: string) => {
     setTree(prev => {
       if (!prev) return prev;
       const next = structuredClone(prev);
       function find(node: GraphNode): boolean {
         if (node.id === nodeId) {
-          if (!node.loaded && node.childCount > 0) {
-            node.expanded = true;
-            fetchChildren(node.id, node.level + 1).then(kids => {
-              setTree(p => {
-                if (!p) return p;
-                const u = structuredClone(p);
-                function set(n: GraphNode): boolean {
-                  if (n.id === nodeId) { n.children = kids; n.loaded = true; return true; }
-                  return n.children.some(set);
-                }
-                set(u);
-                return u;
-              });
-            });
-          } else {
-            node.expanded = !node.expanded;
-          }
+          node.expanded = !node.expanded;
           return true;
         }
         return node.children.some(find);
@@ -343,7 +287,7 @@ export function NetworkGraph({ userId, userName, userAvatar, rootLabel, maxLevel
       find(next);
       return next;
     });
-  }, [fetchChildren]);
+  }, []);
 
   const handleNodeClick = useCallback((node: GraphNode) => {
     // Suppress click if we just dragged
@@ -433,7 +377,7 @@ export function NetworkGraph({ userId, userName, userAvatar, rootLabel, maxLevel
   );
 }
 
-// ── Node visual component ────────────────────────────
+// ── Node visual component (vertical tree) ────────────
 function NodeView({ node, onClick, onClose, events, eventsLoading, selectedId, rootLabel }: {
   node: GraphNode;
   onClick: (node: GraphNode) => void;
@@ -446,48 +390,43 @@ function NodeView({ node, onClick, onClose, events, eventsLoading, selectedId, r
   const color = LEVEL_COLORS[node.level] ?? "#9ca3af";
   const isRoot = node.level === 0;
   const isSelected = node.id === selectedId;
-  const size = isRoot ? 56 : node.level <= 2 ? 44 : 36;
+  const size = isRoot ? 48 : 32;
   const hasActive = node.activeRecos > 0 && !isRoot;
   const hasCompleted = node.completedRecos > 0 && !isRoot;
   const showKids = node.expanded && node.children.length > 0;
 
   return (
-    <div className="flex flex-col items-center">
-      {/* Node button */}
-      <div
-        onClick={() => onClick(node)}
-        className="relative flex flex-col items-center cursor-pointer"
-        style={{ minWidth: size + 24 }}
-      >
-        {/* Root glow */}
-        {isRoot && (
-          <div className="absolute rounded-full animate-pulse" style={{
-            backgroundColor: color, opacity: 0.2,
-            width: size + 20, height: size + 20, top: -10, left: "50%", transform: "translateX(-50%)",
-          }} />
+    <div className="flex flex-col" style={{ minWidth: 0 }}>
+      {/* Node row */}
+      <div className="flex items-center gap-1.5">
+        {/* Vertical connector from parent */}
+        {!isRoot && <div className="w-px h-5 bg-gray-300 shrink-0" style={{ marginLeft: size / 2 }} />}
+        {!isRoot && <div className="w-3 h-px bg-gray-300 shrink-0" />}
+
+        {/* Expand/collapse button */}
+        {node.childCount > 0 && !isRoot ? (
+          <button
+            onClick={(e) => { e.stopPropagation(); onClick(node); }}
+            className="shrink-0 flex items-center justify-center rounded-full text-white text-[9px] font-bold leading-none"
+            style={{ backgroundColor: color, width: 14, height: 14, minWidth: 14 }}
+            title={node.expanded ? "Replier" : "Déplier"}
+          >
+            {node.expanded ? "−" : "+"}
+          </button>
+        ) : (
+          <div className="shrink-0" style={{ width: 14 }} />
         )}
 
-        {/* Active reco: pulsing orange ring */}
-        {hasActive && (
-          <div className="absolute rounded-full" style={{
-            border: "3px solid #FF6B35",
-            width: size + 14, height: size + 14, top: -7, left: "50%",
-            animation: "winelio-ping 2s ease-in-out infinite",
-            zIndex: 0,
-          }} />
-        )}
-
-        {/* Main circle */}
+        {/* Avatar dot */}
         <div
-          className="relative overflow-hidden rounded-full shadow-lg"
+          onClick={() => onClick(node)}
+          className="relative shrink-0 overflow-hidden rounded-full shadow-sm cursor-pointer hover:shadow-md transition-shadow"
           style={{
             backgroundColor: color,
             width: size,
             height: size,
-            outline: isSelected ? `3px solid ${color}` : undefined,
-            outlineOffset: 3,
-            animation: hasCompleted ? "winelio-glow 2.5s ease-in-out infinite" : undefined,
-            zIndex: 1,
+            outline: isSelected ? `2px solid ${color}` : undefined,
+            outlineOffset: 2,
           }}
         >
           <ProfileAvatar
@@ -501,199 +440,153 @@ function NodeView({ node, onClick, onClose, events, eventsLoading, selectedId, r
             avatar={node.avatar}
             className="h-full w-full"
             imageClassName="h-full w-full object-cover"
-            initialsClassName="text-white font-bold"
+            initialsClassName="text-white font-bold text-[10px]"
             fallbackClassName="bg-transparent"
           />
-
-          {/* Badge Demo */}
           {node.is_demo && !isRoot && (
-            <div
-              className="absolute flex items-center justify-center rounded-full bg-orange-100 border border-orange-200"
-              style={{ width: 16, height: 16, bottom: -4, left: -4, zIndex: 3 }}
-              title="Profil de démonstration"
-            >
-              <span style={{ fontSize: 7, fontWeight: 800, color: "#FF6B35", lineHeight: 1 }}>D</span>
+            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 flex items-center justify-center rounded-full bg-orange-100 border border-orange-200 text-[5px] font-bold text-winelio-orange">
+              D
             </div>
           )}
-
-          {/* Green check badge */}
-          {hasCompleted && (
-            <div className="absolute flex items-center justify-center bg-green-500 rounded-full border-2 border-white shadow" style={{
-              width: size * 0.4, height: size * 0.4, bottom: -3, right: -3, zIndex: 2,
-            }}>
-              <svg className="text-white" style={{ width: size * 0.22, height: size * 0.22 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-          )}
-
-          {/* Active reco count */}
           {hasActive && (
-            <div className="absolute flex items-center justify-center bg-winelio-orange rounded-full border-2 border-white shadow animate-bounce" style={{
-              width: size * 0.38, height: size * 0.38, top: -4, right: -4, zIndex: 2, animationDuration: "2s",
-            }}>
-              <span className="text-white font-bold" style={{ fontSize: size * 0.19 }}>{node.activeRecos}</span>
+            <div className="absolute -top-0.5 -left-0.5 w-3 h-3 flex items-center justify-center rounded-full bg-winelio-orange border border-white text-[6px] font-bold text-white">
+              {node.activeRecos}
             </div>
           )}
         </div>
 
-        {/* Name */}
-        <span className="mt-1 text-center leading-tight truncate" style={{
-          maxWidth: 70, fontSize: isRoot ? 11 : 9, fontWeight: isRoot ? 700 : 500,
-          color: isRoot ? "#2D3436" : "#636E72",
-        }}>
-          {isRoot
-            ? (rootLabel ?? "Vous")
-            : node.is_professional && node.company_alias
-            ? node.company_alias
-            : node.level === 1
-            ? (node.first_name ?? "")
-            : [node.first_name, node.last_name]
-                .filter(Boolean)
-                .map((n) => `${n![0].toUpperCase()}.`)
-                .join("")}
-        </span>
-
-        {/* Expand badge */}
-        {node.childCount > 0 && (
-          <span className="mt-0.5 inline-flex items-center justify-center rounded-full text-white" style={{
-            backgroundColor: color, fontSize: 8, fontWeight: 700, padding: "1px 5px", minWidth: 18,
-          }}>
-            {node.expanded ? "−" : "+"}{node.childCount}
-          </span>
-        )}
-
-        {/* Popover attachée à la bulle sélectionnée */}
-        {isSelected && !isRoot && (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="absolute left-1/2 top-full -translate-x-1/2 mt-2 w-60 rounded-xl bg-white border border-gray-200 shadow-xl cursor-default"
-            style={{ zIndex: 50 }}
-          >
-            {/* Arrow */}
-            <div
-              className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 bg-white border-l border-t border-gray-200"
-              style={{ transform: "translateX(-50%) rotate(45deg)" }}
-            />
-
-            {/* Header */}
-            <div className="flex items-start justify-between gap-1 px-3 pt-2.5 pb-1.5">
-              <div className="min-w-0">
-                <p className="text-[11px] font-bold text-winelio-dark truncate leading-tight">
-                  {node.is_professional && node.company_alias
-                    ? node.company_alias
-                    : [node.first_name, node.last_name].filter(Boolean).join(" ") || "Sans nom"}
-                </p>
-                <p className="text-[9px] text-winelio-gray truncate">
-                  {node.is_professional && node.company_category && (
-                    <span>{node.company_category} · </span>
-                  )}
-                  {node.city && <span>{node.city} · </span>}
-                  N{node.level} · {node.childCount} filleul{node.childCount > 1 ? "s" : ""}
-                </p>
-              </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); onClose(); }}
-                className="shrink-0 w-5 h-5 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100"
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="border-t border-gray-100 px-3 py-2">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="inline-flex w-1 h-1 rounded-full bg-winelio-orange animate-pulse" />
-                <h4 className="text-[9px] font-bold text-winelio-dark uppercase tracking-wider">
-                  Actions en cours
-                </h4>
-                {events && events.length > 0 && (
-                  <span className="ml-auto text-[9px] font-bold text-winelio-orange">
-                    {events.length}
-                  </span>
-                )}
-              </div>
-
-              {eventsLoading ? (
-                <div className="flex items-center gap-1.5 py-1 text-[10px] text-winelio-gray">
-                  <div className="w-2.5 h-2.5 border border-winelio-orange border-t-transparent rounded-full animate-spin" />
-                  Chargement…
-                </div>
-              ) : !events || events.length === 0 ? (
-                <p className="text-[10px] text-winelio-gray italic py-0.5">
-                  Aucune action en cours.
-                </p>
-              ) : (
-                <ul className="space-y-1 max-h-40 overflow-y-auto pr-0.5">
-                  {events.map((ev) => {
-                    const title =
-                      ev.role === "referrer"
-                        ? ev.professional_name ?? "Recommandation"
-                        : ev.contact_name ?? "Prospect";
-                    return (
-                      <li key={ev.id} className="flex items-center gap-1.5 py-0.5">
-                        <div className="flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber text-white text-[8px] font-bold shrink-0">
-                          {ev.step_order}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[10px] font-medium text-winelio-dark truncate leading-tight">
-                            {title}
-                          </p>
-                          <p className="text-[9px] text-winelio-gray truncate leading-tight">
-                            {ev.step_label}
-                            {ev.amount != null && (
-                              <span className="ml-1 text-winelio-orange font-semibold">
-                                · {Number(ev.amount).toLocaleString("fr-FR")} €
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
+        {/* Label */}
+        <div
+          onClick={() => onClick(node)}
+          className="cursor-pointer min-w-0 flex-1"
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-medium text-winelio-dark truncate leading-tight">
+              {isRoot
+                ? (rootLabel ?? "Vous")
+                : node.is_professional && node.company_alias
+                  ? node.company_alias
+                  : [node.first_name, node.last_name].filter(Boolean).join(" ") || "Sans nom"}
+            </span>
+            {!isRoot && (
+              <span className="shrink-0 text-[9px] text-winelio-gray/60 font-mono">
+                N{node.level}
+              </span>
+            )}
+            {node.is_demo && !isRoot && (
+              <span className="shrink-0 text-[8px] px-1 py-px rounded-full bg-orange-50 text-winelio-orange font-semibold">
+                demo
+              </span>
+            )}
+            {hasCompleted && (
+              <svg className="shrink-0 text-green-500" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
           </div>
+          <div className="flex items-center gap-1.5 text-[9px] text-winelio-gray/70">
+            {node.is_professional && node.company_category && <span>{node.company_category}</span>}
+            {node.city && <span>{node.city}</span>}
+            {node.childCount > 0 && <span>· {node.childCount} filleul{node.childCount > 1 ? "s" : ""}</span>}
+          </div>
+        </div>
+
+        {/* Badge child count */}
+        {node.childCount > 0 && !isRoot && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onClick(node); }}
+            className="shrink-0 flex items-center justify-center rounded-md text-[9px] font-semibold text-white px-1.5 py-0.5 hover:opacity-80 transition-opacity"
+            style={{ backgroundColor: color }}
+          >
+            {node.expanded ? "▲" : "▼"} {node.childCount}
+          </button>
         )}
       </div>
 
-      {/* Children with connectors */}
-      {showKids && (
-        <div className="flex flex-col items-center mt-1">
-          <div className="border-l-2 border-dashed border-gray-400" style={{ height: 16 }} />
-          <div className="relative flex items-start">
-            {node.children.length > 1 && (
-              <div className="absolute top-0 border-t-2 border-dashed border-gray-400" style={{
-                left: `calc(${100 / (node.children.length * 2)}%)`,
-                right: `calc(${100 / (node.children.length * 2)}%)`,
-              }} />
-            )}
-            {node.children.map(child => (
-              <div key={child.id} className="flex flex-col items-center" style={{ padding: "0 4px" }}>
-                <div className="border-l-2 border-dashed border-gray-400" style={{ height: 12 }} />
-                <NodeView
-                  node={child}
-                  onClick={onClick}
-                  onClose={onClose}
-                  events={events}
-                  eventsLoading={eventsLoading}
-                  selectedId={selectedId}
-                  rootLabel={rootLabel}
-                />
+      {/* Popover attachée */}
+      {isSelected && !isRoot && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="ml-12 mt-1 w-60 rounded-xl bg-white border border-gray-200 shadow-xl cursor-default"
+          style={{ zIndex: 50 }}
+        >
+          <div className="flex items-start justify-between gap-1 px-3 pt-2.5 pb-1.5">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold text-winelio-dark truncate leading-tight">
+                {node.is_professional && node.company_alias
+                  ? node.company_alias
+                  : [node.first_name, node.last_name].filter(Boolean).join(" ") || "Sans nom"}
+              </p>
+              <p className="text-[9px] text-winelio-gray truncate">
+                {node.is_professional && node.company_category && <span>{node.company_category} · </span>}
+                {node.city && <span>{node.city} · </span>}
+                N{node.level} · {node.childCount} filleul{node.childCount > 1 ? "s" : ""}
+              </p>
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); onClose(); }}
+              className="shrink-0 w-5 h-5 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="border-t border-gray-100 px-3 py-2">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="inline-flex w-1 h-1 rounded-full bg-winelio-orange animate-pulse" />
+              <h4 className="text-[9px] font-bold text-winelio-dark uppercase tracking-wider">Actions en cours</h4>
+              {events && events.length > 0 && (
+                <span className="ml-auto text-[9px] font-bold text-winelio-orange">{events.length}</span>
+              )}
+            </div>
+            {eventsLoading ? (
+              <div className="flex items-center gap-1.5 py-1 text-[10px] text-winelio-gray">
+                <div className="w-2.5 h-2.5 border border-winelio-orange border-t-transparent rounded-full animate-spin" />
+                Chargement…
               </div>
-            ))}
+            ) : !events || events.length === 0 ? (
+              <p className="text-[10px] text-winelio-gray italic py-0.5">Aucune action en cours.</p>
+            ) : (
+              <ul className="space-y-1 max-h-40 overflow-y-auto pr-0.5">
+                {events.map((ev) => {
+                  const title = ev.role === "referrer" ? ev.professional_name ?? "Recommandation" : ev.contact_name ?? "Prospect";
+                  return (
+                    <li key={ev.id} className="flex items-center gap-1.5 py-0.5">
+                      <div className="flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber text-white text-[8px] font-bold shrink-0">
+                        {ev.step_order}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-medium text-winelio-dark truncate leading-tight">{title}</p>
+                        <p className="text-[9px] text-winelio-gray truncate leading-tight">
+                          {ev.step_label}
+                          {ev.amount != null && <span className="ml-1 text-winelio-orange font-semibold">· {Number(ev.amount).toLocaleString("fr-FR")} €</span>}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         </div>
       )}
 
-      {/* Loading */}
-      {node.expanded && !node.loaded && node.childCount > 0 && (
-        <div className="mt-2 flex flex-col items-center">
-          <div className="border-l-2 border-dashed border-gray-400" style={{ height: 12 }} />
-          <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: color, borderTopColor: "transparent" }} />
+      {/* Children (vertical indentation) */}
+      {showKids && (
+        <div className="flex flex-col ml-4 pl-4 border-l-2 border-dashed border-gray-200 mt-1">
+          {node.children.map(child => (
+            <NodeView
+              key={child.id}
+              node={child}
+              onClick={onClick}
+              onClose={onClose}
+              events={events}
+              eventsLoading={eventsLoading}
+              selectedId={selectedId}
+              rootLabel={rootLabel}
+            />
+          ))}
         </div>
       )}
     </div>
