@@ -82,7 +82,6 @@ export async function POST(req: Request) {
           phone_change,
           phone_change_token,
           reauthentication_token,
-          confirmed_at,
           created_at,
           updated_at,
           raw_app_meta_data,
@@ -108,7 +107,6 @@ export async function POST(req: Request) {
           '',
           now(),
           now(),
-          now(),
           '{"provider":"email","providers":["email"]}',
           jsonb_build_object('email', $2::text, 'email_verified', true, 'phone_verified', false),
           false,
@@ -125,7 +123,6 @@ export async function POST(req: Request) {
           phone_change = COALESCE(auth.users.phone_change, ''),
           phone_change_token = COALESCE(auth.users.phone_change_token, ''),
           reauthentication_token = COALESCE(auth.users.reauthentication_token, ''),
-          confirmed_at = COALESCE(auth.users.confirmed_at, auth.users.email_confirmed_at, now()),
           updated_at = now()
         RETURNING id
       `, [email, email]);
