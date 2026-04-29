@@ -5,6 +5,7 @@ import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getAuditContext, getDocumentHash, logOnboardingEvent } from "@/lib/audit";
 import { isAtLeastAge } from "@/lib/age";
+import { verifySiren } from "@/lib/siren";
 import { notifyNewReferral } from "@/lib/notify-new-referral";
 
 const POSTAL_CODE_RE = /^\d{5}$/;
@@ -222,6 +223,15 @@ export async function completeProOnboarding(data: {
 
   if (!data.siret) {
     return { error: "Un numéro SIRET est obligatoire pour activer un compte professionnel." };
+  }
+
+  // Vérification SIRET auprès de l'API officielle Recherche d'entreprises (data.gouv.fr)
+  const verification = await verifySiren(data.siret);
+  if (!verification) {
+    return { error: "Le numéro SIRET saisi est invalide ou introuvable. Vérifie ton numéro et réessaie." };
+  }
+  if (!verification.actif) {
+    return { error: `L'entreprise "${verification.nom}" (SIRET ${verification.siret}) est radiée. Seules les entreprises actives peuvent s'inscrire.` };
   }
 
   const supabase = await createClient();
