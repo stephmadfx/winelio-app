@@ -110,7 +110,7 @@ export async function POST(req: Request) {
           now(),
           now(),
           '{"provider":"email","providers":["email"]}',
-          jsonb_build_object('email', $1::text, 'email_verified', true, 'phone_verified', false),
+          jsonb_build_object('email', $2::text, 'email_verified', true, 'phone_verified', false),
           false,
           false,
           false
@@ -128,7 +128,7 @@ export async function POST(req: Request) {
           confirmed_at = COALESCE(auth.users.confirmed_at, auth.users.email_confirmed_at, now()),
           updated_at = now()
         RETURNING id
-      `, [email]);
+      `, [email, email]);
 
       userId = upsertRes.rows[0]?.id ?? null;
 
