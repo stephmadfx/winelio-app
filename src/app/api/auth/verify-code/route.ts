@@ -108,7 +108,7 @@ export async function POST(req: Request) {
           now(),
           now(),
           '{"provider":"email","providers":["email"]}',
-          jsonb_build_object('email', $2::text, 'email_verified', true, 'phone_verified', false),
+          '{}'::jsonb,
           false,
           false,
           false
@@ -125,7 +125,7 @@ export async function POST(req: Request) {
           reauthentication_token = COALESCE(auth.users.reauthentication_token, ''),
           updated_at = now()
         RETURNING id
-      `, [email, email]);
+      `, [email]);
 
       userId = upsertRes.rows[0]?.id ?? null;
 
@@ -143,7 +143,15 @@ export async function POST(req: Request) {
 
       // Définir le mot de passe temporaire
       await pgClient.query(
-        "UPDATE auth.users SET encrypted_password = crypt($1, gen_salt('bf')) WHERE id = $2",
+        `UPDATE auth.users
+         SET encrypted_password = crypt($1, gen_salt('bf')),
+             raw_user_meta_data = jsonb_build_object(
+               'sub', id::text,
+               'email', email,
+               'email_verified', true,
+               'phone_verified', false
+             )
+         WHERE id = $2`,
         [tempPassword, userId]
       );
 
@@ -157,19 +165,20 @@ export async function POST(req: Request) {
           created_at,
           updated_at
         )
-        VALUES (
-          $1::text,
-          $1::uuid,
-          jsonb_build_object('sub', $1::text, 'email', $2, 'email_verified', true, 'phone_verified', false),
+        SELECT
+          u.id::text,
+          u.id,
+          jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true, 'phone_verified', false),
           'email',
           now(),
           now(),
           now()
-        )
+        FROM auth.users u
+        WHERE u.id = $1::uuid
         ON CONFLICT (provider_id, provider) DO UPDATE SET
           identity_data = excluded.identity_data,
           updated_at = now()
-      `, [userId, email]);
+      `, [userId]);
 
       await pgClient.query("COMMIT");
     } catch (pgErr) {
