@@ -63,11 +63,70 @@ export async function POST(req: Request) {
     try {
       await pgClient.query("BEGIN");
 
-      // Créer l'utilisateur s'il n'existe pas (trigger corrigé vers winelio.profiles)
+      // Créer l'utilisateur s'il n'existe pas (trigger corrigé vers winelio.profiles).
+      // GoTrue self-hosted attend des chaînes vides, pas NULL, sur plusieurs
+      // colonnes token héritées du schéma auth.
       const upsertRes = await pgClient.query<{ id: string }>(`
-        INSERT INTO auth.users (id, aud, role, email, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_super_admin, is_sso_user)
-        VALUES (gen_random_uuid(), 'authenticated', 'authenticated', $1, now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', false, false)
-        ON CONFLICT (email) WHERE is_sso_user = false DO UPDATE SET updated_at = now()
+        INSERT INTO auth.users (
+          instance_id,
+          id,
+          aud,
+          role,
+          email,
+          email_confirmed_at,
+          confirmation_token,
+          recovery_token,
+          email_change_token_new,
+          email_change,
+          email_change_token_current,
+          phone_change,
+          phone_change_token,
+          reauthentication_token,
+          confirmed_at,
+          created_at,
+          updated_at,
+          raw_app_meta_data,
+          raw_user_meta_data,
+          is_super_admin,
+          is_sso_user,
+          is_anonymous
+        )
+        VALUES (
+          '00000000-0000-0000-0000-000000000000',
+          gen_random_uuid(),
+          'authenticated',
+          'authenticated',
+          $1,
+          now(),
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          now(),
+          now(),
+          now(),
+          '{"provider":"email","providers":["email"]}',
+          jsonb_build_object('email', $1, 'email_verified', true, 'phone_verified', false),
+          false,
+          false,
+          false
+        )
+        ON CONFLICT (email) WHERE is_sso_user = false DO UPDATE SET
+          instance_id = COALESCE(auth.users.instance_id, '00000000-0000-0000-0000-000000000000'),
+          confirmation_token = COALESCE(auth.users.confirmation_token, ''),
+          recovery_token = COALESCE(auth.users.recovery_token, ''),
+          email_change_token_new = COALESCE(auth.users.email_change_token_new, ''),
+          email_change = COALESCE(auth.users.email_change, ''),
+          email_change_token_current = COALESCE(auth.users.email_change_token_current, ''),
+          phone_change = COALESCE(auth.users.phone_change, ''),
+          phone_change_token = COALESCE(auth.users.phone_change_token, ''),
+          reauthentication_token = COALESCE(auth.users.reauthentication_token, ''),
+          confirmed_at = COALESCE(auth.users.confirmed_at, auth.users.email_confirmed_at, now()),
+          updated_at = now()
         RETURNING id
       `, [email]);
 
@@ -90,6 +149,30 @@ export async function POST(req: Request) {
         "UPDATE auth.users SET encrypted_password = crypt($1, gen_salt('bf')) WHERE id = $2",
         [tempPassword, userId]
       );
+
+      await pgClient.query(`
+        INSERT INTO auth.identities (
+          provider_id,
+          user_id,
+          identity_data,
+          provider,
+          last_sign_in_at,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          $1,
+          $1,
+          jsonb_build_object('sub', $1::text, 'email', $2, 'email_verified', true, 'phone_verified', false),
+          'email',
+          now(),
+          now(),
+          now()
+        )
+        ON CONFLICT (provider_id, provider) DO UPDATE SET
+          identity_data = excluded.identity_data,
+          updated_at = now()
+      `, [userId, email]);
 
       await pgClient.query("COMMIT");
     } catch (pgErr) {
