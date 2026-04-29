@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const ACTIVE_STATUSES = [
   "PENDING", "ACCEPTED", "CONTACT_MADE", "MEETING_SCHEDULED",
-  "QUOTE_SUBMITTED", "QUOTE_VALIDATED", "PAYMENT_RECEIVED",
+  "QUOTE_SUBMITTED", "PAYMENT_RECEIVED",
 ];
 
 const STATUS_LABEL: Record<string, string> = {
@@ -13,7 +13,6 @@ const STATUS_LABEL: Record<string, string> = {
   CONTACT_MADE: "Contact établi",
   MEETING_SCHEDULED: "Rendez-vous fixé",
   QUOTE_SUBMITTED: "Devis soumis",
-  QUOTE_VALIDATED: "Devis validé",
   PAYMENT_RECEIVED: "Paiement reçu",
 };
 
@@ -23,8 +22,7 @@ const STATUS_ORDER: Record<string, number> = {
   CONTACT_MADE: 3,
   MEETING_SCHEDULED: 4,
   QUOTE_SUBMITTED: 5,
-  QUOTE_VALIDATED: 6,
-  PAYMENT_RECEIVED: 7,
+  PAYMENT_RECEIVED: 6,
 };
 
 export async function GET(request: Request) {

@@ -45,6 +45,12 @@ const STEP_MESSAGES: Record<number, StepInfo> = {
     body:    (pro, contact) => `<strong style="color:#2D3436;">${he(pro)}</strong> a confirmé que les travaux sont terminés et que le paiement de <strong style="color:#2D3436;">${he(contact)}</strong> a été reçu.<br><br>Vos <strong style="color:#FF6B35;">commissions sont en cours de traitement</strong> et seront bientôt disponibles dans votre wallet Winelio.`,
     highlight: true,
   },
+  7: {
+    emoji: "🏁",
+    subject: (pro, contact) => `Affaire terminée avec ${contact} — mission accomplie !`,
+    title:   () => `Affaire terminée avec succès !`,
+    body:    (pro, contact) => `<strong style="color:#2D3436;">${he(pro)}</strong> a clôturé l'affaire pour <strong style="color:#2D3436;">${he(contact)}</strong>. Merci pour votre recommandation, elle a porté ses fruits !`,
+  },
 };
 
 export async function notifyReferrerStep(recommendationId: string, stepIndex: number) {

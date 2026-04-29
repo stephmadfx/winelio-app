@@ -106,6 +106,10 @@ export default function RecommendationDetailPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [transferTarget, setTransferTarget] = useState("");
+  const [transferring, setTransferring] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/whoami").then(async (res) => {
@@ -487,23 +491,108 @@ export default function RecommendationDetailPage() {
                   )}
                 </button>
 
-                {/* Bouton Refuser — visible pour le pro à l'étape d'acceptation (étape 2) */}
+                {/* Boutons Refuser + Transférer — visibles pour le pro à l'étape d'acceptation (étape 2) */}
                 {recommendation && userId === recommendation.professional_id && (currentStep?.step?.order_index ?? 0) === 2 && (
-                  <button
-                    onClick={handleRefuse}
-                    disabled={refusing || completing}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    {refusing ? (
-                      <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
-                    ) : (
+                  <>
+                    <button
+                      onClick={() => setTransferDialogOpen(true)}
+                      disabled={refusing || completing}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-600 hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
                       </svg>
-                    )}
-                    Refuser
-                  </button>
+                      Transférer
+                    </button>
+                    <button
+                      onClick={handleRefuse}
+                      disabled={refusing || completing}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {refusing ? (
+                        <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      )}
+                      Refuser
+                    </button>
+                  </>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Transfer Dialog ── */}
+          {transferDialogOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+              <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+                <h3 className="text-lg font-bold text-winelio-dark">Transférer la recommandation</h3>
+                <p className="mt-1 text-sm text-winelio-gray">
+                  Saisissez l'ID du professionnel à qui vous souhaitez transférer cette recommandation.
+                </p>
+                {transferError && (
+                  <div className="mt-3 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+                    {transferError}
+                  </div>
+                )}
+                <input
+                  type="text"
+                  value={transferTarget}
+                  onChange={(e) => { setTransferTarget(e.target.value); setTransferError(null); }}
+                  placeholder="ID du professionnel"
+                  className="mt-4 w-full rounded-xl border border-winelio-gray/20 bg-white px-4 py-3 text-sm font-semibold focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15 transition-all"
+                />
+                <div className="mt-5 flex items-center justify-end gap-3">
+                  <button
+                    onClick={() => { setTransferDialogOpen(false); setTransferTarget(""); setTransferError(null); }}
+                    className="rounded-xl border border-winelio-gray/20 px-5 py-2.5 text-sm font-semibold text-winelio-gray hover:bg-winelio-light transition-colors cursor-pointer"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!transferTarget.trim() || !recommendation) return;
+                      setTransferring(true);
+                      setTransferError(null);
+                      try {
+                        const res = await fetch(`/api/recommendations/${recommendation.id}/transfer`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ target_professional_id: transferTarget.trim() }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) {
+                          setTransferError(data.error || "Erreur lors du transfert");
+                        } else {
+                          setTransferDialogOpen(false);
+                          setTransferTarget("");
+                          await fetchData();
+                        }
+                      } catch {
+                        setTransferError("Erreur réseau lors du transfert");
+                      }
+                      setTransferring(false);
+                    }}
+                    disabled={transferring || !transferTarget.trim()}
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-winelio-orange/20 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {transferring ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Transfert en cours…
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
+                        </svg>
+                        Transférer
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}
