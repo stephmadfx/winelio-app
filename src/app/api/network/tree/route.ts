@@ -31,7 +31,7 @@ export async function GET(request: Request) {
 
     const { data: kids } = await supabaseAdmin
       .from("profiles")
-      .select("id, first_name, last_name, avatar, city, is_professional, is_demo, companies!owner_id(alias, category:categories(name))")
+      .select("id, sponsor_id, first_name, last_name, avatar, city, is_professional, is_demo, companies!owner_id(alias, category:categories(name))")
       .in("sponsor_id", currentParentIds);
 
     if (!kids || kids.length === 0) break;

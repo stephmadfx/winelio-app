@@ -209,10 +209,11 @@ export function NetworkGraph({ userId, userName, userAvatar, rootLabel, maxLevel
     };
   }, [applyTransform]);
 
-  // ── Convert flat API tree node to GraphNode ─────
-  // Only expand level 1 (direct children) by default
-  // Deeper levels stay collapsed for performance
-  function treeNodeToGraphNode(apiNode: any, level: number): GraphNode {
+  // ── Store raw API tree and build GraphNodes lazily ─
+  const rawTreeRef = useRef<any>(null);
+
+  function materializeNode(apiNode: any, level: number): GraphNode {
+    const expanded = level <= 1; // only N1 expanded by default
     return {
       id: apiNode.id,
       first_name: apiNode.first_name,
@@ -224,22 +225,64 @@ export function NetworkGraph({ userId, userName, userAvatar, rootLabel, maxLevel
       company_alias: apiNode.company_alias ?? null,
       company_category: apiNode.company_category ?? null,
       level,
-      children: (apiNode.children ?? []).map((c: any) => treeNodeToGraphNode(c, level + 1)),
+      // Only build children for expanded nodes
+      children: expanded ? (apiNode.children ?? []).map((c: any) => materializeNode(c, level + 1)) : [],
       childCount: apiNode.childCount ?? 0,
       loaded: true,
-      // Only auto-expand N1 (level 1). Levels 2+ stay collapsed.
-      expanded: level <= 1,
+      expanded,
       activeRecos: 0,
       completedRecos: 0,
     };
   }
 
+  // Expand a node lazily from raw data
+  const expandNode = useCallback((nodeId: string) => {
+    const raw = rawTreeRef.current;
+    if (!raw) return;
+
+    // Find the raw API node and materialize its children
+    function findRaw(nodes: any[]): any | null {
+      for (const n of nodes) {
+        if (n.id === nodeId) return n;
+        const found = findRaw(n.children ?? []);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    const rawNode = findRaw(raw);
+    if (!rawNode) return;
+
+    setTree(prev => {
+      if (!prev) return prev;
+      const next = structuredClone(prev);
+      function find(node: GraphNode): boolean {
+        if (node.id === nodeId) {
+          if (!node.expanded && node.childCount > 0) {
+            // Materialize children from raw data
+            node.children = (rawNode.children ?? []).map((c: any) => materializeNode(c, node.level + 1));
+            node.expanded = true;
+          } else {
+            node.expanded = !node.expanded;
+          }
+          return true;
+        }
+        return node.children.some(find);
+      }
+      find(next);
+      return next;
+    });
+  }, []);
+
   // ── Single fetch for entire tree ─────────────────
   const fetchTree = useCallback(async (): Promise<GraphNode[]> => {
     const res = await fetch(`/api/network/tree?userId=${userId}&maxLevel=${maxLevel}`);
     if (!res.ok) return [];
-    const { children } = await res.json();
-    return (children ?? []).map((c: any) => treeNodeToGraphNode(c, 1));
+    const data = await res.json();
+    const children = data.children ?? [];
+    // Store raw API data for lazy expansion
+    rawTreeRef.current = children;
+    return children.map((c: any) => materializeNode(c, 1));
   }, [userId, maxLevel]);
 
   useEffect(() => {
@@ -297,8 +340,8 @@ export function NetworkGraph({ userId, userName, userAvatar, rootLabel, maxLevel
     const vp = viewportRef.current;
     if (vp?.dataset.wasDrag) return;
     setSelectedNode(node);
-    if (node.childCount > 0 && node.level < maxLevel) toggleExpand(node.id);
-  }, [toggleExpand]);
+    if (node.childCount > 0 && node.level < maxLevel) expandNode(node.id);
+  }, [expandNode, maxLevel]);
 
   const zoomIn = () => { dragState.current.scale = Math.min(dragState.current.scale + 0.2, 4); applyTransform(); rerender(n => n + 1); };
   const zoomOut = () => { dragState.current.scale = Math.max(dragState.current.scale - 0.2, 0.2); applyTransform(); rerender(n => n + 1); };
