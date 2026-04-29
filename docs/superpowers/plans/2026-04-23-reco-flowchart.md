@@ -1,25 +1,31 @@
-# Organigramme Processus de Recommandation — Implementation Plan
+# Organigramme Processus de Recommandation — Implementation Plan (RÉALISÉ)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> ⚠️ **Important : Ce plan a été implémenté.** Voici l'état du code réel au 2026-04-29.
 
-**Goal:** Ajouter une page `/gestion-reseau/processus` dans le dashboard super admin qui affiche l'organigramme complet du processus de recommandation Winelio avec un système de notes par nœud.
+**Goal:** Page `/gestion-reseau/processus` dans le dashboard super admin affichant l'organigramme du processus de recommandation Winelio avec système de notes par nœud.
 
-**Architecture:** Page Next.js Server Component qui charge les notes depuis Supabase, puis passe les données au composant Client `RecoFlowchart` (React Flow v12). Chaque nœud du flowchart est cliquable et ouvre un Dialog shadcn pour consulter/ajouter des notes persistées dans une nouvelle table `winelio.process_flow_annotations`.
+**Architecture:** Page Next.js Server Component qui charge les notes depuis Supabase, puis passe les données au composant Client `RecoFlowchart` (SVG pur — pas React Flow). Chaque nœud est cliquable : les nœuds email ouvrent une preview du template, les autres ouvrent un Dialog d'annotation.
 
-**Tech Stack:** Next.js 15 App Router, @xyflow/react v12, shadcn Dialog, Supabase (schéma `winelio`), TypeScript, Tailwind CSS v4.
+**Tech Stack:** Next.js 15 App Router, SVG pur (pan/zoom custom), shadcn Dialog, Supabase (schéma `winelio`), TypeScript, Tailwind CSS v4.
 
----
-
-## Fichiers créés / modifiés
+## Fichiers créés
 
 | Fichier | Rôle |
 |---|---|
 | `supabase/migrations/20260423_process_flow_annotations.sql` | Table `process_flow_annotations` + index + RLS |
 | `src/app/gestion-reseau/processus/page.tsx` | Server Component — charge les notes et rend le flowchart |
 | `src/app/gestion-reseau/processus/actions.ts` | Server Actions `addFlowAnnotation` + `deleteFlowAnnotation` |
+| `src/components/admin/RecoFlowchart.tsx` | Client Component SVG pur — nœuds custom SVG + pan/zoom |
+| `src/components/admin/RecoFlowchartClient.tsx` | Wrapper dynamic import (SSR:false) |
 | `src/components/admin/FlowAnnotationDialog.tsx` | Dialog shadcn pour consulter/ajouter une note |
-| `src/components/admin/RecoFlowchart.tsx` | Client Component React Flow — nœuds custom + layout |
-| `src/components/admin/AdminSidebar.tsx` | +1 entrée de menu "Processus" |
+| `src/components/admin/EmailPreviewDialog.tsx` | Dialog de preview des templates email (bonus) |
+
+## Fichiers modifiés
+
+| Fichier | Rôle |
+|---|---|
+| `src/components/admin/AdminLayoutShell.tsx` | +1 entrée de menu "Processus" |
+| `src/components/admin/AdminSidebar.tsx` | +1 entrée de menu "Processus" (sidebar héritée) |
 
 ---
 
