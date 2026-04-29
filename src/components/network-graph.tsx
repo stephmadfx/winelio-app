@@ -248,6 +248,35 @@ export function NetworkGraph({ userId, userName, userAvatar, rootLabel, maxLevel
     }));
   }, []);
 
+  // ── Progressive auto-expand all levels ────────────
+  // Shows L1 immediately, then loads deeper levels in background
+  const progressiveExpand = useCallback(async (nodes: GraphNode[], currentLevel: number) => {
+    if (currentLevel >= maxLevel) return;
+    for (const child of nodes) {
+      if (child.childCount > 0) {
+        fetchChildren(child.id, currentLevel + 1).then(kids => {
+          setTree(prev => {
+            if (!prev) return prev;
+            const next = structuredClone(prev);
+            function find(node: GraphNode): boolean {
+              if (node.id === child.id) {
+                node.children = kids;
+                node.loaded = true;
+                node.expanded = true;
+                // Continue expanding this child's children in background
+                progressiveExpand(kids, currentLevel + 1);
+                return true;
+              }
+              return node.children.some(find);
+            }
+            find(next);
+            return next;
+          });
+        });
+      }
+    }
+  }, [fetchChildren, maxLevel]);
+
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -273,22 +302,16 @@ export function NetworkGraph({ userId, userName, userAvatar, rootLabel, maxLevel
         completedRecos: 0,
       };
 
-      // Auto-expand L1
-      for (const child of root.children) {
-        if (child.childCount > 0) {
-          child.children = await fetchChildren(child.id, 2);
-          child.loaded = true;
-          child.expanded = true;
-        }
-      }
-
       setTree(root);
       setLoading(false);
 
       // Initialize transform after render
       requestAnimationFrame(() => applyTransform());
+
+      // Then progressively expand deeper levels in background
+      progressiveExpand(children, 1);
     })();
-  }, [userId, userName, fetchChildren, applyTransform]);
+  }, [userId, userName, fetchChildren, applyTransform, progressiveExpand]);
 
   const toggleExpand = useCallback(async (nodeId: string) => {
     setTree(prev => {
