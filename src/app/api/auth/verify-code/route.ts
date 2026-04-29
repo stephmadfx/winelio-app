@@ -110,7 +110,7 @@ export async function POST(req: Request) {
           now(),
           now(),
           '{"provider":"email","providers":["email"]}',
-          jsonb_build_object('email', $1, 'email_verified', true, 'phone_verified', false),
+          jsonb_build_object('email', $1::text, 'email_verified', true, 'phone_verified', false),
           false,
           false,
           false
@@ -161,8 +161,8 @@ export async function POST(req: Request) {
           updated_at
         )
         VALUES (
-          $1,
-          $1,
+          $1::text,
+          $1::uuid,
           jsonb_build_object('sub', $1::text, 'email', $2, 'email_verified', true, 'phone_verified', false),
           'email',
           now(),
