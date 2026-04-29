@@ -3,6 +3,8 @@ import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { notifyNewRecommendation } from "@/lib/notify-new-recommendation";
 
+const SCHEMA = "winelio";
+
 type SelfProfile = {
   first_name: string;
   last_name: string;
@@ -104,6 +106,32 @@ export async function POST(req: Request) {
 
   if (recError) {
     return NextResponse.json({ error: `Erreur création recommandation: ${recError.message}` }, { status: 500 });
+  }
+
+  // ── Créer les recommendation_steps ─────────────────────────────────────────
+  const { data: stepDefs } = await supabaseAdmin
+    .schema(SCHEMA)
+    .from("steps")
+    .select("id, order_index")
+    .order("order_index");
+
+  if (stepDefs && stepDefs.length > 0) {
+    const now = new Date().toISOString();
+    const stepRows = stepDefs.map((s) => ({
+      recommendation_id: recommendation.id,
+      step_id: s.id,
+      // Auto-compléter l'étape 1 "Recommandation reçue"
+      completed_at: s.order_index === 1 ? now : null,
+    }));
+
+    const { error: stepsErr } = await supabaseAdmin
+      .schema(SCHEMA)
+      .from("recommendation_steps")
+      .insert(stepRows);
+
+    if (stepsErr) {
+      console.error("[create-recommendation] erreur création steps:", stepsErr);
+    }
   }
 
   notifyNewRecommendation(recommendation.id).catch((err) => {

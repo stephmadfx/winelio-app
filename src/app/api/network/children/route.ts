@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 
   const ACTIVE_STATUSES = [
     "PENDING", "ACCEPTED", "CONTACT_MADE", "MEETING_SCHEDULED",
-    "QUOTE_SUBMITTED", "QUOTE_VALIDATED", "PAYMENT_RECEIVED",
+    "QUOTE_SUBMITTED", "PAYMENT_RECEIVED",
   ];
 
   const results = await Promise.all(
