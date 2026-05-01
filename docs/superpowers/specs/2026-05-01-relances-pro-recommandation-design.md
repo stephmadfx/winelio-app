@@ -146,12 +146,14 @@ BEGIN
   SELECT s.order_index INTO step_order
     FROM winelio.steps s WHERE s.id = NEW.step_id;
 
-  -- Cancel les followups pending de l'étape précédente
+  -- Cancel TOUS les followups pending dont l'étape suivante est déjà complétée
+  -- (after_step_order < step_order couvre le cas où le pro saute des étapes,
+  -- ex: passe directement à l'étape 4 sans avoir complété l'étape 3)
   UPDATE winelio.recommendation_followups
      SET status = 'cancelled', cancel_reason = 'next_step_done', updated_at = now()
    WHERE recommendation_id = NEW.recommendation_id
      AND status = 'pending'
-     AND after_step_order = step_order - 1;
+     AND after_step_order < step_order;
 
   -- Crée un followup si l'étape complétée est 2, 4 ou 5
   IF step_order IN (2, 4) THEN
@@ -199,7 +201,8 @@ Auth `Bearer ${CRON_SECRET}`. Déclenché toutes les 15 minutes par cron externe
 
 2. Pour chaque followup:
    a. Re-vérifier les conditions live :
-      - Étape (after_step_order + 1) déjà complétée ?
+      - Une étape d'order > after_step_order déjà complétée ?
+        (couvre étape suivante directe + cas où le pro a sauté plusieurs étapes)
         → status='cancelled', cancel_reason='next_step_done', skip
       - Reco refusée / transférée / supprimée ?
         → status='cancelled', cancel_reason='reco_refused'|'reco_transferred', skip
@@ -273,10 +276,10 @@ standard (cf. `CLAUDE.md` section "Templates email — Charte visuelle obligatoi
 - Barre accent dégradé orange en haut
 - Logo R2 (`LOGO_IMG_HTML`)
 - Icône emoji dans tile dégradée (`🔔` cycle 1, `⏰` cycle 2, `⚠️` cycle 3)
-- H1 selon cycle :
-  - Cycle 1 : "Avez-vous {action} ?"
-  - Cycle 2 : "Toujours intéressé par cette recommandation ?"
-  - Cycle 3 : "Dernière relance — votre client attend une réponse"
+- Sujet email + H1 selon cycle :
+  - Cycle 1 — sujet "Avez-vous {action} ?" / H1 idem
+  - Cycle 2 — sujet "Toujours intéressé par cette recommandation ?" / H1 idem
+  - Cycle 3 — sujet "Dernière relance — votre client attend une réponse" / H1 idem
 - Question principale selon `after_step_order` :
   - 2 : "Avez-vous bien pris contact avec **{contactName}** ?"
   - 4 : "Avez-vous transmis le devis à **{contactName}** ?"
@@ -362,7 +365,7 @@ reportés, cancel + raison) — utile pour le SAV.
 ### Edge cases
 
 1. **Pro complète l'étape suivante via UI** — trigger cancel les pending. Bouton "C'est fait" cliqué a posteriori → idempotent.
-2. **Pro reporte 5 fois** — au 6e envoi planifié, le worker enclenche le cycle sans accepter de nouveau report. À la 3e relance → `abandoned_by_pro_at`.
+2. **Pro reporte 5 fois** — `report_count = 5`. La page `/postpone` affiche "0 reports restants" et la route action rejette tout `postpone` ultérieur (HTTP 409 + page "Limite de reports atteinte"). Le cycle se déroule normalement (cycle 1, 2, 3) à partir de la dernière date reportée. À la 3e relance sans action → `abandoned_by_pro_at`.
 3. **Étape 2 acceptée puis reco refusée 2h après** — le followup créé reste pending mais sera cancel au prochain run cron. Idempotent.
 4. **Étape 5 sans `expected_completion_at`** — le trigger ne crée pas de followup. UI bloque, mais cas de robustesse pour recos historiques / API admin.
 5. **Recos antérieures au déploiement** — pas de backfill. On évite une vague de relances sur des recos peut-être déjà oubliées.
