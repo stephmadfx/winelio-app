@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { assignSponsor, updateProfile, updateCompanyEmail } from "@/app/(protected)/profile/actions";
 import { triggerDemoSeed } from "@/components/DemoSeedBanner";
-import { resolveProfileAvatarUrl } from "@/lib/profile-avatar";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { AvatarCropModal } from "@/components/avatar-crop-modal";
 import { WelcomeModal } from "@/components/welcome-modal";
@@ -59,7 +58,10 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(resolveProfileAvatarUrl(profile.avatar));
+  // On stocke la clé brute (ex: "users/<id>/<file>.webp"). ProfileAvatar la résout
+  // en interne via resolveProfileAvatarUrl — passer une URL déjà résolue produirait
+  // un double préfixe `/api/avatars/api/avatars/...` qui 404.
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile.avatar);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [avatarVisibleToNetwork, setAvatarVisibleToNetwork] = useState(profile.avatar_visible_to_network !== false);
@@ -100,7 +102,7 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
   // Garde formRef toujours à jour
   useEffect(() => { formRef.current = form; }, [form]);
   useEffect(() => {
-    setAvatarPreview(resolveProfileAvatarUrl(profile.avatar));
+    setAvatarPreview(profile.avatar);
   }, [profile.avatar]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,7 +190,7 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
         setMessage({ type: "error", text: data.error || "Impossible d'envoyer la photo. Réessayez." });
         return;
       }
-      setAvatarPreview(resolveProfileAvatarUrl(data.key));
+      setAvatarPreview(data.key);
       setMessage({ type: "success", text: "Photo de profil mise à jour." });
       router.refresh();
     } finally {
