@@ -110,7 +110,7 @@
 │   │           [UTILISE] actions.ts → updateProfile()
 │   │           [UTILISE] StickyFormActions
 │   │
-│   ├── [FEATURE] Recommandations (Workflow 8 étapes)
+│   ├── [FEATURE] Recommandations (Workflow 7 étapes)
 │   │   ├── src/app/(protected)/recommendations/page.tsx
 │   │   │       [PERSISTE DANS] recommendations, profiles
 │   │   │       Filtre : envoyées / reçues / toutes
@@ -125,11 +125,38 @@
 │   │   │       [PERSISTE DANS] contacts (création prospect)
 │   │   │       [UTILISE] compensation_plans, companies
 │   │   │
-│   │   └── src/app/api/recommendations/complete-step/route.ts
-│   │           [PERSISTE DANS] recommendation_steps (completed_at)
-│   │           [DÉCLENCHE] createCommissions() si step=6 (idempotent)
-│   │           [PERSISTE DANS] commission_transactions
-│   │           [PERSISTE DANS] user_wallet_summaries (recalcul)
+│   │   ├── src/app/api/recommendations/complete-step/route.ts
+│   │   │       [PERSISTE DANS] recommendation_steps (completed_at)
+│   │   │       [DÉCLENCHE] createCommissions() si step=6 (idempotent)
+│   │   │       [PERSISTE DANS] commission_transactions
+│   │   │       [PERSISTE DANS] user_wallet_summaries (recalcul)
+│   │   │
+│   │   ├── [FEATURE] Relances automatiques pro (depuis 2026-05)
+│   │   │   ├── src/app/api/recommendations/process-followups/route.ts
+│   │   │   │       [PERSISTE DANS] recommendation_followups (état cycle)
+│   │   │   │       [DÉCLENCHE] notify-pro-followup (email relance)
+│   │   │   │       [DÉCLENCHE] notify-pro-abandoned (email referrer si 3 relances sans réponse)
+│   │   │   │       [UTILISE] email-queue
+│   │   │   │       [DÉPEND DE] recommendation_followups (pending échus)
+│   │   │   │
+│   │   │   ├── src/app/api/recommendations/followup-action/route.ts
+│   │   │   │       [DÉPEND DE] followup-token (validation HMAC)
+│   │   │   │       [PERSISTE DANS] recommendation_followups (status → done/postponed/abandoned)
+│   │   │   │       [PERSISTE DANS] recommendations (abandoned_by_pro_at)
+│   │   │   │       [DÉCLENCHE] complete-step si action=done
+│   │   │   │
+│   │   │   ├── src/app/recommendations/followup/[token]/postpone/page.tsx
+│   │   │   │       [PUBLIC] token HMAC · choix du délai (menu)
+│   │   │   │       [DÉCLENCHE] POST /api/recommendations/followup-action {action: postpone}
+│   │   │   │
+│   │   │   └── src/app/recommendations/followup/[token]/abandon/page.tsx
+│   │   │           [PUBLIC] token HMAC · page de confirmation
+│   │   │           [DÉCLENCHE] POST /api/recommendations/followup-action {action: abandon}
+│   │   │
+│   │   └── (trigger DB)
+│   │           trg_recommendation_step_followup → handle_recommendation_step_completion()
+│   │           [DÉCLENCHE] INSERT recommendation_followups à la complétion étape 2/4/5
+│   │           [DÉCLENCHE] CANCEL followups pending si étape suivante déjà complétée
 │   │
 │   ├── [FEATURE] Réseau MLM
 │   │   ├── src/app/(protected)/network/page.tsx
@@ -278,6 +305,10 @@
 │       he(string) · protection XSS dans emails HTML
 ├── src/lib/email-logo.ts [UTILITY]
 │       LOGO_IMG_HTML · <img> R2 inline pour emails
+├── src/lib/followup-token.ts [UTILITY]
+│       signFollowupToken() · verifyFollowupToken()
+│       HMAC-SHA256 signé avec FOLLOWUP_ACTION_SECRET (min 32 chars)
+│       [UTILISÉ PAR] notify-pro-followup, followup-action route
 └── src/lib/utils.ts [UTILITY]
         cn() · clsx + tailwind-merge
 
