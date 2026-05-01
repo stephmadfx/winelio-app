@@ -16,6 +16,7 @@ interface RecommendationDetail {
   created_at: string;
   referrer_id: string;
   professional_id: string;
+  abandoned_by_pro_at: string | null;
   contact: { first_name: string; last_name: string; email: string; phone: string } | null;
   professional: { first_name: string; last_name: string; company: { name: string } | null } | null;
   referrer: { first_name: string; last_name: string } | null;
@@ -440,6 +441,21 @@ export default function RecommendationDetailPage() {
         </div>
 
         <div className="px-6 py-6 sm:px-8">
+          {recommendation.abandoned_by_pro_at && userId === recommendation.referrer_id && (
+            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">😞</div>
+                <div className="flex-1 text-sm">
+                  <p className="font-semibold text-amber-900">
+                    Le professionnel n&apos;a pas donné suite
+                  </p>
+                  <p className="text-xs text-amber-800 mt-1">
+                    Vous pouvez la transférer à un autre pro depuis le bouton « Transférer » ci-dessous.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           <RecommendationFollowupCard
             recommendationId={recommendation.id}
             isProfessional={userId === recommendation.professional_id}
