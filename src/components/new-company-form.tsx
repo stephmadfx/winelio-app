@@ -36,6 +36,7 @@ export function NewCompanyForm({
     city: "",
     postal_code: "",
     siret: "",
+    insurance_number: "",
     category_id: "",
   });
 
@@ -126,6 +127,7 @@ export function NewCompanyForm({
       postal_code: form.postal_code || undefined,
       siret: form.siret || undefined,
       siren: sirenData?.siren || undefined,
+      insurance_number: form.insurance_number || undefined,
       is_verified: !!sirenData?.actif,
       category_id: form.category_id,
     });
@@ -214,6 +216,22 @@ export function NewCompanyForm({
           <Field label="Adresse" name="address" value={form.address} onChange={handleChange} />
           <Field label="Ville" name="city" value={form.city} onChange={handleChange} />
           <Field label="Code postal" name="postal_code" value={form.postal_code} onChange={handleChange} />
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-winelio-gray mb-1">
+              Numéro d&apos;assurance professionnelle <span className="text-gray-400 text-xs font-normal">(optionnel)</span>
+            </label>
+            <input
+              type="text"
+              name="insurance_number"
+              value={form.insurance_number}
+              onChange={handleChange}
+              placeholder="N° contrat RC pro"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
+            />
+            <p className="mt-1.5 text-xs text-winelio-gray">
+              Une fois enregistré, ce numéro ne pourra être modifié que via le support.
+            </p>
+          </div>
 
           {/* Category select */}
           <div>

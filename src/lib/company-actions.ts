@@ -28,6 +28,7 @@ export async function createCompany(payload: {
   postal_code?: string;
   siret?: string;
   siren?: string;
+  insurance_number?: string;
   is_verified: boolean;
   category_id: string;
 }) {
@@ -51,9 +52,12 @@ export async function createCompany(payload: {
 
   const alias = await generateAlias(supabase);
 
+  const insuranceNumber = (payload.insurance_number ?? "").trim().slice(0, 100) || null;
+
   const { error } = await supabase.from("companies").insert({
     ...payload,
     naf_code: nafCode,
+    insurance_number: insuranceNumber,
     owner_id: user.id,
     source: "owner",
     alias,
@@ -141,6 +145,65 @@ export async function updateCompany(
 
   revalidatePath("/companies");
   revalidatePath(`/companies/${companyId}/edit`);
+  return { success: true };
+}
+
+/**
+ * Envoie au support une demande de modification d'une donnée légale verrouillée
+ * (SIRET / SIREN / NAF) sur une fiche entreprise dont le user est owner.
+ */
+export async function requestCompanyModification(
+  companyId: string,
+  reason: string
+): Promise<{ success?: true; error?: string }> {
+  const trimmed = reason.trim();
+  if (trimmed.length < 10) {
+    return { error: "Merci de préciser la raison (au moins 10 caractères)." };
+  }
+  if (trimmed.length > 2000) {
+    return { error: "Raison trop longue (2000 caractères max)." };
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Non authentifié" };
+
+  const { data: company } = await supabase
+    .from("companies")
+    .select("id, name, siret, siren, naf_code, insurance_number")
+    .eq("id", companyId)
+    .eq("owner_id", user.id)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!company) return { error: "Fiche introuvable." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("first_name, last_name")
+    .eq("id", user.id)
+    .single();
+
+  const requesterName =
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim() ||
+    user.email ||
+    "Utilisateur Winelio";
+
+  const { notifyCompanyModificationRequest } = await import(
+    "@/lib/notify-company-modification-request"
+  );
+  await notifyCompanyModificationRequest({
+    requesterEmail: user.email ?? "",
+    requesterName,
+    companyName: company.name ?? "—",
+    companyId: company.id,
+    siret: company.siret,
+    siren: company.siren,
+    nafCode: company.naf_code,
+    insuranceNumber: company.insurance_number,
+    reason: trimmed,
+  });
+
   return { success: true };
 }
 

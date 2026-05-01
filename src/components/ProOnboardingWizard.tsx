@@ -47,6 +47,7 @@ export function ProOnboardingWizard({
   const [sirenData, setSirenData] = useState<SirenVerification | null>(null);
   const [nafCheck, setNafCheck] = useState<NafCheckResult | null>(null);
   const [proEmail, setProEmail] = useState("");
+  const [insuranceNumber, setInsuranceNumber] = useState("");
   const [engagementChecked, setEngagementChecked] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +63,7 @@ export function ProOnboardingWizard({
       category_id: categoryId,
       siret: siret.trim() || null,
       email: proEmail.trim() || null,
+      insurance_number: insuranceNumber.trim() || null,
     });
     if (result.error) {
       setError(result.error);
@@ -132,6 +134,8 @@ export function ProOnboardingWizard({
           setNafCheck={setNafCheck}
           proEmail={proEmail}
           setProEmail={setProEmail}
+          insuranceNumber={insuranceNumber}
+          setInsuranceNumber={setInsuranceNumber}
           onBack={() => setStep(1)}
           onNext={() => setStep(3)}
         />
@@ -204,7 +208,8 @@ function StepBar({ current }: { current: number }) {
 function Step2({
   categories, categoryId, setCategoryId, siret, setSiret,
   sirenData, setSirenData, nafCheck, setNafCheck,
-  proEmail, setProEmail, onBack, onNext,
+  proEmail, setProEmail, insuranceNumber, setInsuranceNumber,
+  onBack, onNext,
 }: {
   categories: Category[];
   categoryId: string;
@@ -217,6 +222,8 @@ function Step2({
   setNafCheck: (v: NafCheckResult | null) => void;
   proEmail: string;
   setProEmail: (v: string) => void;
+  insuranceNumber: string;
+  setInsuranceNumber: (v: string) => void;
   onBack: () => void;
   onNext: () => void;
 }) {
@@ -346,6 +353,21 @@ function Step2({
           />
           <p className="mt-1.5 text-xs text-winelio-gray">
             C&apos;est l&apos;adresse où tu seras contacté lors d&apos;une nouvelle recommandation. Si non renseigné, ton email de connexion Winelio est utilisé.
+          </p>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-winelio-gray mb-1">
+            Numéro d&apos;assurance professionnelle <span className="text-winelio-gray/50 text-xs font-normal">(optionnel)</span>
+          </label>
+          <input
+            type="text"
+            value={insuranceNumber}
+            onChange={(e) => setInsuranceNumber(e.target.value)}
+            placeholder="N° contrat RC pro"
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
+          />
+          <p className="mt-1.5 text-xs text-winelio-gray">
+            Renseigner l&apos;assurance responsabilité civile pro rassure les clients qui te seront recommandés. Une fois saisi, ce champ ne pourra être modifié que via le support.
           </p>
         </div>
       </div>

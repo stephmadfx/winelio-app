@@ -222,6 +222,7 @@ export async function completeProOnboarding(data: {
   category_id: string;
   siret: string | null;
   email?: string | null;
+  insurance_number?: string | null;
 }): Promise<{ error?: string }> {
   const user = await getUser();
   if (!user) return { error: "Non authentifié" };
@@ -286,6 +287,7 @@ export async function completeProOnboarding(data: {
     .maybeSingle();
 
   const proEmail = (data.email ?? "").trim().slice(0, 254) || null;
+  const insuranceNumber = (data.insurance_number ?? "").trim().slice(0, 100) || null;
 
   if (existingCompany) {
     const patch: Record<string, string | null> = {};
@@ -294,6 +296,7 @@ export async function completeProOnboarding(data: {
     patch.siren = verifiedSiren;
     patch.naf_code = verifiedNafCode;
     if (proEmail !== null) patch.email = proEmail;
+    if (insuranceNumber !== null) patch.insurance_number = insuranceNumber;
     if (Object.keys(patch).length > 0) {
       const { error: companyError } = await supabase
         .from("companies")
@@ -311,6 +314,7 @@ export async function completeProOnboarding(data: {
       siret: data.siret || null,
       siren: verifiedSiren,
       naf_code: verifiedNafCode,
+      insurance_number: insuranceNumber,
       email: proEmail,
       alias,
     });

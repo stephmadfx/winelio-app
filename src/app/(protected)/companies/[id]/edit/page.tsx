@@ -18,7 +18,7 @@ export default async function EditCompanyPage({
   const { data: company } = await supabase
     .from("companies")
     .select(
-      "id, name, legal_name, email, phone, website, address, city, postal_code, siret, siren, naf_code, category_id, owner_id"
+      "id, name, legal_name, email, phone, website, address, city, postal_code, siret, siren, naf_code, insurance_number, category_id, owner_id"
     )
     .eq("id", id)
     .eq("owner_id", user.id)
