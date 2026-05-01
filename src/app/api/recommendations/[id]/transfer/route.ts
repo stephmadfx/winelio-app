@@ -78,6 +78,14 @@ export async function POST(
     return NextResponse.json({ error: `Erreur transfert: ${updateErr.message}` }, { status: 500 });
   }
 
+  // Annuler les relances pending pour la reco originale
+  await supabaseAdmin
+    .schema("winelio")
+    .from("recommendation_followups")
+    .update({ status: "cancelled", cancel_reason: "reco_transferred" })
+    .eq("recommendation_id", rec.id)
+    .eq("status", "pending");
+
   // Créer une nouvelle recommandation pour le pro cible (même contact, même desc)
   const { data: newRec, error: newRecErr } = await supabaseAdmin
     .schema("winelio")
