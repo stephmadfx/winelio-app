@@ -230,6 +230,10 @@ export async function completeProOnboarding(data: {
   if (!data.siret) {
     return { error: "Un numéro SIRET est obligatoire pour activer un compte professionnel." };
   }
+  const insuranceNumber = (data.insurance_number ?? "").trim().slice(0, 100);
+  if (!insuranceNumber) {
+    return { error: "Un numéro d'assurance professionnelle est obligatoire pour activer un compte pro." };
+  }
 
   // Vérification SIREN + NAF côté serveur (empêche tout bypass du contrôle client).
   const sirenData = await verifySiren(data.siret);
@@ -287,7 +291,6 @@ export async function completeProOnboarding(data: {
     .maybeSingle();
 
   const proEmail = (data.email ?? "").trim().slice(0, 254) || null;
-  const insuranceNumber = (data.insurance_number ?? "").trim().slice(0, 100) || null;
 
   if (existingCompany) {
     const patch: Record<string, string | null> = {};
@@ -296,7 +299,7 @@ export async function completeProOnboarding(data: {
     patch.siren = verifiedSiren;
     patch.naf_code = verifiedNafCode;
     if (proEmail !== null) patch.email = proEmail;
-    if (insuranceNumber !== null) patch.insurance_number = insuranceNumber;
+    patch.insurance_number = insuranceNumber;
     if (Object.keys(patch).length > 0) {
       const { error: companyError } = await supabase
         .from("companies")

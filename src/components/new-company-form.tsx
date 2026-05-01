@@ -104,6 +104,10 @@ export function NewCompanyForm({
       setError("La catégorie est obligatoire.");
       return;
     }
+    if (!form.insurance_number.trim()) {
+      setError("Le numéro d'assurance professionnelle est obligatoire.");
+      return;
+    }
     if (form.siret && !sirenData) {
       setError("Veuillez cliquer sur « Vérifier » pour valider votre SIRET avant de continuer.");
       return;
@@ -218,18 +222,19 @@ export function NewCompanyForm({
           <Field label="Code postal" name="postal_code" value={form.postal_code} onChange={handleChange} />
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-winelio-gray mb-1">
-              Numéro d&apos;assurance professionnelle <span className="text-gray-400 text-xs font-normal">(optionnel)</span>
+              Numéro d&apos;assurance professionnelle *
             </label>
             <input
               type="text"
               name="insurance_number"
               value={form.insurance_number}
               onChange={handleChange}
+              required
               placeholder="N° contrat RC pro"
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
             />
             <p className="mt-1.5 text-xs text-winelio-gray">
-              Une fois enregistré, ce numéro ne pourra être modifié que via le support.
+              Obligatoire. Une fois enregistré, ce numéro ne pourra être modifié que via le support.
             </p>
           </div>
 

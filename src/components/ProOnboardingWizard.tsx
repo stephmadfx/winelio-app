@@ -263,7 +263,8 @@ function Step2({
     !!sirenData &&
     sirenData.actif &&
     !!nafCheck &&
-    nafCheck.allowed;
+    nafCheck.allowed &&
+    !!insuranceNumber.trim();
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6">
@@ -357,7 +358,7 @@ function Step2({
         </div>
         <div>
           <label className="block text-sm font-medium text-winelio-gray mb-1">
-            Numéro d&apos;assurance professionnelle <span className="text-winelio-gray/50 text-xs font-normal">(optionnel)</span>
+            Numéro d&apos;assurance professionnelle <span className="text-winelio-orange">*</span>
           </label>
           <input
             type="text"
@@ -367,7 +368,7 @@ function Step2({
             className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
           />
           <p className="mt-1.5 text-xs text-winelio-gray">
-            Renseigner l&apos;assurance responsabilité civile pro rassure les clients qui te seront recommandés. Une fois saisi, ce champ ne pourra être modifié que via le support.
+            L&apos;assurance responsabilité civile pro est obligatoire et rassure les clients qui te seront recommandés. Une fois saisi, ce numéro ne pourra être modifié que via le support.
           </p>
         </div>
       </div>

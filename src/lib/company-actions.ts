@@ -50,9 +50,12 @@ export async function createCompany(payload: {
     nafCode = nafCheck.code;
   }
 
-  const alias = await generateAlias(supabase);
+  const insuranceNumber = (payload.insurance_number ?? "").trim().slice(0, 100);
+  if (!insuranceNumber) {
+    return { error: "Un numéro d'assurance professionnelle est obligatoire." };
+  }
 
-  const insuranceNumber = (payload.insurance_number ?? "").trim().slice(0, 100) || null;
+  const alias = await generateAlias(supabase);
 
   const { error } = await supabase.from("companies").insert({
     ...payload,
