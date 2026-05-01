@@ -4,13 +4,8 @@
 
 BEGIN;
 
--- 0. Fonction set_updated_at (n'existe pas encore dans le schéma winelio)
-CREATE OR REPLACE FUNCTION winelio.set_updated_at()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN NEW.updated_at = now(); RETURN NEW; END $$;
-
 -- 1. Nouvelle table : suivi des relances pro
-CREATE TABLE winelio.recommendation_followups (
+CREATE TABLE IF NOT EXISTS winelio.recommendation_followups (
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   recommendation_id uuid NOT NULL REFERENCES winelio.recommendations(id) ON DELETE CASCADE,
   after_step_order  smallint NOT NULL CHECK (after_step_order IN (2, 4, 5)),
@@ -26,27 +21,35 @@ CREATE TABLE winelio.recommendation_followups (
   updated_at        timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_recommendation_followups_due
+CREATE INDEX IF NOT EXISTS idx_recommendation_followups_due
   ON winelio.recommendation_followups (status, scheduled_at)
   WHERE status = 'pending';
 
-CREATE INDEX idx_recommendation_followups_reco_step
+CREATE INDEX IF NOT EXISTS idx_recommendation_followups_reco_step
   ON winelio.recommendation_followups (recommendation_id, after_step_order);
 
 -- Une seule ligne pending par (reco, step) à la fois
-CREATE UNIQUE INDEX recommendation_followups_one_pending_per_step
+CREATE UNIQUE INDEX IF NOT EXISTS recommendation_followups_one_pending_per_step
   ON winelio.recommendation_followups (recommendation_id, after_step_order)
   WHERE status = 'pending';
 
--- Trigger updated_at automatique (pattern existant dans winelio)
+-- Trigger updated_at automatique (réutilise winelio.update_updated_at_column défini dans 20260415_legal_documents.sql)
+DROP TRIGGER IF EXISTS trg_recommendation_followups_updated_at ON winelio.recommendation_followups;
 CREATE TRIGGER trg_recommendation_followups_updated_at
   BEFORE UPDATE ON winelio.recommendation_followups
-  FOR EACH ROW EXECUTE FUNCTION winelio.set_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION winelio.update_updated_at_column();
 
 -- 2. Nouvelles colonnes sur recommendations
-ALTER TABLE winelio.recommendations
-  ADD COLUMN expected_completion_at timestamptz,
-  ADD COLUMN abandoned_by_pro_at    timestamptz;
+DO $$ BEGIN
+  BEGIN
+    ALTER TABLE winelio.recommendations ADD COLUMN expected_completion_at timestamptz;
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END;
+  BEGIN
+    ALTER TABLE winelio.recommendations ADD COLUMN abandoned_by_pro_at timestamptz;
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END;
+END $$;
 
 COMMENT ON COLUMN winelio.recommendations.expected_completion_at IS
   'Date prévue de fin des travaux + paiement, saisie par le pro à l''étape 5. Programme la 1ère relance étape 5.';
@@ -99,6 +102,7 @@ BEGIN
   RETURN NEW;
 END $$;
 
+DROP TRIGGER IF EXISTS trg_recommendation_step_followup ON winelio.recommendation_steps;
 CREATE TRIGGER trg_recommendation_step_followup
   AFTER INSERT OR UPDATE OF completed_at ON winelio.recommendation_steps
   FOR EACH ROW EXECUTE FUNCTION winelio.handle_recommendation_step_completion();
