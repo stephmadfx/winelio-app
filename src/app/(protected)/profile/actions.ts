@@ -6,6 +6,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getAuditContext, getDocumentHash, logOnboardingEvent } from "@/lib/audit";
 import { isAtLeastAge } from "@/lib/age";
 import { notifyNewReferral } from "@/lib/notify-new-referral";
+import { verifySiren } from "@/lib/siren";
+import { checkNafCode } from "@/lib/naf-rules";
 
 const POSTAL_CODE_RE = /^\d{5}$/;
 const PHONE_RE = /^[+\d\s()\-]{6,20}$/;
@@ -228,6 +230,18 @@ export async function completeProOnboarding(data: {
     return { error: "Un numéro SIRET est obligatoire pour activer un compte professionnel." };
   }
 
+  // Vérification SIREN + NAF côté serveur (empêche tout bypass du contrôle client).
+  const sirenData = await verifySiren(data.siret);
+  if (!sirenData) {
+    return { error: "SIRET introuvable dans le registre des entreprises." };
+  }
+  const nafCheck = checkNafCode(sirenData.naf);
+  if (!nafCheck.allowed) {
+    return { error: nafCheck.reason };
+  }
+  const verifiedNafCode = nafCheck.code;
+  const verifiedSiren = sirenData.siren;
+
   const supabase = await createClient();
   const { ip, userAgent } = await getAuditContext();
 
@@ -277,6 +291,8 @@ export async function completeProOnboarding(data: {
     const patch: Record<string, string | null> = {};
     if (data.category_id) patch.category_id = data.category_id;
     if (data.siret !== null) patch.siret = data.siret;
+    patch.siren = verifiedSiren;
+    patch.naf_code = verifiedNafCode;
     if (proEmail !== null) patch.email = proEmail;
     if (Object.keys(patch).length > 0) {
       const { error: companyError } = await supabase
@@ -293,6 +309,8 @@ export async function completeProOnboarding(data: {
       name: fallbackName,
       category_id: data.category_id || null,
       siret: data.siret || null,
+      siren: verifiedSiren,
+      naf_code: verifiedNafCode,
       email: proEmail,
       alias,
     });

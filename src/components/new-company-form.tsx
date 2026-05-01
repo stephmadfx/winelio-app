@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { verifySiren, isValidSirenOrSiret, type SirenVerification } from "@/lib/siren";
+import { checkNafCode, type NafCheckResult } from "@/lib/naf-rules";
 import { createCompany } from "@/lib/company-actions";
 
 interface Category {
@@ -24,6 +25,7 @@ export function NewCompanyForm({
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [sirenData, setSirenData] = useState<SirenVerification | null>(null);
+  const [nafCheck, setNafCheck] = useState<NafCheckResult | null>(null);
   const [form, setForm] = useState({
     name: "",
     legal_name: "",
@@ -41,13 +43,20 @@ export function NewCompanyForm({
     setVerifying(true);
     setVerifyError(null);
     setSirenData(null);
+    setNafCheck(null);
     try {
       const data = await verifySiren(form.siret);
       if (!data) {
         setVerifyError("SIRET/SIREN introuvable dans le registre des entreprises.");
       } else {
         setSirenData(data);
-        if (!data.actif) setVerifyError("⚠️ Cette entreprise est cessée ou radiée.");
+        const naf = checkNafCode(data.naf);
+        setNafCheck(naf);
+        if (!data.actif) {
+          setVerifyError("⚠️ Cette entreprise est cessée ou radiée.");
+        } else if (!naf.allowed) {
+          setVerifyError(naf.reason);
+        }
         setForm((prev) => ({
           ...prev,
           name: prev.name || data.nom,
@@ -96,6 +105,10 @@ export function NewCompanyForm({
     }
     if (form.siret && !sirenData) {
       setError("Veuillez cliquer sur « Vérifier » pour valider votre SIRET avant de continuer.");
+      return;
+    }
+    if (form.siret && nafCheck && !nafCheck.allowed) {
+      setError(nafCheck.reason);
       return;
     }
 
@@ -151,7 +164,7 @@ export function NewCompanyForm({
               type="text"
               name="siret"
               value={form.siret}
-              onChange={(e) => { handleChange(e); setSirenData(null); setVerifyError(null); }}
+              onChange={(e) => { handleChange(e); setSirenData(null); setNafCheck(null); setVerifyError(null); }}
               placeholder="123 456 789 00012"
               className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
             />
@@ -164,7 +177,7 @@ export function NewCompanyForm({
               {verifying ? "…" : "Vérifier"}
             </button>
           </div>
-          {sirenData && sirenData.actif && (
+          {sirenData && sirenData.actif && nafCheck?.allowed && (
             <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-xl text-sm">
               <div className="flex items-start gap-2">
                 <span className="text-green-600 font-bold">✓</span>
@@ -173,7 +186,9 @@ export function NewCompanyForm({
                   {sirenData.adresse && (
                     <div className="text-xs text-green-700 mt-0.5">{sirenData.adresse}</div>
                   )}
-                  <div className="text-xs text-green-600 mt-1">Active — SIREN {sirenData.siren}</div>
+                  <div className="text-xs text-green-600 mt-1">
+                    Active — SIREN {sirenData.siren} — NAF {nafCheck.code}
+                  </div>
                 </div>
               </div>
             </div>
@@ -181,6 +196,11 @@ export function NewCompanyForm({
           {verifyError && (
             <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
               {verifyError}
+              {nafCheck && !nafCheck.allowed && (
+                <div className="mt-1.5 text-xs text-red-600">
+                  Si vous pensez qu&apos;il s&apos;agit d&apos;une erreur, contactez le support.
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -220,7 +240,7 @@ export function NewCompanyForm({
         <div className="mt-6 flex gap-3">
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || (!!form.siret && (!nafCheck || !nafCheck.allowed))}
             className="px-6 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {saving ? "Création..." : "Créer l'entreprise"}

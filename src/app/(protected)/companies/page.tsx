@@ -112,7 +112,13 @@ export default async function CompaniesPage() {
                   {company.city && (
                     <p className="text-sm text-muted-foreground">{company.city}</p>
                   )}
-                  <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
+                  <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                    <Link
+                      href={`/companies/${company.id}/edit`}
+                      className="text-sm text-winelio-orange font-medium hover:underline"
+                    >
+                      Modifier
+                    </Link>
                     <DeleteCompanyButton
                       companyId={company.id}
                       companyName={company.name}
