@@ -39,7 +39,6 @@ export function ProfileAvatar({
           src={avatarUrl}
           alt={name}
           className={imageClassName}
-          loading="lazy"
           onError={() => setFailed(true)}
         />
       ) : (
