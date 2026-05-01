@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { StepTimeline } from "@/components/step-timeline";
+import { RecommendationFollowupCard } from "@/components/recommendation-followup-card";
 import { SavePaymentMethodDialog } from "@/components/save-payment-method-dialog";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -439,6 +440,10 @@ export default function RecommendationDetailPage() {
         </div>
 
         <div className="px-6 py-6 sm:px-8">
+          <RecommendationFollowupCard
+            recommendationId={recommendation.id}
+            isProfessional={userId === recommendation.professional_id}
+          />
           <StepTimeline
             steps={steps.map((s) => ({
               id: s.id,
