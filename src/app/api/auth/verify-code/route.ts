@@ -63,11 +63,18 @@ export async function POST(req: Request) {
     try {
       await pgClient.query("BEGIN");
 
-      // Créer l'utilisateur s'il n'existe pas (trigger corrigé vers winelio.profiles)
+      // Créer l'utilisateur s'il n'existe pas. Le marker raw_user_meta_data.app='winelio'
+      // permet au trigger winelio.handle_new_user de filtrer les users d'autres projets
+      // partageant la même instance Supabase Auth.
       const upsertRes = await pgClient.query<{ id: string }>(`
         INSERT INTO auth.users (id, aud, role, email, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_super_admin, is_sso_user)
-        VALUES (gen_random_uuid(), 'authenticated', 'authenticated', $1, now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', false, false)
-        ON CONFLICT (email) WHERE is_sso_user = false DO UPDATE SET updated_at = now()
+        VALUES (gen_random_uuid(), 'authenticated', 'authenticated', $1, now(), now(), now(), '{"provider":"email","providers":["email"]}', '{"app":"winelio"}', false, false)
+        ON CONFLICT (email) WHERE is_sso_user = false DO UPDATE SET
+          updated_at = now(),
+          raw_user_meta_data = jsonb_set(
+            COALESCE(auth.users.raw_user_meta_data, '{}'::jsonb),
+            '{app}', '"winelio"'::jsonb, true
+          )
         RETURNING id
       `, [email]);
 
@@ -89,6 +96,18 @@ export async function POST(req: Request) {
       await pgClient.query(
         "UPDATE auth.users SET encrypted_password = crypt($1, gen_salt('bf')) WHERE id = $2",
         [tempPassword, userId]
+      );
+
+      // Filet de sécurité : si l'user existait déjà via un autre projet, le trigger
+      // ON INSERT ne s'est pas déclenché → on crée son profile Winelio à la main.
+      await pgClient.query(`
+        INSERT INTO winelio.profiles (id, email, sponsor_code)
+        VALUES ($1, $2, winelio.generate_unique_sponsor_code())
+        ON CONFLICT (id) DO NOTHING
+      `, [userId, email]);
+      await pgClient.query(
+        "INSERT INTO winelio.user_wallet_summaries (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
+        [userId]
       );
 
       await pgClient.query("COMMIT");

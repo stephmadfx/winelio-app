@@ -7,6 +7,7 @@ import { triggerDemoSeed } from "@/components/DemoSeedBanner";
 import { resolveProfileAvatarUrl } from "@/lib/profile-avatar";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { AvatarCropModal } from "@/components/avatar-crop-modal";
+import { WelcomeModal } from "@/components/welcome-modal";
 import { isAtLeastAge, maxBirthDate } from "@/lib/age";
 
 interface Profile {
@@ -45,7 +46,6 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
     postal_code: profile.postal_code ?? "",
     birth_date: profile.birth_date ?? "",
     terms_accepted: profile.terms_accepted ?? false,
-    is_professional: profile.is_professional ?? false,
   });
   const [proEmailInput, setProEmailInput] = useState(companyEmail ?? "");
   const [proEmailSaving, setProEmailSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -61,6 +61,7 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
   const [avatarPreview, setAvatarPreview] = useState<string | null>(resolveProfileAvatarUrl(profile.avatar));
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
   const formRef = useRef(form);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -78,9 +79,12 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
       // - profil complet → modal disparaît
       // - champ supprimé → modal réapparaît
       router.refresh();
-      // Première complétion du profil → déclencher le seed demo si actif
-      if (result.firstCompletion && process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
-        triggerDemoSeed();
+      // Première complétion du profil
+      if (result.firstCompletion) {
+        setShowWelcome(true);
+        if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
+          triggerDemoSeed();
+        }
       }
     } else {
       setAutoSaveStatus("error");
@@ -215,6 +219,12 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
 
   return (
     <div className="space-y-8">
+      {showWelcome && (
+        <WelcomeModal
+          firstName={form.first_name || profile.first_name}
+          onClose={() => setShowWelcome(false)}
+        />
+      )}
       {/* Message */}
       {message && (
         <div
@@ -455,44 +465,6 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
             )}
           </div>
           <Field label="Adresse" name="address" value={form.address} onChange={handleChange} onBlur={handleBlur} required />
-        </div>
-
-        {/* Toggle is_professional */}
-        <div className="mt-6 flex items-center gap-3">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={form.is_professional}
-            onClick={() => {
-              if (!form.is_professional) {
-                // Activer → rediriger vers onboarding sauf si déjà fait
-                if (profile.pro_engagement_accepted) {
-                  const updated = { ...form, is_professional: true };
-                  setForm(updated);
-                  saveToDb(updated);  // sauvegarde immédiate
-                } else {
-                  router.push("/profile/pro-onboarding");
-                }
-              } else {
-                // Désactiver → sauvegarde immédiate
-                const updated = { ...form, is_professional: false };
-                setForm(updated);
-                saveToDb(updated);
-              }
-            }}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-              form.is_professional ? "bg-winelio-orange" : "bg-gray-300"
-            }`}
-          >
-            <span
-              className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform ${
-                form.is_professional ? "translate-x-5" : "translate-x-0"
-              }`}
-            />
-          </button>
-          <span className="text-sm font-medium text-winelio-dark">
-            Compte professionnel
-          </span>
         </div>
 
         {/* CGU — placée juste avant le bouton Sauvegarder pour un flow de lecture naturel */}

@@ -44,12 +44,18 @@ function LoginForm() {
   const searchParams = useSearchParams();
 
   // Remonte le contenu au-dessus du clavier mobile (visualViewport API)
+  // Stratégie : détecte la réduction de la zone visible et applique un paddingBottom
+  // pour pousser le contenu au-dessus du clavier.
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
     const update = () => {
-      setKbPadding(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+      // Hauteur perdue = différence entre la hauteur originale et la hauteur visuelle actuelle
+      const keyboardHeight = Math.max(0, window.innerHeight - vv.height);
+      setKbPadding(keyboardHeight + 16); // 16px de marge de sécurité
     };
+    // Premier appel pour capturer la hauteur initiale
+    update();
     vv.addEventListener("resize", update);
     vv.addEventListener("scroll", update);
     return () => {
@@ -57,6 +63,7 @@ function LoginForm() {
       vv.removeEventListener("scroll", update);
     };
   }, []);
+
 
   const isRegister = searchParams.get("mode") === "register";
   const refCode = searchParams.get("ref");
@@ -217,10 +224,11 @@ function LoginForm() {
 
   return (
     <div
-      className="relative z-10 flex min-h-dvh items-center justify-center px-4 py-8 sm:px-6"
+      className="relative z-10 flex min-h-dvh flex-col justify-center overflow-y-auto px-4 py-8 sm:px-6"
       style={{ paddingBottom: kbPadding }}
     >
-      <div className="w-full max-w-md">
+      <div className="my-auto w-full max-w-md">
+
         <div className="mb-8 flex justify-center">
           <WinelioLogo variant="color" height={40} />
         </div>
