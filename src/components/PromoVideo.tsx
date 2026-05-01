@@ -3,11 +3,31 @@
 import { useEffect, useRef, useState } from "react";
 
 const VIDEO_URL = "https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/promo.mp4";
+export const PROMO_WATCHED_KEY = "winelio_promo_watched";
+export const PROMO_UNLOCK_RATIO = 0.5;
 
-export function PromoVideo() {
+type Props = {
+  /** Notifie en continu le temps restant (en secondes) avant déblocage. 0 = déblocage atteint. */
+  onCountdownChange?: (secondsLeft: number) => void;
+  /** Tiré une seule fois au moment où le seuil est franchi. */
+  onUnlock?: () => void;
+};
+
+export function PromoVideo({ onCountdownChange, onUnlock }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(false);
   const [ended, setEnded] = useState(false);
+  const unlockedRef = useRef(false);
+
+  // Si déjà débloquée précédemment, on prévient le parent dès le mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.localStorage.getItem(PROMO_WATCHED_KEY) === "1") {
+      unlockedRef.current = true;
+      onCountdownChange?.(0);
+      onUnlock?.();
+    }
+  }, [onCountdownChange, onUnlock]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -30,6 +50,36 @@ export function PromoVideo() {
     observer.observe(video);
     return () => observer.disconnect();
   }, []);
+
+  // Tracking du déblocage à PROMO_UNLOCK_RATIO du temps cumulé
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleProgress = () => {
+      const duration = Number.isFinite(video.duration) ? video.duration : 0;
+      if (duration <= 0) return;
+      const target = duration * PROMO_UNLOCK_RATIO;
+      const remaining = Math.max(0, Math.ceil(target - video.currentTime));
+      onCountdownChange?.(remaining);
+      if (!unlockedRef.current && video.currentTime >= target) {
+        unlockedRef.current = true;
+        try {
+          window.localStorage.setItem(PROMO_WATCHED_KEY, "1");
+        } catch {}
+        onUnlock?.();
+      }
+    };
+
+    video.addEventListener("loadedmetadata", handleProgress);
+    video.addEventListener("timeupdate", handleProgress);
+    video.addEventListener("durationchange", handleProgress);
+    return () => {
+      video.removeEventListener("loadedmetadata", handleProgress);
+      video.removeEventListener("timeupdate", handleProgress);
+      video.removeEventListener("durationchange", handleProgress);
+    };
+  }, [onCountdownChange, onUnlock]);
 
   function toggleSound() {
     const video = videoRef.current;
@@ -68,7 +118,6 @@ export function PromoVideo() {
         }}
       />
 
-      {/* Bouton rejouer — apparaît en haut à gauche quand la vidéo est terminée */}
       {ended && (
         <button
           onClick={replay}
@@ -82,7 +131,6 @@ export function PromoVideo() {
         </button>
       )}
 
-      {/* Bouton son — bas droite */}
       <button
         onClick={toggleSound}
         className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-black/70"

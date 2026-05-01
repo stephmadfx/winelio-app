@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { WinelioLogo } from "@/components/winelio-logo";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppBackground } from "@/components/AppBackground";
+import { PROMO_WATCHED_KEY } from "@/components/PromoVideo";
 
 export default function LoginPage() {
   return (
@@ -67,6 +68,16 @@ function LoginForm() {
 
   const isRegister = searchParams.get("mode") === "register";
   const refCode = searchParams.get("ref");
+
+  // Gate vidéo promo : interdire l'accès direct à l'inscription tant que la vidéo
+  // n'a pas été regardée à 50%. On renvoie sur la landing en préservant ?ref.
+  useEffect(() => {
+    if (!isRegister) return;
+    if (typeof window === "undefined") return;
+    if (window.localStorage.getItem(PROMO_WATCHED_KEY) === "1") return;
+    const target = refCode ? `/?ref=${encodeURIComponent(refCode)}` : "/";
+    router.replace(target);
+  }, [isRegister, refCode, router]);
 
   // Stocker le code de parrainage et récupérer le nom du parrain depuis la DB
   useEffect(() => {
