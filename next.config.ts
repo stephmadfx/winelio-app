@@ -12,14 +12,19 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "X-XSS-Protection", value: "1; mode=block" },
+          // Isole la fenêtre des autres origines. 'same-origin-allow-popups' = Stripe Checkout
+          // popup reste fonctionnel mais window.opener cross-origin est neutralisé.
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+          // Empêche les sites tiers d'embarquer nos ressources via <img>, <script>, etc.
+          // 'same-site' permet à dev2.winelio.app et winelio.app de partager si besoin.
+          { key: "Cross-Origin-Resource-Policy", value: "same-site" },
           {
             key: "Strict-Transport-Security",
-            value: "max-age=31536000; includeSubDomains",
+            value: "max-age=31536000; includeSubDomains; preload",
           },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(self)",
+            value: "camera=(), microphone=(), geolocation=(self), payment=(self)",
           },
           {
             key: "Content-Security-Policy",
