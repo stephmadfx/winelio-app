@@ -59,6 +59,7 @@ export async function POST(req: Request) {
     const tempPassword = randomBytes(32).toString("hex");
     const pgClient = new Pool({ connectionString: dbUrl, max: 1, connectionTimeoutMillis: 8000 });
     let userId: string | null = null;
+    let previousPasswordHash: string | null = null;
 
     try {
       await pgClient.query("BEGIN");
@@ -141,6 +142,15 @@ export async function POST(req: Request) {
         throw new Error("Impossible de trouver l'utilisateur après upsert");
       }
 
+      // Sauvegarde du hash existant pour le restaurer après création de session.
+      // Sans ça, l'étape 5 (effacement du tempPassword) wipe les mdp définis
+      // explicitement par les users via /api/auth/set-password.
+      const previousRes = await pgClient.query<{ encrypted_password: string | null }>(
+        "SELECT encrypted_password FROM auth.users WHERE id = $1",
+        [userId]
+      );
+      previousPasswordHash = previousRes.rows[0]?.encrypted_password ?? null;
+
       // Définir le mot de passe temporaire + marquer le projet d'origine.
       // Le marker 'app: winelio' permet au trigger winelio.handle_new_user de filtrer
       // les users d'autres projets partageant la même instance Supabase Auth.
@@ -203,10 +213,12 @@ export async function POST(req: Request) {
       body: JSON.stringify({ email, password: tempPassword }),
     });
 
-    // 5. Effacer le mot de passe temporaire (fire-and-forget)
+    // 5. Restaurer l'état initial du mot de passe (fire-and-forget).
+    // Si l'utilisateur avait un mdp permanent avant, on remet son hash.
+    // Sinon on remet NULL (état initial pour les comptes 100% OTP).
     new Pool({ connectionString: dbUrl, max: 1 })
-      .query("UPDATE auth.users SET encrypted_password = NULL WHERE email = $1", [email])
-      .catch((e) => console.error("clear temp password error:", e));
+      .query("UPDATE auth.users SET encrypted_password = $1 WHERE email = $2", [previousPasswordHash, email])
+      .catch((e) => console.error("restore password error:", e));
 
     if (!tokenResp.ok) {
       const errData = await tokenResp.json().catch(() => ({}));
