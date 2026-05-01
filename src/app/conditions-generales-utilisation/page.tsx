@@ -29,10 +29,15 @@ const sections = [
   {
     title: "6. Données personnelles",
     body:
-      "Winelio traite certaines données personnelles nécessaires au fonctionnement du service, à la sécurité du compte et au respect des obligations légales. Vous pouvez consulter les informations détaillées dans l'application et contacter le support pour exercer vos droits.",
+      "Winelio traite certaines données personnelles nécessaires au fonctionnement du service, à la sécurité du compte et au respect des obligations légales. Vous pouvez consulter les informations détaillées dans l'application et contacter le support pour exercer vos droits (accès, rectification, effacement, opposition).",
   },
   {
-    title: "7. Suspension et fermeture",
+    title: "7. Visibilité de la photo de profil dans votre réseau",
+    body:
+      "Pour faciliter le fonctionnement du parrainage, votre photo de profil, votre prénom et l'initiale de votre nom sont visibles uniquement par votre parrain direct (niveau 1). Aux niveaux 2 à 5 du réseau, seuls des indicateurs agrégés (nombre de membres) sont visibles, sans photo ni nom. La photo est servie depuis un stockage privé via une URL signée à durée limitée, et n'est jamais accessible à un tiers non authentifié. Vous pouvez à tout moment masquer votre photo aux membres de votre réseau depuis votre profil (toggle « Afficher ma photo dans mon réseau ») — vos initiales s'afficheront alors à la place. Ce toggle constitue l'exercice de votre droit d'opposition (RGPD Art. 21).",
+  },
+  {
+    title: "8. Suspension et fermeture",
     body:
       "Winelio peut suspendre ou fermer un compte en cas de manquement aux présentes conditions, de fraude suspectée, de tentative de contournement des règles ou si les informations nécessaires à l'accès au service ne sont pas fournies.",
   },
@@ -64,7 +69,7 @@ export default function TermsPage() {
           ))}
 
           <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-            <h2 className="text-lg font-semibold text-winelio-dark">8. Contact</h2>
+            <h2 className="text-lg font-semibold text-winelio-dark">9. Contact</h2>
             <p className="mt-2 text-sm leading-7 text-winelio-gray">
               Pour toute question liée à ces conditions, vous pouvez contacter l'équipe Winelio depuis l'application ou via le support habituel.
             </p>

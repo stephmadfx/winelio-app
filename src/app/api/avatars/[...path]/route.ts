@@ -39,17 +39,20 @@ export async function GET(
   const isOwner = viewer.id === targetUserId;
 
   let isDirectSponsor = false;
+  let visibleToNetwork = true;
   if (!isOwner && !isSuperAdmin) {
     const { data: target } = await supabaseAdmin
       .schema("winelio")
       .from("profiles")
-      .select("sponsor_id")
+      .select("sponsor_id, avatar_visible_to_network")
       .eq("id", targetUserId)
       .maybeSingle();
     isDirectSponsor = target?.sponsor_id === viewer.id;
+    visibleToNetwork = target?.avatar_visible_to_network !== false;
   }
 
-  if (!isOwner && !isSuperAdmin && !isDirectSponsor) {
+  // L'utilisateur a opposé son droit Art. 21 → seul lui-même + super_admin peuvent voir.
+  if (!isOwner && !isSuperAdmin && (!isDirectSponsor || !visibleToNetwork)) {
     return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
   }
 

@@ -22,6 +22,7 @@ interface Profile {
   terms_accepted: boolean;
   terms_accepted_at: string | null;
   avatar: string | null;
+  avatar_visible_to_network?: boolean;
   is_professional: boolean;
   pro_engagement_accepted: boolean;
   sponsor_code: string | null;
@@ -61,6 +62,8 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
   const [avatarPreview, setAvatarPreview] = useState<string | null>(resolveProfileAvatarUrl(profile.avatar));
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [avatarVisibleToNetwork, setAvatarVisibleToNetwork] = useState(profile.avatar_visible_to_network !== false);
+  const [avatarVisibilitySaving, setAvatarVisibilitySaving] = useState<"idle" | "saving" | "saved">("idle");
   const [showWelcome, setShowWelcome] = useState(false);
   const formRef = useRef(form);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -285,6 +288,50 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
                 </button>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Toggle RGPD : visibilité de la photo dans le réseau */}
+        <div className="mt-5 pt-5 border-t border-gray-100 flex items-start gap-3">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={avatarVisibleToNetwork}
+            onClick={async () => {
+              const next = !avatarVisibleToNetwork;
+              setAvatarVisibleToNetwork(next);
+              setAvatarVisibilitySaving("saving");
+              const result = await updateProfile({ avatar_visible_to_network: next });
+              if (result.error) {
+                setAvatarVisibleToNetwork(!next);
+                setMessage({ type: "error", text: result.error });
+                setAvatarVisibilitySaving("idle");
+              } else {
+                setAvatarVisibilitySaving("saved");
+                setTimeout(() => setAvatarVisibilitySaving("idle"), 2500);
+                router.refresh();
+              }
+            }}
+            className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+              avatarVisibleToNetwork ? "bg-winelio-orange" : "bg-gray-300"
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform ${
+                avatarVisibleToNetwork ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
+          <div className="flex-1">
+            <span className="text-sm font-medium text-winelio-dark">
+              Afficher ma photo dans mon réseau
+            </span>
+            <p className="text-xs text-winelio-gray mt-0.5 leading-relaxed">
+              Si désactivé, votre parrain et vos filleuls voient uniquement vos initiales. Vous restez libre de désactiver à tout moment (RGPD Art. 21).
+            </p>
+            {avatarVisibilitySaving === "saved" && (
+              <p className="text-xs text-green-600 font-medium mt-1">✓ Préférence enregistrée</p>
+            )}
           </div>
         </div>
 

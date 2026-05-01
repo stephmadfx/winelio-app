@@ -24,6 +24,7 @@ export async function updateProfile(data: {
   terms_accepted?: boolean;
   is_professional?: boolean;
   avatar?: string | null;
+  avatar_visible_to_network?: boolean;
 }): Promise<{ error?: string; firstCompletion?: boolean }> {
   const user = await getUser();
   if (!user) return { error: "Non authentifié" };
@@ -79,6 +80,9 @@ export async function updateProfile(data: {
   if ("avatar" in data) {
     const v = typeof data.avatar === "string" ? data.avatar.trim().slice(0, 512) : null;
     patch.avatar = v || null;
+  }
+  if ("avatar_visible_to_network" in data) {
+    patch.avatar_visible_to_network = !!data.avatar_visible_to_network;
   }
 
   const supabase = await createClient();
