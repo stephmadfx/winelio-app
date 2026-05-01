@@ -133,11 +133,11 @@ async function postJsonPostpone(fu: FollowupRow, postponeToParam: string | null)
 }
 
 async function postJsonAbandon(fu: FollowupRow): Promise<Response> {
-  // Marquer la reco comme refusée (réutilise le statut REJECTED)
+  // Marquer la reco comme refusée (statut CANCELLED, aligné sur /refuse)
   await supabaseAdmin
     .schema("winelio")
     .from("recommendations")
-    .update({ status: "REJECTED" })
+    .update({ status: "CANCELLED" })
     .eq("id", fu.recommendation_id);
 
   // Cancel tous les followups pending de cette reco

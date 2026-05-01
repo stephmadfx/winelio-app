@@ -120,7 +120,7 @@ async function checkCancelReason(
     .single();
 
   if (!rec) return "reco_deleted";
-  if (rec.status === "REJECTED") return "reco_refused";
+  if (rec.status === "CANCELLED") return "reco_refused";
   if (rec.status === "TRANSFERRED") return "reco_transferred";
 
   // Une étape > afterStepOrder déjà complétée ?
