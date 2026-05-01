@@ -44,6 +44,10 @@ export async function middleware(request: NextRequest) {
       path.startsWith("/api/bugs/imap-debug") ||
       path.startsWith("/api/email/process-queue") ||
       path.startsWith("/api/stripe/cron-reminders") ||
+      path.startsWith("/api/recommendations/process-followups") ||
+      path.startsWith("/api/recommendations/cron-scraped-reminder") ||
+      path.startsWith("/api/recommendations/followup-action") ||
+      path.startsWith("/recommendations/followup/") ||
       path.startsWith("/api/video/");
     const isExempt =
       path === "/staging-login" ||
