@@ -1,28 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { uploadAvatar, deleteAvatar } from "@/lib/r2-avatars";
 
-const BUCKET = "profile-avatars";
 const MAX_SIZE = 5 * 1024 * 1024;
-
-async function ensureBucketExists() {
-  const { data } = await supabaseAdmin.storage.getBucket(BUCKET);
-  if (data) return;
-
-  const { error } = await supabaseAdmin.storage.createBucket(BUCKET, {
-    public: true,
-    fileSizeLimit: MAX_SIZE,
-  });
-
-  if (error) {
-    throw error;
-  }
-}
 
 function sanitizeFilename(filename: string): string {
   return filename
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-zA-Z0-9._-]/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "")
@@ -54,30 +40,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "L'image ne doit pas dépasser 5 Mo" }, { status: 400 });
     }
 
-    await ensureBucketExists();
-
     const ext = sanitizeFilename(file.name).split(".").pop() || "jpg";
     const key = `users/${user.id}/${Date.now()}-${sanitizeFilename(file.name).replace(/\.[^.]+$/, "")}.${ext}`;
     const bytes = Buffer.from(await file.arrayBuffer());
 
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from(BUCKET)
-      .upload(key, bytes, {
-        contentType: file.type,
-        upsert: true,
-      });
+    await uploadAvatar(key, bytes, file.type);
 
-    if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 });
+    // Supprimer l'ancien avatar du bucket pour éviter l'accumulation
+    const { data: previous } = await supabaseAdmin
+      .schema("winelio")
+      .from("profiles")
+      .select("avatar")
+      .eq("id", user.id)
+      .maybeSingle();
+    const oldKey = previous?.avatar;
+    if (oldKey && !/^https?:\/\//i.test(oldKey) && oldKey !== key) {
+      deleteAvatar(oldKey).catch((e) => console.error("[avatar] cleanup old failed:", e));
     }
 
-    const { data: publicUrlData } = supabaseAdmin.storage
-      .from(BUCKET)
-      .getPublicUrl(key);
-
-    const publicUrl = publicUrlData.publicUrl;
-
     const { error: updateError } = await supabaseAdmin
+      .schema("winelio")
       .from("profiles")
       .update({ avatar: key })
       .eq("id", user.id);
@@ -86,7 +68,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, publicUrl, key });
+    return NextResponse.json({ success: true, key });
   } catch (error) {
     console.error("[profile/avatar] upload error:", error);
     return NextResponse.json(
@@ -107,6 +89,7 @@ export async function DELETE() {
     }
 
     const { data: profile } = await supabaseAdmin
+      .schema("winelio")
       .from("profiles")
       .select("avatar")
       .eq("id", user.id)
@@ -114,17 +97,15 @@ export async function DELETE() {
 
     const avatar = profile?.avatar;
 
-    if (avatar) {
-      const path = avatar.startsWith("http")
-        ? null
-        : avatar.replace(/^\/+/, "");
-
-      if (path) {
-        await supabaseAdmin.storage.from(BUCKET).remove([path]);
+    if (avatar && !/^https?:\/\//i.test(avatar)) {
+      const key = avatar.replace(/^\/+/, "");
+      if (key) {
+        await deleteAvatar(key).catch((e) => console.error("[avatar] r2 delete failed:", e));
       }
     }
 
     const { error: updateError } = await supabaseAdmin
+      .schema("winelio")
       .from("profiles")
       .update({ avatar: null })
       .eq("id", user.id);
