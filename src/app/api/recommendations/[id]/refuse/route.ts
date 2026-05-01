@@ -31,6 +31,14 @@ export async function POST(
 
   if (error) return NextResponse.json({ error: "Erreur lors du refus" }, { status: 500 });
 
+  // Annuler les relances pending pour cette reco
+  await supabaseAdmin
+    .schema("winelio")
+    .from("recommendation_followups")
+    .update({ status: "cancelled", cancel_reason: "reco_refused" })
+    .eq("recommendation_id", id)
+    .eq("status", "pending");
+
   notifyRecoRefused(id).catch((err) => console.error("notify-reco-refused error:", err));
 
   return NextResponse.json({ success: true });

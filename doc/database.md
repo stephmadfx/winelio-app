@@ -149,14 +149,14 @@ Plans de commission MLM. Définit les taux de redistribution.
 ---
 
 ### `winelio.steps`
-Définition des 8 étapes du workflow de recommandation.
+Définition des 7 étapes du workflow de recommandation (restructuré par `20260427_restructure_steps.sql`).
 
 | Colonne | Type | Contraintes | Description |
 |---------|------|-------------|-------------|
 | `id` | `uuid` | PK | |
 | `name` | `text` | NOT NULL | Nom de l'étape |
 | `description` | `text` | | Description |
-| `order_index` | `integer` | NOT NULL | Ordre (1 à 8) |
+| `order_index` | `integer` | NOT NULL | Ordre (1 à 7) |
 | `completion_role` | `text` | CHECK(IN('REFERRER','PROFESSIONAL')) | Qui peut compléter cette étape |
 
 **Données statiques** :
@@ -168,9 +168,8 @@ Définition des 8 étapes du workflow de recommandation.
 | 3 | Contact établi | PROFESSIONAL |
 | 4 | Rendez-vous fixé | PROFESSIONAL |
 | 5 | Devis soumis | PROFESSIONAL |
-| 6 | **Devis validé** ← déclenche commissions | REFERRER |
-| 7 | Paiement reçu | PROFESSIONAL |
-| 8 | Affaire terminée | PROFESSIONAL |
+| 6 | **Travaux + paiement** ← déclenche commissions | PROFESSIONAL |
+| 7 | Affaire terminée | PROFESSIONAL |
 
 ---
 
@@ -187,8 +186,33 @@ Recommandations entre utilisateurs (cœur du système).
 | `amount` | `decimal` | | Montant de la transaction (renseigné à l'étape 5) |
 | `company_id` | `uuid` | FK → `companies.id` | Entreprise concernée |
 | `notes` | `text` | | Notes |
+| `expected_completion_at` | `timestamptz` | | Date prévue de fin des travaux + paiement, saisie par le pro à l'étape 5. Programme la 1ère relance étape 5. |
+| `abandoned_by_pro_at` | `timestamptz` | | Date à laquelle le cycle de 3 relances s'est terminé sans action du pro. |
 | `created_at` | `timestamptz` | DEFAULT NOW() | |
 | `updated_at` | `timestamptz` | AUTO via trigger | |
+
+---
+
+### `winelio.recommendation_followups`
+Suivi des cycles de relances automatiques au pro. Un enregistrement par cycle (étape 2, 4 ou 5).
+
+| Colonne | Type | Contraintes | Description |
+|---------|------|-------------|-------------|
+| `id` | `uuid` | PK, DEFAULT gen_random_uuid() | |
+| `recommendation_id` | `uuid` | NOT NULL, FK → `recommendations.id` | |
+| `triggered_by_step` | `integer` | NOT NULL | Étape qui a déclenché le cycle (2, 4 ou 5) |
+| `status` | `text` | NOT NULL | `pending` → `sent` → `done` / `postponed` / `abandoned` / `cancelled` |
+| `send_at` | `timestamptz` | NOT NULL | Timestamp d'envoi planifié |
+| `sent_at` | `timestamptz` | | Timestamp d'envoi effectif |
+| `attempt_number` | `integer` | NOT NULL, DEFAULT 1 | Numéro de relance dans le cycle (1, 2 ou 3) |
+| `postpone_count` | `integer` | NOT NULL, DEFAULT 0 | Nombre de reports effectués (max 5) |
+| `token` | `text` | UNIQUE | Token HMAC signé (actions email sans session) |
+| `created_at` | `timestamptz` | DEFAULT NOW() | |
+| `updated_at` | `timestamptz` | AUTO via trigger | |
+
+**Contrainte** : UNIQUE(recommendation_id, triggered_by_step, attempt_number)
+
+**RLS** : pas de lecture directe côté utilisateur (accès uniquement via supabaseAdmin ou super_admin).
 
 ---
 
@@ -332,6 +356,7 @@ Calcul top sponsors, top performers pour le dashboard.
 | `update_recommendations_updated_at` | `winelio.recommendations` | BEFORE UPDATE | SET updated_at = NOW() |
 | `update_withdrawals_updated_at` | `winelio.withdrawals` | BEFORE UPDATE | SET updated_at = NOW() |
 | `update_commission_transactions_updated_at` | `winelio.commission_transactions` | BEFORE UPDATE | SET updated_at = NOW() |
+| `trg_recommendation_step_followup` | `winelio.recommendation_steps` | AFTER INSERT OR UPDATE | `winelio.handle_recommendation_step_completion()` — insertion auto d'un followup à la complétion d'une étape 2/4/5 ; cancelle les pending dont l'étape suivante est déjà complétée |
 
 ---
 
@@ -380,6 +405,8 @@ winelio.profiles ──────────────────── wi
 | 008 | `008_mlm_network_rpc.sql` | RPC `get_mlm_network()` |
 | 009 | `009_open_registration_rotation.sql` | RPC round-robin + table état |
 | 010 | `010_founder_flag.sql` | Colonne `is_founder` + mise à jour RPC |
+| 011 | `20260427_restructure_steps.sql` | Restructuration 8 → 7 étapes (fusion étapes 6+7, renumérotation) |
+| 012 | `20260501_recommendation_followups.sql` | Table `recommendation_followups` + trigger `trg_recommendation_step_followup` + colonnes `expected_completion_at`/`abandoned_by_pro_at` sur `recommendations` |
 
 ### Commande pour appliquer une migration
 

@@ -76,16 +76,41 @@ export async function POST(request: Request) {
     const stepIndex = step?.order_index ?? 0;
     const stepData: Record<string, unknown> = {};
 
-    // Étape 5 : enregistrer le montant du devis
+    // Étape 5 : enregistrer le montant du devis + date prévue de fin de travaux
     if (stepIndex === 5) {
       const amount = parseFloat(quote_amount);
       if (isNaN(amount) || amount <= 0 || amount > 1000000) {
         return NextResponse.json({ error: "Montant du devis invalide" }, { status: 400 });
       }
+
+      const expectedCompletionRaw = body.expected_completion_at;
+      if (!expectedCompletionRaw) {
+        return NextResponse.json(
+          { error: "Date prévue de fin des travaux obligatoire" },
+          { status: 400 }
+        );
+      }
+      const expectedDate = new Date(expectedCompletionRaw);
+      const nowMs = Date.now();
+      if (
+        isNaN(expectedDate.getTime()) ||
+        expectedDate.getTime() < nowMs + 24 * 60 * 60 * 1000 ||
+        expectedDate.getTime() > nowMs + 2 * 365 * 24 * 60 * 60 * 1000
+      ) {
+        return NextResponse.json(
+          { error: "Date prévue invalide (entre +1 jour et +2 ans)" },
+          { status: 400 }
+        );
+      }
+
       stepData.montant = amount;
+      stepData.date_prevue = expectedDate.toLocaleDateString("fr-FR");
+
+      // IMPORTANT : update expected_completion_at AVANT de marquer l'étape complétée,
+      // sinon le trigger SQL ne lit pas la valeur correcte.
       await supabase
         .from("recommendations")
-        .update({ amount })
+        .update({ amount, expected_completion_at: expectedDate.toISOString() })
         .eq("id", rec.id);
     }
 

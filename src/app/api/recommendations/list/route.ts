@@ -21,7 +21,7 @@ export async function GET(req: Request) {
     .schema("winelio")
     .from("recommendations")
     .select(
-      `id, status, amount, created_at, email_opened_at, email_clicked_at,
+      `id, status, amount, created_at, email_opened_at, email_clicked_at, abandoned_by_pro_at,
        contact:contacts(first_name, last_name),
        professional:profiles!recommendations_professional_id_fkey(
          first_name, last_name,

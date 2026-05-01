@@ -158,6 +158,72 @@ Assigne le prochain sponsor par round-robin parmi les fondateurs.
 
 ## RECOMMANDATIONS
 
+### `POST /api/recommendations/process-followups`
+**Fichier** : `src/app/api/recommendations/process-followups/route.ts`
+**Accès** : `Bearer CRON_SECRET` (header `Authorization`)
+
+Cron worker des relances pro. Scanne les `recommendation_followups` en statut `pending` dont `send_at ≤ NOW()`, envoie l'email de relance, programme la relance suivante ou conclut le cycle par un abandon. À déclencher toutes les 15 min.
+
+**Body** : aucun
+
+**Logique** :
+1. SELECT followups pending échus (`send_at ≤ NOW()`, `status = 'pending'`)
+2. Pour chaque followup : génère un token HMAC, enqueue l'email de relance pro
+3. Si `attempt_number < 3` : INSERT followup suivant (`attempt_number + 1`, `send_at + délai`)
+4. Si `attempt_number = 3` : SET `recommendations.abandoned_by_pro_at = NOW()`, enqueue email referrer "soft"
+5. UPDATE followup : `status = 'sent'`, `sent_at = NOW()`
+
+**Réponse** :
+```json
+{ "processed": 3, "errors": 0 }
+```
+
+---
+
+### `GET /api/recommendations/followup-action`
+**Fichier** : `src/app/api/recommendations/followup-action/route.ts`
+**Accès** : `[PUBLIC]` — token HMAC signé dans la query string
+
+Point d'entrée des clics depuis email. Valide le token HMAC, puis redirige ou exécute l'action.
+
+**Query params** :
+```
+?token=<HMAC>&action=done|postpone|abandon[&postpone_to=<ISO8601>]
+```
+
+**Logique** :
+- `action=done` : marque le followup `done`, complète l'étape suivante via `complete-step`, redirect `/recommendations/[id]`
+- `action=postpone` : redirect `/recommendations/followup/[token]/postpone` (choix du délai)
+- `action=abandon` : redirect `/recommendations/followup/[token]/abandon` (confirmation)
+
+---
+
+### `POST /api/recommendations/followup-action`
+**Fichier** : `src/app/api/recommendations/followup-action/route.ts`
+**Accès** : `[PUBLIC]` — token HMAC signé dans le body
+
+Appelé depuis les pages publiques `/postpone` et `/abandon` après confirmation.
+
+**Body** :
+```json
+{ "token": "<HMAC>", "action": "postpone", "postpone_to": "2026-05-10T09:00:00Z" }
+```
+ou
+```json
+{ "token": "<HMAC>", "action": "abandon" }
+```
+
+**Logique postpone** :
+- Vérifie `postpone_count < 5` (sinon 400)
+- UPDATE followup : `status = 'postponed'`, `send_at = postpone_to`, `postpone_count += 1`, remet `status = 'pending'`
+
+**Logique abandon** :
+- UPDATE followup : `status = 'abandoned'`
+- SET `recommendations.abandoned_by_pro_at = NOW()`
+- Enqueue email referrer "soft"
+
+---
+
 ### `POST /api/recommendations/complete-step`
 **Fichier** : `src/app/api/recommendations/complete-step/route.ts`
 **Accès** : `[AUTH]`
@@ -303,3 +369,5 @@ Réponse dépassement : 429 Too Many Requests
 | `/gestion-reseau/reseau` | `app/gestion-reseau/reseau/page.tsx` | Super Admin |
 | `/gestion-reseau/retraits` | `app/gestion-reseau/retraits/page.tsx` | Super Admin |
 | `/gestion-reseau/professionnels` | `app/gestion-reseau/professionnels/page.tsx` | Super Admin |
+| `/recommendations/followup/[token]/postpone` | `app/recommendations/followup/[token]/postpone/page.tsx` | Public (token HMAC) |
+| `/recommendations/followup/[token]/abandon` | `app/recommendations/followup/[token]/abandon/page.tsx` | Public (token HMAC) |

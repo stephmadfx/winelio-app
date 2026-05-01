@@ -32,7 +32,7 @@ src/
 │   │   ├── dashboard/                # Tableau de bord
 │   │   ├── profile/                  # Profil utilisateur (avatar, infos perso)
 │   │   ├── companies/                # Gestion entreprises (liste + /new)
-│   │   ├── recommendations/          # Workflow 8 étapes (liste, /new, /[id])
+│   │   ├── recommendations/          # Workflow 7 étapes (liste, /new, /[id])
 │   │   ├── network/                  # Réseau MLM (arbre 5 niveaux) + /stats
 │   │   ├── wallet/                   # Wallet EUR + Wins + retraits
 │   │   ├── settings/                 # Paramètres (thème clair/sombre, RGPD)
@@ -91,7 +91,7 @@ src/
 │   ├── profile-incomplete-modal.tsx  # Rappel profil incomplet
 │   ├── network-graph.tsx / tree.tsx  # Visualisation MLM (react-d3-tree, xyflow)
 │   ├── network-feed.tsx              # Feed d'événements réseau
-│   ├── step-timeline.tsx             # Timeline workflow 8 étapes
+│   ├── step-timeline.tsx             # Timeline workflow 7 étapes
 │   ├── PromoVideo.tsx                # Player vidéo landing
 │   ├── BetaBanner.tsx                # Bandeau bêta
 │   ├── DemoSeedBanner.tsx            # Bandeau mode démo
@@ -183,8 +183,9 @@ await supabase.from("recommendations").insert(...)
 | companies | Entreprises des pros (siret, siren, vat_number, is_verified, alias, `source` ∈ {owner, scraped}, deleted_at) |
 | contacts | Prospects pour les recommandations (nom, email, phone, address, postal_code) |
 | compensation_plans | Plans de commission (taux, pourcentages par niveau) |
-| steps | 8 étapes du workflow de recommandation |
-| recommendations | Recommandations (referrer → professional, statut, montant, email_opened_at, email_clicked_at) |
+| steps | 7 étapes du workflow de recommandation |
+| recommendations | Recommandations (referrer → professional, statut, montant, email_opened_at, email_clicked_at, expected_completion_at, abandoned_by_pro_at) |
+| recommendation_followups | Suivi des relances pro après acceptation (cycle 3 relances par étape, max 5 reports) |
 | recommendation_steps | Junction table (étape complétée, données associées) |
 | recommendation_annotations | Notes admin sur une reco ou une étape |
 | commission_transactions | Commissions (type, level, montant, statut PENDING/EARNED) |
@@ -205,7 +206,8 @@ await supabase.from("recommendations").insert(...)
 ### Triggers Supabase
 - `on_auth_user_created` : auto-crée le profil + wallet summary à l'inscription
 - `update_*_updated_at` : met à jour le champ updated_at automatiquement
-- Trigger commissions : création auto des `commission_transactions` quand l'étape 6 (devis validé) passe à `completed`
+- Trigger commissions : création auto des `commission_transactions` quand l'étape 6 passe à `completed`
+- `trg_recommendation_step_followup` : insertion auto dans `recommendation_followups` à la complétion d'une étape 2/4/5 ; cancelle les relances pending si l'étape suivante est déjà complétée
 
 ### Storage Supabase
 - `avatars` (public) : photos de profil utilisateur
@@ -236,24 +238,80 @@ Chemins valides :
 - Génération : `winelio.generate_unique_sponsor_code()` avec retry anti-collision
 - Unicité garantie via table `deleted_sponsor_codes` (pas de réutilisation après suppression)
 
-### Workflow de recommandation (8 étapes)
+### Workflow de recommandation (7 étapes)
 1. Recommandation reçue (auto)
 2. Acceptée par le professionnel
 3. Contact établi
 4. Rendez-vous fixé
 5. Devis soumis (avec montant)
-6. **Devis validé** → déclenche la création des commissions (PENDING → EARNED)
-7. Paiement reçu (via Stripe SetupIntent/charge — voir `stripe_payment_sessions`)
-8. Affaire terminée
+6. **Travaux + paiement** → déclenche la création des commissions (PENDING → EARNED)
+7. Affaire terminée
 
 **Anonymat pro** : l'identité du pro reste masquée côté referrer jusqu'à l'acceptation de la reco (étape 2).
 
 **Tracking email** : `email_opened_at` (pixel) et `email_clicked_at` (redirect) sur la recommandation, enregistrés seulement à la première interaction.
 
+Schéma textuel du workflow avec relances :
+
+```
+Étape 1 : Recommandation reçue
+   │
+   ▼
+Étape 2 : Acceptée par le pro ─────────────► [Relance auto T+24h, cycle 3×]
+   │                                         ✅ C'est fait → étape 3
+   ▼                                         📅 Reporter (max 5)
+Étape 3 : Contact établi                     ❌ Abandon → reco refusée
+   │
+   ▼
+Étape 4 : Rendez-vous fixé ────────────────► [Relance auto T+72h, cycle 3×]
+   │
+   ▼
+Étape 5 : Devis soumis ────────────────────► [Relance auto à expected_completion_at, cycle 3×]
+   │  (champ obligatoire : délai estimé)
+   ▼
+Étape 6 : Travaux + paiement (déclenche commissions MLM)
+   │
+   ▼
+Étape 7 : Affaire terminée
+```
+
+### Relances automatiques pro (depuis 2026-05)
+Système de relances email automatiques au pro après acceptation, pour pousser
+l'avancement du workflow.
+
+**Cycle** : 3 relances espacées (1ère / +48h / +5j) par étape déclenchée. Les
+étapes qui déclenchent un cycle sont 2, 4 et 5.
+
+**Délais de la 1ère relance** :
+- Étape 2 (Acceptée) → 24h après complétion
+- Étape 4 (RDV fixé) → 72h après complétion
+- Étape 5 (Devis soumis) → date `expected_completion_at` saisie obligatoirement par le pro
+
+**Actions email** (token HMAC signé, pas de session requise) :
+- ✅ "C'est fait" → complète l'étape suivante (`POST /api/recommendations/followup-action?action=done`)
+- 📅 "Reporter" → page publique `/recommendations/followup/[token]/postpone` (max 5 reports par étape)
+- ❌ "Je ne peux pas donner suite" → page publique `/recommendations/followup/[token]/abandon`
+
+**Fin de cycle** : si le pro ne répond pas après 3 relances, `recommendations.abandoned_by_pro_at`
+est posé et le referrer reçoit un email "soft" l'invitant à reprendre la main. La reco reste
+assignée au pro (badge "Abandonnée par le pro" côté referrer).
+
+**Architecture** :
+- Table `winelio.recommendation_followups` (état explicite du cycle)
+- Trigger SQL `trg_recommendation_step_followup` : insertion auto à la complétion d'une étape 2/4/5
+- Cron worker `POST /api/recommendations/process-followups` (à déclencher toutes les 15 min, auth `Bearer CRON_SECRET`)
+- Module HMAC `src/lib/followup-token.ts` (env var `FOLLOWUP_ACTION_SECRET`, min 32 chars)
+
+**Cron à enregistrer côté infra** :
+```
+*/15 * * * * curl -s -X POST -H "Authorization: Bearer $CRON_SECRET" \
+              https://winelio.app/api/recommendations/process-followups > /dev/null 2>&1
+```
+
 ### Système MLM (5 niveaux)
 - Chaque user a un `sponsor_code` unique (8 chars)
 - `sponsor_id` pointe vers le parrain
-- Quand une reco est validée (étape 6) :
+- Quand une reco atteint l'étape 6 (travaux + paiement) :
   - Referrer reçoit 60% de la commission (`recommendation`)
   - Niveau 1 (sponsor du referrer) : 4% (`referral_level_1`)
   - Niveau 2-5 : 4% chacun (`referral_level_2` … `referral_level_5`)

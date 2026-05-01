@@ -12,6 +12,7 @@ interface Recommendation {
   status: string;
   amount: number | null;
   created_at: string;
+  abandoned_by_pro_at: string | null;
   contact: { first_name: string; last_name: string } | null;
   professional: {
     first_name: string | null;
@@ -342,6 +343,11 @@ export default function RecommendationsPage() {
                           <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
                           {STATUS_LABELS[rec.status] ?? rec.status}
                         </span>
+                        {rec.abandoned_by_pro_at && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                            Abandonnée par le pro
+                          </span>
+                        )}
                       </div>
 
                       <svg className="w-4 h-4 text-winelio-gray/25 group-hover:text-winelio-orange/60 transition-colors duration-200 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
