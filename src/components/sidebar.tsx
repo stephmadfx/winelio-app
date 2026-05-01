@@ -47,7 +47,14 @@ export function Sidebar({ userEmail, isSuperAdmin, demoBanner = false }: { userE
   const pathname = usePathname();
 
   return (
-    <aside className={`fixed left-0 w-64 bg-[#eff1f2] border-r border-black/5 flex flex-col ${demoBanner ? "top-6 h-[calc(100vh-1.5rem)]" : "top-0 h-screen"}`}>
+    <aside
+      className="fixed left-0 w-64 bg-[#eff1f2] border-r border-black/5 flex flex-col"
+      style={
+        demoBanner
+          ? { top: "var(--beta-banner-h, 0px)", height: "calc(100vh - var(--beta-banner-h, 0px))" }
+          : { top: 0, height: "100vh" }
+      }
+    >
 
       {/* Logo */}
       <div className="px-5 py-6 border-b border-black/5">

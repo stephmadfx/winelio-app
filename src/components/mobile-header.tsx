@@ -103,9 +103,8 @@ export function MobileHeader({
     <>
       {/* ── Header bar ── */}
       <header
-        className={`fixed left-0 right-0 z-50 bg-winelio-light/80 backdrop-blur-md border-b border-black/5 shadow-sm lg:hidden ${
-          demoBanner ? "top-6" : "top-0"
-        }`}
+        className="fixed left-0 right-0 z-50 bg-winelio-light/80 backdrop-blur-md border-b border-black/5 shadow-sm lg:hidden"
+        style={{ top: demoBanner ? "var(--beta-banner-h, 0px)" : 0 }}
       >
         <div className="relative flex items-center justify-between px-4 h-16">
           {/* Gauche : logo */}

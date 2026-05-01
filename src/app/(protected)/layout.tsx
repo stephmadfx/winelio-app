@@ -64,7 +64,10 @@ export default async function ProtectedLayout({
 
   if (ageVerified === false) {
     return (
-      <div className={`relative min-h-dvh bg-winelio-light dark:bg-slate-900 transition-colors duration-200 ${DEMO_MODE ? "pt-6" : ""}`}>
+      <div
+        className="relative min-h-dvh bg-winelio-light dark:bg-slate-900 transition-colors duration-200"
+        style={DEMO_MODE ? { paddingTop: "var(--beta-banner-h, 0px)" } : undefined}
+      >
         <AppBackground />
         <BetaBanner />
         {DEMO_MODE && <DemoSeedBanner />}
@@ -102,7 +105,7 @@ export default async function ProtectedLayout({
   }
 
   return (
-    <div className={`relative min-h-dvh bg-winelio-light dark:bg-slate-900 transition-colors duration-200 ${DEMO_MODE ? "pt-6" : ""}`}>
+    <div className="relative min-h-dvh bg-winelio-light dark:bg-slate-900 transition-colors duration-200">
       <AppBackground />
       <BetaBanner />
       {DEMO_MODE && <DemoSeedBanner />}
@@ -130,8 +133,10 @@ export default async function ProtectedLayout({
       {/* Bug report button — mobile: dans le header / desktop: floating */}
       <BugReportButton userId={user.id} allBugReports={allBugReports ?? []} />
 
-      {/* Main content: adaptatif mobile/desktop */}
-      <main className={`relative z-10 pb-24 px-4 lg:pb-0 lg:ml-64 lg:px-8 lg:py-8 ${DEMO_MODE ? "pt-22 lg:pt-6" : "pt-16 lg:pt-0"}`}>
+      {/* Main content: adaptatif mobile/desktop. Le padding-top inclut la hauteur réelle du bandeau démo (var --beta-banner-h, 0 si absent) + la hauteur du header mobile (4rem). */}
+      <main
+        className="relative z-10 pb-24 px-4 lg:pb-0 lg:ml-64 lg:px-8 lg:py-8 pt-[calc(var(--beta-banner-h,0px)+4rem)] lg:pt-[var(--beta-banner-h,0px)]"
+      >
         {children}
       </main>
     </div>
