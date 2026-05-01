@@ -93,7 +93,8 @@ export async function notifyProFollowup(ctx: FollowupContext): Promise<string | 
 
   const projectExcerpt = (rec.project_description ?? "").slice(0, 140);
   const greeting = proFirstName ? `Bonjour ${he(proFirstName)},` : "Bonjour,";
-  const acceptedDaysAgo = Math.max(1, Math.round((Date.now() - new Date(rec.created_at).getTime()) / 86_400_000));
+  const createdMs = rec.created_at ? new Date(rec.created_at).getTime() : Date.now();
+  const acceptedDaysAgo = Math.max(1, Math.round((Date.now() - createdMs) / 86_400_000));
 
   const html = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><title>${he(subject)}</title></head>
