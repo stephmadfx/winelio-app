@@ -103,6 +103,8 @@ export default function RecommendationDetailPage() {
   const [completing, setCompleting] = useState(false);
   const [refusing, setRefusing] = useState(false);
   const [quoteAmount, setQuoteAmount] = useState("");
+  const [expectedDelay, setExpectedDelay] = useState<string>("");
+  const [customExpectedDate, setCustomExpectedDate] = useState<string>("");
   const [userId, setUserId] = useState<string | null>(null);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -163,6 +165,23 @@ export default function RecommendationDetailPage() {
     return true;
   };
 
+  const DELAY_PRESETS: Record<string, number> = {
+    "7d":  7 * 24 * 60 * 60 * 1000,
+    "4w":  28 * 24 * 60 * 60 * 1000,
+    "3m":  90 * 24 * 60 * 60 * 1000,
+    "6m":  180 * 24 * 60 * 60 * 1000,
+    "12m": 365 * 24 * 60 * 60 * 1000,
+  };
+
+  const computeExpectedDate = (): string | null => {
+    if (expectedDelay === "custom") {
+      return customExpectedDate ? new Date(customExpectedDate).toISOString() : null;
+    }
+    const offset = DELAY_PRESETS[expectedDelay];
+    if (!offset) return null;
+    return new Date(Date.now() + offset).toISOString();
+  };
+
   const handleCompleteStep = async () => {
     if (!currentStep || !recommendation) return;
     setCompleting(true);
@@ -174,6 +193,7 @@ export default function RecommendationDetailPage() {
           recommendation_id: recommendation.id,
           step_id: currentStep.id,
           quote_amount: (currentStep?.step?.order_index ?? 0) === 5 ? quoteAmount : undefined,
+          expected_completion_at: (currentStep?.step?.order_index ?? 0) === 5 ? computeExpectedDate() : undefined,
         }),
       });
       if (!res.ok) {
@@ -186,6 +206,8 @@ export default function RecommendationDetailPage() {
     await fetchData();
     setCompleting(false);
     setQuoteAmount("");
+    setExpectedDelay("");
+    setCustomExpectedDate("");
   };
 
   const handleRefuse = async () => {
@@ -468,12 +490,59 @@ export default function RecommendationDetailPage() {
                     </div>
                   </div>
                 )}
+                {(currentStep?.step?.order_index ?? 0) === 5 && (
+                  <div className="mb-4">
+                    <label className="mb-2 block text-sm font-bold text-winelio-dark">
+                      Délai estimé avant fin des travaux + paiement
+                    </label>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {[
+                        { value: "7d",     label: "Sous 7 jours" },
+                        { value: "4w",     label: "2-4 semaines" },
+                        { value: "3m",     label: "1-3 mois" },
+                        { value: "6m",     label: "3-6 mois" },
+                        { value: "12m",    label: "Plus de 6 mois" },
+                        { value: "custom", label: "Date précise" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setExpectedDelay(opt.value)}
+                          className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold transition-all ${
+                            expectedDelay === opt.value
+                              ? "border-winelio-orange bg-winelio-orange/5 text-winelio-orange"
+                              : "border-gray-200 bg-white text-winelio-dark hover:border-winelio-orange/30"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    {expectedDelay === "custom" && (
+                      <input
+                        type="date"
+                        value={customExpectedDate}
+                        onChange={(e) => setCustomExpectedDate(e.target.value)}
+                        min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                        max={new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                        className="mt-2 w-full rounded-xl border border-winelio-gray/20 bg-white px-4 py-2 text-sm"
+                      />
+                    )}
+                    <p className="mt-2 text-xs text-winelio-gray">
+                      Nous vous enverrons un rappel à cette date pour confirmer la fin du chantier. Vous pourrez le reporter si besoin.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="px-5 pb-5 flex items-center gap-3">
                 <button
                   onClick={handleCompleteStep}
-                  disabled={completing || refusing || ((currentStep?.step?.order_index ?? 0) === 5 && !quoteAmount)}
+                  disabled={
+                    completing ||
+                    refusing ||
+                    ((currentStep?.step?.order_index ?? 0) === 5 && (!quoteAmount || !computeExpectedDate()))
+                  }
                   className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-winelio-orange px-5 py-3 text-sm font-bold text-white shadow-md shadow-winelio-orange/25 transition-all hover:bg-winelio-amber hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none cursor-pointer"
                 >
                   {completing ? (
