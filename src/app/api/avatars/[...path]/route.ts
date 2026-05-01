@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { getAvatarSignedUrl } from "@/lib/r2-avatars";
+import { getAvatarStream } from "@/lib/r2-avatars";
 
 // Route auth-protégée qui sert les photos de profil depuis R2 privé.
 // Règles d'accès :
@@ -11,7 +11,8 @@ import { getAvatarSignedUrl } from "@/lib/r2-avatars";
 //   - Membre du même réseau MLM (niveaux 2-5) : non, on retombe sur les initiales.
 //   - Anonyme : 401.
 //
-// Réponse : redirect 302 vers la signed URL R2 (expire 1 h, cacheable côté client).
+// Réponse : on STREAM l'image directement (pas de redirect vers R2) pour ne jamais
+// exposer l'endpoint S3 au client et éviter d'avoir à élargir la CSP.
 
 export async function GET(
   req: NextRequest,
@@ -53,10 +54,18 @@ export async function GET(
   }
 
   try {
-    const url = await getAvatarSignedUrl(key, 3600);
-    return NextResponse.redirect(url, { status: 302 });
+    const obj = await getAvatarStream(key);
+    if (!obj) return NextResponse.json({ error: "Photo introuvable" }, { status: 404 });
+
+    const headers: Record<string, string> = {
+      "Content-Type": obj.contentType,
+      "Cache-Control": "private, max-age=3600",
+    };
+    if (obj.contentLength) headers["Content-Length"] = String(obj.contentLength);
+
+    return new Response(obj.body, { status: 200, headers });
   } catch (err) {
-    console.error("[avatars] signed url error:", err);
+    console.error("[avatars] stream error:", err);
     return NextResponse.json({ error: "Image indisponible" }, { status: 500 });
   }
 }

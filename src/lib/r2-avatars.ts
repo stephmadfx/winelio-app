@@ -1,5 +1,4 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 // Bucket privé dédié aux photos de profil Winelio. Pas d'URL publique.
 // Lecture exclusivement via signed URLs générées côté serveur après auth check.
@@ -37,11 +36,23 @@ export async function deleteAvatar(key: string): Promise<void> {
   await getClient().send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
 
-// Génère une URL signée de lecture, valable expiresIn secondes (défaut 1 h).
-export async function getAvatarSignedUrl(key: string, expiresIn = 3600): Promise<string> {
-  return getSignedUrl(
-    getClient(),
-    new GetObjectCommand({ Bucket: BUCKET, Key: key }),
-    { expiresIn },
-  );
+// Récupère le contenu d'un avatar depuis R2 pour le streamer côté serveur.
+export async function getAvatarStream(key: string): Promise<{
+  body: ReadableStream<Uint8Array>;
+  contentType: string;
+  contentLength?: number;
+} | null> {
+  try {
+    const res = await getClient().send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+    if (!res.Body) return null;
+    return {
+      body: res.Body.transformToWebStream(),
+      contentType: res.ContentType || "application/octet-stream",
+      contentLength: res.ContentLength,
+    };
+  } catch (err) {
+    const code = (err as { name?: string; $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode;
+    if (code === 404) return null;
+    throw err;
+  }
 }
