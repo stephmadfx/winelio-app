@@ -227,6 +227,14 @@ export async function completeProOnboarding(data: {
   const supabase = await createClient();
   const { ip, userAgent } = await getAuditContext();
 
+  // Lire l'état actuel pour ne notifier le parrain qu'à la première activation pro
+  const { data: previous } = await supabase
+    .from("profiles")
+    .select("is_professional")
+    .eq("id", user.id)
+    .single();
+  const wasAlreadyPro = !!previous?.is_professional;
+
   // 1. Mettre à jour le profil
   const { error: profileError } = await supabase
     .from("profiles")
@@ -301,6 +309,20 @@ export async function completeProOnboarding(data: {
       workMode: data.work_mode,
       categoryName: category?.name || "—",
     }).catch((err) => console.error("notify-pro-onboarding error:", err));
+
+    // Notifier le parrain niveau 1 uniquement à la 1re activation pro
+    if (!wasAlreadyPro) {
+      const { data: category2 } = await supabase
+        .from("categories")
+        .select("name")
+        .eq("id", data.category_id)
+        .maybeSingle();
+      const { notifyNewProInNetwork } = await import("@/lib/notify-new-pro-in-network");
+      notifyNewProInNetwork(user.id, {
+        categoryName: category2?.name ?? null,
+        workMode: data.work_mode,
+      }).catch((err) => console.error("notify-new-pro-in-network error:", err));
+    }
   }
 
   // 5. Audit trail

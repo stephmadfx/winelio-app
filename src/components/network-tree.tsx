@@ -298,6 +298,11 @@ function TreeNodeRow({
               <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold text-white ${colors.badge} shrink-0`}>
                 N{level}
               </span>
+              {isPro && (
+                <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-white bg-gradient-to-r from-winelio-orange to-winelio-amber shrink-0">
+                  Pro
+                </span>
+              )}
               {node.is_demo && (
                 <span className="inline-flex items-center justify-center px-1 py-0.5 rounded text-[8px] font-bold text-orange-400 bg-orange-50 border border-orange-200 shrink-0">
                   demo
