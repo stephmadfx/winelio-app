@@ -98,18 +98,6 @@ export async function POST(req: Request) {
         [tempPassword, userId]
       );
 
-      // Filet de sécurité : si l'user existait déjà via un autre projet, le trigger
-      // ON INSERT ne s'est pas déclenché → on crée son profile Winelio à la main.
-      await pgClient.query(`
-        INSERT INTO winelio.profiles (id, email, sponsor_code)
-        VALUES ($1, $2, winelio.generate_unique_sponsor_code())
-        ON CONFLICT (id) DO NOTHING
-      `, [userId, email]);
-      await pgClient.query(
-        "INSERT INTO winelio.user_wallet_summaries (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
-        [userId]
-      );
-
       await pgClient.query("COMMIT");
     } catch (pgErr) {
       await pgClient.query("ROLLBACK").catch(() => {});
