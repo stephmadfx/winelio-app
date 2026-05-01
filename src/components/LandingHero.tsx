@@ -1,18 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { PromoVideo } from "@/components/PromoVideo";
 
 export function LandingHero() {
   const [unlocked, setUnlocked] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
 
+  // Code parrain transmis via ?ref=... (ex : QR code). On le persiste en localStorage
+  // pour que /auth/login puisse l'utiliser même si le param n'est pas propagé dans l'URL,
+  // et on l'ajoute explicitement dans le lien d'inscription.
+  const searchParams = useSearchParams();
+  const refCode = searchParams.get("ref");
+  useEffect(() => {
+    if (refCode) {
+      try {
+        localStorage.setItem("winelio_ref", refCode);
+      } catch {}
+    }
+  }, [refCode]);
+
   const handleCountdown = useCallback((s: number) => {
     setSecondsLeft(s);
     if (s <= 0) setUnlocked(true);
   }, []);
   const handleUnlock = useCallback(() => setUnlocked(true), []);
+
+  const registerHref = refCode
+    ? `/auth/login?mode=register&ref=${encodeURIComponent(refCode)}`
+    : "/auth/login?mode=register";
 
   return (
     <>
@@ -42,16 +60,24 @@ export function LandingHero() {
       </div>
 
       <div className="mt-4 flex flex-col gap-3">
-        <Link
-          href="/auth/login"
-          className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105"
-        >
-          Se connecter
-        </Link>
+        {/* Pas de bouton "Se connecter" si on arrive via un lien de parrainage :
+            le visiteur est forcément un nouveau prospect. */}
+        {!refCode && (
+          <Link
+            href="/auth/login"
+            className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105"
+          >
+            Se connecter
+          </Link>
+        )}
         {unlocked ? (
           <Link
-            href="/auth/login?mode=register"
-            className="inline-flex items-center justify-center rounded-2xl border border-winelio-orange/30 bg-white px-6 py-3.5 text-sm font-semibold text-winelio-orange transition hover:border-winelio-orange hover:bg-winelio-orange/5"
+            href={registerHref}
+            className={
+              refCode
+                ? "inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105"
+                : "inline-flex items-center justify-center rounded-2xl border border-winelio-orange/30 bg-white px-6 py-3.5 text-sm font-semibold text-winelio-orange transition hover:border-winelio-orange hover:bg-winelio-orange/5"
+            }
           >
             Créer un compte
           </Link>
