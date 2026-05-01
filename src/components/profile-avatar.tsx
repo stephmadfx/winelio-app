@@ -40,7 +40,6 @@ export function ProfileAvatar({
           alt={name}
           className={imageClassName}
           loading="lazy"
-          referrerPolicy="no-referrer"
           onError={() => setFailed(true)}
         />
       ) : (
