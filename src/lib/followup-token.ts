@@ -5,7 +5,7 @@
 
 import crypto from "crypto";
 
-const SECRET = process.env.FOLLOWUP_ACTION_SECRET;
+const SECRET = process.env.FOLLOWUP_ACTION_SECRET?.replace(/\s/g, "");
 const TTL_SECONDS = 30 * 24 * 60 * 60; // 30 jours
 const VERSION = 1;
 
