@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { WinelioLogo } from "@/components/winelio-logo";
 import { AppBackground } from "@/components/AppBackground";
 import { NetworkBackground } from "@/components/NetworkBackground";
@@ -18,7 +19,10 @@ export default function Home() {
             <span className="text-winelio-orange font-semibold">Gagnez.</span>
           </p>
 
-          <LandingHero />
+          {/* Suspense requis car LandingHero utilise useSearchParams (lecture de ?ref) */}
+          <Suspense fallback={null}>
+            <LandingHero />
+          </Suspense>
         </div>
       </main>
     </div>
