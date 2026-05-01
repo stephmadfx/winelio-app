@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { advanceRecommendationStep, toggleRecommendationStatus } from "../../actions";
 import { addRecoAnnotation, deleteRecoAnnotation } from "./actions";
 import { RecoJourneyView, type AnnotationRow, type StepRow } from "@/components/admin/RecoJourneyView";
+import { FollowupTimeline } from "@/components/admin/FollowupTimeline";
 
 export default async function AdminRecoDetail({
   params,
@@ -64,22 +65,28 @@ export default async function AdminRecoDetail({
   const professional = Array.isArray(reco.professional) ? reco.professional[0] : reco.professional;
 
   return (
-    <RecoJourneyView
-      reco={{
-        id: reco.id,
-        status: reco.status,
-        amount: reco.amount,
-        commission_rate: commissionRate,
-        referrer: referrer ?? null,
-        professional: professional ?? null,
-      }}
-      steps={steps}
-      annotations={(annotationsRaw ?? []) as unknown as AnnotationRow[]}
-      currentAdminId={user.id}
-      onAddAnnotation={addRecoAnnotation}
-      onDeleteAnnotation={deleteRecoAnnotation}
-      onAdvanceStep={advanceRecommendationStep}
-      onToggleStatus={toggleRecommendationStatus}
-    />
+    <>
+      <RecoJourneyView
+        reco={{
+          id: reco.id,
+          status: reco.status,
+          amount: reco.amount,
+          commission_rate: commissionRate,
+          referrer: referrer ?? null,
+          professional: professional ?? null,
+        }}
+        steps={steps}
+        annotations={(annotationsRaw ?? []) as unknown as AnnotationRow[]}
+        currentAdminId={user.id}
+        onAddAnnotation={addRecoAnnotation}
+        onDeleteAnnotation={deleteRecoAnnotation}
+        onAdvanceStep={advanceRecommendationStep}
+        onToggleStatus={toggleRecommendationStatus}
+      />
+      <section className="mt-8">
+        <h2 className="text-lg font-bold mb-3">Historique des relances pro</h2>
+        <FollowupTimeline recommendationId={id} />
+      </section>
+    </>
   );
 }

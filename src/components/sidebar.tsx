@@ -68,10 +68,15 @@ export function Sidebar({ userEmail, isSuperAdmin, demoBanner = false }: { userE
       <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          const tourKey =
+            item.href === "/network" ? "sidebar-network" :
+            item.href === "/wallet" ? "sidebar-wallet" :
+            undefined;
           return (
             <Link
               key={item.href}
               href={item.href}
+              data-tour={tourKey}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 isActive
                   ? "bg-white text-winelio-orange shadow-sm shadow-black/5"
