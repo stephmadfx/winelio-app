@@ -298,3 +298,57 @@ input, textarea, select {
 }
 .dark input::placeholder,
 .dark textarea::placeholder { color: #475569; }
+/* ───────── Driver.js (visite guidée dashboard) — palette Winelio ───────── */
+.driver-popover {
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(45, 52, 54, 0.18);
+  font-family: inherit;
+}
+.driver-popover-title {
+  color: #2D3436;
+  font-weight: 700;
+  font-size: 16px;
+}
+.driver-popover-description {
+  color: #636E72;
+  line-height: 1.55;
+}
+.driver-popover-progress-text {
+  color: #FF6B35;
+  font-weight: 600;
+}
+.driver-popover-next-btn,
+.driver-popover-done-btn {
+  background: linear-gradient(135deg, #FF6B35, #F7931E) !important;
+  border: none !important;
+  color: #fff !important;
+  text-shadow: none !important;
+  padding: 8px 14px !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+.driver-popover-next-btn:hover,
+.driver-popover-done-btn:hover {
+  filter: brightness(1.05);
+}
+.driver-popover-prev-btn {
+  color: #636E72 !important;
+  background: transparent !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: 10px !important;
+  padding: 8px 14px !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  text-shadow: none !important;
+}
+.driver-popover-close-btn {
+  color: #9CA3AF !important;
+}
+.driver-popover-close-btn:hover {
+  color: #2D3436 !important;
+}
+.driver-active-element {
+  outline: 3px solid rgba(255, 107, 53, 0.55) !important;
+  border-radius: 12px !important;
+}

@@ -120,6 +120,7 @@ export const BugReportButton = ({ userId, allBugReports = [], variant = "floatin
         </button>
       ) : (
         <button onClick={handleFloatingButtonClick}
+          data-tour="bug-button"
           className="fixed bottom-16 right-4 z-50 rounded-full bg-gradient-to-br from-winelio-orange to-winelio-amber shadow-lg shadow-winelio-orange/30 hidden lg:flex items-center gap-1.5 px-3 h-8 text-white text-xs font-semibold hover:scale-105 active:scale-95 transition-transform lg:bottom-4"
           aria-label="Bugs et idées">
           {hasUnread && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white" />}

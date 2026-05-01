@@ -3,6 +3,7 @@ import { getUser } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { OnboardingModal } from "@/components/onboarding-modal";
+import { DashboardTour } from "@/components/dashboard-tour";
 import { Card, CardContent } from "@/components/ui/card";
 import { MonthlyBarChart } from "@/components/monthly-bar-chart";
 import { AnimatedCounter } from "@/components/animated-counter";
@@ -61,12 +62,14 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("first_name, last_name")
+    .select("first_name, last_name, tour_completed_at")
     .eq("id", user.id)
     .single();
 
   const isSuperAdmin = user.app_metadata?.role === "super_admin";
   const needsOnboarding = !isSuperAdmin && (!profile?.first_name || !profile?.last_name);
+  // Visite guidée à la première arrivée sur le dashboard, après l'onboarding initial
+  const showTour = !needsOnboarding && !profile?.tour_completed_at;
 
   // Réseau MLM (5 niveaux) — une seule requête récursive via RPC
   const { data: networkRows } = await supabase.rpc("get_network_ids", {
@@ -382,6 +385,7 @@ export default async function DashboardPage() {
   return (
     <>
       {needsOnboarding && <OnboardingModal userId={user.id} />}
+      {showTour && <DashboardTour />}
 
       {/* ═══ MOBILE (< lg) ═══ */}
       <div className="lg:hidden space-y-5">
@@ -461,6 +465,7 @@ export default async function DashboardPage() {
           </div>
           <Link
             href="/recommendations/new"
+            data-tour="new-reco"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-br from-winelio-orange to-winelio-amber text-white font-bold text-sm shadow-md hover:opacity-90 transition-opacity"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -471,7 +476,7 @@ export default async function DashboardPage() {
         </header>
 
         {/* KPIs desktop – 4 colonnes */}
-        <section className="grid grid-cols-4 gap-5">
+        <section data-tour="kpis" className="grid grid-cols-4 gap-5">
           <DesktopKpiCard
             numValue={recoThisMonth ?? 0}
             label="Recommandations"
