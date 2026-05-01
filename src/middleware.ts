@@ -122,7 +122,10 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/bugs/imap-debug") &&
     !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
     !request.nextUrl.pathname.startsWith("/api/email-track/") &&
-    !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders")
+    !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders") &&
+    !request.nextUrl.pathname.startsWith("/api/recommendations/process-followups") &&
+    !request.nextUrl.pathname.startsWith("/api/recommendations/cron-scraped-reminder") &&
+    !request.nextUrl.pathname.startsWith("/api/recommendations/followup-action")
   ) {
     if (!user) {
       return NextResponse.json(
@@ -142,6 +145,10 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
     !request.nextUrl.pathname.startsWith("/api/email-track/") &&
     !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders") &&
+    !request.nextUrl.pathname.startsWith("/api/recommendations/process-followups") &&
+    !request.nextUrl.pathname.startsWith("/api/recommendations/cron-scraped-reminder") &&
+    !request.nextUrl.pathname.startsWith("/api/recommendations/followup-action") &&
+    !request.nextUrl.pathname.startsWith("/recommendations/followup/") &&
     !request.nextUrl.pathname.startsWith("/claim") &&
     !request.nextUrl.pathname.startsWith("/conditions-generales-utilisation") &&
     request.nextUrl.pathname !== "/"
