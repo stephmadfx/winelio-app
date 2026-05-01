@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 import { MobileHeader } from "@/components/mobile-header";
+import { DesktopHeader } from "@/components/desktop-header";
 import { AppBackground } from "@/components/AppBackground";
 import { ProfileIncompleteModal } from "@/components/profile-incomplete-modal";
 import { BugReportButton } from "@/components/bug-report-button";
@@ -113,10 +114,16 @@ export default async function ProtectedLayout({
       {/* Modal profil incomplet */}
       {!isProfileComplete && <ProfileIncompleteModal />}
 
-      {/* Desktop: sidebar */}
+      {/* Desktop: sidebar + top bar avec greeting & avatar */}
       <div className="hidden lg:block">
         <Sidebar userEmail={user.email ?? ""} isSuperAdmin={isSuperAdmin} demoBanner={DEMO_MODE} />
       </div>
+      <DesktopHeader
+        userEmail={user.email ?? ""}
+        firstName={profile?.first_name ?? undefined}
+        avatar={profile?.avatar ?? undefined}
+        demoBanner={DEMO_MODE}
+      />
 
       {/* Mobile: header + bottom nav */}
       <MobileHeader
@@ -133,9 +140,9 @@ export default async function ProtectedLayout({
       {/* Bug report button — mobile: dans le header / desktop: floating */}
       <BugReportButton userId={user.id} allBugReports={allBugReports ?? []} />
 
-      {/* Main content: adaptatif mobile/desktop. Le padding-top inclut la hauteur réelle du bandeau démo (var --beta-banner-h, 0 si absent) + la hauteur du header mobile (4rem). */}
+      {/* Main content: adaptatif mobile/desktop. Le padding-top inclut la hauteur réelle du bandeau démo (var --beta-banner-h, 0 si absent) + la hauteur du header (4rem mobile et desktop). Sur desktop on ajoute 1.5rem pour aérer le contenu sous le header. */}
       <main
-        className="relative z-10 pb-24 px-4 lg:pb-0 lg:ml-64 lg:px-8 lg:py-8 pt-[calc(var(--beta-banner-h,0px)+4rem)] lg:pt-[var(--beta-banner-h,0px)]"
+        className="relative z-10 pb-24 px-4 lg:pb-8 lg:ml-64 lg:px-8 pt-[calc(var(--beta-banner-h,0px)+4rem)] lg:pt-[calc(var(--beta-banner-h,0px)+4rem+1.5rem)]"
       >
         {children}
       </main>
