@@ -86,11 +86,7 @@ test("chemin 3 : auto-reco — referrer touche bien la commission de 60 %", asyn
 /* ---------------------------------------------------------------- */
 /* Chemin 4 — Trigger auto recommendation_followups après étape 2    */
 /* ---------------------------------------------------------------- */
-test.fixme("chemin 4 : étape 2 complétée → ligne dans recommendation_followups", async ({ page }) => {
-  // FIXME : aucune ligne dans winelio.recommendation_followups n'a jamais été
-  // créée dans cette base, alors que le trigger trg_recommendation_step_followup
-  // est censé en insérer à chaque complétion d'étape 2/4/5. Bug du trigger ou
-  // de la fonction handle_recommendation_step_completion à investiguer.
+test("chemin 4 : étape 2 complétée → ligne dans recommendation_followups", async ({ page }) => {
   const { referrer, pro, contactId } = await createBasicChain();
 
   await loginAsFast(page, referrer.email);
