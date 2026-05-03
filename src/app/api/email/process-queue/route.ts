@@ -6,6 +6,8 @@ import { sendMailWithTimeout, SMTP_FROM } from "@/lib/email-transporter";
 const BATCH_SIZE = 10;
 const RETRY_DELAYS_MIN = [5, 30, 120];
 
+const E2E_TEST_EMAIL_RE = /@winelio-e2e\.local$/i;
+
 export async function POST(req: Request) {
   const auth = req.headers.get("authorization") ?? "";
   if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -44,6 +46,18 @@ export async function POST(req: Request) {
 
   await Promise.allSettled(
     batch.map(async (row) => {
+      // E2E test recipients : on ne touche pas au SMTP. L'email reste lisible
+      // dans la table pour que les tests Playwright puissent le récupérer.
+      if (E2E_TEST_EMAIL_RE.test(row.to_email)) {
+        await supabaseAdmin
+          .schema("winelio")
+          .from("email_queue")
+          .update({ status: "test_skipped", sent_at: new Date().toISOString() })
+          .eq("id", row.id);
+        sent++;
+        return;
+      }
+
       try {
         await sendMailWithTimeout({
           from:    row.from_name && row.from_email

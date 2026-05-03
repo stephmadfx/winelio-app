@@ -94,14 +94,20 @@ export async function POST(req: Request) {
       );
     }
 
-    // Send custom email (text + html pour éviter les filtres spam)
-    await sendMailWithTimeout({
-      from: `"${process.env.SMTP_SENDER_NAME || "Winelio"}" <${process.env.SMTP_ADMIN_EMAIL || process.env.SMTP_USER || "support@winelio.app"}>`,
-      to: email,
-      subject: "Votre code de connexion Winelio",
-      text: `Votre code de connexion Winelio : ${code}\n\nCe code est valable 24 heures et a usage unique.\nSi vous n'avez pas fait cette demande, ignorez cet email.\n\n---\n© 2026 Winelio · Recommandez. Connectez. Gagnez.`,
-      html: buildEmailHtml(code),
-    });
+    // E2E test recipients : on saute l'envoi SMTP (le code reste en DB et
+    // sera lu directement par les tests Playwright).
+    const isE2E = /@winelio-e2e\.local$/i.test(email);
+
+    if (!isE2E) {
+      // Send custom email (text + html pour éviter les filtres spam)
+      await sendMailWithTimeout({
+        from: `"${process.env.SMTP_SENDER_NAME || "Winelio"}" <${process.env.SMTP_ADMIN_EMAIL || process.env.SMTP_USER || "support@winelio.app"}>`,
+        to: email,
+        subject: "Votre code de connexion Winelio",
+        text: `Votre code de connexion Winelio : ${code}\n\nCe code est valable 24 heures et a usage unique.\nSi vous n'avez pas fait cette demande, ignorez cet email.\n\n---\n© 2026 Winelio · Recommandez. Connectez. Gagnez.`,
+        html: buildEmailHtml(code),
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
