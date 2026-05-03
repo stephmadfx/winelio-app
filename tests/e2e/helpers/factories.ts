@@ -25,7 +25,12 @@ export async function createTestUser(opts: {
   const { data: auth, error: authErr } = await db().auth.admin.createUser({
     email: opts.email,
     email_confirm: true,
-    user_metadata: { first_name: opts.firstName ?? "E2E", last_name: opts.lastName ?? "Test" },
+    // Le trigger winelio.handle_new_user ne crée le profile que si app='winelio'.
+    user_metadata: {
+      app: "winelio",
+      first_name: opts.firstName ?? "E2E",
+      last_name:  opts.lastName  ?? "Test",
+    },
   });
   if (authErr || !auth.user) throw new Error(`createUser ${opts.email}: ${authErr?.message}`);
 
@@ -66,15 +71,20 @@ export async function createTestCompany(opts: {
   email?: string | null;
   source?: "owner" | "scraped";
 }): Promise<{ id: string }> {
+  // Contrainte DB : alias = varchar(7).
+  const alias = Math.random().toString(36).slice(2, 9).toUpperCase();
+
   const { data, error } = await wn()
     .from("companies")
     .insert({
       owner_id:    opts.ownerId,
       name:        opts.name,
+      alias,
       category_id: opts.categoryId,
       email:       opts.email ?? null,
       source:      opts.source ?? "owner",
       is_verified: true,
+      country:     "FR",
     })
     .select("id")
     .single();

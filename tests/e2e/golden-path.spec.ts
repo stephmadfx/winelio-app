@@ -117,7 +117,7 @@ test("golden path : reco standard 7 étapes + commissions MLM", async ({ page, c
   // 5) Vérification : les commissions ont été créées
   const { data: commissions, error: commErr } = await wn()
     .from("commission_transactions")
-    .select("id, type, level, amount, recipient_id, status")
+    .select("id, type, level, amount, user_id, status")
     .eq("recommendation_id", recoId);
   expect(commErr).toBeNull();
   expect(commissions, "commissions vides — étape 6 n'a pas déclenché createCommissions").toBeTruthy();
@@ -133,7 +133,7 @@ test("golden path : reco standard 7 étapes + commissions MLM", async ({ page, c
   ).toBe(true);
 
   const recommendationCommission = commissions!.find((c) => c.type === "recommendation");
-  expect(recommendationCommission?.recipient_id).toBe(referrer.id);
+  expect(recommendationCommission?.user_id).toBe(referrer.id);
   expect(Number(recommendationCommission?.amount)).toBeGreaterThan(0);
 
   // Total des commissions ≈ commission_rate du plan × montant (typiquement 10% × 1200 = 120€)

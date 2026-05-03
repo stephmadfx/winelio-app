@@ -1,21 +1,31 @@
 import type { Page, BrowserContext } from "@playwright/test";
-import { db } from "./supabase";
 import { readOtpCode } from "./otp";
 
 /**
- * Connecte un compte test rapidement via magic link admin.
- * Utilisé par défaut dans les tests qui ne valident pas le flow OTP UI.
+ * Connecte un compte test rapidement via les routes API custom (send-code + verify-code).
+ * Le SMTP est déjà skippé pour les emails @winelio-e2e.local : on lit le code OTP
+ * directement en DB. Les cookies HttpOnly de session sont posés par /api/auth/verify-code.
  */
 export async function loginAsFast(page: Page, email: string): Promise<void> {
-  const { data, error } = await db().auth.admin.generateLink({
-    type: "magiclink",
-    email,
-  });
-  if (error || !data?.properties?.action_link) {
-    throw new Error(`generateLink ${email}: ${error?.message ?? "no action_link"}`);
+  // 1. Demande l'OTP (insère dans winelio.otp_codes, skip SMTP pour @winelio-e2e.local)
+  const sendRes = await page.request.post("/api/auth/send-code", { data: { email } });
+  if (!sendRes.ok()) {
+    throw new Error(`send-code ${email}: HTTP ${sendRes.status()} ${await sendRes.text()}`);
   }
 
-  await page.goto(data.properties.action_link);
+  // 2. Lit le code en DB
+  const code = await readOtpCode(email);
+
+  // 3. Vérifie le code → la route pose les cookies de session HttpOnly
+  const verifyRes = await page.request.post("/api/auth/verify-code", {
+    data: { email, code },
+  });
+  if (!verifyRes.ok()) {
+    throw new Error(`verify-code ${email}: HTTP ${verifyRes.status()} ${await verifyRes.text()}`);
+  }
+
+  // 4. Confirme la session côté browser via /dashboard
+  await page.goto("/dashboard");
   await page.waitForURL(/\/(dashboard|profile|recommendations|network|wallet)/, { timeout: 15_000 });
 }
 
