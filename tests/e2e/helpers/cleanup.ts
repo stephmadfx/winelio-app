@@ -26,6 +26,17 @@ export async function cleanupE2EAccounts(): Promise<{ deleted: number }> {
   const emails = targets.map((p) => p.email.toLowerCase());
 
   // 2) purge applicative en amont (FK potentiellement SET NULL)
+  // recommendation_followups référence recommendations (FK CASCADE en place
+  // mais on purge aussi par sécurité avant de supprimer les recos elles-mêmes).
+  const { data: recos } = await wn()
+    .from("recommendations")
+    .select("id")
+    .or(`referrer_id.in.(${ids.join(",")}),professional_id.in.(${ids.join(",")})`);
+  const recoIds = (recos ?? []).map((r) => r.id);
+  if (recoIds.length) {
+    await wn().from("recommendation_followups").delete().in("recommendation_id", recoIds);
+    await wn().from("recommendation_steps").delete().in("recommendation_id", recoIds);
+  }
   await wn().from("recommendations").delete().in("referrer_id", ids);
   await wn().from("recommendations").delete().in("professional_id", ids);
   await wn().from("contacts").delete().in("user_id", ids);
