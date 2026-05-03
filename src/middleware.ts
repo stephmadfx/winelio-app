@@ -125,7 +125,8 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders") &&
     !request.nextUrl.pathname.startsWith("/api/recommendations/process-followups") &&
     !request.nextUrl.pathname.startsWith("/api/recommendations/cron-scraped-reminder") &&
-    !request.nextUrl.pathname.startsWith("/api/recommendations/followup-action")
+    !request.nextUrl.pathname.startsWith("/api/recommendations/followup-action") &&
+    !request.nextUrl.pathname.startsWith("/api/staging-auth")
   ) {
     if (!user) {
       return NextResponse.json(
@@ -151,6 +152,9 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/recommendations/followup/") &&
     !request.nextUrl.pathname.startsWith("/claim") &&
     !request.nextUrl.pathname.startsWith("/conditions-generales-utilisation") &&
+    !request.nextUrl.pathname.startsWith("/monitoring/") &&
+    request.nextUrl.pathname !== "/staging-login" &&
+    request.nextUrl.pathname !== "/api/staging-auth" &&
     request.nextUrl.pathname !== "/"
   ) {
     const url = request.nextUrl.clone();
