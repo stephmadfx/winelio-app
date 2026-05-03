@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -45,4 +46,16 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // Token Sentry pour upload des source maps (à mettre dans Coolify : SENTRY_AUTH_TOKEN)
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  // Pas de logs de build verbeux
+  silent: !process.env.CI,
+  // Désactivé localement (no DSN) ; activé en prod si DSN posé
+  disableLogger: true,
+  // Tunnel pour contourner les ad-blockers qui bloquent ingest.sentry.io
+  tunnelRoute: "/monitoring/sentry",
+  // N'upload pas les source maps si pas de token (build local non bloqué)
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+});
