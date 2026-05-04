@@ -252,7 +252,32 @@ test("commissions — idempotence : retrigger createCommissions ne double pas", 
 });
 
 /* ──────────────────────────────────────────────────────────── */
-/* Test 4 : pro orphelin → affiliation_bonus va à platform     */
+/* Test 4 : étape 6 déclenche le checkout Stripe pour le pro    */
+/* ──────────────────────────────────────────────────────────── */
+test("commissions — étape 6 crée une stripe_payment_session pour facturer le pro", async ({ page }) => {
+  const chain = await buildFullChain();
+  const recoId = await runFullRecoFlow(page, {
+    referrerEmail: chain.referrer.email,
+    proEmail: chain.pro.email,
+    contactId: chain.contactId,
+    proId: chain.pro.id,
+    dealAmount: DEAL,
+  });
+
+  const { data: session, error } = await wn()
+    .from("stripe_payment_sessions")
+    .select("id, status, amount, recommendation_id, stripe_session_id")
+    .eq("recommendation_id", recoId)
+    .maybeSingle();
+
+  expect(error).toBeNull();
+  expect(session, "stripe_payment_sessions absente — étape 6 n'a pas déclenché le checkout").toBeTruthy();
+  expect(session?.status).toBe("pending");
+  expect(session?.stripe_session_id).toMatch(/^cs_test_/);
+});
+
+/* ──────────────────────────────────────────────────────────── */
+/* Test 5 : pro orphelin → affiliation_bonus va à platform     */
 /* ──────────────────────────────────────────────────────────── */
 test("commissions — pro sans sponsor : affiliation_bonus absorbé par platform_winelio", async ({ page }) => {
   // Pro sans sponsor : on doit forcer sponsor_id=null APRÈS chaque login,

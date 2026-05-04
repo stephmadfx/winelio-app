@@ -123,7 +123,13 @@ export async function POST(request: Request) {
       })
       .eq("id", stepRow.id);
 
-    // Étape 6 : "Travaux terminés + Paiement reçu" → commissions MLM
+    // Étape 6 : "Travaux terminés + Paiement reçu"
+    //   → commissions MLM créées (referrer + niveaux + cagnotte + cashback)
+    //   → checkout Stripe pour facturer le pro (le pro vient d'être payé par
+    //     son client, c'est le moment naturel de lui facturer la part Winelio).
+    //
+    // L'étape 7 ne déclenche plus rien côté financier : c'est juste une clôture
+    // administrative.
     if (stepIndex === 6 && rec.amount) {
       await createCommissions(
         rec.id,
@@ -132,19 +138,12 @@ export async function POST(request: Request) {
         rec.amount,
         rec.compensation_plan_id ?? null
       );
-    }
 
-    // Étape 7 : "Affaire terminée" → checkout Stripe pour facturer le pro.
-    // Symétrie avec advanceRecommendationStep (server action admin) qui le
-    // déclenche aussi à l'étape 7 — sans ça, un pro qui complète l'étape 7
-    // lui-même via cette route ne reçoit jamais l'email "Commission à régler"
-    // et ne paie jamais sa part Winelio.
-    if (stepIndex === 7 && rec.amount) {
       try {
         const { createStripeCheckoutSession } = await import("@/lib/stripe-checkout");
         await createStripeCheckoutSession(rec.id);
       } catch (err) {
-        console.error("[complete-step] Erreur création session Stripe étape 7:", err);
+        console.error("[complete-step] Erreur création session Stripe étape 6:", err);
       }
     }
 

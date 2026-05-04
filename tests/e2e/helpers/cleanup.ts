@@ -36,6 +36,7 @@ export async function cleanupE2EAccounts(): Promise<{ deleted: number }> {
   if (recoIds.length) {
     await wn().from("recommendation_followups").delete().in("recommendation_id", recoIds);
     await wn().from("recommendation_steps").delete().in("recommendation_id", recoIds);
+    await wn().from("stripe_payment_sessions").delete().in("recommendation_id", recoIds);
   }
   await wn().from("recommendations").delete().in("referrer_id", ids);
   await wn().from("recommendations").delete().in("professional_id", ids);

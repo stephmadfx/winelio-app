@@ -81,8 +81,12 @@ export async function advanceRecommendationStep(
   const stepData = Array.isArray(stepRow?.step) ? stepRow.step[0] : stepRow?.step;
   const orderIndex = (stepData as { order_index: number } | null | undefined)?.order_index;
 
-  if (orderIndex === 7) {
-    // Déclencher le paiement Stripe de la commission pro
+  if (orderIndex === 6) {
+    // Étape 6 = "Travaux terminés + Paiement reçu" : le pro vient d'être payé
+    // par son client, on déclenche immédiatement le checkout Stripe pour qu'il
+    // règle sa commission Winelio. (Avant le 2026-05-04 c'était à l'étape 7,
+    // ce qui retardait le time-to-cash sans valeur ajoutée — l'étape 7 est
+    // désormais une simple clôture sans effet financier.)
     try {
       await createStripeCheckoutSession(recommendationId);
     } catch (err) {

@@ -328,11 +328,11 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           {/* Étape 6 → commissions */}
           <line x1="500" y1="978" x2="500" y2="1002" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
+          {/* Étape 6 → email "Commission à régler" (déclenché en parallèle des commissions MLM) */}
+          <line x1="700" y1="954" x2="830" y2="954" stroke="#F7931E" strokeWidth={1.5} strokeDasharray="4,3" markerEnd="url(#arr)" />
+
           {/* Commissions → étape 7 (flux principal direct) */}
           <line x1="500" y1="1038" x2="500" y2="1056" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
-
-          {/* Étape 7 → email commission (effet déclenché PAR la complétion étape 7) */}
-          <line x1="700" y1="1078" x2="830" y2="1078" stroke="#F7931E" strokeWidth={1.5} strokeDasharray="4,3" markerEnd="url(#arr)" />
 
           {/* Étape 7 → fin */}
           <line x1="500" y1="1100" x2="500" y2="1172" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
@@ -486,10 +486,22 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
             sublabel="abandoned_by_pro_at posé · email soft → recommandeur"
             labelColor="#E74C3C" onClick={click} hasBadge={ann.has("pro-abandoned")} />
 
-          {/* Étape 6 — Travaux terminés + Paiement reçu */}
+          {/* Email "Commission à régler" → Pro (déclenché PAR la complétion étape 6) */}
+          <g style={{ cursor: "pointer" }} onClick={() => click("email-commission", '📧 Email "Commission à régler" → Professionnel')}>
+            <rect x={830} y={930} width={340} height={48} rx={8} fill="#F7931E" filter="url(#sh)" />
+            <text x={1000} y={952} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
+              📧 &quot;Commission à régler&quot; → Pro
+            </text>
+            <text x={1000} y={968} textAnchor="middle" fontSize={9} fill="rgba(255,255,255,0.85)">
+              J+0 · Relance J+2 · Alerte J+4 · Stripe Checkout
+            </text>
+            {ann.has("email-commission") && <Badge x={1164} y={936} />}
+          </g>
+
+          {/* Étape 6 — Travaux terminés + Paiement reçu (déclenche commissions MLM + facture Stripe au pro) */}
           <RectNode id="etape-6" x={300} y={930} w={400} h={48} fill="#FFF5F0" stroke="#FF6B35"
             label="Étape 6 — Travaux terminés + Paiement reçu"
-            sublabel="Le pro confirme · commissions déclenchées · recommandeur notifié"
+            sublabel="Commissions MLM + facture Stripe au pro · recommandeur notifié"
             labelColor="#FF6B35" onClick={click} hasBadge={ann.has("etape-6")} />
 
           {/* Commissions */}
@@ -504,23 +516,11 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
             {ann.has("commissions") && <Badge x={914} y={1008} />}
           </g>
 
-          {/* Étape 7 — Affaire terminée (déclenche le checkout Stripe pour facturer le pro) */}
-          <RectNode id="etape-7" x={300} y={1056} w={400} h={42} fill="#FFF5F0" stroke="#FF6B35"
+          {/* Étape 7 — Affaire terminée (clôture administrative, sans effet financier) */}
+          <RectNode id="etape-7" x={300} y={1056} w={400} h={42} fill="white" stroke="#2D3436"
             label="Étape 7 — Affaire terminée"
-            sublabel="→ déclenche checkout Stripe + email pro"
-            labelColor="#FF6B35" onClick={click} hasBadge={ann.has("etape-7")} />
-
-          {/* Email commission (à droite de l'étape 7, déclenché PAR sa complétion) */}
-          <g style={{ cursor: "pointer" }} onClick={() => click("email-commission", '📧 Email "Commission à régler" → Professionnel')}>
-            <rect x={830} y={1056} width={340} height={42} rx={8} fill="#F7931E" filter="url(#sh)" />
-            <text x={1000} y={1075} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
-              📧 &quot;Commission à régler&quot; → Pro
-            </text>
-            <text x={1000} y={1089} textAnchor="middle" fontSize={9} fill="rgba(255,255,255,0.85)">
-              J+0 · Relance J+2 · Alerte J+4 · Stripe Checkout
-            </text>
-            {ann.has("email-commission") && <Badge x={1164} y={1062} />}
-          </g>
+            sublabel="Clôture administrative (sans effet financier)"
+            onClick={click} hasBadge={ann.has("etape-7")} />
 
           {/* Fin */}
           <PillNode id="fin" x={300} y={1172} w={400} h={42} fill="#27AE60"
