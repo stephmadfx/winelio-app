@@ -33,6 +33,25 @@ function generateCode(): string {
   return randomInt(100000, 1000000).toString();
 }
 
+// ── Rate-limit dédié OTP ─────────────────────────────────────
+// 5 demandes/heure par IP, exempté pour les emails de test E2E.
+// L'email est validé AVANT le rate-limit pour pouvoir bypass les
+// adresses @winelio-e2e.local sans consommer le compteur.
+const otpBuckets = new Map<string, { count: number; resetAt: number }>();
+const OTP_LIMIT  = 5;
+const OTP_WINDOW = 60 * 60 * 1000;
+
+function isOtpRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = otpBuckets.get(ip);
+  if (!entry || now > entry.resetAt) {
+    otpBuckets.set(ip, { count: 1, resetAt: now + OTP_WINDOW });
+    return false;
+  }
+  entry.count++;
+  return entry.count > OTP_LIMIT;
+}
+
 function buildEmailHtml(code: string): string {
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -78,6 +97,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email invalide" }, { status: 400 });
     }
 
+    // E2E test recipients : on saute aussi le rate-limit OTP (sinon les tests
+    // qui créent plusieurs comptes/run sont bloqués).
+    const isE2EAddress = /@winelio-e2e\.local$/i.test(email);
+
+    if (!isE2EAddress) {
+      const ip =
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+        req.headers.get("x-real-ip") ??
+        "unknown";
+      if (isOtpRateLimited(ip)) {
+        return NextResponse.json(
+          { error: "Trop de demandes de code en peu de temps. Réessayez dans 1 heure." },
+          { status: 429 }
+        );
+      }
+    }
+
     const code = generateCode();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 min
 
@@ -96,9 +132,7 @@ export async function POST(req: Request) {
 
     // E2E test recipients : on saute l'envoi SMTP (le code reste en DB et
     // sera lu directement par les tests Playwright).
-    const isE2E = /@winelio-e2e\.local$/i.test(email);
-
-    if (!isE2E) {
+    if (!isE2EAddress) {
       // Send custom email (text + html pour éviter les filtres spam)
       await sendMailWithTimeout({
         from: `"${process.env.SMTP_SENDER_NAME || "Winelio"}" <${process.env.SMTP_ADMIN_EMAIL || process.env.SMTP_USER || "support@winelio.app"}>`,

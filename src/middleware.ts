@@ -5,19 +5,21 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./lib/supabase/config";
 // Rate limiter en mémoire (best-effort, par process).
 // LIMITATION : en environnement multi-worker (ex: PM2 cluster), chaque worker a son propre
 // compteur. Pour une protection stricte, remplacer par un compteur Redis/Upstash.
-const rateMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 60; // requêtes max par fenêtre
-const RATE_WINDOW_MS = 60_000; // 1 minute
+
+type Bucket = { count: number; resetAt: number };
+
+// Bucket générique : 60 req/min/IP toutes routes /api confondues
+const rateMap = new Map<string, Bucket>();
+const RATE_LIMIT = 60;
+const RATE_WINDOW_MS = 60_000;
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
   const entry = rateMap.get(ip);
-
   if (!entry || now > entry.resetAt) {
     rateMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
     return false;
   }
-
   entry.count++;
   return entry.count > RATE_LIMIT;
 }
@@ -26,11 +28,8 @@ function isRateLimited(ip: string): boolean {
 if (typeof globalThis !== "undefined") {
   const timer = setInterval(() => {
     const now = Date.now();
-    for (const [key, val] of rateMap) {
-      if (now > val.resetAt) rateMap.delete(key);
-    }
+    for (const [key, val] of rateMap) if (now > val.resetAt) rateMap.delete(key);
   }, 5 * 60_000);
-  // Permet au process de se terminer sans attendre l'intervalle
   if (typeof timer === "object" && "unref" in timer) timer.unref();
 }
 
@@ -78,6 +77,9 @@ export async function middleware(request: NextRequest) {
     if (isRateLimited(ip)) {
       return new NextResponse("Too Many Requests", { status: 429 });
     }
+    // Note : rate-limit dédié OTP (5/heure/IP) est appliqué dans
+    // /api/auth/send-code lui-même pour pouvoir exempter les emails
+    // de test E2E (@winelio-e2e.local).
   }
 
   let supabaseResponse = NextResponse.next({ request });
