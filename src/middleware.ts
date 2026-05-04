@@ -74,7 +74,15 @@ export async function middleware(request: NextRequest) {
     "unknown";
 
   if (request.nextUrl.pathname.startsWith("/api/")) {
-    if (isRateLimited(ip)) {
+    // Bypass rate-limit pour la suite E2E : header partagé via env.
+    // Le token doit être stocké côté serveur (E2E_BYPASS_TOKEN) ET côté
+    // tests (extraHTTPHeaders dans playwright.config.ts).
+    const bypassToken = request.headers.get("x-e2e-bypass-token");
+    const isE2EBypass =
+      !!process.env.E2E_BYPASS_TOKEN &&
+      bypassToken === process.env.E2E_BYPASS_TOKEN;
+
+    if (!isE2EBypass && isRateLimited(ip)) {
       return new NextResponse("Too Many Requests", { status: 429 });
     }
     // Note : rate-limit dédié OTP (5/heure/IP) est appliqué dans

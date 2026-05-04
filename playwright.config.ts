@@ -20,7 +20,9 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
-    extraHTTPHeaders: {},
+    extraHTTPHeaders: process.env.E2E_BYPASS_TOKEN
+      ? { "x-e2e-bypass-token": process.env.E2E_BYPASS_TOKEN }
+      : {},
   },
   projects: [
     {
