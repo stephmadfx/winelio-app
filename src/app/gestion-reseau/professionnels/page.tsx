@@ -6,12 +6,11 @@ import { fakeLastActive } from "@/lib/fake-last-active";
 export default async function AdminProfessionnels() {
   const [{ data: companies }, { data: categories }, { data: recosRaw }] = await Promise.all([
     supabaseAdmin
-      .from("companies")
+      .from("companies_real")
       .select(
         `id, name, legal_name, alias, email, phone, website,
          address, city, postal_code, country,
-         latitude, longitude, siret, is_verified, created_at,
-         owner:profiles!owner_id(id, first_name, last_name, email),
+         latitude, longitude, siret, is_verified, created_at, owner_id,
          category:categories!category_id(name)`
       )
       .limit(1000),
@@ -20,7 +19,7 @@ export default async function AdminProfessionnels() {
       .select("id, name")
       .order("name"),
     supabaseAdmin
-      .from("recommendations")
+      .from("recommendations_real")
       .select("company_id")
       .eq("status", "COMPLETED"),
   ]);
@@ -38,12 +37,25 @@ export default async function AdminProfessionnels() {
     lastSignInMap[u.id] = u.last_sign_in_at ?? null;
   }
 
+  // Récupérer les owners en lot (la vue companies_real n'a pas de FK
+  // déclarée vers profiles, donc le join PostgREST inline ne marche pas).
+  const ownerIds = [...new Set((companies ?? []).map((c) => c.owner_id).filter(Boolean))];
+  const { data: owners } = ownerIds.length
+    ? await supabaseAdmin
+        .from("profiles")
+        .select("id, first_name, last_name, email")
+        .in("id", ownerIds)
+    : { data: [] };
+  const ownerMap: Record<string, { id: string; first_name: string | null; last_name: string | null; email: string | null }> = {};
+  for (const o of owners ?? []) ownerMap[o.id] = o;
+
   // Enrichir les entreprises : connexion réelle si disponible, sinon date fictive déterministe
   const enriched = (companies ?? []).map((c) => {
-    const owner = Array.isArray(c.owner) ? c.owner[0] : c.owner;
+    const owner = c.owner_id ? ownerMap[c.owner_id] ?? null : null;
     const realSignIn = owner?.id ? (lastSignInMap[owner.id] ?? null) : null;
     return {
       ...c,
+      owner,
       last_sign_in_at: realSignIn ?? fakeLastActive(c.id),
       finalized_recos_count: recoCountMap[c.id] ?? 0,
     };

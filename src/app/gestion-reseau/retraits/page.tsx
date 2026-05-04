@@ -14,12 +14,29 @@ const STATUS = {
 
 export default async function AdminRetraits() {
   const { data: withdrawals } = await supabaseAdmin
-    .from("withdrawals")
-    .select(`*, user:profiles!user_id(id, first_name, last_name, email)`)
+    .from("withdrawals_real")
+    .select("*")
     .order("created_at", { ascending: true });
 
-  const pending = (withdrawals ?? []).filter((w) => w.status === "PENDING");
-  const others  = (withdrawals ?? []).filter((w) => w.status !== "PENDING");
+  // La vue n'a pas de FK déclarée vers profiles → on récupère les users séparément
+  const userIds = [...new Set((withdrawals ?? []).map((w) => w.user_id).filter(Boolean))];
+  const { data: users } = userIds.length
+    ? await supabaseAdmin
+        .from("profiles")
+        .select("id, first_name, last_name, email")
+        .in("id", userIds)
+    : { data: [] };
+  const userMap: Record<string, { id: string; first_name: string | null; last_name: string | null; email: string | null }> = {};
+  for (const u of users ?? []) userMap[u.id] = u;
+
+  // Réinjecter user dans chaque withdrawal pour conserver le format attendu plus bas
+  const enrichedWithdrawals = (withdrawals ?? []).map((w) => ({
+    ...w,
+    user: w.user_id ? userMap[w.user_id] ?? null : null,
+  }));
+
+  const pending = enrichedWithdrawals.filter((w) => w.status === "PENDING");
+  const others  = enrichedWithdrawals.filter((w) => w.status !== "PENDING");
 
   const totalPending = pending.reduce((s, w) => s + (w.amount ?? 0), 0);
   const totalFees    = pending.reduce((s, w) => s + (w.fee_amount ?? 0), 0);

@@ -11,9 +11,9 @@ export default async function AdminUtilisateurs({
   const pageSize = 30;
 
   let query = supabaseAdmin
-    .from("profiles")
+    .from("profiles_real")
     .select(
-      "id, first_name, last_name, is_professional, is_active, created_at, sponsor_id, company:companies(name, siret)",
+      "id, first_name, last_name, is_professional, is_active, created_at, sponsor_id",
       { count: "exact" }
     )
     .order("created_at", { ascending: false })
@@ -55,6 +55,24 @@ export default async function AdminUtilisateurs({
       referralCount[row.sponsor_id] = (referralCount[row.sponsor_id] ?? 0) + 1;
     }
   }
+
+  // Récupérer les companies des users (la vue profiles_real n'expose pas les FKs)
+  const { data: userCompanies } = userIds.length
+    ? await supabaseAdmin
+        .from("companies")
+        .select("owner_id, name, siret")
+        .in("owner_id", userIds)
+    : { data: [] };
+  const companyMap: Record<string, { name: string | null; siret: string | null }> = {};
+  for (const c of userCompanies ?? []) {
+    if (c.owner_id) companyMap[c.owner_id] = { name: c.name, siret: c.siret };
+  }
+
+  // Réinjecter company dans chaque user pour conserver le format attendu plus bas
+  const usersWithCompany = (users ?? []).map((u) => ({
+    ...u,
+    company: companyMap[u.id] ?? null,
+  }));
 
   const totalPages = Math.ceil((count ?? 0) / pageSize);
 
@@ -98,7 +116,7 @@ export default async function AdminUtilisateurs({
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {(users ?? []).map((user) => {
+            {usersWithCompany.map((user) => {
               const company = Array.isArray(user.company) ? user.company[0] : user.company;
               const sponsor = user.sponsor_id ? sponsorMap[user.sponsor_id] : null;
               const initials = `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase() || "?";
@@ -181,7 +199,7 @@ export default async function AdminUtilisateurs({
 
       {/* Cards mobile */}
       <div className="md:hidden space-y-2">
-        {(users ?? []).map((user) => {
+        {usersWithCompany.map((user) => {
           const company = Array.isArray(user.company) ? user.company[0] : user.company;
           const sponsor = user.sponsor_id ? sponsorMap[user.sponsor_id] : null;
           const initials = `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase() || "?";

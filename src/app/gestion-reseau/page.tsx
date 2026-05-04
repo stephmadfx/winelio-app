@@ -46,34 +46,34 @@ async function getKPIs() {
     cagnotteMoisRes,
   ] = await Promise.all([
     // Membres actifs
-    supabaseAdmin.from("profiles").select("id", { count: "exact", head: true }).eq("is_active", true),
+    supabaseAdmin.from("profiles_real").select("id", { count: "exact", head: true }).eq("is_active", true),
     // Commissions distribuées (EARNED) — hors cagnotte Winelio
-    supabaseAdmin.from("commission_transactions").select("amount").eq("status", "EARNED").neq("type", "platform_winelio"),
+    supabaseAdmin.from("commissions_real").select("amount").eq("status", "EARNED").neq("type", "platform_winelio"),
     // Commissions en attente (PENDING) — hors cagnotte Winelio
-    supabaseAdmin.from("commission_transactions").select("amount").eq("status", "PENDING").neq("type", "platform_winelio"),
+    supabaseAdmin.from("commissions_real").select("amount").eq("status", "PENDING").neq("type", "platform_winelio"),
     // Recommandations en cours
-    supabaseAdmin.from("recommendations").select("id", { count: "exact", head: true })
+    supabaseAdmin.from("recommendations_real").select("id", { count: "exact", head: true })
       .not("status", "in", '("COMPLETED","CANCELLED")'),
     // Retraits en attente
-    supabaseAdmin.from("withdrawals").select("id", { count: "exact", head: true }).eq("status", "PENDING"),
+    supabaseAdmin.from("withdrawals_real").select("id", { count: "exact", head: true }).eq("status", "PENDING"),
     // Total Wins distribués
-    supabaseAdmin.from("user_wallet_summaries").select("total_wins"),
+    supabaseAdmin.from("wallet_summaries_real").select("total_wins"),
     // Nouveaux membres ce mois
-    supabaseAdmin.from("profiles").select("id", { count: "exact", head: true })
+    supabaseAdmin.from("profiles_real").select("id", { count: "exact", head: true })
       .gte("created_at", monthStart),
     // Nouveaux membres mois précédent (pour delta)
-    supabaseAdmin.from("profiles").select("id", { count: "exact", head: true })
+    supabaseAdmin.from("profiles_real").select("id", { count: "exact", head: true })
       .gte("created_at", prevMonthStart)
       .lt("created_at", monthStart),
     // Total recommandations (pour taux de conversion)
-    supabaseAdmin.from("recommendations").select("id", { count: "exact", head: true }),
+    supabaseAdmin.from("recommendations_real").select("id", { count: "exact", head: true }),
     // Recommandations terminées
-    supabaseAdmin.from("recommendations").select("id", { count: "exact", head: true })
+    supabaseAdmin.from("recommendations_real").select("id", { count: "exact", head: true })
       .eq("status", "COMPLETED"),
     // Cagnotte Winelio — total cumulé
-    supabaseAdmin.from("commission_transactions").select("amount").eq("type", "platform_winelio").eq("status", "EARNED"),
+    supabaseAdmin.from("commissions_real").select("amount").eq("type", "platform_winelio").eq("status", "EARNED"),
     // Cagnotte Winelio — ce mois
-    supabaseAdmin.from("commission_transactions").select("amount").eq("type", "platform_winelio").eq("status", "EARNED")
+    supabaseAdmin.from("commissions_real").select("amount").eq("type", "platform_winelio").eq("status", "EARNED")
       .gte("created_at", monthStart),
   ]);
 
@@ -120,11 +120,11 @@ async function getChartData(): Promise<{ inscriptions: MonthStat[]; recosStatus:
 
   const [profilesRes, recosRes] = await Promise.all([
     supabaseAdmin
-      .from("profiles")
+      .from("profiles_real")
       .select("created_at")
       .gte("created_at", twelveMonthsAgo.toISOString()),
     supabaseAdmin
-      .from("recommendations")
+      .from("recommendations_real")
       .select("status"),
   ]);
 
