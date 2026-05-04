@@ -134,6 +134,20 @@ export async function POST(request: Request) {
       );
     }
 
+    // Étape 7 : "Affaire terminée" → checkout Stripe pour facturer le pro.
+    // Symétrie avec advanceRecommendationStep (server action admin) qui le
+    // déclenche aussi à l'étape 7 — sans ça, un pro qui complète l'étape 7
+    // lui-même via cette route ne reçoit jamais l'email "Commission à régler"
+    // et ne paie jamais sa part Winelio.
+    if (stepIndex === 7 && rec.amount) {
+      try {
+        const { createStripeCheckoutSession } = await import("@/lib/stripe-checkout");
+        await createStripeCheckoutSession(rec.id);
+      } catch (err) {
+        console.error("[complete-step] Erreur création session Stripe étape 7:", err);
+      }
+    }
+
     // Mettre à jour le statut de la recommandation
     const newStatus = STATUS_BY_STEP[stepIndex] ?? rec.status;
     await supabase

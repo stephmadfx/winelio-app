@@ -156,6 +156,110 @@ const TEMPLATES: Record<string, () => string> = {
     ${infoBlock(`<p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Retrouvez le détail de vos commissions dans votre <strong>wallet Winelio</strong> dès leur validation.</p>`)}
     ${cta(`${SITE}/recommendations/demo`, "Voir la recommandation →")}
   `),
+
+  "pro-followup": () => wrap(`
+    ${icon("⏰")}
+    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Avancée du dossier ${CONTACT} ?</h1></td></tr>
+    <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;">Bonjour <strong style="color:#2D3436;">Martin</strong>,<br><br>Où en êtes-vous avec <strong style="color:#2D3436;">${CONTACT}</strong> sur la recommandation de <strong style="color:#2D3436;">${REFERRER}</strong> ?</p></td></tr>
+    ${infoBlock(`<p style="margin:0 0 8px;color:#2D3436;font-size:13px;font-weight:600;">Trois actions rapides :</p>
+    <p style="margin:0 0 6px;color:#636E72;font-size:14px;line-height:1.6;">✅ <strong>C'est fait</strong> — l'étape avance d'un cran</p>
+    <p style="margin:0 0 6px;color:#636E72;font-size:14px;line-height:1.6;">📅 <strong>Reporter</strong> — choisissez une nouvelle échéance (max 5 reports)</p>
+    <p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">❌ <strong>Je ne peux pas donner suite</strong> — la reco est libérée pour un autre pro</p>`)}
+    ${cta(`${SITE}/recommendations/demo`, "✅ C'est fait")}
+    <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><p style="margin:0;color:#B2BAC0;font-size:12px;">Cycle 1/3 · prochaine relance dans 48h si pas de réponse</p></td></tr>
+  `),
+
+  "pro-abandoned": () => wrap(`
+    ${icon("📭")}
+    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Le professionnel n'a pas donné suite</h1></td></tr>
+    <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;">Bonjour <strong style="color:#2D3436;">${REFERRER}</strong>,<br><br>Malgré 3 relances espacées, <strong style="color:#2D3436;">${PRO}</strong> n'a pas avancé sur la recommandation pour <strong style="color:#2D3436;">${CONTACT}</strong>.</p></td></tr>
+    ${infoBlock(`<p style="margin:0 0 8px;color:#2D3436;font-size:13px;font-weight:600;">Que faire maintenant ?</p>
+    <p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Vous pouvez créer une nouvelle recommandation vers un autre professionnel pour ne pas faire attendre <strong>${CONTACT}</strong>. La reco existante est marquée comme abandonnée par le pro.</p>`)}
+    ${cta(`${SITE}/recommendations/new`, "Recommander un autre pro →")}
+  `),
+
+  // ── Cycle de vie pro ────────────────────────────────────────────────────────
+
+  "auth-otp": () => wrap(`
+    ${icon("🔐")}
+    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Votre code de connexion</h1></td></tr>
+    <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;">Saisissez ce code pour accéder à votre compte Winelio.</p></td></tr>
+    <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><span style="display:inline-block;background:#FFF5F0;border:2px solid #FF6B35;border-radius:12px;padding:16px 40px;font-size:36px;font-weight:800;letter-spacing:10px;color:#2D3436;font-family:'Courier New',monospace;">428193</span></td></tr>
+    <tr><td style="height:18px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><p style="margin:0;color:#B2BAC0;font-size:12px;">Code valable 24h · usage unique · 5 tentatives max</p></td></tr>
+  `),
+
+  "welcome": () => wrap(`
+    ${icon("🎉")}
+    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Bienvenue chez Winelio&nbsp;!</h1></td></tr>
+    <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;">Bonjour <strong style="color:#2D3436;">${REFERRER}</strong>, bienvenue sur la plateforme de recommandation entre pros.</p></td></tr>
+    ${infoBlock(`<p style="margin:0 0 6px;color:#2D3436;font-size:13px;font-weight:600;">3 étapes pour démarrer :</p>
+    <p style="margin:0 0 4px;color:#636E72;font-size:14px;line-height:1.6;">1. <strong>Complétez votre profil</strong> (photo, bio, ville)</p>
+    <p style="margin:0 0 4px;color:#636E72;font-size:14px;line-height:1.6;">2. <strong>Recommandez un pro</strong> que vous connaissez à vos contacts</p>
+    <p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">3. <strong>Suivez vos commissions</strong> dans votre wallet</p>`)}
+    ${cta(`${SITE}/dashboard`, "Découvrir mon dashboard →")}
+  `),
+
+  "new-referral": () => wrap(`
+    ${icon("🤝")}
+    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Vous avez un nouveau filleul&nbsp;!</h1></td></tr>
+    <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;">Bonjour <strong style="color:#2D3436;">${REFERRER}</strong>,<br><br><strong style="color:#2D3436;">Sophie Martin</strong> vient de s'inscrire avec votre code parrain. Bienvenue dans votre réseau&nbsp;!</p></td></tr>
+    ${infoBlock(`<p style="margin:0 0 8px;color:#2D3436;font-size:13px;font-weight:600;">Ce que ça change pour vous :</p>
+    <p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Vous toucherez <strong style="color:#FF6B35;">4&nbsp;%</strong> de commission sur chaque recommandation aboutie de Sophie (niveau 1 du MLM), et 4&nbsp;% supplémentaires sur les filleuls qu'elle parrainera à son tour.</p>`)}
+    ${cta(`${SITE}/network`, "Voir mon réseau →")}
+  `),
+
+  "new-pro-in-network": () => wrap(`
+    ${icon("🛠")}
+    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Un nouveau pro dans votre réseau</h1></td></tr>
+    <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;">Bonjour <strong style="color:#2D3436;">${REFERRER}</strong>,<br><br><strong style="color:#2D3436;">${PRO}</strong> vient de finaliser son inscription pro et est désormais recommandable depuis votre dashboard.</p></td></tr>
+    ${infoBlock(`<p style="margin:0 0 8px;color:#2D3436;font-size:13px;font-weight:600;">Catégorie : Électricité</p>
+    <p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Recommandez ce pro à vos contacts dès maintenant pour profiter du programme MLM Winelio.</p>`)}
+    ${cta(`${SITE}/recommendations/new`, "Le recommander →")}
+  `),
+
+  "pro-onboarding": () => wrap(`
+    ${icon("✅")}
+    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Onboarding pro complet</h1></td></tr>
+    <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;">Notification admin :<br><strong style="color:#2D3436;">${PRO}</strong> vient de terminer son parcours d'inscription pro.</p></td></tr>
+    ${infoBlock(`<p style="margin:0 0 6px;color:#2D3436;font-size:13px;font-weight:600;">Étapes validées :</p>
+    <p style="margin:0 0 4px;color:#636E72;font-size:14px;line-height:1.6;">✅ SIRET vérifié via API SIRENE</p>
+    <p style="margin:0 0 4px;color:#636E72;font-size:14px;line-height:1.6;">✅ CGU signées électroniquement (PDF stocké)</p>
+    <p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">✅ Moyen de paiement Stripe enregistré</p>`)}
+    ${cta(`${SITE}/gestion-reseau/utilisateurs`, "Voir le profil →")}
+  `),
+
+  "siret-reminder": () => wrap(`
+    ${icon("⏰")}
+    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Complétez votre SIRET pour être recommandable</h1></td></tr>
+    <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;">Bonjour <strong style="color:#2D3436;">${PRO}</strong>,<br><br>Votre profil pro est presque prêt. Il vous reste à <strong>renseigner votre SIRET</strong> pour apparaître dans l'annuaire et recevoir vos premières recommandations.</p></td></tr>
+    ${infoBlock(`<p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Le SIRET est vérifié automatiquement via l'API officielle SIRENE — l'opération prend moins d'une minute.</p>`)}
+    ${cta(`${SITE}/profile/pro-onboarding`, "Compléter mon profil →")}
+    <tr><td style="height:14px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><p style="margin:0;color:#B2BAC0;font-size:12px;">2e relance · prochaine relance dans 4 jours</p></td></tr>
+  `),
+
+  "cgu-signed": () => wrap(`
+    ${icon("✍")}
+    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Vos CGU ont été signées</h1></td></tr>
+    <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;">Bonjour <strong style="color:#2D3436;">${PRO}</strong>,<br><br>Merci pour votre signature&nbsp;! Voici votre exemplaire des Conditions Générales d'Utilisation Winelio.</p></td></tr>
+    ${infoBlock(`<p style="margin:0 0 6px;color:#2D3436;font-size:13px;font-weight:600;">📎 Pièce jointe :</p>
+    <p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">cgu-winelio-${PRO.replace(/\s+/g, "-").toLowerCase()}-signe.pdf</p>`)}
+    ${cta(`${SITE}/profile/pro-onboarding`, "Continuer mon onboarding →")}
+    <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><p style="margin:0;color:#B2BAC0;font-size:12px;">Conservez ce mail comme preuve d'acceptation des CGU.</p></td></tr>
+  `),
 };
 
 export async function GET(req: Request) {

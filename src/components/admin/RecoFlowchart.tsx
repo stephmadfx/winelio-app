@@ -104,6 +104,8 @@ const EMAIL_NODE_TYPES: Record<string, string> = {
   "cron-alerte":      "alerte-recommandeur",
   "email-refus":      "reco-refusee",
   "email-commission": "commission",
+  "pro-followup":     "pro-followup",
+  "pro-abandoned":    "pro-abandoned",
   "etape-2":          "step-2",
   "etape-3":          "step-3",
   "etape-4":          "step-4",
@@ -326,14 +328,14 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           {/* Étape 6 → commissions */}
           <line x1="500" y1="978" x2="500" y2="1002" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Commissions → email commission */}
+          {/* Commissions → étape 7 (flux principal direct) */}
           <line x1="500" y1="1038" x2="500" y2="1056" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Email commission → étape 7 */}
-          <line x1="500" y1="1090" x2="500" y2="1110" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          {/* Étape 7 → email commission (effet déclenché PAR la complétion étape 7) */}
+          <line x1="700" y1="1078" x2="830" y2="1078" stroke="#F7931E" strokeWidth={1.5} strokeDasharray="4,3" markerEnd="url(#arr)" />
 
           {/* Étape 7 → fin */}
-          <line x1="500" y1="1152" x2="500" y2="1172" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          <line x1="500" y1="1100" x2="500" y2="1172" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* ══ NŒUDS ══ */}
 
@@ -457,6 +459,33 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
             sublabel="Le pro renseigne le montant · ✉️ email recommandeur"
             onClick={click} hasBadge={ann.has("etape-5")} />
 
+          {/* ── Branche relances pro automatiques (à droite des étapes 2/4/5) ── */}
+
+          {/* Connecteurs pointillés étapes 2/4/5 → pro-followup */}
+          <line x1="700" y1="660" x2="780" y2="660" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4,3" />
+          <line x1="700" y1="808" x2="780" y2="808" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4,3" />
+          <line x1="700" y1="882" x2="780" y2="882" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4,3" />
+          <line x1="780" y1="660" x2="780" y2="882" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4,3" />
+
+          {/* Flèche pointillée → bloc relance */}
+          <line x1="780" y1="770" x2="800" y2="770" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4,3" markerEnd="url(#arr)" />
+
+          {/* Bloc Relances pro auto */}
+          <RectNode id="pro-followup" x={800} y={745} w={300} h={50} fill="#F59E0B" stroke="#F59E0B"
+            label="📧 Relances pro automatiques (3 cycles)"
+            sublabel="Étape 2/4/5 · T+24h / +48h / +5j · max 5 reports"
+            labelColor="white" onClick={click} hasBadge={ann.has("pro-followup")} />
+
+          {/* Flèche → abandoned */}
+          <line x1="950" y1="795" x2="950" y2="850" stroke="#E74C3C" strokeWidth={1.5} markerEnd="url(#arr-red)" />
+          <text x="965" y="828" fontSize={10} fontWeight="700" fill="#E74C3C">3× sans réponse</text>
+
+          {/* Bloc Pro abandoned → email recommandeur */}
+          <RectNode id="pro-abandoned" x={800} y={850} w={300} h={50} fill="#FDECEA" stroke="#E74C3C"
+            label="📭 Abandonné par le pro"
+            sublabel="abandoned_by_pro_at posé · email soft → recommandeur"
+            labelColor="#E74C3C" onClick={click} hasBadge={ann.has("pro-abandoned")} />
+
           {/* Étape 6 — Travaux terminés + Paiement reçu */}
           <RectNode id="etape-6" x={300} y={930} w={400} h={48} fill="#FFF5F0" stroke="#FF6B35"
             label="Étape 6 — Travaux terminés + Paiement reçu"
@@ -475,20 +504,23 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
             {ann.has("commissions") && <Badge x={914} y={1008} />}
           </g>
 
-          {/* Email commission */}
-          <g style={{ cursor: "pointer" }} onClick={() => click("email-commission", '📧 Email "Commission à régler" → Professionnel')}>
-            <rect x={170} y={1056} width={660} height={34} rx={8} fill="#F7931E" filter="url(#sh)" />
-            <text x={500} y={1070} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
-              📧 Email &quot;Commission à régler&quot; → Professionnel (J+0 · Relance J+2 · Alerte J+4)
-            </text>
-            {ann.has("email-commission") && <Badge x={824} y={1062} />}
-          </g>
-
-          {/* Étape 7 — Affaire terminée */}
-          <RectNode id="etape-7" x={300} y={1110} w={400} h={42} fill="white" stroke="#2D3436"
+          {/* Étape 7 — Affaire terminée (déclenche le checkout Stripe pour facturer le pro) */}
+          <RectNode id="etape-7" x={300} y={1056} w={400} h={42} fill="#FFF5F0" stroke="#FF6B35"
             label="Étape 7 — Affaire terminée"
-            sublabel="Clôture de la recommandation"
-            onClick={click} hasBadge={ann.has("etape-7")} />
+            sublabel="→ déclenche checkout Stripe + email pro"
+            labelColor="#FF6B35" onClick={click} hasBadge={ann.has("etape-7")} />
+
+          {/* Email commission (à droite de l'étape 7, déclenché PAR sa complétion) */}
+          <g style={{ cursor: "pointer" }} onClick={() => click("email-commission", '📧 Email "Commission à régler" → Professionnel')}>
+            <rect x={830} y={1056} width={340} height={42} rx={8} fill="#F7931E" filter="url(#sh)" />
+            <text x={1000} y={1075} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
+              📧 &quot;Commission à régler&quot; → Pro
+            </text>
+            <text x={1000} y={1089} textAnchor="middle" fontSize={9} fill="rgba(255,255,255,0.85)">
+              J+0 · Relance J+2 · Alerte J+4 · Stripe Checkout
+            </text>
+            {ann.has("email-commission") && <Badge x={1164} y={1062} />}
+          </g>
 
           {/* Fin */}
           <PillNode id="fin" x={300} y={1172} w={400} h={42} fill="#27AE60"
