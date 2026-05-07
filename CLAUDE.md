@@ -402,7 +402,7 @@ Décompressé dans `/Users/steph/PROJETS/WINKO/_old_app/` (frontend React Native
 
 ## Documentation Architecture
 
-> Régénérée le 2026-04-09 par analyse froide des fichiers source.
+> Régénérée le 2026-05-07 par analyse froide des fichiers source.
 
 Fichiers de référence dans `/doc/` :
 - `@doc/architecture.md` — Arbre relationnel complet (CORE/FEATURE/SUB/HOOK/UTILITY + verbes de relation [UTILISE/DÉCLENCHE/DÉPEND DE/PERSISTE DANS])

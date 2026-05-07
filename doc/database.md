@@ -1,418 +1,494 @@
-# Schéma Base de Données — Winelio
+# Winelio — Schéma base de données
 
-> Analyse froide des fichiers source + migrations SQL. Généré le 2026-04-09.
-> Instance : Supabase self-hosted · Schéma PostgreSQL : `winelio`
-
----
-
-## ORGANISATION
-
-- **Schéma applicatif** : `winelio` (toutes les tables métier)
-- **Schéma auth** : `auth` (géré par Supabase — `auth.users`)
-- **RLS** : activé sur toutes les tables applicatives
-- **Triggers** : `update_*_updated_at` sur toutes les tables avec `updated_at`
+> Régénéré le 2026-05-07 depuis les 60 migrations SQL.
+> Schéma PostgreSQL principal : `winelio` (Supabase self-hosted VPS)
+> La migration `002_initial_schema.sql` crée des tables dans `public` (schéma legacy cloud, non utilisé en prod). Toute la prod est dans `winelio`.
 
 ---
 
-## TABLES
+## Tables `winelio.*`
 
-### `winelio.profiles`
-Extension de `auth.users`. Créé automatiquement par le trigger `on_auth_user_created`.
+### `profiles` (extension de `auth.users`)
+Colonnes clés (état final après migrations) :
 
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `id` | `uuid` | PK, FK → `auth.users.id` | Identifiant utilisateur Supabase |
-| `email` | `text` | NOT NULL, UNIQUE | Email (synchronisé depuis auth.users) |
-| `first_name` | `text` | | Prénom |
-| `last_name` | `text` | | Nom |
-| `phone` | `text` | | Téléphone |
-| `postal_code` | `text` | | Code postal |
-| `city` | `text` | | Ville |
-| `address` | `text` | | Adresse |
-| `is_professional` | `boolean` | DEFAULT false | Est-il professionnel ? |
-| `sponsor_id` | `uuid` | FK → `profiles.id` | Parrain direct (MLM niveau 1) |
-| `sponsor_code` | `text` | UNIQUE | Code parrain unique (6 chars alphanum) |
-| `is_founder` | `boolean` | DEFAULT false | Fondateur (pool round-robin inscription) |
-| `is_active` | `boolean` | DEFAULT true | Compte actif (false = suspendu) |
-| `compensation_plan_id` | `uuid` | FK → `compensation_plans.id` | Plan de commission assigné |
-| `created_at` | `timestamptz` | DEFAULT NOW() | Date création |
-| `updated_at` | `timestamptz` | AUTO via trigger | Date dernière modification |
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | FK → auth.users(id) ON DELETE CASCADE |
+| email | text NOT NULL | |
+| first_name, last_name, phone | text | |
+| avatar | text | URL R2 ou null — c'est `avatar`, pas `avatar_url` |
+| is_professional | boolean DEFAULT false | |
+| is_admin | boolean DEFAULT false | non utilisé en prod (admin = app_metadata.role) |
+| sponsor_code | text UNIQUE DEFAULT generate_unique_sponsor_code() | 8 chars A-Z0-9 [20260415_sponsor_code_8chars.sql] |
+| sponsor_id | uuid FK profiles(id) | null pour les fondateurs |
+| is_founder | boolean DEFAULT false | têtes de lignée pour la rotation [010_founder_flag.sql] |
+| is_active | boolean DEFAULT true | |
+| address, city, postal_code, country | text | country DEFAULT 'FR' |
+| latitude, longitude | double precision | géocodage [lib/geocode.ts] |
+| work_mode | text CHECK ('remote','onsite','both') | [20260413_pro_fields.sql] |
+| pro_engagement_accepted | boolean DEFAULT false | [20260413_pro_fields.sql] |
+| stripe_customer_id | text | [20260417_stripe_setup_intent.sql] |
+| stripe_payment_method_id | text | [20260417_stripe_setup_intent.sql] |
+| stripe_payment_method_brand | text | ex: 'visa' |
+| stripe_payment_method_last4 | text | [20260417_stripe_setup_intent.sql] |
+| stripe_payment_method_saved_at | timestamptz | |
+| terms_accepted | boolean DEFAULT false | [20260420_profile_terms_acceptance.sql] |
+| terms_accepted_at | timestamptz | |
+| birth_date | date CHECK (>= 18 ans) | [20260420_profiles_birth_date.sql] |
+| is_demo | boolean DEFAULT false | profils de démo [015_demo_network.sql] |
+| demo_owner_id | uuid FK profiles(id) ON DELETE CASCADE | [015_demo_network.sql] |
+| tour_completed_at | timestamptz | visite guidée driver.js [20260501_tour_completed_at.sql] |
+| avatar_visible_to_network | boolean DEFAULT true | RGPD Art. 21 [20260501_avatar_visibility.sql] |
+| created_at, updated_at | timestamptz | updated_at via trigger |
 
-**Relations** :
-- `profiles.sponsor_id → profiles.id` (auto-jointure, arbre MLM)
-- `profiles.compensation_plan_id → compensation_plans.id`
-- `profiles.id → recommendations.referrer_id`
-- `profiles.id → recommendations.professional_id`
-- `profiles.id → companies.owner_id`
-- `profiles.id → commission_transactions.user_id`
-- `profiles.id → user_wallet_summaries.user_id`
-- `profiles.id → withdrawals.user_id`
-
-**RLS** : SELECT public (tout le monde peut lire), INSERT/UPDATE self only
-
----
-
-### `winelio.otp_codes`
-Codes OTP temporaires pour l'authentification.
-
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `email` | `text` | PK | Email cible |
-| `code` | `text` | NOT NULL | Code à 6 chiffres |
-| `expires_at` | `timestamptz` | NOT NULL | Expiration (10 min) |
-| `created_at` | `timestamptz` | DEFAULT NOW() | Date création |
-
-**Logique** : UPSERT à chaque demande (1 code actif par email). Suppression après validation réussie.
+RLS : SELECT public, INSERT/UPDATE owner-only. Écriture admin via `supabaseAdmin`.
 
 ---
 
-### `winelio.categories`
-Catégories de services professionnels. Données statiques (15 catégories).
+### `companies`
 
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `id` | `uuid` | PK | Identifiant |
-| `name` | `text` | NOT NULL | Nom affiché (ex: "Plomberie") |
-| `slug` | `text` | UNIQUE | Slug URL (ex: "plomberie") |
-| `description` | `text` | | Description |
-| `icon` | `text` | | Nom icône (Lucide) |
-| `created_at` | `timestamptz` | DEFAULT NOW() | |
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| owner_id | uuid FK profiles(id) ON DELETE CASCADE | |
+| name | text NOT NULL | |
+| legal_name, email, phone, website | text | |
+| address, city, postal_code, country | text | |
+| latitude, longitude | numeric | |
+| radius | integer DEFAULT 50 | rayon d'intervention (km) |
+| category_id | uuid FK categories(id) | |
+| siret, siren, vat_number | text | |
+| is_verified | boolean DEFAULT false | |
+| alias | varchar(7) UNIQUE | format `#XXXXXX` [004_add_company_alias.sql] |
+| deleted_at | timestamptz | soft delete [20260417_company_soft_delete.sql] |
+| source | text DEFAULT 'owner' CHECK ('owner','scraped') | [20260417_company_source.sql] |
+| naf_code | text | code APE SIRENE [20260501_companies_naf_code.sql] |
+| insurance_number | text | RC pro, optionnel [20260501_companies_insurance.sql] |
+| created_at, updated_at | timestamptz | |
 
-**RLS** : SELECT public (lecture libre).
-
----
-
-### `winelio.companies`
-Entreprises des professionnels.
-
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `id` | `uuid` | PK, DEFAULT gen_random_uuid() | |
-| `owner_id` | `uuid` | NOT NULL, FK → `profiles.id` | Propriétaire |
-| `name` | `text` | NOT NULL | Nom commercial |
-| `alias` | `text` | NOT NULL, UNIQUE | Alias interne #XXXXXX |
-| `legal_name` | `text` | | Raison sociale |
-| `category_id` | `uuid` | FK → `categories.id` | Catégorie métier |
-| `email` | `text` | | Email professionnel |
-| `phone` | `text` | | Téléphone |
-| `website` | `text` | | Site web |
-| `address` | `text` | | Adresse |
-| `city` | `text` | | Ville |
-| `postal_code` | `text` | | Code postal |
-| `siret` | `text` | | N° SIRET |
-| `siren` | `text` | | N° SIREN |
-| `vat_number` | `text` | | N° TVA intracommunautaire |
-| `is_verified` | `boolean` | DEFAULT false | Vérifié par admin |
-| `lat` | `decimal` | | Latitude (geocodage) |
-| `lon` | `decimal` | | Longitude (geocodage) |
-| `created_at` | `timestamptz` | DEFAULT NOW() | |
-| `updated_at` | `timestamptz` | AUTO via trigger | |
-
-**Trigger** : `update_companies_updated_at` → met à jour `updated_at`.
+RLS : SELECT public, écriture owner-only. Index partiel sur `deleted_at IS NULL`.
 
 ---
 
-### `winelio.contacts`
-Prospects/clients pour les recommandations.
+### `contacts`
 
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `id` | `uuid` | PK | |
-| `created_by` | `uuid` | FK → `profiles.id` | Utilisateur ayant créé le contact |
-| `first_name` | `text` | | |
-| `last_name` | `text` | | |
-| `email` | `text` | | |
-| `phone` | `text` | | |
-| `created_at` | `timestamptz` | DEFAULT NOW() | |
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| user_id | uuid FK profiles(id) ON DELETE CASCADE | |
+| first_name, last_name | text NOT NULL | |
+| email, phone | text | |
+| address, city, postal_code, country, company_name, job_title | text | |
+| created_at, updated_at | timestamptz | |
 
----
-
-### `winelio.compensation_plans`
-Plans de commission MLM. Définit les taux de redistribution.
-
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `id` | `uuid` | PK | |
-| `name` | `text` | NOT NULL | Nom du plan (ex: "Standard") |
-| `commission_rate` | `decimal` | | Taux global de commission (%) |
-| `referrer_percentage` | `decimal` | | Part du referrer (60%) |
-| `level_1_percentage` | `decimal` | | Part parrain N1 (4%) |
-| `level_2_percentage` | `decimal` | | Part parrain N2 (4%) |
-| `level_3_percentage` | `decimal` | | Part parrain N3 (4%) |
-| `level_4_percentage` | `decimal` | | Part parrain N4 (4%) |
-| `level_5_percentage` | `decimal` | | Part parrain N5 (4%) |
-| `affiliation_bonus_percentage` | `decimal` | | Bonus sponsor du professionnel (1%) |
-| `cashback_wins_percentage` | `decimal` | | Cashback Wins professionnel (1%) |
-| `platform_percentage` | `decimal` | | Part plateforme (14%) |
-| `created_at` | `timestamptz` | DEFAULT NOW() | |
+RLS : CRUD owner-only. En plus : SELECT pour le professionnel d'une reco concernée [20260417_contacts_rls_pros.sql].
 
 ---
 
-### `winelio.steps`
-Définition des 7 étapes du workflow de recommandation (restructuré par `20260427_restructure_steps.sql`).
+### `categories`
 
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `id` | `uuid` | PK | |
-| `name` | `text` | NOT NULL | Nom de l'étape |
-| `description` | `text` | | Description |
-| `order_index` | `integer` | NOT NULL | Ordre (1 à 7) |
-| `completion_role` | `text` | CHECK(IN('REFERRER','PROFESSIONAL')) | Qui peut compléter cette étape |
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| name, slug | text NOT NULL | |
+| description, icon | text | |
+| is_active | boolean DEFAULT true | |
+| is_hoguet | boolean DEFAULT false | activités soumises à la loi Hoguet (immo) [20260415_is_hoguet_and_storage.sql] |
+| created_at | timestamptz | |
 
-**Données statiques** :
-
-| order_index | name | completion_role |
-|-------------|------|-----------------|
-| 1 | Recommandation reçue | AUTO |
-| 2 | Acceptée | PROFESSIONAL |
-| 3 | Contact établi | PROFESSIONAL |
-| 4 | Rendez-vous fixé | PROFESSIONAL |
-| 5 | Devis soumis | PROFESSIONAL |
-| 6 | **Travaux + paiement** ← déclenche commissions | PROFESSIONAL |
-| 7 | Affaire terminée | PROFESSIONAL |
+RLS : SELECT public.
 
 ---
 
-### `winelio.recommendations`
-Recommandations entre utilisateurs (cœur du système).
+### `compensation_plans`
 
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `id` | `uuid` | PK | |
-| `referrer_id` | `uuid` | NOT NULL, FK → `profiles.id` | Qui recommande |
-| `professional_id` | `uuid` | NOT NULL, FK → `profiles.id` | Le professionnel recommandé |
-| `contact_id` | `uuid` | FK → `contacts.id` | Le prospect concerné |
-| `status` | `text` | NOT NULL | Statut global (pending/active/completed/cancelled) |
-| `amount` | `decimal` | | Montant de la transaction (renseigné à l'étape 5) |
-| `company_id` | `uuid` | FK → `companies.id` | Entreprise concernée |
-| `notes` | `text` | | Notes |
-| `expected_completion_at` | `timestamptz` | | Date prévue de fin des travaux + paiement, saisie par le pro à l'étape 5. Programme la 1ère relance étape 5. |
-| `abandoned_by_pro_at` | `timestamptz` | | Date à laquelle le cycle de 3 relances s'est terminé sans action du pro. |
-| `created_at` | `timestamptz` | DEFAULT NOW() | |
-| `updated_at` | `timestamptz` | AUTO via trigger | |
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| name, description | text | |
+| commission_rate | numeric DEFAULT 10 | % appliqué sur le montant deal |
+| referrer_percentage | numeric DEFAULT 60 | |
+| level_1..5_percentage | numeric DEFAULT 4 each | niveaux MLM |
+| platform_percentage | numeric DEFAULT 14 | cagnotte Winelio [20260414_cagnotte_winelio.sql] |
+| affiliation_percentage | numeric DEFAULT 1 | sponsor du pro [20260414_cagnotte_winelio.sql] |
+| cashback_wins_percentage | numeric DEFAULT 1 | cashback pro en Wins [20260414_cagnotte_winelio.sql] |
+| priority, conditions | int / jsonb | |
+| is_default, is_active | boolean | |
+| created_at, updated_at | timestamptz | |
 
----
-
-### `winelio.recommendation_followups`
-Suivi des cycles de relances automatiques au pro. Un enregistrement par cycle (étape 2, 4 ou 5).
-
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `id` | `uuid` | PK, DEFAULT gen_random_uuid() | |
-| `recommendation_id` | `uuid` | NOT NULL, FK → `recommendations.id` | |
-| `triggered_by_step` | `integer` | NOT NULL | Étape qui a déclenché le cycle (2, 4 ou 5) |
-| `status` | `text` | NOT NULL | `pending` → `sent` → `done` / `postponed` / `abandoned` / `cancelled` |
-| `send_at` | `timestamptz` | NOT NULL | Timestamp d'envoi planifié |
-| `sent_at` | `timestamptz` | | Timestamp d'envoi effectif |
-| `attempt_number` | `integer` | NOT NULL, DEFAULT 1 | Numéro de relance dans le cycle (1, 2 ou 3) |
-| `postpone_count` | `integer` | NOT NULL, DEFAULT 0 | Nombre de reports effectués (max 5) |
-| `token` | `text` | UNIQUE | Token HMAC signé (actions email sans session) |
-| `created_at` | `timestamptz` | DEFAULT NOW() | |
-| `updated_at` | `timestamptz` | AUTO via trigger | |
-
-**Contrainte** : UNIQUE(recommendation_id, triggered_by_step, attempt_number)
-
-**RLS** : pas de lecture directe côté utilisateur (accès uniquement via supabaseAdmin ou super_admin).
+RLS : SELECT public.
 
 ---
 
-### `winelio.recommendation_steps`
-Table de jonction : suivi des étapes par recommandation.
+### `steps` (7 étapes workflow)
 
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `id` | `uuid` | PK | |
-| `recommendation_id` | `uuid` | NOT NULL, FK → `recommendations.id` | |
-| `step_id` | `uuid` | NOT NULL, FK → `steps.id` | |
-| `completed_at` | `timestamptz` | | NULL si non complétée |
-| `completed_by` | `uuid` | FK → `profiles.id` | Qui a complété |
-| `data` | `jsonb` | | Données associées (ex: `{amount: 5000}` pour l'étape 5) |
-| `created_at` | `timestamptz` | DEFAULT NOW() | |
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| name, description | text | |
+| order_index | integer NOT NULL | 1–7 |
+| completion_role | text | 'PROFESSIONAL' ou 'REFERRER'. Étape 6 = REFERRER [20260417_fix_step_completion_role.sql] |
+| is_active | boolean DEFAULT true | |
+| created_at | timestamptz | |
 
-**Contrainte** : UNIQUE(recommendation_id, step_id)
+Restructuration : migration 20260427 supprime l'ancienne étape 7 "Paiement reçu" et renumérote → 7 étapes au total (étape 6 = "Travaux terminés + Paiement", étape 7 = "Affaire terminée").
 
 ---
 
-### `winelio.commission_transactions`
-Transactions de commission générées à l'étape 6.
+### `recommendations`
 
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `id` | `uuid` | PK | |
-| `recommendation_id` | `uuid` | NOT NULL, FK → `recommendations.id` | Source |
-| `user_id` | `uuid` | NOT NULL, FK → `profiles.id` | Bénéficiaire |
-| `source_user_id` | `uuid` | FK → `profiles.id` | Utilisateur source de la commission |
-| `amount` | `decimal` | NOT NULL | Montant en EUR |
-| `wins_amount` | `decimal` | | Montant en Wins (monnaie interne) |
-| `type` | `text` | NOT NULL | `referrer` / `sponsor` / `affiliation` / `cashback_wins` / `manual_adjustment` |
-| `level` | `integer` | | Niveau MLM (0=referrer, 1-5=sponsors) |
-| `status` | `text` | NOT NULL | `PENDING` → `EARNED` (déclenché à l'étape 6) |
-| `notes` | `text` | | Notes admin |
-| `created_at` | `timestamptz` | DEFAULT NOW() | |
-| `updated_at` | `timestamptz` | AUTO via trigger | |
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| referrer_id | uuid FK profiles(id) NOT NULL | |
+| professional_id | uuid FK profiles(id) NOT NULL | |
+| company_id | uuid FK companies(id) | |
+| contact_id | uuid FK contacts(id) | |
+| compensation_plan_id | uuid FK compensation_plans(id) | |
+| project_description | text | |
+| urgency_level | text DEFAULT 'normal' CHECK ('low','normal','high','urgent') | |
+| status | text CHECK (...) | voir enum ci-dessous |
+| amount | numeric | montant deal (saisi à étape 5) |
+| professional_response_at, contact_made_at, validation_date | timestamptz | |
+| rejection_reason | text | |
+| expires_at | timestamptz DEFAULT now()+7j | |
+| email_opened_at, email_clicked_at | timestamptz | tracking pixel/CTA [20260422_email_tracking.sql] |
+| scraped_reminder_sent_at | timestamptz | relance 12h scraped [20260426_scraped_reminder.sql] |
+| referrer_no_response_notified_at | timestamptz | alerte referrer 24h [20260426_referrer_no_response.sql] |
+| transferred_at, transfer_reason | timestamptz / text | [20260429_transfer_recommendation.sql] |
+| original_recommendation_id | uuid FK recommendations(id) | [20260429_transfer_recommendation.sql] |
+| expected_completion_at | timestamptz | date fin travaux saisie étape 5 [20260501_recommendation_followups.sql] |
+| abandoned_by_pro_at | timestamptz | fin cycle 3 relances sans réponse [20260501_recommendation_followups.sql] |
+| is_demo | boolean DEFAULT false | [015_demo_network.sql] |
+| created_at, updated_at | timestamptz | |
 
-**Logique idempotence** : création vérifiée par `recommendation_id` + `user_id` + `type` avant insert.
+**Statuts valides** : PENDING, ACCEPTED, CONTACT_MADE, MEETING_SCHEDULED, QUOTE_SUBMITTED, QUOTE_VALIDATED, PAYMENT_RECEIVED, COMPLETED, REJECTED, TRANSFERRED, EXPIRED, CANCELLED (noté dans le code).
 
----
+**Contrainte** : `referrer_id <> professional_id` [014_no_self_recommendation.sql] (exception : auto-reco "pour moi-même" contournée côté app).
 
-### `winelio.user_wallet_summaries`
-Cache dénormalisé du wallet utilisateur. Mis à jour à chaque transaction.
-
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `user_id` | `uuid` | PK, FK → `profiles.id` | |
-| `total_earned` | `decimal` | DEFAULT 0 | Total commissions gagnées (EUR) |
-| `total_withdrawn` | `decimal` | DEFAULT 0 | Total retiré (EUR) |
-| `pending_commissions` | `decimal` | DEFAULT 0 | Commissions en attente (PENDING) |
-| `available` | `decimal` | DEFAULT 0 | Solde disponible = total_earned - total_withdrawn |
-| `total_wins` | `decimal` | DEFAULT 0 | Total Wins gagnés |
-| `available_wins` | `decimal` | DEFAULT 0 | Wins disponibles |
-| `redeemed_wins` | `decimal` | DEFAULT 0 | Wins utilisés |
-| `updated_at` | `timestamptz` | AUTO via trigger | |
-
-**Créé automatiquement** par trigger `on_auth_user_created` → initialize à 0.
+RLS : SELECT/UPDATE pour referrer ou professional_id = auth.uid(). INSERT pour referrer_id = auth.uid().
 
 ---
 
-### `winelio.withdrawals`
-Demandes de retrait des utilisateurs.
+### `recommendation_steps`
 
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `id` | `uuid` | PK | |
-| `user_id` | `uuid` | NOT NULL, FK → `profiles.id` | |
-| `amount` | `decimal` | NOT NULL | Montant demandé |
-| `payment_method` | `text` | NOT NULL | `bank_transfer` / `paypal` |
-| `payment_details` | `jsonb` | NOT NULL | `{iban: "..."}` ou `{email: "..."}` |
-| `status` | `text` | DEFAULT 'pending' | `pending` → `approved` → `paid` / `rejected` |
-| `rejection_reason` | `text` | | Motif de rejet (admin) |
-| `created_at` | `timestamptz` | DEFAULT NOW() | |
-| `updated_at` | `timestamptz` | AUTO via trigger | |
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| recommendation_id | uuid FK recommendations(id) ON DELETE CASCADE | |
+| step_id | uuid FK steps(id) | |
+| completed_at | timestamptz | null = non complétée |
+| data | jsonb DEFAULT '{}' | données de l'étape (ex: amount à étape 5) |
+| created_at | timestamptz | |
+
+UNIQUE `(recommendation_id, step_id)` [20260503_fix_recommendation_triggers.sql]. Création 100% applicative (suppression du trigger `init_recommendation_steps` corrigé dans cette même migration).
 
 ---
 
-### `winelio.deleted_sponsor_codes`
-Protection contre la réutilisation des codes parrain supprimés.
+### `recommendation_followups`
+[20260501_recommendation_followups.sql] — relances automatiques pro
 
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `sponsor_code` | `text` | PK | Code parrain supprimé |
-| `deleted_at` | `timestamptz` | DEFAULT NOW() | Date suppression |
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| recommendation_id | uuid FK NOT NULL | |
+| after_step_order | smallint CHECK IN (2,4,5) | étape qui déclenche le cycle |
+| cycle_index | smallint CHECK 1-3 | numéro de relance dans le cycle |
+| scheduled_at | timestamptz NOT NULL | date d'envoi planifiée |
+| status | text CHECK ('pending','sent','cancelled','superseded') | |
+| sent_at | timestamptz | |
+| report_count | smallint DEFAULT 0 | max 5 reports (reporter) |
+| cancel_reason | text | |
+| email_queue_id | uuid FK email_queue(id) | |
+| created_at, updated_at | timestamptz | |
 
----
+UNIQUE partiel : une seule ligne `pending` par `(recommendation_id, after_step_order)`.
 
-### `winelio.audit_logs`
-Journal d'audit des actions sensibles.
-
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| `id` | `uuid` | PK | |
-| `user_id` | `uuid` | FK → `profiles.id` | Acteur |
-| `action` | `text` | NOT NULL | Type d'action (ex: `WITHDRAWAL_APPROVED`) |
-| `entity_type` | `text` | | Type d'entité concernée |
-| `entity_id` | `uuid` | | ID de l'entité |
-| `old_value` | `jsonb` | | Valeur avant |
-| `new_value` | `jsonb` | | Valeur après |
-| `ip_address` | `text` | | IP de l'action |
-| `created_at` | `timestamptz` | DEFAULT NOW() | |
+RLS : SELECT pour le pro ET le referrer concernés, SELECT pour super_admin [20260501_recommendation_followups_rls.sql].
 
 ---
 
-## FONCTIONS & RPC
+### `recommendation_annotations`
+[20260415_recommendation_annotations.sql]
 
-### `process_withdrawal(p_user_id, p_amount, p_method, p_details)`
-**Fichier** : `supabase/migrations/007_atomic_withdrawal.sql`
-Transaction atomique :
-1. Vérifie solde disponible ≥ montant
-2. INSERT withdrawals (status='pending')
-3. UPDATE user_wallet_summaries (available -= amount, total_withdrawn += amount)
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| recommendation_id | uuid FK ON DELETE CASCADE | |
+| recommendation_step_id | uuid FK ON DELETE CASCADE | optionnel |
+| author_id | uuid FK profiles(id) | |
+| content | text CHECK (1–1000 chars) | |
+| created_at | timestamptz | |
 
-Retourne : `{success: bool, withdrawal_id: uuid, error?: text}`
-
-### `get_mlm_network(p_user_id, p_max_levels)`
-**Fichier** : `supabase/migrations/008_mlm_network_rpc.sql`
-Remonte la chaîne de sponsors jusqu'à N niveaux via CTE récursive.
-Retourne : tableau de `{user_id, sponsor_id, level, ...}`
-
-### `get_next_open_registration_sponsor()`
-**Fichier** : `supabase/migrations/009_open_registration_rotation.sql` + `010_founder_flag.sql`
-Round-robin parmi les utilisateurs `is_founder=true`.
-Utilise une table d'état `open_registration_rotation_state`.
-Retourne : `uuid` (prochain sponsor à assigner)
-
-### `global_highlights()`
-**Fichier** : `supabase/migrations/003_global_highlights_fn.sql`
-Calcul top sponsors, top performers pour le dashboard.
+RLS : super_admin only.
 
 ---
 
-## TRIGGERS
+### `commission_transactions`
 
-| Trigger | Table | Action | Fonction |
-|---------|-------|--------|----------|
-| `on_auth_user_created` | `auth.users` | AFTER INSERT | Crée `profiles` + `user_wallet_summaries` |
-| `update_profiles_updated_at` | `winelio.profiles` | BEFORE UPDATE | SET updated_at = NOW() |
-| `update_companies_updated_at` | `winelio.companies` | BEFORE UPDATE | SET updated_at = NOW() |
-| `update_recommendations_updated_at` | `winelio.recommendations` | BEFORE UPDATE | SET updated_at = NOW() |
-| `update_withdrawals_updated_at` | `winelio.withdrawals` | BEFORE UPDATE | SET updated_at = NOW() |
-| `update_commission_transactions_updated_at` | `winelio.commission_transactions` | BEFORE UPDATE | SET updated_at = NOW() |
-| `trg_recommendation_step_followup` | `winelio.recommendation_steps` | AFTER INSERT OR UPDATE | `winelio.handle_recommendation_step_completion()` — insertion auto d'un followup à la complétion d'une étape 2/4/5 ; cancelle les pending dont l'étape suivante est déjà complétée |
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| user_id | uuid FK profiles(id) NOT NULL | bénéficiaire |
+| recommendation_id | uuid FK (nullable) | null pour ajustements manuels |
+| amount | numeric DEFAULT 0 NOT NULL | |
+| level | integer | 0=referrer, 1-5=niveaux MLM |
+| type | text CHECK (...) | voir enum |
+| status | text DEFAULT 'PENDING' CHECK ('PENDING','EARNED','CANCELLED') | |
+| referrer_id | uuid FK profiles(id) | referrer de la reco |
+| notes | text | [011_fix_commissions_and_withdrawals.sql] |
+| earned_at | timestamptz | |
+| is_demo | boolean DEFAULT false | [015_demo_network.sql] |
+| created_at | timestamptz | |
 
----
+**Types valides** : recommendation, referral_level_1..5, affiliation_bonus, professional_cashback, manual_adjustment, platform_winelio.
 
-## DIAGRAMME ERD SIMPLIFIÉ
+UNIQUE : `(recommendation_id, type, level, user_id)` [007_atomic_withdrawal.sql].
 
-```
-auth.users (Supabase)
-    │ 1:1
-    ▼
-winelio.profiles ──────────────────── winelio.compensation_plans
-    │ (sponsor_id FK self)
-    │
-    ├── 1:N ──► winelio.companies
-    │
-    ├── 1:1 ──► winelio.user_wallet_summaries
-    │
-    ├── 1:N ──► winelio.withdrawals
-    │
-    ├── 1:N ──► winelio.commission_transactions
-    │               │ N:1
-    │               ▼
-    ├── 1:N ──► winelio.recommendations
-    │               │ 1:N
-    │               ▼
-    │           winelio.recommendation_steps
-    │               │ N:1
-    │               ▼
-    │           winelio.steps (static data)
-    │
-    └── 1:N ──► winelio.contacts
-```
+RLS : SELECT only pour user_id = auth.uid() ou super_admin. Toute écriture via `supabaseAdmin` (lib/commission.ts). Trigger `on_commission_change` met à jour `user_wallet_summaries` [011_fix_commissions_and_withdrawals.sql]. RLS lockdown [20260504_lockdown_financial_rls.sql].
 
 ---
 
-## MIGRATIONS (ordre d'application)
+### `user_wallet_summaries`
 
-| # | Fichier | Contenu |
-|---|---------|---------|
-| 001 | `001_otp_codes.sql` | Table `otp_codes` |
-| 002 | `002_initial_schema.sql` | Toutes les tables principales + triggers + RLS |
-| 003 | `003_global_highlights_fn.sql` | Fonction `global_highlights()` |
-| 004 | `004_add_company_alias.sql` | Colonne `alias` sur `companies` |
-| 005 | `005_company_alias_not_null.sql` | `alias` NOT NULL + trigger `updated_at` |
-| 006 | `006_deleted_accounts.sql` | Table `deleted_sponsor_codes` |
-| 007 | `007_atomic_withdrawal.sql` | RPC `process_withdrawal()` |
-| 008 | `008_mlm_network_rpc.sql` | RPC `get_mlm_network()` |
-| 009 | `009_open_registration_rotation.sql` | RPC round-robin + table état |
-| 010 | `010_founder_flag.sql` | Colonne `is_founder` + mise à jour RPC |
-| 011 | `20260427_restructure_steps.sql` | Restructuration 8 → 7 étapes (fusion étapes 6+7, renumérotation) |
-| 012 | `20260501_recommendation_followups.sql` | Table `recommendation_followups` + trigger `trg_recommendation_step_followup` + colonnes `expected_completion_at`/`abandoned_by_pro_at` sur `recommendations` |
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| user_id | uuid UNIQUE FK profiles(id) ON DELETE CASCADE | |
+| total_earned | numeric DEFAULT 0 | |
+| total_withdrawn | numeric DEFAULT 0 | |
+| pending_commissions | numeric DEFAULT 0 | |
+| available | numeric DEFAULT 0 CHECK (>= 0) | [013_security_fixes.sql] |
+| total_wins | numeric DEFAULT 0 | |
+| available_wins | numeric DEFAULT 0 | |
+| redeemed_wins | numeric DEFAULT 0 | |
+| created_at, updated_at | timestamptz | |
 
-### Commande pour appliquer une migration
+RLS : SELECT only pour user_id = auth.uid() ou super_admin. Aucune policy INSERT/UPDATE/DELETE côté client. Toutes mutations via trigger `on_commission_change` ou `supabaseAdmin` (lib/wallet.ts). [20260504_lockdown_financial_rls.sql]
 
-```bash
-sshpass -p '04660466aA@@@' scp supabase/migrations/XXX.sql root@31.97.152.195:/tmp/
-sshpass -p '04660466aA@@@' ssh root@31.97.152.195 \
-  "docker cp /tmp/XXX.sql supabase-db-ixlhs1fg5t2n8c4zsgvnys0r:/tmp/ && \
-   docker exec supabase-db-ixlhs1fg5t2n8c4zsgvnys0r psql -U supabase_admin -d postgres -f /tmp/XXX.sql"
-```
+---
+
+### `withdrawals`
+
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| user_id | uuid FK profiles(id) NOT NULL | |
+| amount | numeric NOT NULL | montant demandé (frais inclus) |
+| fee_amount | numeric DEFAULT 0 | 0,25€ si < 50€, 0 sinon [20260417_withdrawal_fees.sql] |
+| status | text DEFAULT 'PENDING' CHECK ('PENDING','PROCESSING','COMPLETED','REJECTED') | |
+| method | text DEFAULT 'bank_transfer' | |
+| bank_details | jsonb | IBAN et BIC chiffrés |
+| rejection_reason | text | [012_withdrawals_missing_columns.sql] |
+| processed_at | timestamptz | |
+| created_at, updated_at | timestamptz | |
+
+RLS : SELECT only pour user_id = auth.uid() ou super_admin. Création via RPC `winelio.process_withdrawal` (SECURITY DEFINER). [20260504_lockdown_financial_rls.sql]
+
+---
+
+### `stripe_payment_sessions`
+[20260415_stripe_payment_sessions.sql]
+
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| recommendation_id | uuid FK ON DELETE CASCADE | |
+| stripe_session_id | text UNIQUE NOT NULL | |
+| amount | numeric(10,2) NOT NULL | |
+| status | text DEFAULT 'pending' CHECK ('pending','paid','expired') | |
+| reminder_sent_at, alert_sent_at, paid_at | timestamptz | |
+| created_at | timestamptz | |
+
+UNIQUE partiel : une seule session `pending` par `recommendation_id`. RLS : service_role only.
+
+---
+
+### `email_queue`
+[20260415_email_queue.sql]
+
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| to_email, to_name, subject, html, text_body | text | |
+| from_email | text DEFAULT 'support@winelio.app' | |
+| from_name | text DEFAULT 'Winelio' | |
+| reply_to | text | |
+| priority | int CHECK (1-10) DEFAULT 5 | |
+| status | text CHECK ('pending','sending','sent','failed','test_skipped') | test_skipped [20260503_email_queue_test_skipped.sql] |
+| attempts, max_attempts | int DEFAULT 0/3 | |
+| scheduled_at | timestamptz DEFAULT now() | |
+| sent_at, error | timestamptz / text | |
+| created_at | timestamptz | |
+
+RLS : deny-all pour anon/authenticated (service_role only). Index partiel sur status='pending'.
+
+---
+
+### `bug_reports`
+[20260410_bug_reports.sql + 20260420_bug_reports_board.sql]
+
+| Colonne | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| user_id | uuid FK auth.users(id) ON DELETE CASCADE | |
+| message | text NOT NULL | |
+| screenshot_url | text | URL bucket bug-screenshots |
+| page_url | text | |
+| status | text DEFAULT 'pending' CHECK ('pending','replied') | |
+| admin_reply | text | |
+| replied_at | timestamptz | |
+| tracking_status | text DEFAULT 'todo' CHECK ('todo','in_progress','blocked','done') | |
+| ticket_type | text DEFAULT 'bug' CHECK ('bug','improvement','site_change') | |
+| priority | text DEFAULT 'medium' CHECK ('low','medium','high','urgent') | |
+| internal_note | text | admin seulement |
+| source | text DEFAULT 'user' CHECK ('user','manual') | [20260420_bug_reports_manual_source.sql] |
+| in_progress_notified_at, done_notified_at | timestamptz | [20260420_bug_reports_status_notifications.sql] |
+| updated_at | timestamptz | |
+| created_at | timestamptz | |
+
+RLS : SELECT/INSERT pour user_id = auth.uid(). UPDATE/SELECT admin via supabaseAdmin.
+Realtime activé sur cette table.
+
+---
+
+### `legal_documents`, `document_sections`, `document_annotations`, `document_placeholder_values`
+[20260415_legal_documents.sql]
+
+`legal_documents` : id, title, version, status CHECK ('draft','reviewing','validated'), created_by, created_at, updated_at.
+`document_sections` : id, document_id FK (CASCADE), order_index, article_number, title, content, created_at.
+`document_annotations` : id, section_id FK (CASCADE), author_id FK, content, created_at, updated_at.
+`document_placeholder_values` : id, document_id FK (CASCADE), placeholder_key, value, filled_by FK, filled_at. UNIQUE (document_id, placeholder_key).
+
+RLS : super_admin ALL sur les 4 tables.
+
+---
+
+### `pro_onboarding_events`
+[20260415_pro_onboarding_audit.sql]
+
+id, user_id FK profiles, event_type CHECK ('cgu_accepted','engagement_accepted','siret_provided','category_set','pro_activated','signature_completed'), ip_address, user_agent, document_id FK, document_version, document_hash, metadata jsonb, created_at.
+
+RLS : SELECT super_admin, INSERT deny-all (écriture via supabaseAdmin uniquement).
+
+---
+
+### `recommendation_annotations`
+Voir section dédiée ci-dessus.
+
+---
+
+### `founder_rotation`
+[20260417_founder_rotation.sql]
+
+id INTEGER PK DEFAULT 1 CHECK (id=1) — table singleton. last_founder_id uuid FK profiles, updated_at.
+
+---
+
+### `deleted_sponsor_codes`
+[006_deleted_accounts.sql]
+
+sponsor_code TEXT PK, deleted_at TIMESTAMPTZ. RLS : SELECT public (validation unicité). Codes de comptes supprimés ne pouvant jamais être réattribués.
+
+---
+
+### `process_flow_annotations`
+[20260423_process_flow_annotations.sql]
+
+id, node_id text (ID du nœud organigramme), content text CHECK (1-1000), author_id FK auth.users ON DELETE CASCADE, created_at. RLS : super_admin ALL.
+
+---
+
+### `devices`
+[002_initial_schema.sql]
+
+id, user_id FK profiles (ON DELETE CASCADE), token text, platform DEFAULT 'web', is_active boolean DEFAULT true, created_at. RLS : ALL pour user_id = auth.uid().
+
+---
+
+### `audit_logs`
+[002_initial_schema.sql]
+
+id, user_id uuid, action text NOT NULL, entity_type, entity_id uuid, old_value/new_value jsonb, ip_address, success boolean DEFAULT true, error_message, created_at. RLS : activée, pas de policies visibles → accès service_role only.
+
+---
+
+## Table hors schéma `winelio`
+
+### `public.otp_codes`
+[001_otp_codes.sql]
+
+email TEXT PK, code TEXT NOT NULL, expires_at TIMESTAMPTZ NOT NULL, attempts INT DEFAULT 0 [013_security_fixes.sql], created_at. RLS activée, service_role only. Pas de policy → deny-all anon/authenticated. Utilisée par `/api/auth/send-code` et `/api/auth/verify-code` via `supabaseAdmin`.
+
+### `public.registration_rotation_state`
+[009_open_registration_rotation.sql, 010_founder_flag.sql]
+
+name TEXT PK, next_index INTEGER DEFAULT 0, created_at, updated_at. État du round-robin pour l'assignation des fondateurs. Utilisée par `public.get_next_open_registration_sponsor()`.
+
+---
+
+## Vues `winelio.*` (admin, filtrage E2E)
+[20260504_admin_real_views.sql]
+
+6 vues qui excluent les comptes `@winelio-e2e.local` :
+- `profiles_real`, `recommendations_real`, `commissions_real`, `withdrawals_real`, `wallet_summaries_real`, `companies_real`
+
+Helper : `winelio.is_e2e_email(addr text) RETURNS boolean IMMUTABLE`.
+
+Ces vues sont utilisées par les pages `/gestion-reseau/` pour les KPI super_admin.
+
+---
+
+## Triggers notables
+
+| Trigger | Table | Fonction | Description |
+|---|---|---|---|
+| `on_auth_user_created` | auth.users | `winelio.handle_new_user()` | Crée profil + wallet à l'inscription. Filtre sur `raw_user_meta_data->>'app' = 'winelio'` [20260501_app_marker.sql] |
+| `on_commission_change` | commission_transactions | `winelio.update_wallet_on_commission()` | Met à jour user_wallet_summaries sur INSERT/UPDATE commission [011_fix_commissions_and_withdrawals.sql] |
+| `trg_recommendation_step_followup` | recommendation_steps | `winelio.handle_recommendation_step_completion()` | Insère auto un followup à la complétion d'étape 2/4/5 ; cancelle les pending si étape suivante déjà faite. SECURITY DEFINER [20260503_fix_recommendation_triggers.sql] |
+| `update_*_updated_at` | profiles, companies, contacts, recommendations, withdrawals, etc. | `winelio.update_updated_at_column()` | MAJ automatique du champ updated_at |
+
+---
+
+## RPC functions notables
+
+| Fonction | Schéma | Description |
+|---|---|---|
+| `generate_unique_sponsor_code()` | winelio | Génère 8 chars A-Z0-9, retry anti-collision contre profiles + deleted_sponsor_codes [20260415_sponsor_code_8chars.sql] |
+| `get_network_ids(user_id, max_depth)` | winelio | CTE récursive renvoyant tous les membres du réseau jusqu'à depth=5 [008_mlm_network_rpc.sql] |
+| `process_withdrawal(user_id, amount, method, details, fee)` | winelio | Retrait atomique avec lock FOR UPDATE, SECURITY DEFINER [20260417_withdrawal_fees.sql] |
+| `handle_new_user()` | winelio | Trigger fonction pour on_auth_user_created [20260501_app_marker.sql] |
+| `seed_demo_network(user_id)` | winelio | Génère réseau MLM 4-5 niveaux fictif (guard idempotent) [015_demo_network.sql] |
+| `purge_demo_network(user_id)` | winelio | Supprime le réseau demo + recalcule wallet [015_demo_network.sql] |
+| `get_global_highlights()` | public | Retourne top sponsor semaine, top reco jour, grosse commission >100€ [003_global_highlights_fn.sql] |
+| `get_next_open_registration_sponsor(exclude_id)` | public | Round-robin sur les fondateurs (is_founder=true) [010_founder_flag.sql] |
+
+---
+
+## Buckets Supabase Storage
+
+| Bucket | Accès | Notes |
+|---|---|---|
+| `profile-avatars` | public | Photos de profil. RLS fine : insert/update/delete owner, select owner + super_admin [20260420_profile_avatars.sql] |
+| `legal-signatures` | privé | PDF CGU signés. SELECT owner ou super_admin [20260415_is_hoguet_and_storage.sql + 20260415_legal_signatures_private.sql] |
+| `bug-screenshots` | privé | Captures bugs. INSERT owner (par chemin uid) [20260410_bug_reports.sql] |
+
+Note : les avatars publics passent aussi par Cloudflare R2 (lib/r2-avatars.ts) — `profile-avatars` bucket Supabase reste le fallback.
+
+---
+
+## Migrations notables
+
+| Fichier | Ce qu'il fait |
+|---|---|
+| `002_initial_schema.sql` | Schéma initial legacy (cloud, schéma `public`) — contexte historique uniquement |
+| `006_deleted_accounts.sql` | Table deleted_sponsor_codes (schéma winelio) |
+| `007_atomic_withdrawal.sql` | RPC process_withdrawal + contrainte UNIQUE commissions |
+| `008_mlm_network_rpc.sql` | RPC get_network_ids (CTE récursive) |
+| `011_fix_commissions_and_withdrawals.sql` | Trigger wallet, fix colonnes withdrawals, manual_adjustment |
+| `20260414_cagnotte_winelio.sql` | UUID système `00000000-...0001`, type platform_winelio |
+| `20260427_restructure_steps.sql` | Fusionné étape 6+7, renumérote → 7 étapes finales |
+| `20260503_fix_recommendation_triggers.sql` | Supprime trigger init_recommendation_steps (bug doublons), fixe SECURITY DEFINER sur followups |
+| `20260504_lockdown_financial_rls.sql` | Lockdown RLS : wallet/commissions/withdrawals en lecture seule côté client |
+| `20260504_admin_real_views.sql` | Vues _real pour KPI admin (filtre E2E) |
+| `20260501_app_marker.sql` | Filtre `raw_user_meta_data->>'app'='winelio'` dans handle_new_user (instance Supabase partagée) |
