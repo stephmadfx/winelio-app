@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { OnboardingModal } from "@/components/onboarding-modal";
 import { DashboardTour } from "@/components/dashboard-tour";
 import { Card, CardContent } from "@/components/ui/card";
 import { MonthlyBarChart } from "@/components/monthly-bar-chart";
@@ -67,9 +66,10 @@ export default async function DashboardPage() {
     .single();
 
   const isSuperAdmin = user.app_metadata?.role === "super_admin";
-  const needsOnboarding = !isSuperAdmin && (!profile?.first_name || !profile?.last_name);
-  // Visite guidée à la première arrivée sur le dashboard, après l'onboarding initial
-  const showTour = !needsOnboarding && !profile?.tour_completed_at;
+  // Visite guidée : uniquement après que le profil soit complet (l'onboarding réel
+  // se fait via /profile + ProfileIncompleteModal, et le WelcomeModal s'affiche
+  // depuis ProfileForm à la première complétion)
+  const showTour = !!profile?.first_name && !profile?.tour_completed_at;
 
   // Réseau MLM (5 niveaux) — une seule requête récursive via RPC
   const { data: networkRows } = await supabase.rpc("get_network_ids", {
@@ -384,7 +384,6 @@ export default async function DashboardPage() {
 
   return (
     <>
-      {needsOnboarding && <OnboardingModal userId={user.id} />}
       {showTour && <DashboardTour />}
 
       {/* ═══ MOBILE (< lg) ═══ */}
