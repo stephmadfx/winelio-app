@@ -46,6 +46,7 @@ export async function middleware(request: NextRequest) {
       path.startsWith("/api/recommendations/process-followups") ||
       path.startsWith("/api/recommendations/cron-scraped-reminder") ||
       path.startsWith("/api/recommendations/followup-action") ||
+      path.startsWith("/api/admin/auth-health") ||
       path.startsWith("/recommendations/followup/") ||
       path.startsWith("/api/video/");
     const isExempt =
@@ -136,6 +137,7 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/recommendations/process-followups") &&
     !request.nextUrl.pathname.startsWith("/api/recommendations/cron-scraped-reminder") &&
     !request.nextUrl.pathname.startsWith("/api/recommendations/followup-action") &&
+    !request.nextUrl.pathname.startsWith("/api/admin/auth-health") &&
     !request.nextUrl.pathname.startsWith("/api/staging-auth")
   ) {
     if (!user) {
@@ -159,6 +161,7 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/recommendations/process-followups") &&
     !request.nextUrl.pathname.startsWith("/api/recommendations/cron-scraped-reminder") &&
     !request.nextUrl.pathname.startsWith("/api/recommendations/followup-action") &&
+    !request.nextUrl.pathname.startsWith("/api/admin/auth-health") &&
     !request.nextUrl.pathname.startsWith("/recommendations/followup/") &&
     !request.nextUrl.pathname.startsWith("/claim") &&
     !request.nextUrl.pathname.startsWith("/conditions-generales-utilisation") &&
