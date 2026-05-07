@@ -193,6 +193,22 @@ export async function POST(req: Request) {
           updated_at = now()
       `, [userId]);
 
+      // Filet de sécurité : garantit qu'un profil existe pour ce user.
+      // Le trigger handle_new_user filtre sur raw_user_meta_data->>'app' = 'winelio'
+      // et ne se déclenche pas si le INSERT auth.users devient un ON CONFLICT UPDATE.
+      // Sans ce filet, des comptes ressuscitent sans profil et /profile boucle.
+      await pgClient.query(
+        `INSERT INTO winelio.profiles (id, email, sponsor_code)
+         VALUES ($1, $2, winelio.generate_unique_sponsor_code())
+         ON CONFLICT (id) DO NOTHING`,
+        [userId, email]
+      );
+      await pgClient.query(
+        `INSERT INTO winelio.user_wallet_summaries (user_id) VALUES ($1)
+         ON CONFLICT (user_id) DO NOTHING`,
+        [userId]
+      );
+
       await pgClient.query("COMMIT");
     } catch (pgErr) {
       await pgClient.query("ROLLBACK").catch(() => {});
