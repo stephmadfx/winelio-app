@@ -89,17 +89,41 @@ export async function updateProfile(data: {
 
   const supabase = await createClient();
 
-  // Lire le profil AVANT update pour détecter la première complétion
+  // Lire le profil AVANT update pour détecter la première complétion TOTALE
+  // (tous les champs requis remplis + CGU acceptées)
   const { data: before } = await supabase
     .from("profiles")
-    .select("first_name, last_name")
+    .select("first_name, last_name, phone, address, city, postal_code, birth_date, terms_accepted")
     .eq("id", user.id)
     .single();
 
-  const wasIncomplete = !before?.first_name || !before?.last_name;
+  type ProfileSnapshot = {
+    first_name: string | null;
+    last_name: string | null;
+    phone: string | null;
+    address: string | null;
+    city: string | null;
+    postal_code: string | null;
+    birth_date: string | null;
+    terms_accepted: boolean | null;
+  };
+  const snap = (before ?? {}) as ProfileSnapshot;
+  const STRING_FIELDS = ["first_name","last_name","phone","address","city","postal_code","birth_date"] as const;
+
+  const isStringFilled = (v: unknown) => typeof v === "string" && v.trim() !== "";
+  const wasComplete =
+    STRING_FIELDS.every((f) => isStringFilled(snap[f])) &&
+    snap.terms_accepted === true;
+
+  // Valeur effective après update : si présente dans patch, on prend patch ; sinon ce qui était en DB
+  const effective = (f: typeof STRING_FIELDS[number]) =>
+    f in patch ? patch[f] : snap[f];
+  const effectiveTerms =
+    "terms_accepted" in patch ? !!patch.terms_accepted : snap.terms_accepted === true;
+
   const willBeComplete =
-    (patch.first_name ?? before?.first_name) &&
-    (patch.last_name  ?? before?.last_name);
+    STRING_FIELDS.every((f) => isStringFilled(effective(f))) &&
+    effectiveTerms === true;
 
   const { error } = await supabase
     .from("profiles")
@@ -115,7 +139,7 @@ export async function updateProfile(data: {
   const accountCreatedAt = user.created_at ? new Date(user.created_at) : null;
   const isNewAccount = accountCreatedAt !== null && accountCreatedAt >= DEMO_SEED_LAUNCH;
 
-  const firstCompletion = !!(wasIncomplete && willBeComplete && isNewAccount);
+  const firstCompletion = !!(!wasComplete && willBeComplete && isNewAccount);
 
   // Envoyer l'email au parrain UNIQUEMENT à la première complétion,
   // pas au moment de l'inscription (un user peut abandonner entre les deux).
