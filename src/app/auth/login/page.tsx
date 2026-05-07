@@ -391,13 +391,22 @@ function LoginForm() {
                   )}
                 </button>
               </form>
-              <button
-                type="button"
-                onClick={() => switchMethod("code")}
-                className="mt-4 text-sm font-medium text-winelio-gray transition hover:text-winelio-orange"
-              >
-                Mot de passe oublié ? Se connecter par code email →
-              </button>
+              <div className="mt-4 flex items-center justify-between gap-3 text-sm">
+                <button
+                  type="button"
+                  onClick={() => switchMethod("code")}
+                  className="font-medium text-winelio-gray transition hover:text-winelio-orange"
+                >
+                  Code par email →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push("/auth/forgot-password")}
+                  className="font-medium text-winelio-orange transition hover:text-winelio-amber"
+                >
+                  Mot de passe oublié ?
+                </button>
+              </div>
             </>
           )}
 
