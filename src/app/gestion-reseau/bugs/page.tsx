@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { BugTrackerBoard, type BugBoardReport } from "@/components/admin/BugTrackerBoard";
+import { toPublicStorageUrl } from "@/lib/storage-public-url";
 
 function normalizeReporter(reporter: unknown) {
   if (Array.isArray(reporter)) return reporter[0] ?? null;
@@ -50,7 +51,7 @@ export default async function BugsPage() {
         const { data } = await supabaseAdmin.storage
           .from("bug-screenshots")
           .createSignedUrl(report.screenshot_url, 60 * 60 * 24 * 7);
-        screenshotSignedUrl = data?.signedUrl ?? null;
+        screenshotSignedUrl = toPublicStorageUrl(data?.signedUrl ?? null);
       }
 
       return {

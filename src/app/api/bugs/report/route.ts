@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { queueEmail } from "@/lib/email-queue";
+import { toPublicStorageUrl } from "@/lib/storage-public-url";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -42,7 +43,9 @@ export async function POST(req: NextRequest) {
       const { data: signed } = await supabaseAdmin.storage
         .from("bug-screenshots")
         .createSignedUrl(path, 60 * 60 * 24 * 7); // 7 jours
-      screenshotSignedUrl = signed?.signedUrl ?? null;
+      // Le client admin utilise SUPABASE_URL=http://supabase-kong:8000 (interne Docker).
+      // On remplace l'hôte par l'URL publique pour que le lien marche dans les emails.
+      screenshotSignedUrl = toPublicStorageUrl(signed?.signedUrl ?? null);
     } else {
       console.error("[bug/report] Storage upload error:", uploadError);
     }

@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getAuditContext, getDocumentHash, logOnboardingEvent } from "@/lib/audit";
 import { generateSignedPDF } from "@/lib/generate-signed-pdf";
 import { sendSignatureConfirmationEmail } from "@/lib/notify-signature-cgu";
+import { toPublicStorageUrl } from "@/lib/storage-public-url";
 
 export async function signAgentCGU(params: {
   signatureBase64: string;
@@ -65,13 +66,16 @@ export async function signAgentCGU(params: {
 
   // Signed URLs valables 1 an pour le téléchargement (bucket privé)
   const ONE_YEAR_SECONDS = 365 * 24 * 3600;
-  const { data: sigSignedUrl } = await supabaseAdmin.storage
+  const { data: sigSignedUrlRaw } = await supabaseAdmin.storage
     .from("legal-signatures")
     .createSignedUrl(signaturePath, ONE_YEAR_SECONDS);
-  const { data: pdfSignedUrl } = await supabaseAdmin.storage
+  const { data: pdfSignedUrlRaw } = await supabaseAdmin.storage
     .from("legal-signatures")
     .createSignedUrl(pdfPath, ONE_YEAR_SECONDS);
-  if (!pdfSignedUrl?.signedUrl) throw new Error("Impossible de générer l'URL signée du PDF");
+  if (!pdfSignedUrlRaw?.signedUrl) throw new Error("Impossible de générer l'URL signée du PDF");
+  // Réécrit l'hôte interne supabase-kong:8000 vers l'URL publique HTTPS
+  const sigSignedUrl = sigSignedUrlRaw ? { signedUrl: toPublicStorageUrl(sigSignedUrlRaw.signedUrl) ?? sigSignedUrlRaw.signedUrl } : null;
+  const pdfSignedUrl = { signedUrl: toPublicStorageUrl(pdfSignedUrlRaw.signedUrl) ?? pdfSignedUrlRaw.signedUrl };
 
   // 6. Log audit
   await logOnboardingEvent({
