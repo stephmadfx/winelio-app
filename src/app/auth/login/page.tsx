@@ -39,6 +39,7 @@ function LoginForm() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [errorReason, setErrorReason] = useState<string | null>(null);
   const [sponsorName, setSponsorName] = useState<string | null>(null);
   const [kbPadding, setKbPadding] = useState(0);
   const router = useRouter();
@@ -118,6 +119,7 @@ function LoginForm() {
     setCode("");
     setPassword("");
     setError("");
+    setErrorReason(null);
   };
 
   // Step 1 : envoyer le code OTP
@@ -186,6 +188,7 @@ function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setErrorReason(null);
 
     const res = await fetch("/api/auth/login-password", {
       method: "POST",
@@ -197,6 +200,7 @@ function LoginForm() {
 
     if (!res.ok) {
       setError(data.error || "Email ou mot de passe incorrect.");
+      setErrorReason(data.reason ?? null);
       setLoading(false);
       return;
     }
@@ -367,9 +371,42 @@ function LoginForm() {
                   />
                 </div>
 
-                {error && (
+                {error && errorReason !== "password_not_set" && (
                   <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-500">
                     {error}
+                  </div>
+                )}
+
+                {errorReason === "password_not_set" && (
+                  <div className="rounded-2xl border border-winelio-orange/30 bg-winelio-orange/5 px-4 py-4 text-sm">
+                    <p className="font-semibold text-winelio-dark">
+                      Aucun mot de passe défini pour ce compte.
+                    </p>
+                    <p className="mt-1.5 leading-6 text-winelio-gray">
+                      Vous vous êtes connecté avec un code par email lors de votre
+                      inscription. Pour utiliser un mot de passe, choisissez « Définir
+                      un mot de passe » : vous recevrez un code email pour en créer un.
+                    </p>
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={() => switchMethod("code")}
+                        className="inline-flex items-center justify-center rounded-xl border border-winelio-orange/30 bg-white px-4 py-2 text-xs font-semibold text-winelio-orange transition hover:bg-winelio-orange/10"
+                      >
+                        Recevoir un code par email
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          router.push(
+                            `/auth/forgot-password?email=${encodeURIComponent(email)}`
+                          )
+                        }
+                        className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-4 py-2 text-xs font-semibold text-white shadow-[0_8px_20px_rgba(255,107,53,0.24)] transition hover:brightness-105"
+                      >
+                        Définir un mot de passe
+                      </button>
+                    </div>
                   </div>
                 )}
 

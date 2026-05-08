@@ -1,8 +1,32 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { Pool } from "pg";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config";
 import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
+
+async function checkPasswordNotSet(email: string): Promise<boolean> {
+  const dbUrl = process.env.SUPABASE_DB_URL;
+  if (!dbUrl) return false;
+  const pool = new Pool({ connectionString: dbUrl, max: 1, connectionTimeoutMillis: 5000 });
+  try {
+    const res = await pool.query<{ has_password: boolean }>(
+      `SELECT (encrypted_password IS NOT NULL AND encrypted_password <> '') AS has_password
+       FROM auth.users
+       WHERE email = $1
+         AND raw_user_meta_data->>'app' = 'winelio'
+       LIMIT 1`,
+      [email]
+    );
+    if (res.rows.length === 0) return false;
+    return res.rows[0].has_password === false;
+  } catch (e) {
+    console.error("login-password checkPasswordNotSet error:", e);
+    return false;
+  } finally {
+    pool.end().catch(() => {});
+  }
+}
 
 export async function POST(req: Request) {
   try {
@@ -43,6 +67,16 @@ export async function POST(req: Request) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error || !data.user) {
+      const passwordNotSet = await checkPasswordNotSet(email);
+      if (passwordNotSet) {
+        return NextResponse.json(
+          {
+            error: "Aucun mot de passe défini pour ce compte.",
+            reason: "password_not_set",
+          },
+          { status: 401 }
+        );
+      }
       return NextResponse.json(
         { error: "Email ou mot de passe incorrect." },
         { status: 401 }
