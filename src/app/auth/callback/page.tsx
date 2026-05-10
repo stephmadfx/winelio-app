@@ -53,12 +53,14 @@ export default function AuthCallbackPage() {
             setErrorType("used");
           }
         } else {
+          try { localStorage.setItem("winelio_known_user", "1"); } catch {}
           router.push("/dashboard");
         }
       });
     } else {
       supabase.auth.getSession().then(({ data }) => {
         if (data.session) {
+          try { localStorage.setItem("winelio_known_user", "1"); } catch {}
           router.push("/dashboard");
         } else {
           setErrorType("generic");

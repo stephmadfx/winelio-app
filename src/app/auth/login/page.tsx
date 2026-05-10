@@ -174,6 +174,7 @@ function LoginForm() {
 
     if (data.success) {
       await applyReferral();
+      try { localStorage.setItem("winelio_known_user", "1"); } catch {}
       const returnTo = searchParams.get("returnTo");
       router.push(returnTo && returnTo.startsWith("/") ? returnTo : "/dashboard");
       return;
@@ -207,6 +208,7 @@ function LoginForm() {
 
     if (data.success) {
       await applyReferral();
+      try { localStorage.setItem("winelio_known_user", "1"); } catch {}
       const returnTo = searchParams.get("returnTo");
       router.push(returnTo && returnTo.startsWith("/") ? returnTo : "/dashboard");
       return;
