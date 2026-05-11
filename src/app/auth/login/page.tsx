@@ -5,6 +5,7 @@ import { WinelioLogo } from "@/components/winelio-logo";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppBackground } from "@/components/AppBackground";
 import { PROMO_WATCHED_KEY } from "@/components/PromoVideo";
+import { safeJsonFetch } from "@/lib/safe-fetch";
 
 export default function LoginPage() {
   return (
@@ -128,16 +129,14 @@ function LoginForm() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/auth/send-code", {
+    const result = await safeJsonFetch("/api/auth/send-code", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.error || "Erreur lors de l'envoi.");
+    if (!result.ok) {
+      setError(result.error);
       setLoading(false);
       return;
     }
@@ -154,7 +153,7 @@ function LoginForm() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/auth/verify-code", {
+    const result = await safeJsonFetch<{ success?: boolean }>("/api/auth/verify-code", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -164,15 +163,13 @@ function LoginForm() {
       }),
     });
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.error || "Code invalide.");
+    if (!result.ok) {
+      setError(result.error);
       setLoading(false);
       return;
     }
 
-    if (data.success) {
+    if (result.data?.success) {
       await applyReferral();
       try { localStorage.setItem("winelio_known_user", "1"); } catch {}
       const returnTo = searchParams.get("returnTo");
@@ -191,22 +188,23 @@ function LoginForm() {
     setError("");
     setErrorReason(null);
 
-    const res = await fetch("/api/auth/login-password", {
+    const result = await safeJsonFetch<{ success?: boolean; error?: string; reason?: string }>("/api/auth/login-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.error || "Email ou mot de passe incorrect.");
-      setErrorReason(data.reason ?? null);
+    if (!result.ok) {
+      setError(result.error);
+      const reason = (result.data && typeof result.data === "object" && "reason" in result.data)
+        ? (result.data as { reason?: string }).reason ?? null
+        : null;
+      setErrorReason(reason);
       setLoading(false);
       return;
     }
 
-    if (data.success) {
+    if (result.data?.success) {
       await applyReferral();
       try { localStorage.setItem("winelio_known_user", "1"); } catch {}
       const returnTo = searchParams.get("returnTo");
