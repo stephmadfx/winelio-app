@@ -13,7 +13,11 @@ export function toPublicStorageUrl(url: string | null | undefined): string | nul
     const parsed = new URL(url);
     const publicParsed = new URL(publicBase);
     parsed.protocol = publicParsed.protocol;
-    parsed.host = publicParsed.host;
+    // /!\ URL.host = "domaine" SANS port conserve le port d'origine.
+    // Il faut écrire hostname + port séparément pour purger l'éventuel :8000
+    // hérité de l'hôte interne supabase-kong:8000.
+    parsed.hostname = publicParsed.hostname;
+    parsed.port = publicParsed.port;
     return parsed.toString();
   } catch {
     return url;
