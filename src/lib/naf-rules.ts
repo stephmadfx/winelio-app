@@ -15,7 +15,7 @@ export const SECTION_RULES: Record<string, { allowed: boolean; label: string }> 
   D: { allowed: false, label: "Production et distribution d'électricité, gaz" },
   E: { allowed: false, label: "Production et distribution d'eau, déchets" },
   F: { allowed: true,  label: "Construction / BTP" },
-  G: { allowed: false, label: "Commerce ; réparation autos/motos" }, // exceptions ci-dessous
+  G: { allowed: false, label: "Commerce de gros ou de détail" }, // exceptions ci-dessous (intermédiaires 46.1X, réparation auto 45.20)
   H: { allowed: true,  label: "Transports et entreposage" },
   I: { allowed: true,  label: "Hébergement et restauration" },
   J: { allowed: true,  label: "Information et communication" },
@@ -36,9 +36,28 @@ export const SECTION_RULES: Record<string, { allowed: boolean; label: string }> 
 // Le code retourné par l'API SIRENE peut contenir un point (ex. "45.20A") ou pas.
 // On normalise en supprimant le point dans la fonction de check.
 export const CODE_OVERRIDES: Record<string, { allowed: boolean; label: string }> = {
+  // Réparation auto/moto (sub-section 45.20 / 45.40) — prestation de service
   "4520A": { allowed: true, label: "Entretien et réparation de véhicules automobiles légers" },
   "4520B": { allowed: true, label: "Entretien et réparation d'autres véhicules automobiles" },
   "4540Z": { allowed: true, label: "Commerce et réparation de motocycles" },
+
+  // Intermédiaires du commerce (46.11 → 46.19) — agents commerciaux,
+  // courtiers, apporteurs d'affaires : aucune marchandise détenue,
+  // pure prestation de service B2B (cible Winelio par excellence).
+  "4611Z": { allowed: true, label: "Intermédiaires en matières premières agricoles, animaux vivants…" },
+  "4612A": { allowed: true, label: "Intermédiaires en combustibles, carburants, minerais…" },
+  "4612B": { allowed: true, label: "Intermédiaires en produits chimiques industriels et engrais" },
+  "4613Z": { allowed: true, label: "Intermédiaires en bois et matériaux de construction" },
+  "4614Z": { allowed: true, label: "Intermédiaires en machines, équipements industriels, navires…" },
+  "4615Z": { allowed: true, label: "Intermédiaires en meubles, articles de ménage, quincaillerie" },
+  "4616Z": { allowed: true, label: "Intermédiaires en textiles, habillement, fourrures, chaussures…" },
+  "4617A": { allowed: true, label: "Centrales d'achat alimentaires" },
+  "4617B": { allowed: true, label: "Autres intermédiaires en denrées, boissons et tabac" },
+  "4618Z": { allowed: true, label: "Intermédiaires spécialisés dans d'autres produits spécifiques" },
+  "4619A": { allowed: true, label: "Centrales d'achat non alimentaires" },
+  "4619B": { allowed: true, label: "Autres intermédiaires du commerce en produits divers" },
+
+  // Optique-lunetterie : commerce de détail mais avec forte composante service (examen vue, ajustement)
   "4778C": { allowed: true, label: "Optique-lunetterie (commerce de détail)" },
 };
 
