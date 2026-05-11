@@ -6,6 +6,7 @@ import { Pool } from "pg";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config";
 import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
+import { notifyAdminNewSignup } from "@/lib/notify-admin-new-signup";
 
 // Connexion pg directe par requête (pas de pool singleton — évite l'état d'erreur au démarrage)
 function getDbUrl(): string | null {
@@ -60,6 +61,7 @@ export async function POST(req: Request) {
     const pgClient = new Pool({ connectionString: dbUrl, max: 1, connectionTimeoutMillis: 8000 });
     let userId: string | null = null;
     let previousPasswordHash: string | null = null;
+    let isNewSignup = false;
 
     try {
       await pgClient.query("BEGIN");
@@ -197,12 +199,16 @@ export async function POST(req: Request) {
       // Le trigger handle_new_user filtre sur raw_user_meta_data->>'app' = 'winelio'
       // et ne se déclenche pas si le INSERT auth.users devient un ON CONFLICT UPDATE.
       // Sans ce filet, des comptes ressuscitent sans profil et /profile boucle.
-      await pgClient.query(
+      const profileInsertRes = await pgClient.query<{ id: string }>(
         `INSERT INTO winelio.profiles (id, email, sponsor_code)
          VALUES ($1, $2, winelio.generate_unique_sponsor_code())
-         ON CONFLICT (id) DO NOTHING`,
+         ON CONFLICT (id) DO NOTHING
+         RETURNING id`,
         [userId, email]
       );
+      // Si une ligne est retournée, c'est qu'on vient de créer un nouveau profil
+      // (= première inscription). Sinon c'est un retour d'utilisateur existant.
+      isNewSignup = profileInsertRes.rowCount === 1;
       await pgClient.query(
         `INSERT INTO winelio.user_wallet_summaries (user_id) VALUES ($1)
          ON CONFLICT (user_id) DO NOTHING`,
@@ -270,6 +276,14 @@ export async function POST(req: Request) {
       }
     } catch (e) {
       console.error("assign-sponsor error:", e);
+    }
+
+    // 8. Notification admin (uniquement à la première inscription, après assignation
+    // du parrain). En queue priorité 10 (bulk), n'impacte pas les autres envois.
+    if (isNewSignup && userId) {
+      notifyAdminNewSignup(userId).catch((e) =>
+        console.error("notify-admin-new-signup error:", e),
+      );
     }
 
     return response;
