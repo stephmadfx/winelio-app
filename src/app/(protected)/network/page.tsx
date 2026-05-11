@@ -6,6 +6,7 @@ import { NetworkGraph } from "@/components/network-graph";
 import { CopyButton, ShareButton, EmailInviteButton } from "@/components/referral-buttons";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { PromoVideoPreview } from "@/components/PromoVideoPreview";
 
 export default async function NetworkPage() {
   const supabase = await createClient();
@@ -164,6 +165,7 @@ export default async function NetworkPage() {
               <CopyButton code={sponsorCode} />
               <EmailInviteButton code={sponsorCode} />
               <ShareButton code={sponsorCode} />
+              <PromoVideoPreview />
             </div>
           </div>
         </CardContent>
