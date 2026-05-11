@@ -1,19 +1,5 @@
-import nodemailer from "nodemailer";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
-
-const smtpPort = Number(process.env.SMTP_PORT) || 465;
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "ssl0.ovh.net",
-  port: smtpPort,
-  secure: smtpPort === 465,
-  connectionTimeout: 8000,
-  greetingTimeout: 8000,
-  socketTimeout: 8000,
-  auth: {
-    user: process.env.SMTP_USER || "support@winelio.app",
-    pass: process.env.SMTP_PASS || "",
-  },
-});
+import { sendEmail } from "@/lib/email-sender";
 
 export async function sendSignatureConfirmationEmail(params: {
   to: string;
@@ -31,8 +17,7 @@ export async function sendSignatureConfirmationEmail(params: {
 
   const html = buildConfirmationHtml(params.firstName, dateStr);
 
-  await transporter.sendMail({
-    from: `"Winelio" <${process.env.SMTP_USER || "support@winelio.app"}>`,
+  await sendEmail({
     to: params.to,
     subject: "Vos CGU Agents Immobiliers — exemplaire signé",
     html,

@@ -2,21 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ImapFlow } from "imapflow";
 import { uploadToR2 } from "@/lib/r2";
-import nodemailer from "nodemailer";
-
-const smtpPort = Number(process.env.SMTP_PORT) || 465;
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "ssl0.ovh.net",
-  port: smtpPort,
-  secure: smtpPort === 465,
-  connectionTimeout: 8000,
-  greetingTimeout: 8000,
-  socketTimeout: 8000,
-  auth: {
-    user: process.env.SMTP_USER || "support@winelio.app",
-    pass: process.env.SMTP_PASS || "",
-  },
-});
+import { sendEmail } from "@/lib/email-sender";
 
 async function sendReplyNotification(
   userEmail: string,
@@ -106,16 +92,12 @@ async function sendReplyNotification(
 </body>
 </html>`;
 
-  await Promise.race([
-    transporter.sendMail({
-      from: `"Winelio Support" <${process.env.SMTP_USER || "support@winelio.app"}>`,
-      to: userEmail,
-      replyTo: "support@winelio.app",
-      subject: `Réponse à votre signalement #${shortId}`,
-      html,
-    }),
-    new Promise<never>((_, reject) => setTimeout(() => reject(new Error("SMTP timeout")), 10000)),
-  ]);
+  await sendEmail({
+    to: userEmail,
+    replyTo: "support@winelio.app",
+    subject: `Réponse à votre signalement #${shortId}`,
+    html,
+  });
 }
 
 /** Décode le quoted-printable en UTF-8 (séquences multi-octets gérées via TextDecoder) */

@@ -1,7 +1,7 @@
 // src/app/api/email/process-queue/route.ts
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { sendMailWithTimeout, SMTP_FROM } from "@/lib/email-transporter";
+import { sendEmail } from "@/lib/email-sender";
 
 const BATCH_SIZE = 10;
 const RETRY_DELAYS_MIN = [5, 30, 120];
@@ -59,16 +59,17 @@ export async function POST(req: Request) {
       }
 
       try {
-        await sendMailWithTimeout({
-          from:    row.from_name && row.from_email
-                     ? `"${row.from_name}" <${row.from_email}>`
-                     : SMTP_FROM,
-          to:      row.to_name ? `"${row.to_name}" <${row.to_email}>` : row.to_email,
-          replyTo: row.reply_to ?? undefined,
+        const result = await sendEmail({
+          to:      row.to_email,
+          toName:  row.to_name ?? undefined,
           subject: row.subject,
           html:    row.html,
           text:    row.text_body ?? undefined,
+          replyTo: row.reply_to ?? undefined,
         });
+        if (!result.ok) {
+          throw new Error(result.error || "send failed");
+        }
 
         await supabaseAdmin
           .schema("winelio")

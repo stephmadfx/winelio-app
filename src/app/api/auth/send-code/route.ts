@@ -1,33 +1,8 @@
 import { NextResponse } from "next/server";
 import { randomInt } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import nodemailer from "nodemailer";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
-
-const smtpPort = Number(process.env.SMTP_PORT) || 465;
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "ssl0.ovh.net",
-  port: smtpPort,
-  secure: smtpPort === 465,
-  connectionTimeout: 8000,
-  greetingTimeout: 8000,
-  socketTimeout: 8000,
-  auth: {
-    user: process.env.SMTP_USER || "support@winelio.app",
-    pass: process.env.SMTP_PASS || "",
-  },
-});
-
-const SEND_MAIL_TIMEOUT_MS = 10000;
-
-async function sendMailWithTimeout(message: Parameters<typeof transporter.sendMail>[0]) {
-  return Promise.race([
-    transporter.sendMail(message),
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("SMTP timeout")), SEND_MAIL_TIMEOUT_MS)
-    ),
-  ]);
-}
+import { sendEmail } from "@/lib/email-sender";
 
 function generateCode(): string {
   return randomInt(100000, 1000000).toString();
@@ -133,14 +108,16 @@ export async function POST(req: Request) {
     // E2E test recipients : on saute l'envoi SMTP (le code reste en DB et
     // sera lu directement par les tests Playwright).
     if (!isE2EAddress) {
-      // Send custom email (text + html pour éviter les filtres spam)
-      await sendMailWithTimeout({
-        from: `"${process.env.SMTP_SENDER_NAME || "Winelio"}" <${process.env.SMTP_ADMIN_EMAIL || process.env.SMTP_USER || "support@winelio.app"}>`,
+      const result = await sendEmail({
         to: email,
         subject: "Votre code de connexion Winelio",
-        text: `Votre code de connexion Winelio : ${code}\n\nCe code est valable 24 heures et a usage unique.\nSi vous n'avez pas fait cette demande, ignorez cet email.\n\n---\n© 2026 Winelio · Recommandez. Connectez. Gagnez.`,
+        text: `Votre code de connexion Winelio : ${code}\n\nCe code est valable 24 heures et à usage unique.\nSi vous n'avez pas fait cette demande, ignorez cet email.\n\n---\n© 2026 Winelio · Recommandez. Connectez. Gagnez.`,
         html: buildEmailHtml(code),
       });
+      if (!result.ok) {
+        console.error("send-code email failed:", result.error);
+        return NextResponse.json({ error: "Envoi du code temporairement indisponible. Réessayez." }, { status: 504 });
+      }
     }
 
     return NextResponse.json({ success: true });
