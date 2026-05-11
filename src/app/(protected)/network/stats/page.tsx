@@ -96,7 +96,7 @@ export default async function NetworkStatsPage() {
               href="/network"
               className="text-sm text-winelio-orange hover:text-winelio-amber transition-colors font-medium"
             >
-              Retour au reseau
+              Retour au réseau
             </Link>
           </nav>
         </div>
@@ -104,10 +104,10 @@ export default async function NetworkStatsPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-winelio-dark mb-2">
-          Statistiques reseau detaillees
+          Statistiques réseau détaillées
         </h2>
         <p className="text-winelio-gray mb-8">
-          Vue complete de vos commissions par niveau de parrainage.
+          Vue complète de vos commissions par niveau de parrainage.
         </p>
 
         {/* Summary card */}
@@ -115,7 +115,7 @@ export default async function NetworkStatsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-winelio-gray font-medium">
-                Total commissions reseau
+                Total commissions réseau
               </p>
               <p className="text-3xl font-bold bg-gradient-to-r from-winelio-orange to-winelio-amber bg-clip-text text-transparent">
                 {totalAllLevels.toFixed(2)} EUR
@@ -252,7 +252,7 @@ export default async function NetworkStatsPage() {
           </div>
           {maxCommission <= 1 && (
             <p className="text-center text-muted-foreground text-sm mt-6">
-              Aucune commission reseau pour le moment.
+              Aucune commission réseau pour le moment.
             </p>
           )}
         </CardContent></Card>
@@ -260,7 +260,7 @@ export default async function NetworkStatsPage() {
         {/* Commission history */}
         <Card className="!rounded-2xl"><CardContent className="p-6">
           <h3 className="text-lg font-semibold text-winelio-dark mb-6">
-            Historique des commissions reseau
+            Historique des commissions réseau
           </h3>
 
           {allCommissions.length === 0 ? (
@@ -281,7 +281,7 @@ export default async function NetworkStatsPage() {
                 </svg>
               </div>
               <p className="text-muted-foreground">
-                Aucune commission reseau enregistree.
+                Aucune commission réseau enregistrée.
               </p>
             </div>
           ) : (
