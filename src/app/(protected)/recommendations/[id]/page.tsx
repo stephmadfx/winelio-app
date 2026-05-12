@@ -285,12 +285,13 @@ export default function RecommendationDetailPage() {
           <div className="pointer-events-none absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-black/10 blur-2xl" />
 
           <div className="relative">
-            {/* Row 1 : avatar + nom + badge status (compact) */}
-            <div className="flex items-center gap-3 sm:gap-4">
-              <Avatar name={contactName} />
+            {/* Row 1 : nom + badge status. Nom en entier (pas tronqué), peut wrapper */}
+            <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <h1 className="text-lg sm:text-2xl font-black text-white truncate">{contactName}</h1>
-                <p className={`text-xs ${cfg.heroText} opacity-70 mt-0.5`}>
+                <h1 className="text-lg sm:text-2xl font-black text-white leading-tight break-words">
+                  {contactName}
+                </h1>
+                <p className={`text-xs ${cfg.heroText} opacity-70 mt-1`}>
                   {new Date(recommendation.created_at).toLocaleDateString("fr-FR", {
                     day: "numeric", month: "long", year: "numeric",
                   })}
