@@ -17,7 +17,7 @@ interface RecommendationDetail {
   referrer_id: string;
   professional_id: string;
   abandoned_by_pro_at: string | null;
-  contact: { first_name: string; last_name: string; email: string; phone: string } | null;
+  contact: { first_name: string; last_name: string; email: string; phone: string; address: string | null; city: string | null; postal_code: string | null } | null;
   professional: { first_name: string; last_name: string; company: { name: string } | null } | null;
   referrer: { first_name: string; last_name: string } | null;
 }
@@ -285,58 +285,84 @@ export default function RecommendationDetailPage() {
           <div className="pointer-events-none absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-black/10 blur-2xl" />
 
           <div className="relative">
-            {/* Top row: avatar + name + status */}
-            <div className="flex items-start gap-4">
+            {/* Row 1 : avatar + nom + badge status (compact) */}
+            <div className="flex items-center gap-3 sm:gap-4">
               <Avatar name={contactName} />
               <div className="flex-1 min-w-0">
-                <h1 className="text-xl font-black text-white truncate sm:text-2xl">{contactName}</h1>
-                {recommendation.contact?.email && (() => {
-                  const isPro = userId === recommendation.professional_id;
-                  const shouldMask = isPro && hasPaymentMethod === false;
-                  if (shouldMask) {
-                    return (
-                      <div className="mt-1 inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-2.5 py-1 rounded-lg">
-                        <span className="text-sm select-none blur-sm">
-                          ••••••@••••.com · 06 •• •• •• ••
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setPaymentDialogOpen(true)}
-                          className="text-[10px] font-bold uppercase tracking-wider bg-white text-winelio-orange px-2 py-1 rounded-md hover:bg-winelio-light transition-colors"
-                        >
-                          💳 Accéder
-                        </button>
-                      </div>
-                    );
-                  }
-                  return (
-                    <>
-                      <p className={`mt-0.5 text-sm truncate ${cfg.heroText}`}>
-                        <a href={`mailto:${recommendation.contact.email}`} className="hover:underline">
-                          {recommendation.contact.email}
-                        </a>
-                      </p>
-                      {recommendation.contact.phone && (
-                        <p className={`mt-0.5 text-sm ${cfg.heroText}`}>
-                          <a href={`tel:${recommendation.contact.phone}`} className="hover:underline">
-                            📞 {recommendation.contact.phone}
-                          </a>
-                        </p>
-                      )}
-                    </>
-                  );
-                })()}
-                <p className={`mt-1 text-xs ${cfg.heroText} opacity-70`}>
+                <h1 className="text-lg sm:text-2xl font-black text-white truncate">{contactName}</h1>
+                <p className={`text-xs ${cfg.heroText} opacity-70 mt-0.5`}>
                   {new Date(recommendation.created_at).toLocaleDateString("fr-FR", {
                     day: "numeric", month: "long", year: "numeric",
                   })}
                 </p>
               </div>
-              <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1.5 text-xs font-bold text-white ring-1 ring-white/25`}>
+              <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-sm px-2.5 py-1 text-[10px] sm:text-xs font-bold text-white ring-1 ring-white/25">
                 <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                 {STATUS_LABELS[recommendation.status] ?? recommendation.status}
               </span>
             </div>
+
+            {/* Row 2 : coordonnées sur leur propre bloc, pleine largeur */}
+            {recommendation.contact && (() => {
+              const isPro = userId === recommendation.professional_id;
+              const shouldMask = isPro && hasPaymentMethod === false;
+              if (shouldMask) {
+                return (
+                  <div className="mt-4 bg-white/15 backdrop-blur-sm rounded-xl p-3.5 flex items-center justify-between gap-3">
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <p className="text-sm select-none blur-sm">••••••@••••.com</p>
+                      <p className="text-sm select-none blur-sm">📞 06 •• •• •• ••</p>
+                      <p className="text-sm select-none blur-sm">📍 ••• rue •••••</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentDialogOpen(true)}
+                      className="shrink-0 text-xs font-bold uppercase tracking-wider bg-white text-winelio-orange px-3 py-2 rounded-md hover:bg-winelio-light transition-colors"
+                    >
+                      💳 Accéder
+                    </button>
+                  </div>
+                );
+              }
+              const addressParts = [
+                recommendation.contact.address,
+                [recommendation.contact.postal_code, recommendation.contact.city].filter(Boolean).join(" "),
+              ].filter(Boolean);
+              const fullAddress = addressParts.join(", ");
+              return (
+                <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-xl p-3.5 space-y-1.5">
+                  {recommendation.contact.email && (
+                    <p className={`text-sm ${cfg.heroText} flex items-center gap-2`}>
+                      <span className="opacity-70 shrink-0">📧</span>
+                      <a href={`mailto:${recommendation.contact.email}`} className="hover:underline truncate">
+                        {recommendation.contact.email}
+                      </a>
+                    </p>
+                  )}
+                  {recommendation.contact.phone && (
+                    <p className={`text-sm ${cfg.heroText} flex items-center gap-2`}>
+                      <span className="opacity-70 shrink-0">📞</span>
+                      <a href={`tel:${recommendation.contact.phone}`} className="hover:underline">
+                        {recommendation.contact.phone}
+                      </a>
+                    </p>
+                  )}
+                  {fullAddress && (
+                    <p className={`text-sm ${cfg.heroText} flex items-start gap-2`}>
+                      <span className="opacity-70 shrink-0 mt-0.5">📍</span>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline"
+                      >
+                        {fullAddress}
+                      </a>
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Progress bar */}
             {steps.length > 0 && (

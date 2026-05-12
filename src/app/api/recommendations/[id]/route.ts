@@ -30,7 +30,7 @@ export async function GET(
     .from("recommendations")
     .select(
       `id, status, amount, project_description, urgency_level, created_at, referrer_id, professional_id, abandoned_by_pro_at,
-       contact:contacts(first_name, last_name, email, phone),
+       contact:contacts(first_name, last_name, email, phone, address, city, postal_code),
        professional:profiles!recommendations_professional_id_fkey(first_name, last_name, company:companies(name, alias)),
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name)`
     )
