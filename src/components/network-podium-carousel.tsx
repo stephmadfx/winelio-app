@@ -116,7 +116,7 @@ export function NetworkPodiumCarousel({
           href="/network/leaderboard"
           className="text-sm text-winelio-orange hover:text-winelio-amber font-medium inline-flex items-center gap-1"
         >
-          Voir le Hall of Fame all-time →
+          Voir le palmarès historique →
         </Link>
       </div>
     </section>

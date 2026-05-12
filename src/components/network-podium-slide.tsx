@@ -61,7 +61,7 @@ export function NetworkPodiumSlide({
           </p>
         </div>
       ) : (
-        <div className="flex-1 flex items-end justify-center gap-3 sm:gap-6 px-2">
+        <div className="flex-1 flex items-end justify-center gap-4 sm:gap-8 px-2">
           {/* Place 2 (gauche) */}
           {top2 && (
             <PodiumStep
@@ -137,7 +137,7 @@ function PodiumStep({
   heightClass: string;
 }) {
   return (
-    <div className="flex flex-col items-center gap-1.5 min-w-0 max-w-[100px]">
+    <div className="flex flex-col items-center gap-1.5 min-w-0 max-w-[120px] flex-1">
       <div className="relative">
         <ProfileAvatar
           name={`${entry.first_name ?? ""} ${entry.last_name ?? ""}`}

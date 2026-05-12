@@ -30,7 +30,7 @@ const PERIODS: { key: string; label: string; startFn: () => Date }[] = [
     startFn: () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
   { key: "90d", label: "90j",
     startFn: () => new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
-  { key: "all", label: "All-time", startFn: startOfAllTime },
+  { key: "all", label: "Historique", startFn: startOfAllTime },
 ];
 
 function formatValue(value: number, category: LeaderboardCategory, suffix: string): string {
@@ -66,7 +66,7 @@ export default async function LeaderboardPage({
     <div className="pb-24 md:pb-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-winelio-dark">Hall of Fame Winelio</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-winelio-dark">Palmarès Winelio</h2>
           <p className="text-sm text-winelio-gray mt-1">
             Les meilleurs bâtisseurs de réseau, classement mis à jour toutes les 5 minutes.
           </p>
