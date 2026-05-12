@@ -138,7 +138,7 @@ export default async function LeaderboardPage({
                     <ProfileAvatar
                       name={`${e.first_name ?? ""} ${e.last_name ?? ""}`}
                       avatar={e.avatar}
-                      size={36}
+                      className="h-9 w-9"
                     />
                     <span className="flex-1 min-w-0 text-sm font-medium text-winelio-dark truncate">
                       {formatPodiumName(e.first_name, e.last_name)}

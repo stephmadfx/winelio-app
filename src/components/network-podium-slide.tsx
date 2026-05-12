@@ -142,8 +142,7 @@ function PodiumStep({
         <ProfileAvatar
           name={`${entry.first_name ?? ""} ${entry.last_name ?? ""}`}
           avatar={entry.avatar}
-          size={rank === 1 ? 56 : 44}
-          className={isCurrentUser ? "ring-2 ring-winelio-orange ring-offset-2" : ""}
+          className={`${rank === 1 ? "h-14 w-14" : "h-11 w-11"} ${isCurrentUser ? "ring-2 ring-winelio-orange ring-offset-2" : ""}`}
         />
         <span className="absolute -top-1 -right-1 text-base" aria-label={`${rank}e place`}>
           {RANK_EMOJIS[rank]}
