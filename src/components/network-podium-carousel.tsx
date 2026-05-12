@@ -29,6 +29,8 @@ const SLIDE_META: Record<SlideKey, { emoji: string; titlePrefix: string; suffix:
   recos:    { emoji: "📋", titlePrefix: "Top Recos",   suffix: "" },
 };
 
+const SWIPE_THRESHOLD_PX = 40;
+
 export function NetworkPodiumCarousel({
   monthLabel,
   currentUserId,
@@ -40,6 +42,49 @@ export function NetworkPodiumCarousel({
   const [index, setIndex] = useState(0);
   const [pausedByUser, setPausedByUser] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Tracking du swipe tactile (et souris pour desktop)
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+  const swipeHandledRef = useRef(false);
+
+  const goToSlide = (i: number) => {
+    setIndex(((i % SLIDES.length) + SLIDES.length) % SLIDES.length);
+    setPausedByUser(true);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStartXRef.current = t.clientX;
+    touchStartYRef.current = t.clientY;
+    swipeHandledRef.current = false;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStartXRef.current;
+    const dy = t.clientY - touchStartYRef.current;
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+
+    // Geste horizontal dominant ET amplitude suffisante = swipe
+    if (Math.abs(dx) > SWIPE_THRESHOLD_PX && Math.abs(dx) > Math.abs(dy)) {
+      swipeHandledRef.current = true;
+      e.preventDefault();
+      if (dx < 0) goToSlide(index + 1);  // swipe gauche → suivant
+      else        goToSlide(index - 1);  // swipe droit  → précédent
+    }
+  };
+
+  const handleClick = () => {
+    // Si un swipe vient d'être détecté, ne pas re-pauser
+    if (swipeHandledRef.current) {
+      swipeHandledRef.current = false;
+      return;
+    }
+    setPausedByUser(true);
+  };
 
   const prefersReducedMotion = typeof window !== "undefined"
     && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -72,8 +117,10 @@ export function NetworkPodiumCarousel({
     >
       <Card className="!rounded-2xl">
         <CardContent
-          className="p-4 sm:p-5 cursor-pointer select-none min-h-[280px]"
-          onClick={() => setPausedByUser(true)}
+          className="p-4 sm:p-5 cursor-pointer select-none min-h-[280px] touch-pan-y"
+          onClick={handleClick}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
           <div aria-live="polite" className="sr-only">
             {meta.titlePrefix} · {monthLabel}
