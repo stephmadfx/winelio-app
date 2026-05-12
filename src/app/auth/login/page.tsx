@@ -25,7 +25,7 @@ function LoginForm() {
   const [step, setStep] = useState<"email" | "code">("email");
   const [authMethod, setAuthMethod] = useState<"code" | "password">("password");
 
-  // Restaure le dernier email utilisé (sessionStorage : effacé en fin de session)
+  // Restaure le dernier email utilisé (localStorage : persiste entre les sessions)
   // ou pré-remplit depuis le query param (invitation par email)
   useEffect(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -34,7 +34,7 @@ function LoginForm() {
       setEmail(prefilled);
       return;
     }
-    const saved = sessionStorage.getItem("winelio_last_email");
+    const saved = localStorage.getItem("winelio_last_email") || sessionStorage.getItem("winelio_last_email");
     if (saved) setEmail(saved);
   }, []);
 
@@ -141,7 +141,7 @@ function LoginForm() {
       return;
     }
 
-    sessionStorage.setItem("winelio_last_email", email);
+    try { localStorage.setItem("winelio_last_email", email); } catch {}
     setStep("code");
     setLoading(false);
   };
@@ -347,11 +347,13 @@ function LoginForm() {
                   </label>
                   <input
                     id="email-pw"
+                    name="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="vous@exemple.com"
                     required
+                    autoComplete="username"
                     className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
                   />
                 </div>
@@ -361,6 +363,7 @@ function LoginForm() {
                   </label>
                   <input
                     id="password"
+                    name="password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -457,11 +460,13 @@ function LoginForm() {
                   </label>
                   <input
                     id="email"
+                    name="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="vous@exemple.com"
                     required
+                    autoComplete="username"
                     className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
                   />
                 </div>

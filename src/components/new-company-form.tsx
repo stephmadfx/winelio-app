@@ -132,7 +132,10 @@ export function NewCompanyForm({
       siret: form.siret || undefined,
       siren: sirenData?.siren || undefined,
       insurance_number: form.insurance_number || undefined,
-      is_verified: !!sirenData?.actif,
+      // Toute fiche créée manuellement par son owner est marquée vérifiée
+       // (l'utilisateur a déclaré sa propre fiche professionnelle).
+       // Les fiches scrapées restent is_verified=false côté API import.
+       is_verified: true,
       category_id: form.category_id,
     });
 
