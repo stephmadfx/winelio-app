@@ -2,6 +2,7 @@ import { queueEmail } from "@/lib/email-queue";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
+import { pickActiveCompany } from "@/lib/pick-active-company";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
 const trackClick = (rid: string) => `${SITE_URL}/api/email-track/click?rid=${encodeURIComponent(rid)}`;
@@ -12,7 +13,7 @@ export async function notifyScrapedReminder(recommendationId: string) {
     .from("recommendations")
     .select(
       `id, project_description, urgency_level,
-       professional:profiles!recommendations_professional_id_fkey(companies(name, email, source)),
+       professional:profiles!recommendations_professional_id_fkey(companies(name, email, source, deleted_at)),
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name),
        contact:contacts(first_name, last_name)`
     )
@@ -25,7 +26,7 @@ export async function notifyScrapedReminder(recommendationId: string) {
     Array.isArray(v) ? (v[0] ?? null) : (v as T | null);
 
   const pro = normalize<{ companies: unknown }>(rec.professional);
-  const company = normalize<{ name: string | null; email: string | null; source: string | null }>(pro?.companies);
+  const company = pickActiveCompany<{ name: string | null; email: string | null; source: string | null; deleted_at: string | null }>(pro?.companies);
   const referrer = normalize<{ first_name: string | null; last_name: string | null }>(rec.referrer);
   const contact = normalize<{ first_name: string | null; last_name: string | null }>(rec.contact);
 

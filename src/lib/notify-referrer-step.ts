@@ -2,6 +2,7 @@ import { queueEmail } from "@/lib/email-queue";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
+import { pickActiveCompany } from "@/lib/pick-active-company";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
 
@@ -63,7 +64,7 @@ export async function notifyReferrerStep(recommendationId: string, stepIndex: nu
     .select(
       `id,
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name, email),
-       professional:profiles!recommendations_professional_id_fkey(first_name, last_name, companies(name)),
+       professional:profiles!recommendations_professional_id_fkey(first_name, last_name, companies(name, deleted_at)),
        contact:contacts(first_name, last_name)`
     )
     .eq("id", recommendationId)
@@ -76,7 +77,7 @@ export async function notifyReferrerStep(recommendationId: string, stepIndex: nu
 
   const referrer = normalize<{ first_name: string | null; last_name: string | null; email: string | null }>(rec.referrer);
   const pro      = normalize<{ first_name: string | null; last_name: string | null; companies: unknown }>(rec.professional);
-  const company  = normalize<{ name: string | null }>(pro?.companies);
+  const company  = pickActiveCompany<{ name: string | null; deleted_at: string | null }>(pro?.companies);
   const contact  = normalize<{ first_name: string | null; last_name: string | null }>(rec.contact);
 
   if (!referrer?.email) return;

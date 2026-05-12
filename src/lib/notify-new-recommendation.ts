@@ -11,6 +11,7 @@ import { queueEmail } from "@/lib/email-queue";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
+import { pickActiveCompany } from "@/lib/pick-active-company";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.app").replace(/\/$/, "");
 const trackClick = (rid: string) => `${SITE_URL}/api/email-track/click?rid=${encodeURIComponent(rid)}`;
@@ -119,7 +120,7 @@ export async function notifyNewRecommendation(recommendationId: string) {
     .from("recommendations")
     .select(
       `id, project_description, urgency_level,
-       professional:profiles!recommendations_professional_id_fkey(id, first_name, email, companies(name, email, source)),
+       professional:profiles!recommendations_professional_id_fkey(id, first_name, email, companies(name, email, source, deleted_at)),
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name),
        contact:contacts(first_name, last_name)`
     )
@@ -140,7 +141,7 @@ export async function notifyNewRecommendation(recommendationId: string) {
 
   if (!pro) return;
 
-  const company = normalize<{ name: string | null; email: string | null; source: string | null }>(pro.companies);
+  const company = pickActiveCompany<{ name: string | null; email: string | null; source: string | null; deleted_at: string | null }>(pro.companies);
 
   // Collecter les adresses valides. On ignore les emails factices (@kiparlo-pro.fr).
   const isPlaceholderEmail = (e: string | null) => !!e && /@kiparlo-pro\.fr$/i.test(e);

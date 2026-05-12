@@ -5,6 +5,7 @@ import { queueEmail } from "@/lib/email-queue";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
+import { pickActiveCompany } from "@/lib/pick-active-company";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
 
@@ -15,7 +16,7 @@ export async function notifyProAbandoned(recommendationId: string): Promise<void
     .select(
       `id,
        referrer:profiles!recommendations_referrer_id_fkey(email, first_name, last_name),
-       professional:profiles!recommendations_professional_id_fkey(companies(name)),
+       professional:profiles!recommendations_professional_id_fkey(companies(name, deleted_at)),
        contact:contacts(first_name, last_name)`
     )
     .eq("id", recommendationId)
@@ -28,7 +29,7 @@ export async function notifyProAbandoned(recommendationId: string): Promise<void
 
   const referrer = normalize<{ email: string | null; first_name: string | null; last_name: string | null }>(rec.referrer);
   const pro = normalize<{ companies: unknown }>(rec.professional);
-  const company = normalize<{ name: string | null }>(pro?.companies);
+  const company = pickActiveCompany<{ name: string | null; deleted_at: string | null }>(pro?.companies);
   const contact = normalize<{ first_name: string | null; last_name: string | null }>(rec.contact);
 
   if (!referrer?.email) return;
