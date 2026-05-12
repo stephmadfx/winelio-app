@@ -310,10 +310,20 @@ export default function RecommendationDetailPage() {
                     );
                   }
                   return (
-                    <p className={`mt-0.5 text-sm truncate ${cfg.heroText}`}>
-                      {recommendation.contact.email}
-                      {recommendation.contact.phone ? ` · ${recommendation.contact.phone}` : ""}
-                    </p>
+                    <>
+                      <p className={`mt-0.5 text-sm truncate ${cfg.heroText}`}>
+                        <a href={`mailto:${recommendation.contact.email}`} className="hover:underline">
+                          {recommendation.contact.email}
+                        </a>
+                      </p>
+                      {recommendation.contact.phone && (
+                        <p className={`mt-0.5 text-sm ${cfg.heroText}`}>
+                          <a href={`tel:${recommendation.contact.phone}`} className="hover:underline">
+                            📞 {recommendation.contact.phone}
+                          </a>
+                        </p>
+                      )}
+                    </>
                   );
                 })()}
                 <p className={`mt-1 text-xs ${cfg.heroText} opacity-70`}>
