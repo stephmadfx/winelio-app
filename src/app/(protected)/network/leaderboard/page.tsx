@@ -35,6 +35,8 @@ const PERIODS: { key: string; label: string; startFn: () => Date }[] = [
 
 function formatValue(value: number, category: LeaderboardCategory, suffix: string): string {
   if (category === "revenue") return fmtEur(value);
+  if (category === "sponsors") return `${value} filleul${value > 1 ? "s" : ""}`;
+  if (category === "recos") return `${value} reco${value > 1 ? "s" : ""}`;
   return `${value}${suffix}`;
 }
 
