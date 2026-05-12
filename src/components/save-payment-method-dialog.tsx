@@ -25,14 +25,52 @@ interface Props {
   onSaved: (info: { brand: string | null; last4: string | null }) => void;
 }
 
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+
 export function SavePaymentMethodDialog({ open, onClose, onSaved }: Props) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [demoProcessing, setDemoProcessing] = useState(false);
+
+  // Branche mode démo : simule un enregistrement de carte (2s de latence visuelle
+  // puis appel API qui pose une fausse carte sur le profil).
+  useEffect(() => {
+    if (!open || !DEMO_MODE) return;
+    setDemoProcessing(true);
+    let cancelled = false;
+    const start = Date.now();
+    fetch("/api/stripe/demo-bypass", { method: "POST" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        // Garantit un minimum de 2s d'affichage pour ne pas paraître instantané
+        const elapsed = Date.now() - start;
+        const remaining = Math.max(0, 2000 - elapsed);
+        setTimeout(() => {
+          if (cancelled) return;
+          setDemoProcessing(false);
+          if (data?.success) {
+            onSaved({ brand: data.brand ?? null, last4: data.last4 ?? null });
+            onClose();
+          } else {
+            setLoadError(data?.error ?? "Erreur en mode démo");
+          }
+        }, remaining);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setDemoProcessing(false);
+        setLoadError(err.message);
+      });
+    return () => { cancelled = true; };
+  }, [open, onSaved, onClose]);
 
   useEffect(() => {
-    if (!open) {
-      setClientSecret(null);
-      setLoadError(null);
+    if (!open || DEMO_MODE) {
+      if (!open) {
+        setClientSecret(null);
+        setLoadError(null);
+      }
       return;
     }
     fetch("/api/stripe/setup-intent", { method: "POST" })
@@ -70,12 +108,27 @@ export function SavePaymentMethodDialog({ open, onClose, onSaved }: Props) {
           </div>
         </div>
 
-        <div className="rounded-xl bg-winelio-light/60 border border-winelio-orange/20 p-3 mb-4 text-xs text-winelio-dark leading-relaxed">
-          Pour accéder aux coordonnées du lead, enregistrez une carte bancaire.
-          <br />
-          <strong>0 € prélevé maintenant</strong> — la commission Winelio de 10 % sera
-          prélevée automatiquement au moment du paiement du client (étape 7).
-        </div>
+        {DEMO_MODE ? (
+          <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 mb-4 text-xs text-amber-900 leading-relaxed">
+            🧪 <strong>Mode démo</strong> — aucune vraie carte requise. On simule
+            l&apos;enregistrement d&apos;une carte fictive (Visa •••• 4242) pour que tu puisses
+            tester l&apos;ensemble du parcours.
+          </div>
+        ) : (
+          <div className="rounded-xl bg-winelio-light/60 border border-winelio-orange/20 p-3 mb-4 text-xs text-winelio-dark leading-relaxed">
+            Pour accéder aux coordonnées du lead, enregistrez une carte bancaire.
+            <br />
+            <strong>0 € prélevé maintenant</strong> — la commission Winelio de 10 % sera
+            prélevée automatiquement au moment du paiement du client (étape 7).
+          </div>
+        )}
+
+        {DEMO_MODE && demoProcessing && (
+          <div className="flex flex-col items-center justify-center py-8 gap-3">
+            <div className="w-8 h-8 border-2 border-winelio-orange border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-winelio-gray">Enregistrement de la carte fictive…</p>
+          </div>
+        )}
 
         {loadError && (
           <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3">
@@ -83,13 +136,13 @@ export function SavePaymentMethodDialog({ open, onClose, onSaved }: Props) {
           </p>
         )}
 
-        {!clientSecret && !loadError && (
+        {!DEMO_MODE && !clientSecret && !loadError && (
           <div className="flex items-center justify-center py-8">
             <div className="w-6 h-6 border-2 border-winelio-orange border-t-transparent rounded-full animate-spin" />
           </div>
         )}
 
-        {clientSecret && (
+        {!DEMO_MODE && clientSecret && (
           <Elements
             stripe={getStripe()}
             options={{
