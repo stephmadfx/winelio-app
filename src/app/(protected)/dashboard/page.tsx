@@ -8,6 +8,14 @@ import { MonthlyBarChart } from "@/components/monthly-bar-chart";
 import { AnimatedCounter } from "@/components/animated-counter";
 import { FeedEvent, formatUserName } from "@/lib/feed-utils";
 import { ActivityFeed } from "@/components/activity-feed";
+import { NetworkPodiumCarousel } from "@/components/network-podium-carousel";
+import {
+  fetchTopSponsors,
+  fetchTopRevenue,
+  fetchTopRecos,
+  fetchMyPosition,
+  startOfCurrentMonthUTC,
+} from "@/lib/leaderboard";
 
 export default async function DashboardPage() {
   const user = await getUser();
@@ -356,6 +364,21 @@ export default async function DashboardPage() {
   );
 
   const topEvents = activityEvents.slice(0, 20); // 20 pour alimenter la rotation démo
+
+  // Podium des bâtisseurs réseau (mois en cours, top 3)
+  const periodStart = startOfCurrentMonthUTC();
+  const monthLabel = periodStart.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  const monthLabelCapitalized = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+
+  const [topSponsors, topRevenue, topRecos, posSponsors, posRevenue, posRecos] = await Promise.all([
+    fetchTopSponsors(supabase, periodStart, 3),
+    fetchTopRevenue(supabase, periodStart, 3),
+    fetchTopRecos(supabase, periodStart, 3),
+    fetchMyPosition(supabase, user.id, "sponsors", periodStart),
+    fetchMyPosition(supabase, user.id, "revenue", periodStart),
+    fetchMyPosition(supabase, user.id, "recos", periodStart),
+  ]);
+
   const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   const totalEarned = wallet?.total_earned ?? 0;
   const availableBalance = wallet?.available ?? 0;
@@ -413,6 +436,22 @@ export default async function DashboardPage() {
               </svg>
             </Link>
           </div>
+        </section>
+
+        {/* Podium des bâtisseurs réseau (mois en cours) */}
+        <section>
+          <NetworkPodiumCarousel
+            monthLabel={monthLabelCapitalized}
+            currentUserId={user.id}
+            topSponsors={topSponsors}
+            topRevenue={topRevenue}
+            topRecos={topRecos}
+            myPositions={{
+              sponsors: posSponsors,
+              revenue: posRevenue,
+              recos: posRecos,
+            }}
+          />
         </section>
 
         {/* Feed d'activité */}
