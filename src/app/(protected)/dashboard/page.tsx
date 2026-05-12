@@ -67,6 +67,13 @@ export default async function DashboardPage() {
       .gte("created_at", sixMonthsAgo),
   ]);
 
+  // Recommandations en cours (user impliqué comme referrer OU pro, statut actif)
+  const { count: inProgressRecos } = await supabase
+    .from("recommendations")
+    .select("id", { count: "exact", head: true })
+    .or(`referrer_id.eq.${user.id},professional_id.eq.${user.id}`)
+    .in("status", ["PENDING", "ACCEPTED", "CONTACT_MADE", "MEETING_SCHEDULED", "QUOTE_SUBMITTED", "QUOTE_VALIDATED", "PAYMENT_RECEIVED"]);
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("first_name, last_name, tour_completed_at")
@@ -435,6 +442,14 @@ export default async function DashboardPage() {
                 className="inline-flex items-center justify-center gap-2 bg-white/15 text-white border border-white/30 px-5 py-2.5 rounded-full font-semibold text-sm backdrop-blur-sm active:scale-95 transition-all hover:bg-white/25"
               >
                 Recommandations en cours
+                {(inProgressRecos ?? 0) > 0 && (
+                  <span
+                    className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-white text-winelio-orange text-xs font-bold tabular-nums"
+                    aria-label={`${inProgressRecos} en cours`}
+                  >
+                    {inProgressRecos}
+                  </span>
+                )}
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
