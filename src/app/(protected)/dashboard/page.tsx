@@ -417,24 +417,29 @@ export default async function DashboardPage() {
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
           <div className="relative z-10 space-y-4">
-            <div>
-              <h2 className="text-xl font-extrabold leading-tight">
-                Recommandez. Gagnez. Grandissez.
-              </h2>
-              <p className="text-white/80 mt-1 text-sm">
-                {recoThisMonth ?? 0} recommandation{(recoThisMonth ?? 0) > 1 ? "s" : ""} ce mois
-                {networkCount > 0 ? ` · ${networkCount} membre${networkCount > 1 ? "s" : ""} actif${networkCount > 1 ? "s" : ""}` : ""}
-              </p>
+            <h2 className="text-xl font-extrabold leading-tight">
+              Recommandez. Gagnez. Grandissez.
+            </h2>
+            <div className="flex flex-col gap-2.5">
+              <Link
+                href="/recommendations/new"
+                className="inline-flex items-center justify-center gap-2 bg-white text-winelio-orange px-5 py-2.5 rounded-full font-bold text-sm shadow-lg active:scale-95 transition-all"
+              >
+                Faire une recommandation
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+              <Link
+                href="/recommendations"
+                className="inline-flex items-center justify-center gap-2 bg-white/15 text-white border border-white/30 px-5 py-2.5 rounded-full font-semibold text-sm backdrop-blur-sm active:scale-95 transition-all hover:bg-white/25"
+              >
+                Recommandations en cours
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
             </div>
-            <Link
-              href="/recommendations/new"
-              className="inline-flex items-center gap-2 bg-white text-winelio-orange px-5 py-2.5 rounded-full font-bold text-sm shadow-lg active:scale-95 transition-all"
-            >
-              Faire une recommandation
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </Link>
           </div>
         </section>
 
