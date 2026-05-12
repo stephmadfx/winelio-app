@@ -1,8 +1,21 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { validateCompanyName } from "@/lib/company-name-validator";
 
 const ALIAS_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+/**
+ * Catégories Winelio interdites côté scraping (professions réglementées
+ * ou incompatibles avec le modèle de recommandation).
+ * Comparaison insensible à la casse, sur le nom de catégorie tel qu'envoyé
+ * dans le CSV (`category_name`).
+ */
+const BLOCKED_CATEGORIES = new Set<string>([
+  "comptabilite",       // experts-comptables (profession réglementée + Ordre)
+  "comptabilité",
+  "juridique",          // avocats, notaires, huissiers (mêmes problématiques)
+]);
 async function generateAlias(): Promise<string> {
   for (let i = 0; i < 10; i++) {
     const suffix = Array.from({ length: 6 }, () =>
@@ -61,6 +74,22 @@ export async function POST(req: Request) {
   for (const row of rows) {
     if (!row.name || !row.name.trim()) {
       skipped++;
+      continue;
+    }
+
+    // Filtre catégories interdites (experts-comptables, juridique...)
+    const catKey = row.category_name?.toLowerCase().trim() ?? "";
+    if (catKey && BLOCKED_CATEGORIES.has(catKey)) {
+      skipped++;
+      errors.push(`${row.name}: catégorie interdite (${row.category_name})`);
+      continue;
+    }
+
+    // Refus URL/téléphone dans le nom (cohérence avec la création manuelle)
+    const nameValidation = validateCompanyName(row.name);
+    if (!nameValidation.ok) {
+      skipped++;
+      errors.push(`${row.name}: ${nameValidation.error}`);
       continue;
     }
 

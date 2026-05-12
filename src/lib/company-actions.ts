@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { geocodeAddress } from "@/lib/geocode";
 import { verifySiren } from "@/lib/siren";
 import { checkNafCode } from "@/lib/naf-rules";
+import { validateCompanyName } from "@/lib/company-name-validator";
 
 const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -35,6 +36,12 @@ export async function createCompany(payload: {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Non authentifié" };
+
+  // Refus URL/téléphone dans le nom commercial et la raison sociale
+  const nameCheck = validateCompanyName(payload.name, "nom");
+  if (!nameCheck.ok) return { error: nameCheck.error };
+  const legalNameCheck = validateCompanyName(payload.legal_name, "nom légal");
+  if (!legalNameCheck.ok) return { error: legalNameCheck.error };
 
   // Re-vérification SIREN + NAF côté serveur pour empêcher tout bypass du contrôle client.
   let nafCode: string | null = null;
@@ -110,6 +117,16 @@ export async function updateCompany(
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Non authentifié" };
+
+  // Refus URL/téléphone dans le nom commercial et la raison sociale
+  if ("name" in payload) {
+    const nameCheck = validateCompanyName(payload.name, "nom");
+    if (!nameCheck.ok) return { error: nameCheck.error };
+  }
+  if ("legal_name" in payload) {
+    const legalNameCheck = validateCompanyName(payload.legal_name, "nom légal");
+    if (!legalNameCheck.ok) return { error: legalNameCheck.error };
+  }
 
   const patch: Record<string, string | null> = {};
   if ("name" in payload) patch.name = (payload.name ?? "").trim().slice(0, 200) || null;
