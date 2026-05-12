@@ -16,7 +16,8 @@ import {
   type PodiumEntry,
 } from "@/lib/leaderboard";
 
-export const revalidate = 300; // 5 min
+// Page server-side avec auth + RPC : ne pas pré-rendre au build (cookies absents)
+export const dynamic = "force-dynamic";
 
 const TABS: { key: LeaderboardCategory; label: string; emoji: string; suffix: string }[] = [
   { key: "sponsors", label: "Parrains", emoji: "🏆", suffix: " pts" },
