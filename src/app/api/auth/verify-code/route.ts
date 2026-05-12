@@ -69,7 +69,7 @@ export async function POST(req: Request) {
       // Créer l'utilisateur s'il n'existe pas (trigger corrigé vers winelio.profiles).
       // GoTrue self-hosted attend des chaînes vides, pas NULL, sur plusieurs
       // colonnes token héritées du schéma auth.
-      const upsertRes = await pgClient.query<{ id: string }>(`
+      const upsertRes = await pgClient.query<{ id: string; inserted: boolean }>(`
         INSERT INTO auth.users (
           instance_id,
           id,
@@ -127,10 +127,16 @@ export async function POST(req: Request) {
           phone_change_token = COALESCE(auth.users.phone_change_token, ''),
           reauthentication_token = COALESCE(auth.users.reauthentication_token, ''),
           updated_at = now()
-        RETURNING id
+        RETURNING id, (xmax = 0) AS inserted
       `, [email]);
 
       userId = upsertRes.rows[0]?.id ?? null;
+      // xmax = 0 → ligne réellement INSERT (pas UPDATE via ON CONFLICT).
+      // C'est notre seule façon fiable de détecter une vraie première inscription :
+      // le trigger handle_new_user crée le profil auto, donc le INSERT INTO
+      // winelio.profiles ON CONFLICT DO NOTHING qui suit retourne toujours 0
+      // pour un vrai nouveau user (faux négatif sur isNewSignup avant ce fix).
+      isNewSignup = upsertRes.rows[0]?.inserted === true;
 
       if (!userId) {
         // Si ON CONFLICT ne retourne pas l'id (vieux PostgreSQL), on le récupère
@@ -199,16 +205,12 @@ export async function POST(req: Request) {
       // Le trigger handle_new_user filtre sur raw_user_meta_data->>'app' = 'winelio'
       // et ne se déclenche pas si le INSERT auth.users devient un ON CONFLICT UPDATE.
       // Sans ce filet, des comptes ressuscitent sans profil et /profile boucle.
-      const profileInsertRes = await pgClient.query<{ id: string }>(
+      await pgClient.query(
         `INSERT INTO winelio.profiles (id, email, sponsor_code)
          VALUES ($1, $2, winelio.generate_unique_sponsor_code())
-         ON CONFLICT (id) DO NOTHING
-         RETURNING id`,
+         ON CONFLICT (id) DO NOTHING`,
         [userId, email]
       );
-      // Si une ligne est retournée, c'est qu'on vient de créer un nouveau profil
-      // (= première inscription). Sinon c'est un retour d'utilisateur existant.
-      isNewSignup = profileInsertRes.rowCount === 1;
       await pgClient.query(
         `INSERT INTO winelio.user_wallet_summaries (user_id) VALUES ($1)
          ON CONFLICT (user_id) DO NOTHING`,
