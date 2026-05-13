@@ -108,6 +108,15 @@ export default function RecommendationsPage() {
   // allRecommendations: always the full unfiltered list for the current tab
   const [allRecommendations, setAllRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tabCounts, setTabCounts] = useState<{ sent: number | null; received: number | null }>({ sent: null, received: null });
+
+  // Fetch tab counts for both tabs on mount
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/recommendations/list?tab=sent&countOnly=true").then(r => r.ok ? r.json() : { count: null }),
+      fetch("/api/recommendations/list?tab=received&countOnly=true").then(r => r.ok ? r.json() : { count: null }),
+    ]).then(([s, r]) => setTabCounts({ sent: s.count, received: r.count }));
+  }, []);
 
   // Fetch ALL recommendations for current tab via server API
   // (client-side supabase.from() can't see session cookies → empty results)
@@ -231,6 +240,11 @@ export default function RecommendationsPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
                 Envoyées
+                {tabCounts.sent !== null && (
+                  <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold tabular-nums ${tab === "sent" ? "bg-winelio-orange text-white" : "bg-winelio-gray/15 text-winelio-gray"}`}>
+                    {tabCounts.sent}
+                  </span>
+                )}
               </span>
             ) : (
               <span className="flex items-center justify-center gap-2">
@@ -238,6 +252,11 @@ export default function RecommendationsPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                 </svg>
                 Reçues
+                {tabCounts.received !== null && (
+                  <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold tabular-nums ${tab === "received" ? "bg-winelio-orange text-white" : "bg-winelio-gray/15 text-winelio-gray"}`}>
+                    {tabCounts.received}
+                  </span>
+                )}
               </span>
             )}
           </button>

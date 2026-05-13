@@ -16,6 +16,17 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const tab = searchParams.get("tab") === "received" ? "received" : "sent";
   const column = tab === "sent" ? "referrer_id" : "professional_id";
+  const countOnly = searchParams.get("countOnly") === "true";
+
+  if (countOnly) {
+    const { count, error } = await supabaseAdmin
+      .schema("winelio")
+      .from("recommendations")
+      .select("id", { count: "exact", head: true })
+      .eq(column, user.id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ count: count ?? 0 });
+  }
 
   const { data, error } = await supabaseAdmin
     .schema("winelio")

@@ -483,11 +483,25 @@ export default function RecommendationDetailPage() {
             <h2 className="text-lg font-bold text-winelio-dark">Suivi des étapes</h2>
             <p className="mt-0.5 text-sm text-winelio-gray">Workflow de la recommandation</p>
           </div>
-          {steps.length > 0 && (
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-winelio-orange/10">
-              <span className="text-sm font-black text-winelio-orange">{progressPct}%</span>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {paymentCheckDone && currentStep && canComplete() && (
+              <a
+                href="#complete-step-action"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-winelio-orange px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-winelio-orange/30 hover:bg-winelio-amber transition-colors"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+                </span>
+                À valider ↓
+              </a>
+            )}
+            {steps.length > 0 && (
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-winelio-orange/10">
+                <span className="text-sm font-black text-winelio-orange">{progressPct}%</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="px-6 py-6 sm:px-8">
@@ -527,7 +541,7 @@ export default function RecommendationDetailPage() {
 
           {/* ── Complete step action ── */}
           {currentStep && canComplete() && (
-            <div className="mt-8 overflow-hidden rounded-2xl border border-winelio-orange/20 bg-gradient-to-br from-winelio-orange/8 via-winelio-amber/5 to-transparent">
+            <div id="complete-step-action" className="mt-8 overflow-hidden rounded-2xl border border-winelio-orange/20 bg-gradient-to-br from-winelio-orange/8 via-winelio-amber/5 to-transparent">
               <div className="px-5 pt-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-winelio-orange/15 shrink-0">
