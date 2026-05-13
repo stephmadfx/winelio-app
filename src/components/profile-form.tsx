@@ -70,6 +70,32 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
   const formRef = useRef(form);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Sélecteur date de naissance en 3 parties
+  const parseBirthDate = (d: string) => ({ y: d.slice(0, 4), m: d.slice(5, 7), day: d.slice(8, 10) });
+  const [birthParts, setBirthParts] = useState(() =>
+    form.birth_date ? parseBirthDate(form.birth_date) : { y: "", m: "", day: "" }
+  );
+  const handleBirthPart = (part: "day" | "m" | "y", value: string) => {
+    const next = { ...birthParts, [part]: value };
+    setBirthParts(next);
+    if (next.y && next.m && next.day) {
+      const dateStr = `${next.y}-${next.m}-${next.day}`;
+      if (!isAtLeastAge(dateStr)) {
+        setBirthDateError("Vous devez avoir au moins 18 ans pour utiliser Winelio.");
+        return;
+      }
+      setBirthDateError(null);
+      const updated = { ...formRef.current, birth_date: dateStr };
+      formRef.current = updated;
+      setForm(updated);
+      saveToDb(updated);
+    } else {
+      const updated = { ...formRef.current, birth_date: "" };
+      formRef.current = updated;
+      setForm(updated);
+    }
+  };
+
   const saveToDb = async (data: typeof form) => {
     if (data.birth_date && !isAtLeastAge(data.birth_date)) {
       setBirthDateError("Vous devez avoir au moins 18 ans pour utiliser Winelio.");
@@ -466,16 +492,41 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
             <label className="block text-sm font-medium text-winelio-gray mb-1">
               Date de naissance <span className="text-winelio-orange">*</span>
             </label>
-            <input
-              type="date"
-              name="birth_date"
-              value={form.birth_date}
-              max={maxBirthDate()}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              required
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
-            />
+            <div className="flex gap-2">
+              <select
+                value={birthParts.day}
+                onChange={(e) => handleBirthPart("day", e.target.value)}
+                className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white"
+              >
+                <option value="">Jour</option>
+                {Array.from({ length: 31 }, (_, i) => {
+                  const v = String(i + 1).padStart(2, "0");
+                  return <option key={v} value={v}>{i + 1}</option>;
+                })}
+              </select>
+              <select
+                value={birthParts.m}
+                onChange={(e) => handleBirthPart("m", e.target.value)}
+                className="flex-[1.4] px-3 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white"
+              >
+                <option value="">Mois</option>
+                {["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"].map((name, i) => {
+                  const v = String(i + 1).padStart(2, "0");
+                  return <option key={v} value={v}>{name}</option>;
+                })}
+              </select>
+              <select
+                value={birthParts.y}
+                onChange={(e) => handleBirthPart("y", e.target.value)}
+                className="flex-[1.2] px-3 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white"
+              >
+                <option value="">Année</option>
+                {Array.from({ length: new Date().getFullYear() - 18 - 1919 }, (_, i) => {
+                  const y = new Date().getFullYear() - 18 - i;
+                  return <option key={y} value={String(y)}>{y}</option>;
+                })}
+              </select>
+            </div>
             <p className="mt-1 text-xs text-winelio-gray">
               La date de naissance sert à vérifier que l'accès est réservé aux personnes majeures.
             </p>
