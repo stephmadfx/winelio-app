@@ -109,6 +109,7 @@ export default function RecommendationDetailPage() {
   const [customExpectedDate, setCustomExpectedDate] = useState<string>("");
   const [userId, setUserId] = useState<string | null>(null);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
+  const [paymentCheckDone, setPaymentCheckDone] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [transferTarget, setTransferTarget] = useState("");
@@ -117,15 +118,16 @@ export default function RecommendationDetailPage() {
 
   useEffect(() => {
     fetch("/api/auth/whoami").then(async (res) => {
-      if (!res.ok) return;
+      if (!res.ok) { setPaymentCheckDone(true); return; }
       const { user } = await res.json();
-      if (!user?.id) return;
+      if (!user?.id) { setPaymentCheckDone(true); return; }
       setUserId(user.id);
       const profileRes = await fetch(`/api/profile/payment-method-status`);
       if (profileRes.ok) {
         const { hasPaymentMethod: hpm } = await profileRes.json();
         setHasPaymentMethod(!!hpm);
       }
+      setPaymentCheckDone(true);
     });
   }, []);
 
@@ -305,8 +307,19 @@ export default function RecommendationDetailPage() {
 
             {/* Row 2 : coordonnées sur leur propre bloc, pleine largeur */}
             {recommendation.contact && (() => {
-              const isPro = userId === recommendation.professional_id;
+              const isPro = paymentCheckDone && userId === recommendation.professional_id;
               const shouldMask = isPro && hasPaymentMethod === false;
+              // Pendant le chargement : masque si on est potentiellement le pro
+              const isLoading = !paymentCheckDone;
+              if (isLoading) {
+                return (
+                  <div className="mt-4 bg-white/15 backdrop-blur-sm rounded-xl p-3.5 space-y-1.5 animate-pulse">
+                    <div className="h-4 bg-white/30 rounded w-3/4" />
+                    <div className="h-4 bg-white/30 rounded w-1/2" />
+                    <div className="h-4 bg-white/30 rounded w-2/3" />
+                  </div>
+                );
+              }
               if (shouldMask) {
                 return (
                   <div className="mt-4 bg-white/15 backdrop-blur-sm rounded-xl p-3.5 flex items-center justify-between gap-3">

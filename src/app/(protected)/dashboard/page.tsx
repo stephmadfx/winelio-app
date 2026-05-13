@@ -574,11 +574,6 @@ export default async function DashboardPage() {
           />
         </section>
 
-        {/* Activité récente — pleine largeur */}
-        <section>
-          <ActivityFeed initialEvents={topEvents} demoMode={demoMode} />
-        </section>
-
         {/* Podium des bâtisseurs réseau */}
         <section>
           <NetworkPodiumCarousel
@@ -593,6 +588,11 @@ export default async function DashboardPage() {
               recos: posRecos,
             }}
           />
+        </section>
+
+        {/* Activité récente — pleine largeur */}
+        <section>
+          <ActivityFeed initialEvents={topEvents} demoMode={demoMode} />
         </section>
 
         {/* Grille 7/5 */}
