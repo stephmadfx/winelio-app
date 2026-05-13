@@ -579,6 +579,22 @@ export default async function DashboardPage() {
           <ActivityFeed initialEvents={topEvents} demoMode={demoMode} />
         </section>
 
+        {/* Podium des bâtisseurs réseau */}
+        <section>
+          <NetworkPodiumCarousel
+            monthLabel={monthLabelCapitalized}
+            currentUserId={user.id}
+            topSponsors={topSponsors}
+            topRevenue={topRevenue}
+            topRecos={topRecos}
+            myPositions={{
+              sponsors: posSponsors,
+              revenue: posRevenue,
+              recos: posRecos,
+            }}
+          />
+        </section>
+
         {/* Grille 7/5 */}
         <section className="grid grid-cols-12 gap-6">
 
