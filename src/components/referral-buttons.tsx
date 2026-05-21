@@ -239,11 +239,16 @@ export function ShareButton({ code }: { code: string }) {
 
   const handleNativeShare = async () => {
     if (navigator.share) {
-      await navigator.share({
-        title: "Rejoins Winelio",
-        text: "Rejoins Winelio avec mon lien de parrainage !",
-        url: referralUrl,
-      });
+      try {
+        await navigator.share({
+          title: "Rejoins Winelio",
+          text: "Rejoins Winelio avec mon lien de parrainage !",
+          url: referralUrl,
+        });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        throw err;
+      }
     }
   };
 
