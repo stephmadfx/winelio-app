@@ -7,6 +7,7 @@ import {
   fetchTopSponsors,
   fetchTopRevenue,
   fetchTopRecos,
+  fetchTopNetworkTotal,
   fetchMyPosition,
   formatPodiumName,
   fmtEur,
@@ -19,10 +20,12 @@ import {
 // Page server-side avec auth + RPC : ne pas pré-rendre au build (cookies absents)
 export const dynamic = "force-dynamic";
 
-const TABS: { key: LeaderboardCategory; label: string; emoji: string; suffix: string }[] = [
-  { key: "sponsors", label: "Parrains", emoji: "🏆", suffix: " pts" },
-  { key: "revenue",  label: "Revenus",  emoji: "💰", suffix: "" },
-  { key: "recos",    label: "Recos",    emoji: "📋", suffix: "" },
+const TABS: { key: LeaderboardCategory; label: string; emoji: string; suffix: string; allTime?: boolean }[] = [
+  { key: "sponsors",      label: "Parrains",       emoji: "🏆", suffix: " pts" },
+  { key: "n1_total",      label: "Filleuls N1",    emoji: "👥", suffix: "", allTime: true },
+  { key: "network_total", label: "Réseau total",   emoji: "🌐", suffix: "", allTime: true },
+  { key: "revenue",       label: "Revenus",        emoji: "💰", suffix: "" },
+  { key: "recos",         label: "Recos",          emoji: "📋", suffix: "" },
 ];
 
 const PERIODS: { key: string; label: string; startFn: () => Date }[] = [
@@ -36,7 +39,8 @@ const PERIODS: { key: string; label: string; startFn: () => Date }[] = [
 
 function formatValue(value: number, category: LeaderboardCategory, suffix: string): string {
   if (category === "revenue") return fmtEur(value);
-  if (category === "sponsors") return `${value} filleul${value > 1 ? "s" : ""}`;
+  if (category === "sponsors" || category === "n1_total") return `${value} filleul${value > 1 ? "s" : ""}`;
+  if (category === "network_total") return `${value} membre${value > 1 ? "s" : ""}`;
   if (category === "recos") return `${value} reco${value > 1 ? "s" : ""}`;
   return `${value}${suffix}`;
 }
@@ -48,9 +52,11 @@ export default async function LeaderboardPage({
 }) {
   const params = await searchParams;
   const tabKey = (TABS.find((t) => t.key === params.tab)?.key ?? "sponsors") as LeaderboardCategory;
-  const periodKey = PERIODS.find((p) => p.key === params.p)?.key ?? "month";
-  const period = PERIODS.find((p) => p.key === periodKey)!;
   const tab = TABS.find((t) => t.key === tabKey)!;
+  // Les onglets all-time ignorent le sélecteur de période
+  const isAllTime = !!tab.allTime;
+  const periodKey = isAllTime ? "all" : (PERIODS.find((p) => p.key === params.p)?.key ?? "month");
+  const period = PERIODS.find((p) => p.key === periodKey)!;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -60,6 +66,8 @@ export default async function LeaderboardPage({
 
   let entries: PodiumEntry[] = [];
   if (tabKey === "sponsors") entries = await fetchTopSponsors(supabase, periodStart, 10);
+  else if (tabKey === "n1_total") entries = await fetchTopSponsors(supabase, startOfAllTime(), 10);
+  else if (tabKey === "network_total") entries = await fetchTopNetworkTotal(supabase, 10);
   else if (tabKey === "revenue") entries = await fetchTopRevenue(supabase, periodStart, 10);
   else entries = await fetchTopRecos(supabase, periodStart, 10);
 
@@ -96,22 +104,25 @@ export default async function LeaderboardPage({
         ))}
       </div>
 
-      {/* Filtres période */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
-        {PERIODS.map((p) => (
-          <Link
-            key={p.key}
-            href={`/network/leaderboard?tab=${tabKey}&p=${p.key}`}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition ${
-              p.key === periodKey
-                ? "bg-winelio-dark text-white"
-                : "bg-white text-winelio-gray border border-gray-200 hover:border-winelio-dark/40"
-            }`}
-          >
-            {p.label}
-          </Link>
-        ))}
-      </div>
+      {/* Filtres période — masqués pour les onglets all-time */}
+      {!isAllTime && (
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+          {PERIODS.map((p) => (
+            <Link
+              key={p.key}
+              href={`/network/leaderboard?tab=${tabKey}&p=${p.key}`}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition ${
+                p.key === periodKey
+                  ? "bg-winelio-dark text-white"
+                  : "bg-white text-winelio-gray border border-gray-200 hover:border-winelio-dark/40"
+              }`}
+            >
+              {p.label}
+            </Link>
+          ))}
+        </div>
+      )}
+      {isAllTime && <div className="mb-6" />}
 
       {/* Top 10 */}
       <Card className="!rounded-2xl mb-4">

@@ -12,21 +12,27 @@ interface Props {
   topSponsors: PodiumEntry[];
   topRevenue: PodiumEntry[];
   topRecos: PodiumEntry[];
+  topN1Total: PodiumEntry[];
+  topNetworkTotal: PodiumEntry[];
   myPositions: {
     sponsors: MyPosition;
     revenue: MyPosition;
     recos: MyPosition;
+    n1_total: MyPosition;
+    network_total: MyPosition;
   };
 }
 
 const ROTATION_MS = 8_000;
-const SLIDES = ["sponsors", "revenue", "recos"] as const;
+const SLIDES = ["sponsors", "n1_total", "network_total", "revenue", "recos"] as const;
 type SlideKey = typeof SLIDES[number];
 
 const SLIDE_META: Record<SlideKey, { emoji: string; titlePrefix: string; suffix: string }> = {
-  sponsors: { emoji: "🏆", titlePrefix: "Top Parrains", suffix: " pts" },
-  revenue:  { emoji: "💰", titlePrefix: "Top Revenus", suffix: "" },
-  recos:    { emoji: "📋", titlePrefix: "Top Recos",   suffix: "" },
+  sponsors:      { emoji: "🏆", titlePrefix: "Top Parrains",    suffix: " pts" },
+  n1_total:      { emoji: "👥", titlePrefix: "Filleuls directs", suffix: "" },
+  network_total: { emoji: "🌐", titlePrefix: "Réseau total",     suffix: "" },
+  revenue:       { emoji: "💰", titlePrefix: "Top Revenus",      suffix: "" },
+  recos:         { emoji: "📋", titlePrefix: "Top Recos",        suffix: "" },
 };
 
 const SWIPE_THRESHOLD_PX = 40;
@@ -37,6 +43,8 @@ export function NetworkPodiumCarousel({
   topSponsors,
   topRevenue,
   topRecos,
+  topN1Total,
+  topNetworkTotal,
   myPositions,
 }: Props) {
   const [index, setIndex] = useState(0);
@@ -105,8 +113,10 @@ export function NetworkPodiumCarousel({
   const current = SLIDES[index];
   const meta = SLIDE_META[current];
 
-  const entries = current === "sponsors" ? topSponsors
-                : current === "revenue"  ? topRevenue
+  const entries = current === "sponsors"      ? topSponsors
+                : current === "n1_total"      ? topN1Total
+                : current === "network_total" ? topNetworkTotal
+                : current === "revenue"       ? topRevenue
                 : topRecos;
 
   return (
@@ -123,11 +133,13 @@ export function NetworkPodiumCarousel({
           onTouchEnd={handleTouchEnd}
         >
           <div aria-live="polite" className="sr-only">
-            {meta.titlePrefix} · {monthLabel}
+            {meta.titlePrefix} · {current === "n1_total" || current === "network_total" ? "Tout temps" : monthLabel}
           </div>
           <NetworkPodiumSlide
             category={current}
-            title={`${meta.titlePrefix} · ${monthLabel}`}
+            title={current === "n1_total" || current === "network_total"
+              ? meta.titlePrefix
+              : `${meta.titlePrefix} · ${monthLabel}`}
             emoji={meta.emoji}
             unitSuffix={meta.suffix}
             topEntries={entries}

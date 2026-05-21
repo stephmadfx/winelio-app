@@ -6,7 +6,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type LeaderboardCategory = "sponsors" | "revenue" | "recos";
+export type LeaderboardCategory = "sponsors" | "revenue" | "recos" | "n1_total" | "network_total";
 
 export interface PodiumEntry {
   user_id: string;
@@ -97,6 +97,26 @@ export async function fetchTopRecos(
     last_name: r.last_name,
     avatar: r.avatar,
     value: Number(r.reco_count),
+  }));
+}
+
+export async function fetchTopNetworkTotal(
+  supabase: SupabaseClient,
+  limit = 3,
+): Promise<PodiumEntry[]> {
+  const { data, error } = await supabase.rpc("leaderboard_top_network_total", {
+    p_limit: limit,
+  });
+  if (error) {
+    console.error("[leaderboard] top_network_total error:", error.message);
+    return [];
+  }
+  return (data ?? []).map((r: { user_id: string; first_name: string | null; last_name: string | null; avatar: string | null; total_count: number }) => ({
+    user_id: r.user_id,
+    first_name: r.first_name,
+    last_name: r.last_name,
+    avatar: r.avatar,
+    value: Number(r.total_count),
   }));
 }
 

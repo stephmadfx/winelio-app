@@ -13,8 +13,10 @@ import {
   fetchTopSponsors,
   fetchTopRevenue,
   fetchTopRecos,
+  fetchTopNetworkTotal,
   fetchMyPosition,
   startOfCurrentMonthUTC,
+  startOfAllTime,
 } from "@/lib/leaderboard";
 
 export default async function DashboardPage() {
@@ -377,13 +379,19 @@ export default async function DashboardPage() {
   const monthLabel = periodStart.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
   const monthLabelCapitalized = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
 
-  const [topSponsors, topRevenue, topRecos, posSponsors, posRevenue, posRecos] = await Promise.all([
+  const allTime = startOfAllTime();
+  const [topSponsors, topRevenue, topRecos, topN1Total, topNetworkTotal,
+         posSponsors, posRevenue, posRecos, posN1Total, posNetworkTotal] = await Promise.all([
     fetchTopSponsors(supabase, periodStart, 3),
     fetchTopRevenue(supabase, periodStart, 3),
     fetchTopRecos(supabase, periodStart, 3),
+    fetchTopSponsors(supabase, allTime, 3),
+    fetchTopNetworkTotal(supabase, 3),
     fetchMyPosition(supabase, user.id, "sponsors", periodStart),
     fetchMyPosition(supabase, user.id, "revenue", periodStart),
     fetchMyPosition(supabase, user.id, "recos", periodStart),
+    fetchMyPosition(supabase, user.id, "n1_total", allTime),
+    fetchMyPosition(supabase, user.id, "network_total", allTime),
   ]);
 
   const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
@@ -466,10 +474,14 @@ export default async function DashboardPage() {
             topSponsors={topSponsors}
             topRevenue={topRevenue}
             topRecos={topRecos}
+            topN1Total={topN1Total}
+            topNetworkTotal={topNetworkTotal}
             myPositions={{
               sponsors: posSponsors,
               revenue: posRevenue,
               recos: posRecos,
+              n1_total: posN1Total,
+              network_total: posNetworkTotal,
             }}
           />
         </section>
@@ -582,10 +594,14 @@ export default async function DashboardPage() {
             topSponsors={topSponsors}
             topRevenue={topRevenue}
             topRecos={topRecos}
+            topN1Total={topN1Total}
+            topNetworkTotal={topNetworkTotal}
             myPositions={{
               sponsors: posSponsors,
               revenue: posRevenue,
               recos: posRecos,
+              n1_total: posN1Total,
+              network_total: posNetworkTotal,
             }}
           />
         </section>
