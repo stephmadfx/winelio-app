@@ -106,14 +106,14 @@ export function MobileHeader({
         className="fixed left-0 right-0 z-50 bg-winelio-light/80 backdrop-blur-md border-b border-black/5 shadow-sm lg:hidden"
         style={{ top: demoBanner ? "var(--beta-banner-h, 0px)" : 0 }}
       >
-        <div className="relative flex items-center justify-between px-4 h-16">
+        <div className="flex items-center px-4 h-16 gap-2">
           {/* Gauche : logo */}
-          <Link href="/dashboard" aria-label="Winelio — Accueil">
+          <Link href="/dashboard" aria-label="Winelio — Accueil" className="shrink-0">
             <WinelioLogo variant="color" height={28} gradientId="wGrad-mheader" />
           </Link>
 
-          {/* Centre : avatar + greeting */}
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 max-w-[160px]">
+          {/* Centre : avatar + greeting — flex-1 garantit qu'il ne déborde jamais */}
+          <div className="flex-1 flex items-center justify-center gap-2 overflow-hidden">
             <ProfileAvatar
               name={displayName}
               avatar={avatar}
@@ -124,14 +124,14 @@ export function MobileHeader({
               <span className="text-[10px] uppercase tracking-widest text-winelio-gray font-bold">
                 {greeting}
               </span>
-              <span className="font-bold text-sm text-winelio-orange tracking-tight truncate w-full">
+              <span className="font-bold text-sm text-winelio-orange tracking-tight truncate">
                 {displayName} 👋
               </span>
             </div>
           </div>
 
           {/* Droite : bug + hamburger */}
-          <div className="flex items-center gap-0.5">
+          <div className="shrink-0 flex items-center gap-0.5">
             <BugReportButton userId={userId} allBugReports={allBugReports} variant="inline" />
             <button
               onClick={openMenu}
