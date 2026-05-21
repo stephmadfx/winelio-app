@@ -1,6 +1,11 @@
 /**
  * Notifie toute la chaîne de parrainage (jusqu'à 5 niveaux) qu'un nouveau
  * filleul vient de rejoindre. Appelable depuis n'importe quelle route serveur.
+ *
+ * Règle d'affichage :
+ *   - Niveau 1 (parrain direct) : nom complet du filleul, pas de chaîne.
+ *   - Niveau 2+ : Prénom + initiale du nom, + chaîne des parrains intermédiaires
+ *                 (niveaux 1 à L-1) affichée en liste à puces.
  */
 import { queueEmail } from "@/lib/email-queue";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -9,6 +14,9 @@ import { LOGO_IMG_HTML } from "@/lib/email-logo";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.fr";
 
+type ChainEntry = { name: string; level: number };
+
+/** "Marie D." — prénom capitalisé + initiale du nom */
 function formatSponsorName(firstName: string | null, lastName: string | null): string {
   const capFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
   const first = firstName ? capFirst(firstName) : null;
@@ -16,11 +24,42 @@ function formatSponsorName(firstName: string | null, lastName: string | null): s
   return [first, lastInitial].filter(Boolean).join(". ");
 }
 
+/** Liste à puces HTML des parrains intermédiaires */
+function buildChainHtml(chain: ChainEntry[]): string {
+  if (chain.length === 0) return "";
+  const rows = chain.map((e) => {
+    const label = e.level === 1 ? "parrain direct" : `niveau&nbsp;${e.level}`;
+    return `<tr><td style="padding:3px 0;color:#636E72;font-size:13px;line-height:1.6;">
+      &bull;&nbsp;<strong style="color:#2D3436;">${he(e.name)}</strong>
+      <span style="color:#B2BAC0;font-size:12px;">&nbsp;(${label})</span>
+    </td></tr>`;
+  }).join("");
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px;">
+      <tr><td style="color:#636E72;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;padding-bottom:6px;">
+        Chaîne de parrainage
+      </td></tr>
+      ${rows}
+    </table>`;
+}
+
+/** Version texte brut de la chaîne */
+function buildChainText(chain: ChainEntry[]): string {
+  if (chain.length === 0) return "";
+  return [
+    "Chaîne de parrainage :",
+    ...chain.map((e) => {
+      const label = e.level === 1 ? "parrain direct" : `niveau ${e.level}`;
+      return `  • ${e.name} (${label})`;
+    }),
+  ].join("\n");
+}
+
 function buildReferralEmail(
   recipientFirstName: string,
   newMemberName: string,
   level: number,
-  directSponsorName?: string
+  chain: ChainEntry[],
 ): string {
   const levelLabel =
     level === 1
@@ -43,31 +82,22 @@ function buildReferralEmail(
       <td align="center" style="padding:40px 20px;">
         <table width="520" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%;">
 
-          <!-- Barre accent top -->
           <tr>
             <td style="background:linear-gradient(90deg,#FF6B35,#F7931E);height:4px;font-size:0;line-height:0;border-radius:4px 4px 0 0;">&nbsp;</td>
           </tr>
 
-          <!-- Carte blanche -->
           <tr>
             <td style="background:#ffffff;border-radius:0 0 16px 16px;padding:40px 48px 36px;">
 
-              <!-- Logo -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td align="center" style="padding-bottom:6px;">${LOGO_IMG_HTML}</td>
-                </tr>
-                <tr>
-                  <td style="border-bottom:1px solid #F0F2F4;font-size:0;line-height:0;padding-bottom:28px;">&nbsp;</td>
-                </tr>
+                <tr><td align="center" style="padding-bottom:6px;">${LOGO_IMG_HTML}</td></tr>
+                <tr><td style="border-bottom:1px solid #F0F2F4;font-size:0;line-height:0;padding-bottom:28px;">&nbsp;</td></tr>
               </table>
 
-              <!-- Spacer -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr><td style="height:28px;font-size:0;line-height:0;">&nbsp;</td></tr>
               </table>
 
-              <!-- Icône + titre -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center">
@@ -98,7 +128,6 @@ function buildReferralEmail(
                 </tr>
               </table>
 
-              <!-- Spacer -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
               </table>
@@ -117,15 +146,12 @@ function buildReferralEmail(
                     </p>` : `
                     <p style="margin:12px 0 0;color:#636E72;font-size:13px;line-height:1.6;">
                       Votre réseau grandit ! Vous percevrez une commission sur les recommandations validées au niveau&nbsp;${level}.
-                    </p>${directSponsorName ? `
-                    <p style="margin:8px 0 0;color:#636E72;font-size:13px;line-height:1.6;">
-                      Parrainé(e) par <strong style="color:#2D3436;">${he(directSponsorName)}</strong>
-                    </p>` : ""}`}
+                    </p>
+                    ${buildChainHtml(chain)}`}
                   </td>
                 </tr>
               </table>
 
-              <!-- Spacer -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr><td style="height:20px;font-size:0;line-height:0;">&nbsp;</td></tr>
               </table>
@@ -145,12 +171,10 @@ function buildReferralEmail(
                 </tr>
               </table>
 
-              <!-- Spacer -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr><td style="height:28px;font-size:0;line-height:0;">&nbsp;</td></tr>
               </table>
 
-              <!-- Bouton CTA -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center">
@@ -168,7 +192,6 @@ function buildReferralEmail(
                 </tr>
               </table>
 
-              <!-- Spacer bottom -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr><td style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr>
               </table>
@@ -176,7 +199,6 @@ function buildReferralEmail(
             </td>
           </tr>
 
-          <!-- Footer -->
           <tr>
             <td align="center" style="padding-top:24px;">
               <p style="color:#B2BAC0;font-size:12px;margin:0 0 4px;">
@@ -197,7 +219,6 @@ function buildReferralEmail(
 }
 
 export async function notifyNewReferral(newUserId: string): Promise<number> {
-  // Nom du nouveau filleul
   const { data: newProfile } = await supabaseAdmin
     .from("profiles")
     .select("first_name, last_name")
@@ -208,7 +229,6 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
   const newMemberFullName =
     [newProfile?.first_name, newProfile?.last_name].filter(Boolean).join(" ") ||
     "Un nouveau membre";
-  // Niveau 2+ : prénom + initiale du nom (ex. "Marie D.")
   const newMemberShortName = newProfile?.first_name
     ? [
         cap(newProfile.first_name),
@@ -241,18 +261,14 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
   ]);
 
   const profileMap = new Map(
-    (profilesResult.data ?? []).map((p) => [p.id, { firstName: p.first_name as string | null, lastName: p.last_name as string | null }])
+    (profilesResult.data ?? []).map((p) => [
+      p.id,
+      { firstName: p.first_name as string | null, lastName: p.last_name as string | null },
+    ])
   );
   const emailMap = new Map(
     sponsorIds.map((id, i) => [id, authResults[i].data?.user?.email ?? null])
   );
-
-  // Sponsor direct du nouveau filleul (level 1 dans la chaîne)
-  const directSponsorEntry = sponsorChain.find((s) => s.level === 1);
-  const directSponsorProfile = directSponsorEntry ? profileMap.get(directSponsorEntry.id) : undefined;
-  const directSponsorName = directSponsorProfile
-    ? formatSponsorName(directSponsorProfile.firstName, directSponsorProfile.lastName)
-    : undefined;
 
   const notifications: Array<{ email: string; firstName: string; level: number }> = [];
   for (const { id, level } of sponsorChain) {
@@ -264,7 +280,17 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
   for (const { email, firstName, level } of notifications) {
     const memberName = level === 1 ? newMemberFullName : newMemberShortName;
     const levelLabel = level === 1 ? "filleul direct" : `membre niveau ${level}`;
-    const sponsorLine = level > 1 && directSponsorName ? `Parrainé(e) par ${directSponsorName}.` : "";
+
+    // Chaîne des parrains intermédiaires (niveaux 1 à level-1)
+    const chain: ChainEntry[] = sponsorChain
+      .filter((s) => s.level < level)
+      .map((s) => {
+        const p = profileMap.get(s.id);
+        return { name: formatSponsorName(p?.firstName ?? null, p?.lastName ?? null), level: s.level };
+      });
+
+    const chainText = buildChainText(chain);
+
     const textBody = [
       `Bonjour ${firstName},`,
       "",
@@ -273,9 +299,9 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
       level === 1
         ? "En tant que parrain direct, vous bénéficierez d'une commission sur chaque recommandation validée de ce nouveau membre."
         : `Votre réseau grandit ! Vous percevrez une commission sur les recommandations validées au niveau ${level}.`,
-      ...(sponsorLine ? [sponsorLine] : []),
+      ...(chainText ? ["", chainText] : []),
       "",
-      "Voir mon réseau : " + (process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.fr") + "/network",
+      `Voir mon réseau : ${SITE_URL}/network`,
       "",
       "---",
       "© 2026 Winelio · Recommandez. Connectez. Gagnez.",
@@ -287,7 +313,7 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
         level === 1
           ? `${newMemberFullName} a rejoint votre réseau Winelio`
           : `Nouveau membre niveau ${level} dans votre réseau Winelio`,
-      html: buildReferralEmail(firstName, memberName, level, level > 1 ? directSponsorName : undefined),
+      html: buildReferralEmail(firstName, memberName, level, chain),
       text: textBody,
       priority: level === 1 ? 3 : 7,
     });
