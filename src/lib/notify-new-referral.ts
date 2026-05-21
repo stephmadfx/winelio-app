@@ -9,10 +9,18 @@ import { LOGO_IMG_HTML } from "@/lib/email-logo";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.fr";
 
+function formatSponsorName(firstName: string | null, lastName: string | null): string {
+  const capFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  const first = firstName ? capFirst(firstName) : null;
+  const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : null;
+  return [first, lastInitial].filter(Boolean).join(". ");
+}
+
 function buildReferralEmail(
   recipientFirstName: string,
   newMemberName: string,
-  level: number
+  level: number,
+  directSponsorName?: string
 ): string {
   const levelLabel =
     level === 1
@@ -109,7 +117,10 @@ function buildReferralEmail(
                     </p>` : `
                     <p style="margin:12px 0 0;color:#636E72;font-size:13px;line-height:1.6;">
                       Votre réseau grandit ! Vous percevrez une commission sur les recommandations validées au niveau&nbsp;${level}.
-                    </p>`}
+                    </p>${directSponsorName ? `
+                    <p style="margin:8px 0 0;color:#636E72;font-size:13px;line-height:1.6;">
+                      Parrainé(e) par <strong style="color:#2D3436;">${he(directSponsorName)}</strong>
+                    </p>` : ""}`}
                   </td>
                 </tr>
               </table>
@@ -217,26 +228,34 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
   const sponsorIds = sponsorChain.map((s) => s.id);
 
   const [profilesResult, authResults] = await Promise.all([
-    supabaseAdmin.from("profiles").select("id, first_name").in("id", sponsorIds),
+    supabaseAdmin.from("profiles").select("id, first_name, last_name").in("id", sponsorIds),
     Promise.all(sponsorIds.map((id) => supabaseAdmin.auth.admin.getUserById(id))),
   ]);
 
   const profileMap = new Map(
-    (profilesResult.data ?? []).map((p) => [p.id, p.first_name as string | null])
+    (profilesResult.data ?? []).map((p) => [p.id, { firstName: p.first_name as string | null, lastName: p.last_name as string | null }])
   );
   const emailMap = new Map(
     sponsorIds.map((id, i) => [id, authResults[i].data?.user?.email ?? null])
   );
 
+  // Sponsor direct du nouveau filleul (level 1 dans la chaîne)
+  const directSponsorEntry = sponsorChain.find((s) => s.level === 1);
+  const directSponsorProfile = directSponsorEntry ? profileMap.get(directSponsorEntry.id) : undefined;
+  const directSponsorName = directSponsorProfile
+    ? formatSponsorName(directSponsorProfile.firstName, directSponsorProfile.lastName)
+    : undefined;
+
   const notifications: Array<{ email: string; firstName: string; level: number }> = [];
   for (const { id, level } of sponsorChain) {
     const email = emailMap.get(id);
     if (!email || email.endsWith("@winelio-pro.fr") || email.endsWith("@winelio-demo.internal")) continue;
-    notifications.push({ email, firstName: profileMap.get(id) || "Membre", level });
+    notifications.push({ email, firstName: profileMap.get(id)?.firstName || "Membre", level });
   }
 
   for (const { email, firstName, level } of notifications) {
     const levelLabel = level === 1 ? "filleul direct" : `membre niveau ${level}`;
+    const sponsorLine = level > 1 && directSponsorName ? `Parrainé(e) par ${directSponsorName}.` : "";
     const textBody = [
       `Bonjour ${firstName},`,
       "",
@@ -245,6 +264,7 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
       level === 1
         ? "En tant que parrain direct, vous bénéficierez d'une commission sur chaque recommandation validée de ce nouveau membre."
         : `Votre réseau grandit ! Vous percevrez une commission sur les recommandations validées au niveau ${level}.`,
+      ...(sponsorLine ? [sponsorLine] : []),
       "",
       "Voir mon réseau : " + (process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.fr") + "/network",
       "",
@@ -258,7 +278,7 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
         level === 1
           ? `${newMemberName} a rejoint votre réseau Winelio`
           : `Nouveau membre niveau ${level} dans votre réseau Winelio`,
-      html: buildReferralEmail(firstName, newMemberName, level),
+      html: buildReferralEmail(firstName, newMemberName, level, level > 1 ? directSponsorName : undefined),
       text: textBody,
       priority: level === 1 ? 3 : 7,
     });
