@@ -11,7 +11,6 @@ import { ActivityFeed } from "@/components/activity-feed";
 import { NetworkPodiumCarousel } from "@/components/network-podium-carousel";
 import {
   fetchTopSponsors,
-  fetchTopNetworkTotal,
   fetchMyPosition,
   startOfCurrentMonthUTC,
   startOfAllTime,
@@ -378,14 +377,11 @@ export default async function DashboardPage() {
   const monthLabelCapitalized = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
 
   const allTime = startOfAllTime();
-  const [topSponsors, topN1Total, topNetworkTotal,
-         posSponsors, posN1Total, posNetworkTotal] = await Promise.all([
+  const [topSponsors, topN1Total, posSponsors, posN1Total] = await Promise.all([
     fetchTopSponsors(supabase, periodStart, 3),
     fetchTopSponsors(supabase, allTime, 3),
-    fetchTopNetworkTotal(supabase, 3),
     fetchMyPosition(supabase, user.id, "sponsors", periodStart),
     fetchMyPosition(supabase, user.id, "n1_total", allTime),
-    fetchMyPosition(supabase, user.id, "network_total", allTime),
   ]);
 
   const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
@@ -467,11 +463,9 @@ export default async function DashboardPage() {
             currentUserId={user.id}
             topSponsors={topSponsors}
             topN1Total={topN1Total}
-            topNetworkTotal={topNetworkTotal}
             myPositions={{
               sponsors: posSponsors,
               n1_total: posN1Total,
-              network_total: posNetworkTotal,
             }}
           />
         </section>
@@ -583,11 +577,9 @@ export default async function DashboardPage() {
             currentUserId={user.id}
             topSponsors={topSponsors}
             topN1Total={topN1Total}
-            topNetworkTotal={topNetworkTotal}
             myPositions={{
               sponsors: posSponsors,
               n1_total: posN1Total,
-              network_total: posNetworkTotal,
             }}
           />
         </section>

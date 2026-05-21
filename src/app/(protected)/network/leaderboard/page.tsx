@@ -7,7 +7,6 @@ import {
   fetchTopSponsors,
   fetchTopRevenue,
   fetchTopRecos,
-  fetchTopNetworkTotal,
   fetchMyPosition,
   formatPodiumName,
   fmtEur,
@@ -21,9 +20,8 @@ import {
 export const dynamic = "force-dynamic";
 
 const TABS: { key: LeaderboardCategory; label: string; emoji: string; suffix: string; allTime?: boolean }[] = [
-  { key: "n1_total",      label: "Filleuls 1er niv.", emoji: "👥", suffix: "", allTime: true },
-  { key: "sponsors",      label: "Top Parrainage", emoji: "🏆", suffix: " pts" },
-  { key: "network_total", label: "Réseau total",   emoji: "🌐", suffix: "", allTime: true },
+  { key: "n1_total",  label: "Filleuls 1er niv.", emoji: "👥", suffix: "", allTime: true },
+  { key: "sponsors",  label: "Top Parrainage",    emoji: "🏆", suffix: " pts" },
   { key: "revenue",       label: "Revenus",        emoji: "💰", suffix: "" },
   { key: "recos",         label: "Recos",          emoji: "📋", suffix: "" },
 ];
@@ -67,7 +65,6 @@ export default async function LeaderboardPage({
   let entries: PodiumEntry[] = [];
   if (tabKey === "sponsors") entries = await fetchTopSponsors(supabase, periodStart, 10);
   else if (tabKey === "n1_total") entries = await fetchTopSponsors(supabase, startOfAllTime(), 10);
-  else if (tabKey === "network_total") entries = await fetchTopNetworkTotal(supabase, 10);
   else if (tabKey === "revenue") entries = await fetchTopRevenue(supabase, periodStart, 10);
   else entries = await fetchTopRecos(supabase, periodStart, 10);
 
