@@ -113,18 +113,18 @@ export function MobileHeader({
           </Link>
 
           {/* Centre : avatar + greeting */}
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 max-w-[160px]">
             <ProfileAvatar
               name={displayName}
               avatar={avatar}
-              className="h-[30px] w-[30px] ring-2 ring-winelio-orange/20"
+              className="h-[30px] w-[30px] shrink-0 ring-2 ring-winelio-orange/20"
               initialsClassName="text-[10px] font-bold"
             />
-            <div className="flex flex-col items-start leading-none">
+            <div className="flex flex-col items-start leading-none min-w-0">
               <span className="text-[10px] uppercase tracking-widest text-winelio-gray font-bold">
                 {greeting}
               </span>
-              <span className="font-bold text-sm text-winelio-orange tracking-tight">
+              <span className="font-bold text-sm text-winelio-orange tracking-tight truncate w-full">
                 {displayName} 👋
               </span>
             </div>
