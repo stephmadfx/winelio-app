@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+const isMobile = () => typeof window !== "undefined" && window.innerWidth <= 768;
+
 const VIDEO_URL_DESKTOP = "https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/promo.mp4";
 const VIDEO_URL_MOBILE = "https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/promo-mobile.mp4";
 
@@ -14,7 +16,24 @@ const VIDEO_URL_MOBILE = "https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/wi
 export function PromoVideoPreview() {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [shared, setShared] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const handleShareVideo = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = isMobile() ? VIDEO_URL_MOBILE : VIDEO_URL_DESKTOP;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Vidéo de présentation Winelio", url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShared(true);
+        setTimeout(() => setShared(false), 2500);
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+    }
+  };
 
   useEffect(() => setMounted(true), []);
 
@@ -81,12 +100,10 @@ export function PromoVideoPreview() {
           aria-modal="true"
           aria-label="Vidéo de présentation Winelio"
         >
+          {/* Bouton fermer */}
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(false);
-            }}
+            onClick={(e) => { e.stopPropagation(); setOpen(false); }}
             aria-label="Fermer la vidéo"
             className="absolute top-4 right-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md transition hover:bg-white/30"
             style={{ zIndex: 2147483647 }}
@@ -94,6 +111,31 @@ export function PromoVideoPreview() {
             <svg className="size-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
               <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
+          </button>
+
+          {/* Bouton partager la vidéo */}
+          <button
+            type="button"
+            onClick={handleShareVideo}
+            aria-label="Partager la vidéo"
+            className="absolute top-4 left-4 flex items-center gap-2 px-3 h-12 rounded-full bg-white/15 text-white text-sm font-semibold backdrop-blur-md transition hover:bg-white/30"
+            style={{ zIndex: 2147483647 }}
+          >
+            {shared ? (
+              <>
+                <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Lien copié !
+              </>
+            ) : (
+              <>
+                <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                Partager
+              </>
+            )}
           </button>
 
           <video
