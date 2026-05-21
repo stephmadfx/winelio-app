@@ -10,29 +10,23 @@ interface Props {
   monthLabel: string;       // ex: "Mai 2026"
   currentUserId: string;
   topSponsors: PodiumEntry[];
-  topRevenue: PodiumEntry[];
-  topRecos: PodiumEntry[];
   topN1Total: PodiumEntry[];
   topNetworkTotal: PodiumEntry[];
   myPositions: {
     sponsors: MyPosition;
-    revenue: MyPosition;
-    recos: MyPosition;
     n1_total: MyPosition;
     network_total: MyPosition;
   };
 }
 
 const ROTATION_MS = 8_000;
-const SLIDES = ["sponsors", "n1_total", "network_total", "revenue", "recos"] as const;
+const SLIDES = ["sponsors", "n1_total", "network_total"] as const;
 type SlideKey = typeof SLIDES[number];
 
 const SLIDE_META: Record<SlideKey, { emoji: string; titlePrefix: string; suffix: string }> = {
   sponsors:      { emoji: "🏆", titlePrefix: "Top Parrains",    suffix: " pts" },
   n1_total:      { emoji: "👥", titlePrefix: "Filleuls directs", suffix: "" },
   network_total: { emoji: "🌐", titlePrefix: "Réseau total",     suffix: "" },
-  revenue:       { emoji: "💰", titlePrefix: "Top Revenus",      suffix: "" },
-  recos:         { emoji: "📋", titlePrefix: "Top Recos",        suffix: "" },
 };
 
 const SWIPE_THRESHOLD_PX = 40;
@@ -41,8 +35,6 @@ export function NetworkPodiumCarousel({
   monthLabel,
   currentUserId,
   topSponsors,
-  topRevenue,
-  topRecos,
   topN1Total,
   topNetworkTotal,
   myPositions,
@@ -115,9 +107,7 @@ export function NetworkPodiumCarousel({
 
   const entries = current === "sponsors"      ? topSponsors
                 : current === "n1_total"      ? topN1Total
-                : current === "network_total" ? topNetworkTotal
-                : current === "revenue"       ? topRevenue
-                : topRecos;
+                : topNetworkTotal;
 
   return (
     <section
