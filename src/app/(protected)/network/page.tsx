@@ -30,35 +30,43 @@ export default async function NetworkPage() {
     .select("id, first_name, last_name, city, created_at, avatar, is_professional, is_demo, companies!owner_id(alias, city, category:categories(name))", { count: "exact" })
     .eq("sponsor_id", user.id);
 
-  const referralsWithStats = await Promise.all(
-    (referrals ?? []).map(async (ref) => {
-      const { count } = await supabase
-        .from("profiles")
-        .select("id", { count: "exact", head: true })
-        .eq("sponsor_id", ref.id);
-      const { data: commData } = await supabase
-        .from("commission_transactions")
-        .select("amount")
-        .eq("source_user_id", ref.id);
-      const totalCommissions = (commData ?? []).reduce((sum, c) => sum + (c.amount ?? 0), 0);
+  // Batch les requêtes pour éviter le N+1 : 2 requêtes au lieu de 2×N
+  const referralIds = (referrals ?? []).map((r) => r.id);
+  const [subReferralRows, allCommData] = referralIds.length > 0
+    ? await Promise.all([
+        supabase.from("profiles").select("sponsor_id").in("sponsor_id", referralIds),
+        supabase.from("commission_transactions").select("source_user_id, amount").in("source_user_id", referralIds),
+      ])
+    : [{ data: [] }, { data: [] }];
+
+  const subCountByUser = new Map<string, number>();
+  for (const p of subReferralRows.data ?? []) {
+    const sid = (p as { sponsor_id: string }).sponsor_id;
+    subCountByUser.set(sid, (subCountByUser.get(sid) ?? 0) + 1);
+  }
+  const commByUser = new Map<string, number>();
+  for (const c of allCommData.data ?? []) {
+    const uid = (c as { source_user_id: string; amount: number }).source_user_id;
+    const amt = (c as { source_user_id: string; amount: number }).amount ?? 0;
+    commByUser.set(uid, (commByUser.get(uid) ?? 0) + amt);
+  }
+
+  const referralsWithStats = (referrals ?? []).map((ref) => ({
+    ...ref,
+    sub_referrals: subCountByUser.get(ref.id) ?? 0,
+    total_commissions: commByUser.get(ref.id) ?? 0,
+    company: (() => {
+      const rawCompany = Array.isArray(ref.companies) ? ref.companies[0] ?? null : (ref.companies ?? null);
+      if (!rawCompany) return null;
+      const rawCat = (rawCompany as Record<string, unknown>).category;
+      const catName = Array.isArray(rawCat) ? (rawCat[0] as { name: string } | undefined)?.name ?? null : (rawCat as { name: string } | null)?.name ?? null;
       return {
-        ...ref,
-        sub_referrals: count ?? 0,
-        total_commissions: totalCommissions,
-        company: (() => {
-          const rawCompany = Array.isArray(ref.companies) ? ref.companies[0] ?? null : (ref.companies ?? null);
-          if (!rawCompany) return null;
-          const rawCat = (rawCompany as Record<string, unknown>).category;
-          const catName = Array.isArray(rawCat) ? (rawCat[0] as { name: string } | undefined)?.name ?? null : (rawCat as { name: string } | null)?.name ?? null;
-          return {
-            alias: (rawCompany as { alias?: string | null }).alias ?? null,
-            city: (rawCompany as { city?: string | null }).city ?? null,
-            category: catName,
-          };
-        })(),
+        alias: (rawCompany as { alias?: string | null }).alias ?? null,
+        city: (rawCompany as { city?: string | null }).city ?? null,
+        category: catName,
       };
-    })
-  );
+    })(),
+  }));
 
   let totalNetworkMembers = 0;
   let currentLevelIds = [user.id];

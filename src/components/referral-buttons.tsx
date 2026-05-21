@@ -246,7 +246,14 @@ export function ShareButton({ code }: { code: string }) {
           url: referralUrl,
         });
       } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
+        // iOS Safari lève un AbortError (ou DOMException code 20) quand l'utilisateur
+        // ferme le menu de partage — ce n'est pas une erreur réelle.
+        const isAbort = err instanceof Error && (
+          err.name === "AbortError" ||
+          (err as DOMException).code === 20 ||
+          err.message.includes("cancellation of share")
+        );
+        if (isAbort) return;
         throw err;
       }
     }
@@ -320,7 +327,7 @@ export function ShareButton({ code }: { code: string }) {
             {/* Partage natif (mobile) */}
             {typeof navigator !== "undefined" && "share" in navigator && (
               <button
-                onClick={handleNativeShare}
+                onClick={() => void handleNativeShare()}
                 className="w-full py-3 rounded-xl border-2 border-winelio-orange text-winelio-orange font-semibold text-sm flex items-center justify-center gap-2 hover:bg-winelio-orange hover:text-white transition-colors cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
