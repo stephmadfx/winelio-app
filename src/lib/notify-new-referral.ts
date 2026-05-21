@@ -204,9 +204,17 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
     .eq("id", newUserId)
     .single();
 
-  const newMemberName =
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  const newMemberFullName =
     [newProfile?.first_name, newProfile?.last_name].filter(Boolean).join(" ") ||
     "Un nouveau membre";
+  // Niveau 2+ : prénom + initiale du nom (ex. "Marie D.")
+  const newMemberShortName = newProfile?.first_name
+    ? [
+        cap(newProfile.first_name),
+        newProfile.last_name ? `${newProfile.last_name.charAt(0).toUpperCase()}.` : null,
+      ].filter(Boolean).join(" ")
+    : "Un nouveau membre";
 
   // Remonte la chaîne jusqu'à 5 niveaux
   const sponsorChain: Array<{ id: string; level: number }> = [];
@@ -254,12 +262,13 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
   }
 
   for (const { email, firstName, level } of notifications) {
+    const memberName = level === 1 ? newMemberFullName : newMemberShortName;
     const levelLabel = level === 1 ? "filleul direct" : `membre niveau ${level}`;
     const sponsorLine = level > 1 && directSponsorName ? `Parrainé(e) par ${directSponsorName}.` : "";
     const textBody = [
       `Bonjour ${firstName},`,
       "",
-      `${newMemberName} vient de rejoindre Winelio en tant que ${levelLabel} dans votre réseau.`,
+      `${memberName} vient de rejoindre Winelio en tant que ${levelLabel} dans votre réseau.`,
       "",
       level === 1
         ? "En tant que parrain direct, vous bénéficierez d'une commission sur chaque recommandation validée de ce nouveau membre."
@@ -276,9 +285,9 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
       to: email,
       subject:
         level === 1
-          ? `${newMemberName} a rejoint votre réseau Winelio`
+          ? `${newMemberFullName} a rejoint votre réseau Winelio`
           : `Nouveau membre niveau ${level} dans votre réseau Winelio`,
-      html: buildReferralEmail(firstName, newMemberName, level, level > 1 ? directSponsorName : undefined),
+      html: buildReferralEmail(firstName, memberName, level, level > 1 ? directSponsorName : undefined),
       text: textBody,
       priority: level === 1 ? 3 : 7,
     });
