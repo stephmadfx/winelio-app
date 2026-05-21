@@ -107,6 +107,30 @@ export default async function NetworkPage() {
         </Link>
       </div>
 
+      {/* Sponsor code */}
+      <Card className="!rounded-2xl mb-6">
+        <CardContent className="p-5 sm:p-6">
+          <h3 className="text-sm font-semibold text-winelio-gray uppercase tracking-wider mb-4">Mon code parrain</h3>
+
+          {/* Code parrain en pleine largeur, mis en évidence */}
+          <div className="bg-winelio-light dark:bg-muted rounded-xl border-2 border-dashed border-winelio-orange px-6 py-4 text-center mb-4">
+            <span className="text-3xl sm:text-4xl font-extrabold tracking-[0.2em] bg-gradient-to-r from-winelio-orange to-winelio-amber bg-clip-text text-transparent select-all">
+              {sponsorCode}
+            </span>
+          </div>
+
+          {/* Vignette vidéo + actions de partage */}
+          <div className="flex gap-4 items-stretch">
+            <PromoVideoPreview />
+            <div className="flex-1 grid grid-cols-1 gap-2.5 [&>button]:w-full [&>button]:justify-center [&>button]:py-3">
+              <CopyButton code={sponsorCode} />
+              <EmailInviteButton code={sponsorCode} />
+              <ShareButton code={sponsorCode} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
@@ -151,30 +175,6 @@ export default async function NetworkPage() {
           </Card>
         ))}
       </div>
-
-      {/* Sponsor code */}
-      <Card className="!rounded-2xl mb-6">
-        <CardContent className="p-5 sm:p-6">
-          <h3 className="text-sm font-semibold text-winelio-gray uppercase tracking-wider mb-4">Mon code parrain</h3>
-
-          {/* Code parrain en pleine largeur, mis en évidence */}
-          <div className="bg-winelio-light dark:bg-muted rounded-xl border-2 border-dashed border-winelio-orange px-6 py-4 text-center mb-4">
-            <span className="text-3xl sm:text-4xl font-extrabold tracking-[0.2em] bg-gradient-to-r from-winelio-orange to-winelio-amber bg-clip-text text-transparent select-all">
-              {sponsorCode}
-            </span>
-          </div>
-
-          {/* Vignette vidéo + actions de partage */}
-          <div className="flex gap-4 items-stretch">
-            <PromoVideoPreview />
-            <div className="flex-1 grid grid-cols-1 gap-2.5 [&>button]:w-full [&>button]:justify-center [&>button]:py-3">
-              <CopyButton code={sponsorCode} />
-              <EmailInviteButton code={sponsorCode} />
-              <ShareButton code={sponsorCode} />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Filleuls directs */}
       <Card className="!rounded-2xl mb-6">
