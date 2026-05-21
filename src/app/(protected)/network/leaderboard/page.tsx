@@ -21,8 +21,8 @@ import {
 export const dynamic = "force-dynamic";
 
 const TABS: { key: LeaderboardCategory; label: string; emoji: string; suffix: string; allTime?: boolean }[] = [
-  { key: "sponsors",      label: "Parrains",       emoji: "🏆", suffix: " pts" },
-  { key: "n1_total",      label: "Filleuls N1",    emoji: "👥", suffix: "", allTime: true },
+  { key: "n1_total",      label: "Filleuls 1er niv.", emoji: "👥", suffix: "", allTime: true },
+  { key: "sponsors",      label: "Top Parrainage", emoji: "🏆", suffix: " pts" },
   { key: "network_total", label: "Réseau total",   emoji: "🌐", suffix: "", allTime: true },
   { key: "revenue",       label: "Revenus",        emoji: "💰", suffix: "" },
   { key: "recos",         label: "Recos",          emoji: "📋", suffix: "" },

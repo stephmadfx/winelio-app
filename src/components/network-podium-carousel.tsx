@@ -20,13 +20,13 @@ interface Props {
 }
 
 const ROTATION_MS = 8_000;
-const SLIDES = ["sponsors", "n1_total", "network_total"] as const;
+const SLIDES = ["n1_total", "sponsors", "network_total"] as const;
 type SlideKey = typeof SLIDES[number];
 
 const SLIDE_META: Record<SlideKey, { emoji: string; titlePrefix: string; suffix: string }> = {
-  sponsors:      { emoji: "🏆", titlePrefix: "Top Parrains",    suffix: " pts" },
-  n1_total:      { emoji: "👥", titlePrefix: "Filleuls directs", suffix: "" },
-  network_total: { emoji: "🌐", titlePrefix: "Réseau total",     suffix: "" },
+  n1_total:      { emoji: "👥", titlePrefix: "Filleuls 1er niveau", suffix: "" },
+  sponsors:      { emoji: "🏆", titlePrefix: "Top Parrainage",      suffix: " pts" },
+  network_total: { emoji: "🌐", titlePrefix: "Réseau total",        suffix: "" },
 };
 
 const SWIPE_THRESHOLD_PX = 40;
@@ -127,9 +127,9 @@ export function NetworkPodiumCarousel({
           </div>
           <NetworkPodiumSlide
             category={current}
-            title={current === "n1_total" || current === "network_total"
-              ? meta.titlePrefix
-              : `${meta.titlePrefix} · ${monthLabel}`}
+            title={current === "sponsors"
+              ? `${meta.titlePrefix} · ${monthLabel}`
+              : meta.titlePrefix}
             emoji={meta.emoji}
             unitSuffix={meta.suffix}
             topEntries={entries}
