@@ -6,9 +6,8 @@ import { getAvatarStream } from "@/lib/r2-avatars";
 // Route auth-protégée qui sert les photos de profil depuis R2 privé.
 // Règles d'accès :
 //   - Owner : oui (sa propre photo).
-//   - Sponsor direct (niveau 1) : oui (relation MLM contractuelle).
 //   - Super admin : oui (gestion).
-//   - Membre du même réseau MLM (niveaux 2-5) : non, on retombe sur les initiales.
+//   - Tout utilisateur authentifié : oui, sauf si la cible a désactivé avatar_visible_to_network (opt-out RGPD).
 //   - Anonyme : 401.
 //
 // Réponse : on STREAM l'image directement (pas de redirect vers R2) pour ne jamais
@@ -38,22 +37,17 @@ export async function GET(
   const isSuperAdmin = viewer.app_metadata?.role === "super_admin";
   const isOwner = viewer.id === targetUserId;
 
-  let isDirectSponsor = false;
-  let visibleToNetwork = true;
   if (!isOwner && !isSuperAdmin) {
     const { data: target } = await supabaseAdmin
       .schema("winelio")
       .from("profiles")
-      .select("sponsor_id, avatar_visible_to_network")
+      .select("avatar_visible_to_network")
       .eq("id", targetUserId)
       .maybeSingle();
-    isDirectSponsor = target?.sponsor_id === viewer.id;
-    visibleToNetwork = target?.avatar_visible_to_network !== false;
-  }
-
-  // L'utilisateur a opposé son droit Art. 21 → seul lui-même + super_admin peuvent voir.
-  if (!isOwner && !isSuperAdmin && (!isDirectSponsor || !visibleToNetwork)) {
-    return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+    // Opt-out RGPD explicite → seul l'owner + super_admin peuvent voir.
+    if (target?.avatar_visible_to_network === false) {
+      return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+    }
   }
 
   try {
