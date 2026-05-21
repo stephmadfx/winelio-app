@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { formatDisplayName } from "@/lib/utils";
 import { NetworkTree } from "@/components/network-tree";
 import { NetworkGraph } from "@/components/network-graph";
 import { CopyButton, ShareButton, EmailInviteButton } from "@/components/referral-buttons";
@@ -204,7 +205,7 @@ export default async function NetworkPage() {
                 const isPro = ref.is_professional && ref.company?.alias;
                 const displayName = isPro
                   ? ref.company!.alias!
-                  : (((ref.first_name ?? "") + " " + (ref.last_name ?? "")).trim() || "Sans nom");
+                  : formatDisplayName(ref.first_name, ref.last_name, "Sans nom");
                 const displaySub = isPro
                   ? [ref.company!.category, ref.company!.city ?? ref.city].filter(Boolean).join(" · ")
                   : null;
@@ -264,7 +265,7 @@ export default async function NetworkPage() {
           <p className="text-xs text-muted-foreground mb-4">Pincez pour zoomer · Glissez pour naviguer</p>
           <NetworkGraph
             userId={user.id}
-            userName={`${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim()}
+            userName={formatDisplayName(profile?.first_name, profile?.last_name)}
             userAvatar={profile?.avatar ?? null}
           />
         </CardContent>
