@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 import { pickActiveCompany } from "@/lib/pick-active-company";
+import { formatDisplayName } from "@/lib/utils";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
 
@@ -82,8 +83,8 @@ export async function notifyReferrerStep(recommendationId: string, stepIndex: nu
 
   if (!referrer?.email) return;
 
-  const proName      = company?.name || [pro?.first_name, pro?.last_name].filter(Boolean).join(" ") || "Le professionnel";
-  const contactName  = [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || "votre contact";
+  const proName      = company?.name || formatDisplayName(pro?.first_name, pro?.last_name, "Le professionnel");
+  const contactName  = formatDisplayName(contact?.first_name, contact?.last_name, "votre contact");
   const referrerFirst = referrer.first_name || "Bonjour";
   const recoUrl      = `${SITE_URL}/recommendations/${recommendationId}`;
 

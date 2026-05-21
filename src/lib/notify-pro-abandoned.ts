@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 import { pickActiveCompany } from "@/lib/pick-active-company";
+import { formatDisplayName } from "@/lib/utils";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
 
@@ -36,7 +37,7 @@ export async function notifyProAbandoned(recommendationId: string): Promise<void
 
   const referrerFirstName = referrer.first_name || "";
   const proName = company?.name || "Le professionnel";
-  const contactName = [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || "votre contact";
+  const contactName = formatDisplayName(contact?.first_name, contact?.last_name, "votre contact");
   const ctaUrl = `${SITE_URL}/recommendations/${recommendationId}`;
 
   const html = `<!DOCTYPE html>

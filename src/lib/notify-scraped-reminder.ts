@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 import { pickActiveCompany } from "@/lib/pick-active-company";
+import { formatDisplayName } from "@/lib/utils";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
 const trackClick = (rid: string) => `${SITE_URL}/api/email-track/click?rid=${encodeURIComponent(rid)}`;
@@ -39,8 +40,8 @@ export async function notifyScrapedReminder(recommendationId: string) {
 
   const ctaUrl = trackClick(recommendationId);
   const companyName = company?.name || "votre entreprise";
-  const referrerName = [referrer?.first_name, referrer?.last_name].filter(Boolean).join(" ") || "Un membre Winelio";
-  const contactName = [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || "un client";
+  const referrerName = formatDisplayName(referrer?.first_name, referrer?.last_name, "Un membre Winelio");
+  const contactName = formatDisplayName(contact?.first_name, contact?.last_name, "un client");
 
   const html = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><title>Rappel — Un client vous recommande</title></head>

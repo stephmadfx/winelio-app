@@ -5,6 +5,7 @@ import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 import { signFollowupToken } from "@/lib/followup-token";
 import { pickActiveCompany } from "@/lib/pick-active-company";
+import { formatDisplayName } from "@/lib/utils";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
 
@@ -77,8 +78,8 @@ export async function notifyProFollowup(ctx: FollowupContext): Promise<string | 
   if (!recipientEmail) return null;
 
   const proFirstName = pro?.first_name || "";
-  const referrerName = [referrer?.first_name, referrer?.last_name].filter(Boolean).join(" ") || "Un membre Winelio";
-  const contactName = [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || "votre client";
+  const referrerName = formatDisplayName(referrer?.first_name, referrer?.last_name, "Un membre Winelio");
+  const contactName = formatDisplayName(contact?.first_name, contact?.last_name, "votre client");
   const companyName = company?.name || "votre entreprise";
 
   const baseSubject = SUBJECT_BY_STEP[afterStep];

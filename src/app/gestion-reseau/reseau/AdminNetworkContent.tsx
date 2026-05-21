@@ -5,6 +5,7 @@ import { NetworkGraph } from "@/components/network-graph";
 import { NetworkTree } from "@/components/network-tree";
 import { Card, CardContent } from "@/components/ui/card";
 import { CopyButton } from "@/components/referral-buttons";
+import { formatDisplayName } from "@/lib/utils";
 
 interface DirectReferral {
   id: string;
@@ -127,8 +128,7 @@ export function AdminNetworkContent({
         </TabBtn>
         {roots.map((root) => {
           const name =
-            [root.first_name, root.last_name].filter(Boolean).join(" ") ||
-            root.email;
+            formatDisplayName(root.first_name, root.last_name, root.email);
           return (
             <TabBtn
               key={root.id}
@@ -149,8 +149,7 @@ export function AdminNetworkContent({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {roots.map((root) => {
             const displayName =
-              [root.first_name, root.last_name].filter(Boolean).join(" ") ||
-              root.email.split("@")[0];
+              formatDisplayName(root.first_name, root.last_name, root.email.split("@")[0]);
             const initials =
               [root.first_name, root.last_name]
                 .filter(Boolean)
@@ -254,7 +253,7 @@ function TabBtn({
 
 function RootView({ root }: { root: RootData }) {
   const displayName =
-    [root.first_name, root.last_name].filter(Boolean).join(" ") || root.email;
+    formatDisplayName(root.first_name, root.last_name, root.email);
   const sponsorCode = root.sponsor_code ?? "";
 
   const kpis: { title: string; value: string; sub: string; icon: string; accent: boolean }[] = [

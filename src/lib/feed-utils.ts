@@ -20,8 +20,9 @@ export function formatUserName(
   lastName: string | null
 ): string {
   if (!firstName && !lastName) return "Un membre"
-  if (!lastName) return firstName || "Un membre"
-  return `${firstName} ${lastName.charAt(0)}.`
+  const f = firstName ? firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase() : null
+  if (!lastName) return f || "Un membre"
+  return `${f} ${lastName.charAt(0).toUpperCase()}.`
 }
 
 export function formatRelativeTime(timestamp: string): string {

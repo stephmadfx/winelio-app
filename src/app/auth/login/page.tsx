@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AppBackground } from "@/components/AppBackground";
 import { PROMO_WATCHED_KEY } from "@/components/PromoVideo";
 import { safeJsonFetch } from "@/lib/safe-fetch";
+import { formatDisplayName } from "@/lib/utils";
 
 export default function LoginPage() {
   return (
@@ -95,7 +96,7 @@ function LoginForm() {
         .single()
         .then(({ data }) => {
           if (!data) return;
-          const name = [data.first_name, data.last_name].filter(Boolean).join(" ");
+          const name = formatDisplayName(data.first_name, data.last_name, "");
           setSponsorName(name || null);
         });
     });

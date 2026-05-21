@@ -12,6 +12,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 import { pickActiveCompany } from "@/lib/pick-active-company";
+import { formatDisplayName } from "@/lib/utils";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.app").replace(/\/$/, "");
 const trackClick = (rid: string) => `${SITE_URL}/api/email-track/click?rid=${encodeURIComponent(rid)}`;
@@ -152,8 +153,8 @@ export async function notifyNewRecommendation(recommendationId: string) {
   const recipients = [...new Set([companyMailValid, profileMailValid].filter(Boolean) as string[])];
   if (recipients.length === 0) return;
 
-  const referrerName = [referrer?.first_name, referrer?.last_name].filter(Boolean).join(" ") || "Un membre Winelio";
-  const contactName = [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || "Un contact";
+  const referrerName = formatDisplayName(referrer?.first_name, referrer?.last_name, "Un membre Winelio");
+  const contactName = formatDisplayName(contact?.first_name, contact?.last_name, "Un contact");
   const urgency = urgencyLabel(rec.urgency_level);
   const isScraped = company?.source === "scraped";
 

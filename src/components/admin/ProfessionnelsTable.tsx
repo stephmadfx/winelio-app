@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback, useTransition } from "react";
 import { formatRelativeTime } from "@/lib/fake-last-active";
+import { formatDisplayName } from "@/lib/utils";
 
 type OwnerRow = { id: string; first_name: string | null; last_name: string | null; email: string | null };
 type CategoryRow = { name: string };
@@ -271,7 +272,7 @@ export function ProfessionnelsTable({
                     {/* Propriétaire */}
                     <td className="px-4 py-3">
                       <p className="text-white text-xs">
-                        {[owner?.first_name, owner?.last_name].filter(Boolean).join(" ") || "—"}
+                        {formatDisplayName(owner?.first_name, owner?.last_name, "—")}
                       </p>
                       {owner?.email && <p className="text-gray-500 text-xs truncate max-w-[160px]">{owner.email}</p>}
                     </td>
@@ -405,7 +406,7 @@ export function ProfessionnelsTable({
                   {owner && (
                     <div>
                       <p className="text-gray-600 uppercase text-[10px] tracking-wide">Propriétaire</p>
-                      <p className="text-gray-300">{[owner.first_name, owner.last_name].filter(Boolean).join(" ") || "—"}</p>
+                      <p className="text-gray-300">{formatDisplayName(owner.first_name, owner.last_name, "—")}</p>
                     </div>
                   )}
                   {(c.city || c.postal_code) && (

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/supabase/get-user";
+import { formatDisplayName } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { WinelioLogo } from "@/components/winelio-logo";
@@ -79,10 +80,8 @@ export default async function ClaimPage({
     redirect(`/recommendations/${recommendationId}`);
   }
 
-  const referrerName =
-    [referrer?.first_name, referrer?.last_name].filter(Boolean).join(" ") || "Un membre Winelio";
-  const contactName =
-    [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || "Un contact";
+  const referrerName = formatDisplayName(referrer?.first_name, referrer?.last_name, "Un membre Winelio");
+  const contactName = formatDisplayName(contact?.first_name, contact?.last_name, "Un contact");
   const urgencyLabel = URGENCY_LABELS[rec.urgency_level ?? ""] ?? "Normal";
 
   const alreadyClaimedByOther =

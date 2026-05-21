@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { formatDisplayName } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -80,8 +81,7 @@ export function FlowAnnotationDialog({ open, onClose, nodeId, nodeLabel, annotat
               </p>
               <div className="space-y-2">
                 {nodeAnnotations.map((ann) => {
-                  const authorName = [ann.author?.first_name, ann.author?.last_name]
-                    .filter(Boolean).join(" ") || "Administrateur";
+                  const authorName = formatDisplayName(ann.author?.first_name, ann.author?.last_name, "Administrateur");
                   const date = new Date(ann.created_at).toLocaleDateString("fr-FR", {
                     day: "numeric", month: "short", year: "numeric",
                   });

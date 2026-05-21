@@ -6,6 +6,7 @@ import { geocodeAddress } from "@/lib/geocode";
 import { verifySiren } from "@/lib/siren";
 import { checkNafCode } from "@/lib/naf-rules";
 import { validateCompanyName } from "@/lib/company-name-validator";
+import { formatDisplayName } from "@/lib/utils";
 
 const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -205,9 +206,7 @@ export async function requestCompanyModification(
     .single();
 
   const requesterName =
-    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim() ||
-    user.email ||
-    "Utilisateur Winelio";
+    formatDisplayName(profile?.first_name, profile?.last_name, user.email || "Utilisateur Winelio");
 
   const { notifyCompanyModificationRequest } = await import(
     "@/lib/notify-company-modification-request"

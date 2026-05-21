@@ -102,7 +102,7 @@ export default async function NetworkPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <h2 className="text-xl sm:text-2xl font-bold text-winelio-dark">Mon Réseau</h2>
         <Link href="/network/stats" className="text-sm text-winelio-orange hover:text-winelio-amber transition-colors font-medium">
-          Stats détaillées
+          Statistiques détaillées
         </Link>
       </div>
 

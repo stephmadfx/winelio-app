@@ -142,10 +142,11 @@ export async function fetchMyPosition(
   };
 }
 
-/** Format prénom + initiale du nom. "Stéphane MAIRIAUX" → "Stéphane M." */
+/** Format prénom (capitalisé) + initiale du nom (majuscule). Ex : "Marie D." */
 export function formatPodiumName(first: string | null, last: string | null): string {
-  const f = (first ?? "").trim();
-  const l = (last ?? "").trim();
+  const raw = (first ?? "").trim();
+  const l   = (last ?? "").trim();
+  const f   = raw ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase() : "";
   if (!f && !l) return "Utilisateur";
   if (!l) return f;
   return `${f} ${l.charAt(0).toUpperCase()}.`;

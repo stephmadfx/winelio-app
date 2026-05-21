@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { formatDisplayName } from "@/lib/utils";
 
 interface TreeNode {
   id: string;
@@ -233,7 +234,7 @@ function TreeNodeRow({
   const displayName = isPro
     ? node.company_alias!
     : level === 1
-    ? ([node.first_name, node.last_name].filter(Boolean).join(" ") || "Sans nom")
+    ? formatDisplayName(node.first_name, node.last_name, "Sans nom")
     : ([node.first_name, node.last_name]
         .filter(Boolean)
         .map((n) => `${n![0].toUpperCase()}.`)

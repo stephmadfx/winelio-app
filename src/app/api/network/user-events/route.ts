@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { formatDisplayName } from "@/lib/utils";
 
 const ACTIVE_STATUSES = [
   "PENDING", "ACCEPTED", "CONTACT_MADE", "MEETING_SCHEDULED",
@@ -114,12 +115,12 @@ export async function GET(request: Request) {
 
     const role = r.referrer_id === userId ? "referrer" : "professional";
     const contactName = contact
-      ? [contact.first_name, contact.last_name].filter(Boolean).join(" ")
+      ? formatDisplayName(contact.first_name, contact.last_name, "")
       : null;
     const professionalName = rawCompany?.alias
-      ?? (professional ? [professional.first_name, professional.last_name].filter(Boolean).join(" ") : null);
+      ?? (professional ? formatDisplayName(professional.first_name, professional.last_name, "") : null);
     const referrerName = referrer
-      ? [referrer.first_name, referrer.last_name].filter(Boolean).join(" ")
+      ? formatDisplayName(referrer.first_name, referrer.last_name, "")
       : null;
 
     return {

@@ -8,6 +8,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 import { resolveProfileAvatarUrl, getProfileInitials } from "@/lib/profile-avatar";
+import { formatDisplayName } from "@/lib/utils";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.fr";
 
@@ -261,7 +262,7 @@ export async function notifyNewProInNetwork(
   if (sponsorEmail.endsWith("@winelio-pro.fr") || sponsorEmail.endsWith("@winelio-demo.internal")) return false;
 
   const proName =
-    [newPro.first_name, newPro.last_name].filter(Boolean).join(" ") || "Un nouveau pro";
+    formatDisplayName(newPro.first_name, newPro.last_name, "Un nouveau pro");
   const recipientFirstName = sponsorProfile?.first_name || "Membre";
   const avatarUrl = resolveProfileAvatarUrl(newPro.avatar ?? null);
   const categoryName = meta.categoryName?.trim() || "—";

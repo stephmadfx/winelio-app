@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { formatDisplayName } from "@/lib/utils";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 import { queueEmail } from "@/lib/email-queue";
@@ -295,7 +296,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Code parrainage introuvable" }, { status: 400 });
     }
 
-    const senderName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Un membre Winelio";
+    const senderName = formatDisplayName(profile.first_name, profile.last_name, "Un membre Winelio");
     const referralUrl = `${SITE_URL}/auth/login?mode=register&ref=${profile.sponsor_code}&email=${encodeURIComponent(to)}`;
 
     // Version texte brut (obligatoire pour éviter les filtres spam)

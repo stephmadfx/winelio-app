@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
+import { formatDisplayName } from "@/lib/utils";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getAuditContext, getDocumentHash, logOnboardingEvent } from "@/lib/audit";
 import { isAtLeastAge } from "@/lib/age";
@@ -302,8 +303,7 @@ export async function completeProOnboarding(data: {
     .single();
 
   const fallbackName =
-    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
-    "Mon entreprise";
+    formatDisplayName(profile?.first_name, profile?.last_name, "Mon entreprise");
 
   // 3. Vérifier/créer la company
   const { data: existingCompany } = await supabase

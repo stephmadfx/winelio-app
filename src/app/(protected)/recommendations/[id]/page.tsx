@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { formatDisplayName } from "@/lib/utils";
 import { StepTimeline } from "@/components/step-timeline";
 import { RecommendationFollowupCard } from "@/components/recommendation-followup-card";
 import { SavePaymentMethodDialog } from "@/components/save-payment-method-dialog";
@@ -258,7 +259,7 @@ export default function RecommendationDetailPage() {
 
   const cfg = STATUS_CONFIG[recommendation.status] ?? STATUS_CONFIG.EXPIRED;
   const contactName = recommendation.contact
-    ? [recommendation.contact.first_name, recommendation.contact.last_name].filter(Boolean).join(" ") || "Contact inconnu"
+    ? formatDisplayName(recommendation.contact.first_name, recommendation.contact.last_name, "Contact inconnu")
     : "Contact inconnu";
   const completedCount = steps.filter((s) => s.completed_at).length;
   const progressPct = steps.length > 0 ? Math.round((completedCount / steps.length) * 100) : 0;
@@ -406,7 +407,7 @@ export default function RecommendationDetailPage() {
             >
               <p className="font-bold text-winelio-dark text-sm">
                 {recommendation.professional
-                  ? [recommendation.professional.first_name, recommendation.professional.last_name].filter(Boolean).join(" ") || "Inconnu"
+                  ? formatDisplayName(recommendation.professional.first_name, recommendation.professional.last_name, "Inconnu")
                   : "Inconnu"}
               </p>
               {recommendation.professional?.company && (
@@ -422,7 +423,7 @@ export default function RecommendationDetailPage() {
             >
               <p className="font-bold text-winelio-dark text-sm">
                 {recommendation.referrer
-                  ? [recommendation.referrer.first_name, recommendation.referrer.last_name].filter(Boolean).join(" ") || "Inconnu"
+                  ? formatDisplayName(recommendation.referrer.first_name, recommendation.referrer.last_name, "Inconnu")
                   : "Inconnu"}
               </p>
             </InfoBlock>

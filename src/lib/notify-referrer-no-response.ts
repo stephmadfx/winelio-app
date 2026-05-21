@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 import { pickActiveCompany } from "@/lib/pick-active-company";
+import { formatDisplayName } from "@/lib/utils";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
 
@@ -34,7 +35,7 @@ export async function notifyReferrerNoResponse(recommendationId: string) {
 
   const referrerFirstName = referrer.first_name || "Bonjour";
   const companyName = company?.name || "ce professionnel";
-  const contactName = [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || "votre contact";
+  const contactName = formatDisplayName(contact?.first_name, contact?.last_name, "votre contact");
   const newRecoUrl = `${SITE_URL}/recommendations/new`;
 
   const html = `<!DOCTYPE html>

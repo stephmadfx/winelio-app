@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { formatDisplayName } from "@/lib/utils";
 interface GraphNode {
   id: string;
   first_name: string | null;
@@ -487,7 +488,7 @@ function NodeView({ node, onClick, onClose, events, eventsLoading, selectedId, r
                 ? (rootLabel ?? "Vous")
                 : node.is_professional && node.company_alias
                   ? node.company_alias
-                  : [node.first_name, node.last_name].filter(Boolean).join(" ") || "Sans nom"
+                  : formatDisplayName(node.first_name, node.last_name, "Sans nom")
             }
             avatar={node.avatar}
             className="h-full w-full"
@@ -552,7 +553,7 @@ function NodeView({ node, onClick, onClose, events, eventsLoading, selectedId, r
                 <p className="text-[11px] font-bold text-winelio-dark truncate leading-tight">
                   {node.is_professional && node.company_alias
                     ? node.company_alias
-                    : [node.first_name, node.last_name].filter(Boolean).join(" ") || "Sans nom"}
+                    : formatDisplayName(node.first_name, node.last_name, "Sans nom")}
                 </p>
                 <p className="text-[9px] text-winelio-gray truncate">
                   {node.is_professional && node.company_category && <span>{node.company_category} · </span>}

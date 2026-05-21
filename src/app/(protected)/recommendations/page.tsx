@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { formatDisplayName } from "@/lib/utils";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -315,7 +316,7 @@ export default function RecommendationsPage() {
           {visibleRecommendations.map((rec) => {
             const cfg = STATUS_CONFIG[rec.status] ?? STATUS_CONFIG.EXPIRED;
             const contactName = rec.contact
-              ? [rec.contact.first_name, rec.contact.last_name].filter(Boolean).join(" ") || "Contact inconnu"
+              ? formatDisplayName(rec.contact.first_name, rec.contact.last_name, "Contact inconnu")
               : "Contact inconnu";
             const proAlias = rec.professional?.companies?.alias;
             const proCategory = rec.professional?.companies?.category?.name;
