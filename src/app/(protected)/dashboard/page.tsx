@@ -496,6 +496,8 @@ export default async function DashboardPage() {
           <h3 className="font-bold text-winelio-dark text-base">Actions rapides</h3>
           <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
             <ActionChip href="/recommendations/new" label="Reco" icon="M12 4v16m8-8H4" />
+            <ActionChip href="/wallet#simulateur" label="Simuler"
+              icon="M9 7h6m-6 4h6m-7 8h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
             <ActionChip href="/network" label="Inviter"
               icon="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             <ActionChip href="/wallet" label="Gains"
@@ -694,6 +696,15 @@ export default async function DashboardPage() {
                 >
                   Retirer mes gains
                 </Link>
+                <Link
+                  href="/wallet#simulateur"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/35 bg-white/15 py-2.5 text-center text-sm font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/25"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m-6 4h6m-7 8h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Simuler mes gains
+                </Link>
               </div>
             </div>
 
@@ -864,4 +875,3 @@ function RecoStatusBadge({ status }: { status: string }) {
   }
   return <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-bold bg-winelio-amber/15 text-winelio-amber">En cours</span>;
 }
-
