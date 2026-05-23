@@ -4,10 +4,12 @@ import { useMemo, useState } from "react";
 import {
   ArrowUpRight,
   Calculator,
+  GitBranch,
   Home,
   PiggyBank,
   Sparkles,
   TrendingUp,
+  Users,
 } from "lucide-react";
 import { AnimatedCounter } from "@/components/animated-counter";
 
@@ -29,24 +31,72 @@ const projectPresets = [
 ];
 
 const professionalCommissionRate = 10;
+const directAffiliateRate = 60;
+const networkLevelRate = 4;
+const defaultActiveAffiliatesByLevel = [5, 8, 12, 18, 25];
 
 export function AffiliateSimulator() {
   const [dealAmount, setDealAmount] = useState(5000);
   const [monthlyRecommendations, setMonthlyRecommendations] = useState(3);
+  const [networkEnabled, setNetworkEnabled] = useState(false);
+  const [networkRecommendations, setNetworkRecommendations] = useState(1);
+  const [activeAffiliatesByLevel, setActiveAffiliatesByLevel] = useState(
+    defaultActiveAffiliatesByLevel
+  );
 
   const results = useMemo(() => {
     const proCommission = dealAmount * (professionalCommissionRate / 100);
-    const directGain = proCommission * 0.6;
+    const directGain = proCommission * (directAffiliateRate / 100);
     const monthlyGain = directGain * monthlyRecommendations;
-    const yearlyGain = monthlyGain * 12;
+    const levelCommissions = activeAffiliatesByLevel.map((affiliates, index) => {
+      const amount =
+        affiliates *
+        networkRecommendations *
+        proCommission *
+        (networkLevelRate / 100);
+
+      return {
+        level: index + 1,
+        affiliates,
+        amount,
+      };
+    });
+    const networkMonthlyGain = levelCommissions.reduce(
+      (total, level) => total + level.amount,
+      0
+    );
+    const totalMonthlyGain = monthlyGain + (networkEnabled ? networkMonthlyGain : 0);
+    const yearlyGain = totalMonthlyGain * 12;
 
     return {
       proCommission,
       directGain,
       monthlyGain,
+      networkMonthlyGain,
+      totalMonthlyGain,
       yearlyGain,
+      levelCommissions,
     };
-  }, [dealAmount, monthlyRecommendations]);
+  }, [
+    activeAffiliatesByLevel,
+    dealAmount,
+    monthlyRecommendations,
+    networkEnabled,
+    networkRecommendations,
+  ]);
+
+  const updateActiveAffiliates = (levelIndex: number, value: number) => {
+    setActiveAffiliatesByLevel((current) =>
+      current.map((item, index) =>
+        index === levelIndex ? clampNumber(value, 0, 500) : item
+      )
+    );
+  };
+
+  const maxLevelCommission = Math.max(
+    ...results.levelCommissions.map((level) => level.amount),
+    1
+  );
 
   return (
     <section
@@ -70,9 +120,9 @@ export function AffiliateSimulator() {
                 Estimez votre gain direct
               </h2>
               <p className="mt-2 max-w-xl text-sm leading-6 text-winelio-gray dark:text-white/68">
-                Entrez le montant des travaux, ajustez la commission du
-                professionnel et visualisez ce qui arrive directement dans
-                votre poche.
+                Entrez le montant des travaux et visualisez ce qui arrive
+                directement dans votre poche. Activez le mode réseau pour
+                projeter vos commissions jusqu&apos;à 5 niveaux.
               </p>
             </div>
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-winelio-orange to-winelio-amber text-white shadow-lg shadow-winelio-orange/25">
@@ -134,6 +184,87 @@ export function AffiliateSimulator() {
               </button>
             ))}
           </div>
+
+          <label className="group flex cursor-pointer items-start gap-3 rounded-2xl border border-winelio-orange/20 bg-white/82 p-4 shadow-sm backdrop-blur transition hover:border-winelio-orange/35 hover:bg-white dark:border-white/10 dark:bg-white/8 dark:hover:bg-white/12">
+            <input
+              checked={networkEnabled}
+              className="mt-1 size-5 cursor-pointer accent-winelio-orange"
+              type="checkbox"
+              onChange={(event) => setNetworkEnabled(event.target.checked)}
+            />
+            <span className="min-w-0">
+              <span className="flex items-center gap-2 text-sm font-bold text-winelio-dark dark:text-white">
+                <GitBranch className="size-4 text-winelio-orange" />
+                Simuler avec mon réseau affilié
+              </span>
+              <span className="mt-1 block text-sm leading-5 text-winelio-gray dark:text-white/62">
+                Ajoutez les recommandations générées par vos filleuls sur 5
+                niveaux, avec {networkLevelRate}% par niveau.
+              </span>
+            </span>
+          </label>
+
+          {networkEnabled ? (
+            <div className="rounded-2xl border border-winelio-orange/20 bg-white/86 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/8">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="flex items-center gap-2 text-sm font-bold text-winelio-dark dark:text-white">
+                    <Users className="size-4 text-winelio-orange" />
+                    Affiliés actifs par niveau
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-winelio-gray dark:text-white/58">
+                    Ceux qui génèrent au moins une recommandation régulière.
+                  </p>
+                </div>
+                <label className="rounded-xl border border-winelio-orange/15 bg-white px-3 py-2 dark:border-white/10 dark:bg-black/20">
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.1em] text-winelio-gray dark:text-white/50">
+                    Recos / affilié / mois
+                  </span>
+                  <input
+                    className="mt-1 w-20 bg-transparent text-lg font-black text-winelio-dark outline-none dark:text-white"
+                    inputMode="numeric"
+                    max={10}
+                    min={0}
+                    type="number"
+                    value={networkRecommendations}
+                    onChange={(event) =>
+                      setNetworkRecommendations(
+                        clampNumber(Number(event.target.value) || 0, 0, 10)
+                      )
+                    }
+                  />
+                </label>
+              </div>
+
+              <div className="mt-4 grid grid-cols-5 gap-2">
+                {activeAffiliatesByLevel.map((affiliates, index) => (
+                  <label
+                    key={index}
+                    className="rounded-xl border border-winelio-orange/10 bg-white/75 p-2 text-center dark:border-white/10 dark:bg-black/20"
+                  >
+                    <span className="block text-[11px] font-bold text-winelio-orange">
+                      N{index + 1}
+                    </span>
+                    <input
+                      aria-label={`Affiliés actifs niveau ${index + 1}`}
+                      className="mt-1 w-full bg-transparent text-center text-base font-black text-winelio-dark outline-none dark:text-white"
+                      inputMode="numeric"
+                      max={500}
+                      min={0}
+                      type="number"
+                      value={affiliates}
+                      onChange={(event) =>
+                        updateActiveAffiliates(
+                          index,
+                          Number(event.target.value) || 0
+                        )
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-winelio-dark p-5 text-white shadow-2xl shadow-winelio-dark/20 dark:border-white/10 dark:bg-black/28">
@@ -142,22 +273,25 @@ export function AffiliateSimulator() {
 
           <div className="relative">
             <p className="text-sm font-medium text-white/68">
-              Vous touchez directement
+              {networkEnabled
+                ? "Potentiel mensuel total"
+                : "Vous touchez directement"}
             </p>
             <div className="mt-3 flex items-end gap-2">
               <p className="text-4xl font-black leading-none tracking-normal text-white sm:text-5xl">
                 <AnimatedCounter
-                  key={`${results.directGain}-${professionalCommissionRate}`}
+                  key={`${networkEnabled}-${results.totalMonthlyGain}-${results.directGain}`}
                   decimals={0}
                   suffix=" EUR"
-                  to={results.directGain}
+                  to={networkEnabled ? results.totalMonthlyGain : results.directGain}
                 />
               </p>
               <ArrowUpRight className="mb-1 size-6 text-winelio-amber" />
             </div>
             <p className="mt-3 text-sm leading-6 text-white/62">
-              Base actuelle : {formatCurrency(dealAmount)} x{" "}
-              {professionalCommissionRate}% x 60% reversés à l&apos;affilié.
+              {networkEnabled
+                ? `Votre activité directe + ${networkLevelRate}% sur les recommandations de votre réseau actif.`
+                : `Base actuelle : ${formatCurrency(dealAmount)} x ${professionalCommissionRate}% x ${directAffiliateRate}% reversés à l'affilié.`}
             </p>
 
             <div className="mt-6 grid gap-3">
@@ -185,7 +319,7 @@ export function AffiliateSimulator() {
                 </div>
                 <div className="mt-2 flex justify-between text-xs text-white/45">
                   <span>Part directe</span>
-                  <span>60%</span>
+                  <span>{directAffiliateRate}%</span>
                 </div>
               </div>
 
@@ -212,12 +346,50 @@ export function AffiliateSimulator() {
                   }
                 />
               </label>
+
+              {networkEnabled ? (
+                <div className="rounded-xl border border-white/10 bg-white/8 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-2 text-sm font-medium text-white/72">
+                      <GitBranch className="size-4 text-winelio-amber" />
+                      Effet réseau mensuel
+                    </span>
+                    <span className="font-bold text-white">
+                      {formatCurrency(results.networkMonthlyGain)}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid gap-2">
+                    {results.levelCommissions.map((level) => (
+                      <div key={level.level} className="grid grid-cols-[42px_1fr_72px] items-center gap-2 text-xs">
+                        <span className="font-bold text-white/58">
+                          N{level.level}
+                        </span>
+                        <div className="h-2 overflow-hidden rounded-full bg-white/12">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-winelio-orange to-winelio-amber transition-all duration-500"
+                            style={{
+                              width: `${clampNumber(
+                                (level.amount / maxLevelCommission) * 100,
+                                3,
+                                100
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-right font-semibold text-white/78">
+                          {formatCurrency(level.amount)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl bg-white px-4 py-3 text-winelio-dark">
                 <p className="text-xs font-semibold uppercase tracking-[0.1em] text-winelio-gray">
-                  Projection mois
+                  {networkEnabled ? "Direct mensuel" : "Projection mois"}
                 </p>
                 <p className="mt-1 text-xl font-black">
                   {formatCurrency(results.monthlyGain)}
