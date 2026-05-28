@@ -5,6 +5,7 @@ import { formatDisplayName } from "@/lib/utils";
 import { StepTimeline } from "@/components/step-timeline";
 import { RecommendationFollowupCard } from "@/components/recommendation-followup-card";
 import { SavePaymentMethodDialog } from "@/components/save-payment-method-dialog";
+import { REVIEW_QUESTIONS } from "@/lib/recommendation-review-questions";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -29,6 +30,22 @@ interface StepRow {
   completed_at: string | null;
   data: Record<string, unknown> | null;
   step: { name: string; description: string | null; completion_role: string | null; order_index: number } | null;
+}
+
+interface PayoutInfo {
+  professional_paid: boolean;
+  review: {
+    id: string;
+    rating: number | null;
+    answers: string[] | null;
+    status: string;
+    created_at: string;
+  } | null;
+  referrer_commission: {
+    id: string;
+    amount: number;
+    status: string;
+  } | null;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -102,6 +119,7 @@ export default function RecommendationDetailPage() {
 
   const [recommendation, setRecommendation] = useState<RecommendationDetail | null>(null);
   const [steps, setSteps] = useState<StepRow[]>([]);
+  const [payout, setPayout] = useState<PayoutInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
   const [refusing, setRefusing] = useState(false);
@@ -116,6 +134,10 @@ export default function RecommendationDetailPage() {
   const [transferTarget, setTransferTarget] = useState("");
   const [transferring, setTransferring] = useState(false);
   const [transferError, setTransferError] = useState<string | null>(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewAnswers, setReviewAnswers] = useState<string[]>(["", "", ""]);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/whoami").then(async (res) => {
@@ -136,7 +158,7 @@ export default function RecommendationDetailPage() {
     setLoading(true);
     const res = await fetch(`/api/recommendations/${id}`);
     if (res.ok) {
-      const { recommendation: rec, steps: recSteps } = await res.json();
+      const { recommendation: rec, steps: recSteps, payout: payoutInfo } = await res.json();
       const normalize = (v: unknown) => (Array.isArray(v) ? v[0] ?? null : v);
       setRecommendation({
         ...rec,
@@ -150,6 +172,7 @@ export default function RecommendationDetailPage() {
       })) as StepRow[];
       mapped.sort((a, b) => (a.step?.order_index ?? 0) - (b.step?.order_index ?? 0));
       setSteps(mapped);
+      setPayout(payoutInfo ?? null);
     }
     setLoading(false);
   };
@@ -227,6 +250,30 @@ export default function RecommendationDetailPage() {
     setRefusing(false);
   };
 
+  const handleSubmitReview = async () => {
+    if (!recommendation) return;
+    setReviewSubmitting(true);
+    setReviewError(null);
+    try {
+      const res = await fetch(`/api/recommendations/${recommendation.id}/review`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating: reviewRating, answers: reviewAnswers }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setReviewError(data.error ?? "Avis invalide.");
+      } else {
+        setReviewRating(0);
+        setReviewAnswers(["", "", ""]);
+        await fetchData();
+      }
+    } catch {
+      setReviewError("Erreur réseau lors de l'envoi de l'avis.");
+    }
+    setReviewSubmitting(false);
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -264,6 +311,13 @@ export default function RecommendationDetailPage() {
   const completedCount = steps.filter((s) => s.completed_at).length;
   const progressPct = steps.length > 0 ? Math.round((completedCount / steps.length) * 100) : 0;
   const urgency = recommendation.urgency_level ? URGENCY_CONFIG[recommendation.urgency_level] : null;
+  const isReferrer = userId === recommendation.referrer_id;
+  const shouldShowPayoutReview =
+    isReferrer &&
+    (recommendation.status === "PAYMENT_RECEIVED" ||
+      recommendation.status === "COMPLETED" ||
+      !!payout?.referrer_commission);
+  const referrerCommissionStatus = payout?.referrer_commission?.status ?? null;
 
   return (
     <div className="">
@@ -476,6 +530,120 @@ export default function RecommendationDetailPage() {
           )}
         </div>
       </div>
+
+      {shouldShowPayoutReview && (
+        <div className="mb-4 overflow-hidden rounded-3xl border border-winelio-orange/15 bg-white shadow-sm">
+          <div className="border-b border-winelio-gray/8 px-6 py-5 sm:px-8">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-winelio-dark">Avis requis pour débloquer le paiement</h2>
+                <p className="mt-1 text-sm text-winelio-gray">
+                  Le recommandeur est payé uniquement si le professionnel a réglé Winelio et si un avis qualifié est déposé.
+                </p>
+              </div>
+              <span className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-bold ${
+                referrerCommissionStatus === "EARNED"
+                  ? "bg-green-50 text-green-700 ring-1 ring-green-200"
+                  : "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
+              }`}>
+                {referrerCommissionStatus === "EARNED" ? "Paiement débloqué" : "En attente"}
+              </span>
+            </div>
+          </div>
+
+          <div className="px-6 py-5 sm:px-8">
+            {!payout?.professional_paid ? (
+              <div className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-800 ring-1 ring-amber-100">
+                En attente du paiement du professionnel. Vous pourrez déposer l'avis dès que son règlement sera confirmé.
+              </div>
+            ) : payout.review ? (
+              <div className="rounded-2xl bg-green-50 p-4 ring-1 ring-green-100">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-bold text-green-800">Avis reçu</p>
+                  <div className="flex text-winelio-amber" aria-label={`${payout.review.rating ?? 0} étoiles`}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span key={star}>{star <= (payout.review?.rating ?? 0) ? "★" : "☆"}</span>
+                    ))}
+                  </div>
+                </div>
+                <p className="mt-1 text-xs text-green-700">
+                  {referrerCommissionStatus === "EARNED"
+                    ? "La commission du recommandeur est maintenant disponible."
+                    : "Avis validé, commission en cours de déblocage."}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                <div>
+                  <p className="mb-2 text-sm font-bold text-winelio-dark">Note globale</p>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        className={`text-3xl transition-transform hover:scale-110 ${
+                          star <= reviewRating ? "text-winelio-amber" : "text-gray-300"
+                        }`}
+                        aria-label={`${star} étoile${star > 1 ? "s" : ""}`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {REVIEW_QUESTIONS.map((question, index) => (
+                  <div key={question}>
+                    <label className="mb-2 block text-sm font-bold text-winelio-dark">
+                      {index + 1}. {question}
+                    </label>
+                    <textarea
+                      value={reviewAnswers[index]}
+                      onChange={(e) => {
+                        const next = [...reviewAnswers];
+                        next[index] = e.target.value;
+                        setReviewAnswers(next);
+                        setReviewError(null);
+                      }}
+                      rows={3}
+                      minLength={20}
+                      maxLength={500}
+                      placeholder="Réponse précise et utile, 20 caractères minimum."
+                      className="w-full rounded-xl border border-winelio-gray/20 bg-white px-4 py-3 text-sm focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15"
+                    />
+                    <p className="mt-1 text-right text-[11px] text-winelio-gray">
+                      {reviewAnswers[index].trim().length}/500
+                    </p>
+                  </div>
+                ))}
+
+                {reviewError && (
+                  <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600 ring-1 ring-red-100">
+                    {reviewError}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleSubmitReview}
+                  disabled={reviewSubmitting}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3 text-sm font-bold text-white shadow-md shadow-winelio-orange/20 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                >
+                  {reviewSubmitting ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Envoi de l'avis…
+                    </>
+                  ) : (
+                    "Valider l'avis et débloquer mon paiement"
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Timeline card ── */}
       <div className="rounded-3xl border border-winelio-gray/8 bg-white shadow-sm overflow-hidden">

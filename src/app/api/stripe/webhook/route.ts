@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createCommissions } from "@/lib/commission";
-import { recalculateWallet } from "@/lib/wallet";
+import { unlockRecommendationCommissions } from "@/lib/recommendation-review";
 import type Stripe from "stripe";
 
 export async function POST(req: Request) {
@@ -61,7 +61,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Recommandation sans montant" }, { status: 400 });
   }
 
-  // ── Créer et distribuer les commissions ──────────────────────────────────────
+  // ── Créer les commissions puis débloquer ce qui est payable ─────────────────
+  // La commission directe du recommandeur reste en attente tant que son avis
+  // qualifié n'a pas été déposé.
   await createCommissions(
     reco.id,
     reco.referrer_id,
@@ -70,20 +72,13 @@ export async function POST(req: Request) {
     reco.compensation_plan_id ?? null
   );
 
-  // Recalculer les wallets des bénéficiaires
-  const { data: commissions } = await supabaseAdmin
-    .from("commission_transactions")
-    .select("user_id")
-    .eq("recommendation_id", reco.id);
-
-  const uniqueUsers = [...new Set((commissions ?? []).map((c) => c.user_id))];
-  await Promise.allSettled(uniqueUsers.map((userId) => recalculateWallet(userId)));
-
   // ── Marquer la session comme payée ───────────────────────────────────────────
   await supabaseAdmin
     .from("stripe_payment_sessions")
     .update({ status: "paid", paid_at: new Date().toISOString() })
     .eq("id", paymentSession.id);
+
+  await unlockRecommendationCommissions(reco.id);
 
   return NextResponse.json({ received: true });
 }
