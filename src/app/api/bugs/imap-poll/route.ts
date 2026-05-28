@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ImapFlow } from "imapflow";
 import { uploadToR2 } from "@/lib/r2";
 import { sendEmail } from "@/lib/email-sender";
+import { getEmailDisabledReason } from "@/lib/email-environment";
 
 async function sendReplyNotification(
   userEmail: string,
@@ -12,6 +13,12 @@ async function sendReplyNotification(
   replyText: string,
   imageUrls: string[]
 ) {
+  const disabledReason = getEmailDisabledReason();
+  if (disabledReason) {
+    console.warn(`[imap-poll] Réponse email non envoyée: ${disabledReason}`);
+    return;
+  }
+
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const shortId = reportId.substring(0, 8);
 

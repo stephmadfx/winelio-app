@@ -3,6 +3,7 @@ import { randomInt } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 import { sendEmail } from "@/lib/email-sender";
+import { getEmailDisabledReason } from "@/lib/email-environment";
 
 function generateCode(): string {
   return randomInt(100000, 1000000).toString();
@@ -66,6 +67,12 @@ function buildEmailHtml(code: string): string {
 
 export async function POST(req: Request) {
   try {
+    const disabledReason = getEmailDisabledReason();
+    if (disabledReason) {
+      console.warn(`[send-code] Envoi OTP ignoré: ${disabledReason}`);
+      return NextResponse.json({ error: "Envoi email désactivé sur cet environnement." }, { status: 403 });
+    }
+
     const { email } = await req.json();
 
     if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {

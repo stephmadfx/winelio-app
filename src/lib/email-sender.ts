@@ -17,6 +17,7 @@
 
 import { Resend } from "resend";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getEmailDisabledReason } from "@/lib/email-environment";
 import { sendMailWithTimeout, SMTP_FROM } from "@/lib/email-transporter";
 
 const RESEND_DAILY_LIMIT = 99;   // 100 - 1 pour garder une marge de sécurité
@@ -188,6 +189,16 @@ async function trySendSmtp(params: SendEmailParams): Promise<SendEmailResult> {
  * Toujours log dans email_sent_log (succès ou échec).
  */
 export async function sendEmail(params: SendEmailParams): Promise<SendEmailResult> {
+  const disabledReason = getEmailDisabledReason();
+  if (disabledReason) {
+    console.warn(`[email-sender] Email non envoyé: ${disabledReason}`);
+    return {
+      provider: params.forceProvider === "resend" ? "resend" : "smtp",
+      ok: false,
+      error: disabledReason,
+    };
+  }
+
   // 1. Choix du provider
   let useResend = false;
   if (params.forceProvider === "resend") {
