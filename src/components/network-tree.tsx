@@ -51,45 +51,51 @@ export function NetworkTree({ userId, maxLevel = 5 }: { userId: string; maxLevel
 
       if (!children || children.length === 0) return [];
 
-      const nodes: TreeNode[] = await Promise.all(
-        children.map(async (child) => {
-          const { count } = await supabase
-            .from("profiles")
-            .select("id", { count: "exact", head: true })
-            .eq("sponsor_id", child.id);
+      const childIds = children.map((child) => child.id);
+      const [{ data: subReferrals }, { data: commissions }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("sponsor_id")
+          .in("sponsor_id", childIds),
+        supabase
+          .from("commission_transactions")
+          .select("user_id, amount")
+          .in("user_id", childIds),
+      ]);
 
-          const { data: commissions } = await supabase
-            .from("commission_transactions")
-            .select("amount")
-            .eq("user_id", child.id);
+      const referralCountByUser = new Map<string, number>();
+      for (const row of subReferrals ?? []) {
+        if (!row.sponsor_id) continue;
+        referralCountByUser.set(row.sponsor_id, (referralCountByUser.get(row.sponsor_id) ?? 0) + 1);
+      }
 
-          const totalEarned = (commissions ?? []).reduce(
-            (sum, c) => sum + (c.amount ?? 0),
-            0
-          );
+      const earnedByUser = new Map<string, number>();
+      for (const row of commissions ?? []) {
+        earnedByUser.set(row.user_id, (earnedByUser.get(row.user_id) ?? 0) + (row.amount ?? 0));
+      }
 
-          const rawCompany = Array.isArray(child.companies) ? child.companies[0] ?? null : (child.companies ?? null);
-          const rawCat = rawCompany ? (rawCompany as Record<string, unknown>).category : null;
-          const catName = Array.isArray(rawCat) ? (rawCat[0] as { name: string } | undefined)?.name ?? null : (rawCat as { name: string } | null)?.name ?? null;
+      const nodes: TreeNode[] = children.map((child) => {
+        const rawCompany = Array.isArray(child.companies) ? child.companies[0] ?? null : (child.companies ?? null);
+        const rawCat = rawCompany ? (rawCompany as Record<string, unknown>).category : null;
+        const catName = Array.isArray(rawCat) ? (rawCat[0] as { name: string } | undefined)?.name ?? null : (rawCat as { name: string } | null)?.name ?? null;
 
-          return {
-            id: child.id,
-            first_name: child.first_name,
-            last_name: child.last_name,
-            avatar: (child as { avatar?: string | null }).avatar ?? null,
-            city: child.city,
-            is_professional: (child as { is_professional?: boolean }).is_professional ?? false,
-            is_demo: (child as { is_demo?: boolean }).is_demo ?? false,
-            company_alias: rawCompany ? (rawCompany as { alias?: string | null }).alias ?? null : null,
-            company_category: catName,
-            referral_count: count ?? 0,
-            total_earned: totalEarned,
-            children: [],
-            loaded: false,
-            expanded: false,
-          };
-        })
-      );
+        return {
+          id: child.id,
+          first_name: child.first_name,
+          last_name: child.last_name,
+          avatar: (child as { avatar?: string | null }).avatar ?? null,
+          city: child.city,
+          is_professional: (child as { is_professional?: boolean }).is_professional ?? false,
+          is_demo: (child as { is_demo?: boolean }).is_demo ?? false,
+          company_alias: rawCompany ? (rawCompany as { alias?: string | null }).alias ?? null : null,
+          company_category: catName,
+          referral_count: referralCountByUser.get(child.id) ?? 0,
+          total_earned: earnedByUser.get(child.id) ?? 0,
+          children: [],
+          loaded: false,
+          expanded: false,
+        };
+      });
 
       return nodes;
     },

@@ -2,6 +2,27 @@
 // Ce fichier est automatiquement chargé par Next.js côté navigateur.
 import * as Sentry from "@sentry/nextjs";
 
+function isIgnoredBrowserNoise(event: Sentry.Event, hint: Sentry.EventHint): boolean {
+  const exception = event.exception?.values?.[0];
+  const value = exception?.value ?? "";
+  const frames = exception?.stacktrace?.frames ?? [];
+  const original = hint.originalException;
+  const originalName = original instanceof Error ? original.name : "";
+  const originalMessage = original instanceof Error ? original.message : String(original ?? "");
+
+  const isNativeShareCancel =
+    (originalName === "AbortError" && originalMessage.includes("share")) ||
+    value.includes("Abort due to cancellation of share") ||
+    originalMessage.includes("Abort due to cancellation of share") ||
+    originalMessage.includes("cancellation of share");
+
+  const isSafariMediaControlsNoise =
+    value.includes("EmptyRanges") ||
+    frames.some((frame) => frame.function === "sortedTrackListForMenu");
+
+  return isNativeShareCancel || isSafariMediaControlsNoise;
+}
+
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
   environment: process.env.NEXT_PUBLIC_APP_URL?.includes("dev2") ? "staging" : "production",
@@ -9,6 +30,10 @@ Sentry.init({
   enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
   replaysSessionSampleRate: 0,
   replaysOnErrorSampleRate: 0,
+  beforeSend(event, hint) {
+    if (isIgnoredBrowserNoise(event, hint)) return null;
+    return event;
+  },
 });
 
 // Expose Sentry sur window pour pouvoir tester depuis la console (test E2E).
