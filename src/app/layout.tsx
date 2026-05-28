@@ -5,6 +5,7 @@ import { KeyboardScrollProvider } from "@/components/KeyboardScrollProvider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
+import { CookieConsentBanner } from "@/components/cookie-consent-banner";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -42,6 +43,7 @@ export default function RootLayout({
         <ThemeProvider>
           <KeyboardScrollProvider />
           {children}
+          <CookieConsentBanner />
           <Toaster richColors position="top-right" />
         </ThemeProvider>
       </body>

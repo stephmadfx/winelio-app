@@ -54,6 +54,9 @@ export function calculateCommissions(
  * Idempotente : ne fait rien si des commissions existent déjà pour cette recommandation.
  * Utilise supabaseAdmin pour bypasser la RLS (pas de policy INSERT sur commission_transactions).
  * Le trigger DB `on_commission_change` met à jour user_wallet_summaries automatiquement.
+ * Les commissions restent PENDING jusqu'au paiement Stripe du pro.
+ * La commission directe du recommandeur reste PENDING tant que son avis qualifié
+ * n'a pas été déposé.
  */
 export async function createCommissions(
   recommendationId: string,
@@ -110,7 +113,7 @@ export async function createCommissions(
       amount: referrer_commission,
       type: COMMISSION_TYPE.RECOMMENDATION,
       level: 0,
-      status: COMMISSION_STATUS.EARNED,
+      status: COMMISSION_STATUS.PENDING,
     },
     // Cagnotte Winelio (14%)
     {
@@ -119,7 +122,7 @@ export async function createCommissions(
       amount: platform_commission,
       type: COMMISSION_TYPE.PLATFORM_WINELIO,
       level: 0,
-      status: COMMISSION_STATUS.EARNED,
+      status: COMMISSION_STATUS.PENDING,
     },
   ];
 
@@ -151,7 +154,7 @@ export async function createCommissions(
       amount: lc.amount,
       type: `referral_level_${lc.level}`,
       level: lc.level,
-      status: COMMISSION_STATUS.EARNED,
+      status: COMMISSION_STATUS.PENDING,
     });
 
     currentId = profile.sponsor_id;
@@ -172,7 +175,7 @@ export async function createCommissions(
         amount: affiliation_commission,
         type: COMMISSION_TYPE.AFFILIATION_BONUS,
         level: 0,
-        status: COMMISSION_STATUS.EARNED,
+        status: COMMISSION_STATUS.PENDING,
       });
     } else {
       undistributed += affiliation_commission;
@@ -195,7 +198,7 @@ export async function createCommissions(
       amount: cashback_wins,
       type: COMMISSION_TYPE.PROFESSIONAL_CASHBACK,
       level: 0,
-      status: COMMISSION_STATUS.EARNED,
+      status: COMMISSION_STATUS.PENDING,
     });
   }
 
