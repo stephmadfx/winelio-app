@@ -10,6 +10,18 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
+function isNativeShareAbort(err: unknown) {
+  if (!(err instanceof Error)) return false;
+
+  const domException = err as DOMException;
+  return (
+    err.name === "AbortError" ||
+    domException.code === 20 ||
+    err.message.includes("cancellation of share") ||
+    err.message.includes("Share canceled")
+  );
+}
+
 export function CopyButton({ code }: { code: string }) {
   const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
 
@@ -248,13 +260,8 @@ export function ShareButton({ code }: { code: string }) {
       } catch (err) {
         // iOS Safari lève un AbortError (ou DOMException code 20) quand l'utilisateur
         // ferme le menu de partage — ce n'est pas une erreur réelle.
-        const isAbort = err instanceof Error && (
-          err.name === "AbortError" ||
-          (err as DOMException).code === 20 ||
-          err.message.includes("cancellation of share")
-        );
-        if (isAbort) return;
-        throw err;
+        if (isNativeShareAbort(err)) return;
+        await handleCopyLink();
       }
     }
   };

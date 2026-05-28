@@ -8,6 +8,27 @@ const isMobile = () => typeof window !== "undefined" && window.innerWidth <= 768
 const VIDEO_URL_DESKTOP = "https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/promo.mp4";
 const VIDEO_URL_MOBILE = "https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/promo-mobile.mp4";
 
+function isNativeShareAbort(err: unknown) {
+  if (!(err instanceof Error)) return false;
+
+  const domException = err as DOMException;
+  return (
+    err.name === "AbortError" ||
+    domException.code === 20 ||
+    err.message.includes("cancellation of share") ||
+    err.message.includes("Share canceled")
+  );
+}
+
+async function copyVideoLink(url: string) {
+  try {
+    await navigator.clipboard.writeText(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Petit bouton "Aperçu vidéo" qui ouvre la vidéo promo Winelio en plein écran (modale).
  * Utilisé sur la page Réseau (section "Mon code parrain") pour que les parrains
@@ -26,12 +47,17 @@ export function PromoVideoPreview() {
       if (navigator.share) {
         await navigator.share({ title: "Vidéo de présentation Winelio", url });
       } else {
-        await navigator.clipboard.writeText(url);
+        if (await copyVideoLink(url)) {
+          setShared(true);
+          setTimeout(() => setShared(false), 2500);
+        }
+      }
+    } catch (err) {
+      if (isNativeShareAbort(err)) return;
+      if (await copyVideoLink(url)) {
         setShared(true);
         setTimeout(() => setShared(false), 2500);
       }
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
     }
   };
 
