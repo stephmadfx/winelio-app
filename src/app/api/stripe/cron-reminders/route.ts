@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getEmailDisabledReason } from "@/lib/email-environment";
 import {
   sendCommissionReminderEmail,
   sendCommissionAlertEmails,
@@ -15,6 +16,12 @@ export async function GET(req: Request) {
   const expected = `Bearer ${process.env.CRON_SECRET}`;
   if (!process.env.CRON_SECRET || auth !== expected) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const disabledReason = getEmailDisabledReason();
+  if (disabledReason) {
+    console.warn(`[cron-reminders] Relances ignorées: ${disabledReason}`);
+    return NextResponse.json({ reminders: 0, alerts: 0, skipped: true, reason: disabledReason });
   }
 
   const now = new Date();

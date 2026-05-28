@@ -1,5 +1,6 @@
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 import { sendEmail } from "@/lib/email-sender";
+import { getEmailDisabledReason } from "@/lib/email-environment";
 
 export async function sendSignatureConfirmationEmail(params: {
   to: string;
@@ -7,6 +8,12 @@ export async function sendSignatureConfirmationEmail(params: {
   pdfBuffer: Buffer;
   signedAt: Date;
 }): Promise<void> {
+  const disabledReason = getEmailDisabledReason();
+  if (disabledReason) {
+    console.warn(`[notify-signature-cgu] Email non envoyé: ${disabledReason}`);
+    return;
+  }
+
   const dateStr = params.signedAt.toLocaleString("fr-FR", {
     day: "2-digit",
     month: "long",

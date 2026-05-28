@@ -1,5 +1,6 @@
 // src/lib/email-transporter.ts
 import nodemailer from "nodemailer";
+import { getEmailDisabledReason } from "@/lib/email-environment";
 
 const smtpPort = Number(process.env.SMTP_PORT) || 465;
 
@@ -23,6 +24,11 @@ export const SEND_TIMEOUT_MS = 10_000;
 export async function sendMailWithTimeout(
   message: Parameters<typeof transporter.sendMail>[0]
 ): Promise<void> {
+  const disabledReason = getEmailDisabledReason();
+  if (disabledReason) {
+    throw new Error(`Outbound email disabled: ${disabledReason}`);
+  }
+
   await Promise.race([
     transporter.sendMail(message),
     new Promise<never>((_, reject) =>

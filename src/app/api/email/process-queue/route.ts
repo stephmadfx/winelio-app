@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email-sender";
+import { getEmailDisabledReason } from "@/lib/email-environment";
 
 const BATCH_SIZE = 10;
 const RETRY_DELAYS_MIN = [5, 30, 120];
@@ -12,6 +13,12 @@ export async function POST(req: Request) {
   const auth = req.headers.get("authorization") ?? "";
   if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const disabledReason = getEmailDisabledReason();
+  if (disabledReason) {
+    console.warn(`[process-queue] Envoi SMTP ignoré: ${disabledReason}`);
+    return NextResponse.json({ processed: 0, sent: 0, failed: 0, skipped: true, reason: disabledReason });
   }
 
   const { data: batch, error: fetchErr } = await supabaseAdmin

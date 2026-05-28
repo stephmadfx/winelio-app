@@ -1,5 +1,6 @@
 // src/lib/email-queue.ts
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getEmailDisabledReason } from "@/lib/email-environment";
 
 export interface QueueEmailParams {
   to: string;
@@ -22,6 +23,12 @@ export interface QueueEmailParams {
  * @returns id de la ligne email_queue créée, ou null si échec d'insertion
  */
 export async function queueEmail(params: QueueEmailParams): Promise<string | null> {
+  const disabledReason = getEmailDisabledReason();
+  if (disabledReason) {
+    console.warn(`[email-queue] Email non mis en file: ${disabledReason}`);
+    return null;
+  }
+
   const { data, error } = await supabaseAdmin
     .schema("winelio")
     .from("email_queue")
