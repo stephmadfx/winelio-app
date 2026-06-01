@@ -3,6 +3,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  outputFileTracingRoot: __dirname,
   // pg doit rester en require() natif — le bundler webpack le transforme incorrectement
   serverExternalPackages: ["pg", "pg-pool"],
   async headers() {
