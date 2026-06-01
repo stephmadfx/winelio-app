@@ -27,7 +27,8 @@ type Recipient = {
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const DEMO_EMAIL_RE = /@winelio-demo\.internal$/i;
+const DEMO_EMAIL_RE = /(@winelio-demo\.internal|@kiparlo-demo\.fr|@demo-winelio\.fr)$/i;
+const DEMO_EMAIL_PREFIX_RE = /^(demo[._-]|demo\.kiparlo)/i;
 const NEWSLETTER_LOGO_HTML =
   '<img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-color.png" alt="Winelio" width="160" height="44" style="display:block;margin:0 auto;border:0;max-width:160px;" />';
 
@@ -57,7 +58,7 @@ export const parseManualEmails = (value: unknown): string[] => {
     raw
     .split(/[\s,;]+/)
     .map((email) => email.trim().toLowerCase())
-    .filter((email) => email && !DEMO_EMAIL_RE.test(email))
+    .filter((email) => email && !isDemoEmail(email))
   )];
 };
 
@@ -101,6 +102,12 @@ export const resolveNewsletterRecipients = async (
     .select("id, email, first_name, last_name, is_professional, is_active")
     .not("email", "is", null)
     .eq("is_demo", false)
+    .not("email", "ilike", "%@winelio-demo.internal")
+    .not("email", "ilike", "%@kiparlo-demo.fr")
+    .not("email", "ilike", "%@demo-winelio.fr")
+    .not("email", "ilike", "demo.%")
+    .not("email", "ilike", "demo_%")
+    .not("email", "ilike", "demo-%")
     .order("created_at", { ascending: false });
 
   if (selectedRecipientIds.length > 0) {
@@ -122,7 +129,7 @@ export const resolveNewsletterRecipients = async (
   for (const profile of data ?? []) {
     const email = String(profile.email ?? "").toLowerCase();
     if (!EMAIL_RE.test(email)) continue;
-    if (DEMO_EMAIL_RE.test(email)) continue;
+    if (isDemoEmail(email)) continue;
     byEmail.set(email, {
       userId: profile.id,
       email,
@@ -138,6 +145,8 @@ export const resolveNewsletterRecipients = async (
 
   return [...byEmail.values()];
 };
+
+const isDemoEmail = (email: string) => DEMO_EMAIL_RE.test(email) || DEMO_EMAIL_PREFIX_RE.test(email);
 
 export const buildNewsletterHtml = ({
   subject,

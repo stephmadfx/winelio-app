@@ -11,7 +11,12 @@ export default async function AdminNewslettersPage() {
       .from("profiles")
       .select("id, email, first_name, last_name, is_professional, is_active")
       .eq("is_demo", false)
-      .not("email", "like", "%@winelio-demo.internal")
+      .not("email", "ilike", "%@winelio-demo.internal")
+      .not("email", "ilike", "%@kiparlo-demo.fr")
+      .not("email", "ilike", "%@demo-winelio.fr")
+      .not("email", "ilike", "demo.%")
+      .not("email", "ilike", "demo_%")
+      .not("email", "ilike", "demo-%")
       .order("created_at", { ascending: false })
       .limit(500),
   ]);
