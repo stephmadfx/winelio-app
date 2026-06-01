@@ -26,6 +26,16 @@ type Recipient = {
   name?: string;
 };
 
+type ProfileNewsletterRow = {
+  id: string;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  is_professional: boolean | null;
+  is_active: boolean | null;
+  companies?: { source: string | null; deleted_at: string | null }[] | { source: string | null; deleted_at: string | null } | null;
+};
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DEMO_EMAIL_RE = /(@winelio-demo\.internal|@kiparlo-demo\.fr|@demo-winelio\.fr)$/i;
 const DEMO_EMAIL_PREFIX_RE = /^(demo[._-]|demo\.kiparlo)/i;
@@ -104,7 +114,7 @@ export const resolveNewsletterRecipients = async (
 
   let query = supabaseAdmin
     .from("profiles")
-    .select("id, email, first_name, last_name, is_professional, is_active")
+    .select("id, email, first_name, last_name, is_professional, is_active, companies!owner_id(source, deleted_at)")
     .not("email", "is", null)
     .eq("is_demo", false)
     .not("email", "ilike", "%@winelio-demo.internal")
@@ -135,10 +145,12 @@ export const resolveNewsletterRecipients = async (
   if (error) throw new Error(error.message);
 
   const byEmail = new Map<string, Recipient>();
-  for (const profile of data ?? []) {
+  for (const profile of (data ?? []) as ProfileNewsletterRow[]) {
     const email = String(profile.email ?? "").toLowerCase();
     if (!EMAIL_RE.test(email)) continue;
     if (isExcludedRecipientEmail(email)) continue;
+    if (isScrapedOnlyProfile(profile)) continue;
+    if (filters.audience === "professionals" && !hasOwnerCompany(profile)) continue;
     byEmail.set(email, {
       userId: profile.id,
       email,
@@ -158,6 +170,20 @@ export const resolveNewsletterRecipients = async (
 const isDemoEmail = (email: string) => DEMO_EMAIL_RE.test(email) || DEMO_EMAIL_PREFIX_RE.test(email);
 const isTechnicalProEmail = (email: string) => TECHNICAL_PRO_EMAIL_RE.test(email);
 const isExcludedRecipientEmail = (email: string) => isDemoEmail(email) || isTechnicalProEmail(email);
+const activeCompanies = (profile: ProfileNewsletterRow) => {
+  const companies = Array.isArray(profile.companies)
+    ? profile.companies
+    : profile.companies
+      ? [profile.companies]
+      : [];
+  return companies.filter((company) => !company.deleted_at);
+};
+const hasOwnerCompany = (profile: ProfileNewsletterRow) =>
+  activeCompanies(profile).some((company) => company.source === "owner");
+const isScrapedOnlyProfile = (profile: ProfileNewsletterRow) => {
+  const companies = activeCompanies(profile);
+  return companies.length > 0 && !companies.some((company) => company.source === "owner");
+};
 
 const resolveUnreferencedProfessionalRecipients = async (manualEmails: string[]): Promise<Recipient[]> => {
   const { data, error } = await supabaseAdmin
