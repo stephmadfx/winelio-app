@@ -9,7 +9,7 @@ export default async function AdminNewslettersPage() {
       .order("created_at", { ascending: false }),
     supabaseAdmin
       .from("profiles")
-      .select("id, email, first_name, last_name, is_professional, is_active")
+      .select("id, email, first_name, last_name, is_professional, is_active, companies!owner_id(source, deleted_at)")
       .eq("is_demo", false)
       .not("email", "ilike", "%@winelio-demo.internal")
       .not("email", "ilike", "%@kiparlo-demo.fr")
@@ -25,10 +25,20 @@ export default async function AdminNewslettersPage() {
       .limit(500),
   ]);
 
+  const selectableProfiles = (profiles ?? []).filter((profile) => {
+    const companies = Array.isArray(profile.companies)
+      ? profile.companies
+      : profile.companies
+        ? [profile.companies]
+        : [];
+    const activeCompanies = companies.filter((company) => !company.deleted_at);
+    return activeCompanies.length === 0 || activeCompanies.some((company) => company.source === "owner");
+  });
+
   return (
     <NewsletterManager
       initialNewsletters={newsletters ?? []}
-      profiles={profiles ?? []}
+      profiles={selectableProfiles}
     />
   );
 }
