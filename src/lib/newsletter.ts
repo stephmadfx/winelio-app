@@ -6,7 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export type NewsletterFilters = {
-  audience?: "all" | "professionals" | "individuals";
+  audience?: "all" | "professionals" | "individuals" | "unreferencedProfessionals";
   onlyActive?: boolean;
 };
 
@@ -29,6 +29,7 @@ type Recipient = {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DEMO_EMAIL_RE = /(@winelio-demo\.internal|@kiparlo-demo\.fr|@demo-winelio\.fr)$/i;
 const DEMO_EMAIL_PREFIX_RE = /^(demo[._-]|demo\.kiparlo)/i;
+const TECHNICAL_PRO_EMAIL_RE = /(@winelio-scraped\.local|@kiparlo-pro\.fr|@winelio-pro\.fr|@winko)/i;
 const NEWSLETTER_LOGO_HTML =
   '<img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-color.png" alt="Winelio" width="160" height="44" style="display:block;margin:0 auto;border:0;max-width:160px;" />';
 
@@ -58,7 +59,7 @@ export const parseManualEmails = (value: unknown): string[] => {
     raw
     .split(/[\s,;]+/)
     .map((email) => email.trim().toLowerCase())
-    .filter((email) => email && !isDemoEmail(email))
+    .filter((email) => email && !isExcludedRecipientEmail(email))
   )];
 };
 
@@ -97,6 +98,10 @@ export const resolveNewsletterRecipients = async (
   excludedRecipientIds: string[],
   manualEmails: string[]
 ): Promise<Recipient[]> => {
+  if (filters.audience === "unreferencedProfessionals" && selectedRecipientIds.length === 0) {
+    return resolveUnreferencedProfessionalRecipients(manualEmails);
+  }
+
   let query = supabaseAdmin
     .from("profiles")
     .select("id, email, first_name, last_name, is_professional, is_active")
@@ -105,6 +110,10 @@ export const resolveNewsletterRecipients = async (
     .not("email", "ilike", "%@winelio-demo.internal")
     .not("email", "ilike", "%@kiparlo-demo.fr")
     .not("email", "ilike", "%@demo-winelio.fr")
+    .not("email", "ilike", "%@winelio-scraped.local")
+    .not("email", "ilike", "%@kiparlo-pro.fr")
+    .not("email", "ilike", "%@winelio-pro.fr")
+    .not("email", "ilike", "%@winko%")
     .not("email", "ilike", "demo.%")
     .not("email", "ilike", "demo_%")
     .not("email", "ilike", "demo-%")
@@ -129,7 +138,7 @@ export const resolveNewsletterRecipients = async (
   for (const profile of data ?? []) {
     const email = String(profile.email ?? "").toLowerCase();
     if (!EMAIL_RE.test(email)) continue;
-    if (isDemoEmail(email)) continue;
+    if (isExcludedRecipientEmail(email)) continue;
     byEmail.set(email, {
       userId: profile.id,
       email,
@@ -147,6 +156,40 @@ export const resolveNewsletterRecipients = async (
 };
 
 const isDemoEmail = (email: string) => DEMO_EMAIL_RE.test(email) || DEMO_EMAIL_PREFIX_RE.test(email);
+const isTechnicalProEmail = (email: string) => TECHNICAL_PRO_EMAIL_RE.test(email);
+const isExcludedRecipientEmail = (email: string) => isDemoEmail(email) || isTechnicalProEmail(email);
+
+const resolveUnreferencedProfessionalRecipients = async (manualEmails: string[]): Promise<Recipient[]> => {
+  const { data, error } = await supabaseAdmin
+    .from("companies")
+    .select("id, name, email")
+    .eq("source", "scraped")
+    .not("email", "is", null)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  const byEmail = new Map<string, Recipient>();
+  for (const company of data ?? []) {
+    const email = String(company.email ?? "").trim().toLowerCase();
+    if (!EMAIL_RE.test(email)) continue;
+    if (isExcludedRecipientEmail(email)) continue;
+    byEmail.set(email, {
+      userId: null,
+      email,
+      recipientType: "professional",
+      name: company.name ?? "Professionnel non référencé",
+    });
+  }
+
+  for (const email of manualEmails) {
+    if (!EMAIL_RE.test(email)) continue;
+    byEmail.set(email, { userId: null, email, recipientType: "manual" });
+  }
+
+  return [...byEmail.values()];
+};
 
 export const buildNewsletterHtml = ({
   subject,

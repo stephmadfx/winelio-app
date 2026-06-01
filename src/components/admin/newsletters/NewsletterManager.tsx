@@ -8,7 +8,7 @@ type Newsletter = {
   subject: string;
   content: string;
   status: "draft" | "scheduled" | "sending" | "sent" | "failed";
-  recipient_filters: { audience?: "all" | "professionals" | "individuals"; onlyActive?: boolean };
+  recipient_filters: { audience?: Audience; onlyActive?: boolean };
   selected_recipient_ids: string[];
   excluded_recipient_ids: string[];
   manual_emails: string[];
@@ -21,6 +21,8 @@ type Newsletter = {
   created_at: string;
   updated_at: string;
 };
+
+type Audience = "all" | "professionals" | "individuals" | "unreferencedProfessionals";
 
 type Profile = {
   id: string;
@@ -49,7 +51,7 @@ type Stats = {
 const emptyForm = {
   subject: "",
   content: "",
-  audience: "all" as "all" | "professionals" | "individuals",
+  audience: "all" as Audience,
   onlyActive: true,
   selectedRecipientIds: [] as string[],
   excludedRecipientIds: [] as string[],
@@ -286,12 +288,20 @@ export function NewsletterManager({
                 <select
                   disabled={!canEdit}
                   value={form.audience}
-                  onChange={(event) => setForm((current) => ({ ...current, audience: event.target.value as typeof form.audience }))}
+                  onChange={(event) => {
+                    const audience = event.target.value as Audience;
+                    setForm((current) => ({
+                      ...current,
+                      audience,
+                      selectedRecipientIds: audience === "unreferencedProfessionals" ? [] : current.selectedRecipientIds,
+                    }));
+                  }}
                   className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-winelio-orange/60 disabled:opacity-60"
                 >
                   <option value="all">Tous les utilisateurs</option>
                   <option value="professionals">Professionnels uniquement</option>
                   <option value="individuals">Particuliers uniquement</option>
+                  <option value="unreferencedProfessionals">Pros non référencés</option>
                 </select>
               </label>
               <label className="flex items-end gap-2 rounded-xl border border-border px-3 py-2">
@@ -305,6 +315,12 @@ export function NewsletterManager({
                 <span className="text-sm text-foreground">Utilisateurs actifs uniquement</span>
               </label>
             </div>
+
+            {form.audience === "unreferencedProfessionals" && (
+              <div className="rounded-xl border border-winelio-orange/25 bg-orange-50 px-4 py-3 text-sm text-winelio-dark dark:bg-orange-950/20 dark:text-orange-100">
+                Cette audience utilise uniquement les emails des entreprises scrapées non revendiquées. Les comptes Winelio inscrits et les comptes démo restent exclus.
+              </div>
+            )}
 
             <label className="block space-y-1.5">
               <span className="text-xs font-semibold text-muted-foreground uppercase">Sélection manuelle</span>
@@ -461,7 +477,7 @@ const toPayload = (form: typeof emptyForm) => ({
   subject: form.subject,
   content: form.content,
   recipientFilters: { audience: form.audience, onlyActive: form.onlyActive },
-  selectedRecipientIds: form.selectedRecipientIds,
+  selectedRecipientIds: form.audience === "unreferencedProfessionals" ? [] : form.selectedRecipientIds,
   excludedRecipientIds: form.excludedRecipientIds,
   manualEmails: form.manualEmails,
 });
