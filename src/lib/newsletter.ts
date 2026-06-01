@@ -27,6 +27,7 @@ type Recipient = {
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DEMO_EMAIL_RE = /@winelio-demo\.internal$/i;
 const NEWSLETTER_LOGO_HTML =
   '<img src="https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/logo-color.png" alt="Winelio" width="160" height="44" style="display:block;margin:0 auto;border:0;max-width:160px;" />';
 
@@ -54,9 +55,9 @@ export const parseManualEmails = (value: unknown): string[] => {
   const raw = Array.isArray(value) ? value.join(",") : String(value ?? "");
   return [...new Set(
     raw
-      .split(/[\s,;]+/)
-      .map((email) => email.trim().toLowerCase())
-      .filter(Boolean)
+    .split(/[\s,;]+/)
+    .map((email) => email.trim().toLowerCase())
+    .filter((email) => email && !DEMO_EMAIL_RE.test(email))
   )];
 };
 
@@ -99,6 +100,7 @@ export const resolveNewsletterRecipients = async (
     .from("profiles")
     .select("id, email, first_name, last_name, is_professional, is_active")
     .not("email", "is", null)
+    .eq("is_demo", false)
     .order("created_at", { ascending: false });
 
   if (selectedRecipientIds.length > 0) {
@@ -120,6 +122,7 @@ export const resolveNewsletterRecipients = async (
   for (const profile of data ?? []) {
     const email = String(profile.email ?? "").toLowerCase();
     if (!EMAIL_RE.test(email)) continue;
+    if (DEMO_EMAIL_RE.test(email)) continue;
     byEmail.set(email, {
       userId: profile.id,
       email,

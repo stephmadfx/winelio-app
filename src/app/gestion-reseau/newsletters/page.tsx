@@ -10,6 +10,8 @@ export default async function AdminNewslettersPage() {
     supabaseAdmin
       .from("profiles")
       .select("id, email, first_name, last_name, is_professional, is_active")
+      .eq("is_demo", false)
+      .not("email", "like", "%@winelio-demo.internal")
       .order("created_at", { ascending: false })
       .limit(500),
   ]);
