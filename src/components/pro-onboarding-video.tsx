@@ -55,27 +55,27 @@ export function ProOnboardingVideoReplayButton({
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[9200] flex items-center justify-center bg-winelio-dark/80 p-4 backdrop-blur-sm">
-          <div className="relative w-full max-w-xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-winelio-dark/85 p-3 backdrop-blur-sm sm:p-4">
+          <div className="relative flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[min(92vw,420px)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-w-xl sm:rounded-3xl">
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-winelio-dark shadow-lg transition hover:bg-white"
+              className="absolute right-3 top-3 z-50 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-winelio-dark shadow-lg ring-1 ring-black/10 transition hover:bg-winelio-light sm:right-4 sm:top-4"
               aria-label="Fermer la vidéo"
             >
               <X className="h-5 w-5" aria-hidden="true" />
             </button>
-            <div className="bg-winelio-dark p-3">
+            <div className="flex min-h-0 flex-1 items-center justify-center bg-winelio-dark p-2 sm:p-3">
               <video
                 ref={videoRef}
-                className="mx-auto aspect-[9/16] max-h-[76dvh] w-full max-w-[420px] rounded-2xl bg-winelio-dark object-contain"
+                className="aspect-[9/16] max-h-[calc(100dvh-11rem)] w-full max-w-[420px] rounded-xl bg-winelio-dark object-contain sm:max-h-[76dvh] sm:rounded-2xl"
                 src={PRO_ONBOARDING_VIDEO_SRC}
                 controls
                 playsInline
                 autoPlay
               />
             </div>
-            <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="shrink-0 flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
               <div>
                 <h3 className="text-base font-bold text-winelio-dark">Parcours professionnel Winelio</h3>
                 <p className="text-sm text-winelio-gray">Une vidéo courte pour revoir les avantages et les étapes.</p>

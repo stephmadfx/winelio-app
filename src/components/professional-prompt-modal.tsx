@@ -71,14 +71,18 @@ export function ProfessionalPromptModal({
   if (!visible || hiddenOnThisPath) return null;
 
   return (
-    <div className="fixed inset-0 z-[9100] flex items-center justify-center bg-winelio-dark/70 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-winelio-dark/80 p-3 backdrop-blur-sm sm:p-4">
+      <div className={`relative w-full overflow-hidden bg-white shadow-2xl ${
+        videoMode
+          ? "flex max-h-[calc(100dvh-1.5rem)] max-w-[min(92vw,420px)] flex-col rounded-2xl sm:max-w-xl sm:rounded-3xl"
+          : "max-h-[calc(100dvh-1.5rem)] max-w-4xl overflow-y-auto rounded-3xl"
+      }`}>
         <div className="h-1.5 bg-gradient-to-r from-winelio-orange to-winelio-amber" />
         <button
           type="button"
           onClick={closePrompt}
           disabled={saving}
-          className="absolute right-4 top-5 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-winelio-dark shadow-lg transition hover:bg-white disabled:opacity-50"
+          className="absolute right-3 top-3 z-50 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-winelio-dark shadow-lg ring-1 ring-black/10 transition hover:bg-winelio-light disabled:opacity-50 sm:right-4 sm:top-5"
           aria-label="Fermer"
         >
           <X className="h-5 w-5" aria-hidden="true" />
@@ -163,11 +167,15 @@ export function ProfessionalPromptModal({
             </div>
           </div>
         ) : (
-          <div ref={videoWrapRef} className="p-4 sm:p-6">
-            <div className="bg-winelio-dark p-2 sm:p-3">
-              <ProOnboardingVideoPlayer autoPlay onEnded={() => setVideoEnded(true)} />
+          <div ref={videoWrapRef} className="flex min-h-0 flex-1 flex-col">
+            <div className="flex min-h-0 flex-1 items-center justify-center bg-winelio-dark p-2 sm:p-3">
+              <ProOnboardingVideoPlayer
+                autoPlay
+                onEnded={() => setVideoEnded(true)}
+                className="max-h-[calc(100dvh-13rem)] rounded-xl sm:max-h-[76dvh] sm:rounded-2xl"
+              />
             </div>
-            <div className="flex flex-col gap-4 px-2 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-1">
+            <div className="shrink-0 flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-5">
               <div>
                 <h3 className="text-lg font-bold text-winelio-dark">Prêt à configurer votre profil pro ?</h3>
                 <p className="mt-1 text-sm text-winelio-gray">
