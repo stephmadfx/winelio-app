@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
@@ -14,6 +15,7 @@ import { ProfessionalPromptModal } from "@/components/professional-prompt-modal"
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 const PRO_PROMPT_DELAY_ROLLOUT_AT = new Date("2026-06-03T20:40:00.000Z");
+const PROFILE_SELECT = "first_name, last_name, phone, postal_code, city, address, birth_date, terms_accepted, avatar, is_professional, pro_engagement_accepted, pro_prompt_dismissed_at";
 
 type ProfileCompletionRecord = {
   first_name: string | null;
@@ -24,10 +26,15 @@ type ProfileCompletionRecord = {
   address: string | null;
   birth_date: string | null;
   terms_accepted: boolean | null;
+  avatar: string | null;
   is_professional: boolean | null;
   pro_engagement_accepted: boolean | null;
   pro_prompt_dismissed_at: string | null;
 };
+
+function hasHeaderIdentity(profile: ProfileCompletionRecord | null) {
+  return !!(profile?.first_name?.trim() || profile?.avatar?.trim());
+}
 
 export default async function ProtectedLayout({
   children,
@@ -51,10 +58,22 @@ export default async function ProtectedLayout({
 
   const { data: profileData } = await supabase
     .from("profiles")
-    .select("first_name, last_name, phone, postal_code, city, address, birth_date, terms_accepted, avatar, is_professional, pro_engagement_accepted, pro_prompt_dismissed_at")
+    .select(PROFILE_SELECT)
     .eq("id", user.id)
-    .single();
-  const profile = profileData as (ProfileCompletionRecord & { avatar?: string | null }) | null;
+    .maybeSingle();
+  let profile = profileData as ProfileCompletionRecord | null;
+
+  if (!hasHeaderIdentity(profile)) {
+    const { data: adminProfileData } = await supabaseAdmin
+      .from("profiles")
+      .select(PROFILE_SELECT)
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (adminProfileData) {
+      profile = adminProfileData as ProfileCompletionRecord;
+    }
+  }
 
   const isProfileComplete = !!(
     profile?.first_name?.trim() &&
