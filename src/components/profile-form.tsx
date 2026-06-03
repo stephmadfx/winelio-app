@@ -29,10 +29,11 @@ interface Profile {
   sponsor_id: string | null;
 }
 
-const REQUIRED_FIELDS = ["first_name", "last_name", "phone", "postal_code", "city", "address", "birth_date", "terms_accepted"] as const;
+const REQUIRED_STRING_FIELDS = ["first_name", "last_name", "phone", "postal_code", "city", "address", "birth_date"] as const;
 
 function isComplete(data: Record<string, unknown>) {
-  return REQUIRED_FIELDS.every((f) => typeof data[f] === "string" && (data[f] as string).trim() !== "");
+  return REQUIRED_STRING_FIELDS.every((f) => typeof data[f] === "string" && (data[f] as string).trim() !== "") &&
+    data.terms_accepted === true;
 }
 
 export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Profile; userEmail: string; companyEmail?: string | null }) {

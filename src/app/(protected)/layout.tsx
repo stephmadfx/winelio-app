@@ -14,6 +14,7 @@ import { isAtLeastAge } from "@/lib/age";
 import { ProfessionalPromptModal } from "@/components/professional-prompt-modal";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+const PRO_PROMPT_DELAY_ROLLOUT_AT = new Date("2026-06-03T20:40:00.000Z");
 
 type ProfileCompletionRecord = {
   first_name: string | null;
@@ -66,13 +67,20 @@ export default async function ProtectedLayout({
     profile?.terms_accepted
   );
   const ageVerified = profile?.birth_date ? isAtLeastAge(profile.birth_date) : null;
+  const accountCreatedAt = user.created_at ? new Date(user.created_at) : null;
+  const isNewAccountForProPrompt = !accountCreatedAt || accountCreatedAt >= PRO_PROMPT_DELAY_ROLLOUT_AT;
+  const professionalPromptDelayMs = isNewAccountForProPrompt ? 30_000 : 0;
   const showProfessionalPrompt = !!(
     profile &&
     !profile.is_professional &&
     !profile.pro_engagement_accepted &&
     !profile.pro_prompt_dismissed_at
   );
-  const showProfileIncompleteModal = !isProfileComplete && !showProfessionalPrompt;
+  const showProfileIncompleteModal = !!(
+    (!profile || profile.is_professional) &&
+    !isProfileComplete &&
+    !showProfessionalPrompt
+  );
 
   if (ageVerified === false) {
     return (
@@ -124,7 +132,7 @@ export default async function ProtectedLayout({
 
       {/* Modal profil incomplet */}
       {showProfileIncompleteModal && <ProfileIncompleteModal />}
-      {showProfessionalPrompt && <ProfessionalPromptModal />}
+      {showProfessionalPrompt && <ProfessionalPromptModal delayMs={professionalPromptDelayMs} />}
 
       {/* Desktop: sidebar + top bar avec greeting & avatar */}
       <div className="hidden lg:block">
