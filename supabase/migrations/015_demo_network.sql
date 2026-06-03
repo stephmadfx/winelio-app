@@ -253,14 +253,14 @@ BEGIN
         now() - ((floor(random() * 20))::text  || ' days')::interval
       );
 
-      -- Commission pour reco validée (niveau 1 = 4% de la commission 10%)
+      -- Commission pour reco validée (niveau 1 = 3% de la commission 10%)
       IF v_status = ANY(v_valid_st) THEN
         INSERT INTO winelio.commission_transactions
           (user_id, recommendation_id, amount, level, type, status,
            referrer_id, is_demo, earned_at, created_at)
         VALUES (
           p_user_id, v_reco_id,
-          ROUND(v_amount * 0.10 * 0.04, 2),
+          ROUND(v_amount * 0.10 * 0.03, 2),
           1, 'referral_level_1', 'EARNED',
           v_n1[i], true, now(), now()
         );
@@ -270,7 +270,7 @@ BEGIN
            referrer_id, is_demo, created_at)
         VALUES (
           p_user_id, v_reco_id,
-          ROUND(v_amount * 0.10 * 0.04, 2),
+          ROUND(v_amount * 0.10 * 0.03, 2),
           1, 'referral_level_1', 'PENDING',
           v_n1[i], true, now()
         );
@@ -317,7 +317,7 @@ BEGIN
          referrer_id, is_demo, earned_at, created_at)
       VALUES (
         p_user_id, v_reco_id,
-        ROUND(v_amount * 0.10 * 0.04, 2),
+        ROUND(v_amount * 0.10 * 0.03, 2),
         2, 'referral_level_2', 'EARNED',
         v_n2[i], true, now(), now()
       );
@@ -327,7 +327,7 @@ BEGIN
          referrer_id, is_demo, created_at)
       VALUES (
         p_user_id, v_reco_id,
-        ROUND(v_amount * 0.10 * 0.04, 2),
+        ROUND(v_amount * 0.10 * 0.03, 2),
         2, 'referral_level_2', 'PENDING',
         v_n2[i], true, now()
       );

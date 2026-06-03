@@ -67,12 +67,6 @@ function buildEmailHtml(code: string): string {
 
 export async function POST(req: Request) {
   try {
-    const disabledReason = getEmailDisabledReason();
-    if (disabledReason) {
-      console.warn(`[send-code] Envoi OTP ignoré: ${disabledReason}`);
-      return NextResponse.json({ error: "Envoi email désactivé sur cet environnement." }, { status: 403 });
-    }
-
     const { email } = await req.json();
 
     if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -82,6 +76,12 @@ export async function POST(req: Request) {
     // E2E test recipients : on saute aussi le rate-limit OTP (sinon les tests
     // qui créent plusieurs comptes/run sont bloqués).
     const isE2EAddress = /@winelio-e2e\.local$/i.test(email);
+
+    const disabledReason = getEmailDisabledReason();
+    if (disabledReason && !isE2EAddress) {
+      console.warn(`[send-code] Envoi OTP ignoré: ${disabledReason}`);
+      return NextResponse.json({ error: "Envoi email désactivé sur cet environnement." }, { status: 403 });
+    }
 
     if (!isE2EAddress) {
       const ip =

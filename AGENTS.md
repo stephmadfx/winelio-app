@@ -146,8 +146,8 @@ Toutes les tables ont des politiques RLS actives. Les utilisateurs ne voient que
 - `sponsor_id` pointe vers le parrain
 - Quand une reco est validée (étape 6) :
   - Referrer reçoit 60% de la commission
-  - Niveau 1 (sponsor du referrer) : 4%
-  - Niveau 2-5 : 4% chacun
+  - Niveau 1 (sponsor du referrer) : 3%
+  - Niveau 2-5 : 3% chacun
   - Affiliation bonus (sponsor du pro) : 1%
   - Cashback pro (en Wins) : 1%
   - Plateforme : 14%

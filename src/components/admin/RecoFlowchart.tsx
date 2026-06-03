@@ -511,7 +511,7 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
               💰 Commissions déclenchées automatiquement — 5 niveaux MLM
             </text>
             <text x={500} y={1031} textAnchor="middle" fontSize={10} fill="rgba(255,255,255,0.65)">
-              Recommandeur 60% · Niveaux 1–5 : 4% chacun (20%) · Affiliation 1% · Cashback pro 1% (Gains) · Winelio 14%
+              Recommandeur 60% · Niveaux 1–5 : 3% chacun (15%) · Affiliation 1% · Cashback pro 1% (Gains) · Winelio 14%
             </text>
             {ann.has("commissions") && <Badge x={914} y={1008} />}
           </g>

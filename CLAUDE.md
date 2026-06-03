@@ -313,8 +313,8 @@ assignée au pro (badge "Abandonnée par le pro" côté referrer).
 - `sponsor_id` pointe vers le parrain
 - Quand une reco atteint l'étape 6 (travaux + paiement) :
   - Referrer reçoit 60% de la commission (`recommendation`)
-  - Niveau 1 (sponsor du referrer) : 4% (`referral_level_1`)
-  - Niveau 2-5 : 4% chacun (`referral_level_2` … `referral_level_5`)
+  - Niveau 1 (sponsor du referrer) : 3% (`referral_level_1`)
+  - Niveau 2-5 : 3% chacun (`referral_level_2` … `referral_level_5`)
   - Affiliation bonus (sponsor du pro) : 1% (`affiliation_bonus`)
   - Cashback pro (en Wins) : 1% (`professional_cashback`)
   - Cagnotte Winelio : 14% (`platform_winelio`) → toujours distribuée, même en mode démo
