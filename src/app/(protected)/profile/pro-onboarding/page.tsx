@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { ProOnboardingWizard } from "@/components/ProOnboardingWizard";
+import { ProOnboardingVideoReplayButton } from "@/components/pro-onboarding-video";
 
 export default async function ProOnboardingPage() {
   const supabase = await createClient();
@@ -55,6 +56,20 @@ export default async function ProOnboardingPage() {
 
   return (
     <div className="max-w-lg mx-auto py-8 px-4">
+      <div className="mb-6 rounded-2xl border border-orange-100 bg-white p-5 shadow-sm">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-winelio-orange">
+          Profil professionnel
+        </p>
+        <h1 className="mt-2 text-2xl font-black text-winelio-dark">
+          Configurez votre activité pro
+        </h1>
+        <p className="mt-2 text-sm leading-6 text-winelio-gray">
+          Votre compte sera considéré comme professionnel uniquement après validation de ce parcours.
+        </p>
+        <div className="mt-4">
+          <ProOnboardingVideoReplayButton label="Revoir la vidéo explicative" />
+        </div>
+      </div>
       <ProOnboardingWizard
         categories={categories ?? []}
         defaultSiret={company?.siret ?? ""}

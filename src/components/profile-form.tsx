@@ -8,6 +8,7 @@ import { ProfileAvatar } from "@/components/profile-avatar";
 import { AvatarCropModal } from "@/components/avatar-crop-modal";
 import { WelcomeModal } from "@/components/welcome-modal";
 import { isAtLeastAge, maxBirthDate } from "@/lib/age";
+import { ProOnboardingVideoReplayButton } from "@/components/pro-onboarding-video";
 
 interface Profile {
   id: string;
@@ -419,7 +420,15 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
       {/* Email professionnel — visible uniquement pour les pros */}
       {profile.is_professional && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-winelio-dark mb-1">Email professionnel</h3>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-winelio-dark">Email professionnel</h3>
+              <p className="mt-1 text-sm text-winelio-gray">
+                Retrouvez ici vos réglages pro et la vidéo de rappel du parcours.
+              </p>
+            </div>
+            <ProOnboardingVideoReplayButton label="Revoir la vidéo pro" className="w-full sm:w-auto" />
+          </div>
           <p className="text-sm text-winelio-gray mb-4">
             Optionnel. C&apos;est l&apos;adresse où vous serez notifié lors d&apos;une nouvelle recommandation,
             en plus de votre email de connexion Winelio.
