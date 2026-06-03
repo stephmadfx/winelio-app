@@ -22,7 +22,7 @@ export async function GET(req: Request) {
   const { data: fu } = await supabaseAdmin
     .schema("winelio")
     .from("recommendation_followups")
-    .select("id, recommendation_id, after_step_order, status, report_count")
+    .select("id, recommendation_id, after_step_order, cycle_index, status, report_count, cancel_reason")
     .eq("id", verified.payload.fid)
     .single();
 
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
     return await handleDone(fu);
   }
   if (action === "postpone") {
-    return await handlePostpone(fu, postponeTo);
+    return await handlePostpone(fu, postponeTo, token);
   }
   if (action === "abandon") {
     // GET /abandon est juste un redirect vers la page de confirmation
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
   const { data: fu } = await supabaseAdmin
     .schema("winelio")
     .from("recommendation_followups")
-    .select("id, recommendation_id, after_step_order, status, report_count")
+    .select("id, recommendation_id, after_step_order, cycle_index, status, report_count, cancel_reason")
     .eq("id", verified.payload.fid)
     .single();
 
@@ -80,8 +80,10 @@ interface FollowupRow {
   id: string;
   recommendation_id: string;
   after_step_order: number;
+  cycle_index: number;
   status: string;
   report_count: number;
+  cancel_reason: string | null;
 }
 
 async function handleDone(fu: FollowupRow): Promise<Response> {
@@ -103,21 +105,32 @@ async function handleDone(fu: FollowupRow): Promise<Response> {
     return htmlPage("Déjà fait, merci", "Cette étape a déjà été marquée comme complétée. Merci !", "success");
   }
 
+  const actionability = await ensureRecommendationCanStillMove(fu);
+  if (!actionability.ok) {
+    return htmlPage(actionability.title, actionability.message, "error");
+  }
+
   await supabaseAdmin
     .schema("winelio")
     .from("recommendation_steps")
     .update({ completed_at: new Date().toISOString() })
     .eq("id", stepRow.id);
 
+  await supabaseAdmin
+    .schema("winelio")
+    .from("recommendations")
+    .update({ abandoned_by_pro_at: null })
+    .eq("id", fu.recommendation_id);
+
   // Le trigger SQL cancel les followups pending et crée le suivant si applicable.
   return htmlPage("Étape validée", "Merci ! L'étape a été marquée comme complétée.", "success");
 }
 
-async function handlePostpone(fu: FollowupRow, postponeToParam: string | null): Promise<Response> {
+async function handlePostpone(fu: FollowupRow, postponeToParam: string | null, token: string): Promise<Response> {
   if (!postponeToParam) {
     // Pas de paramètre → redirect vers la page menu
     return NextResponse.redirect(
-      `${SITE_URL}/recommendations/followup/${encodeURIComponent(buildTokenForFollowup(fu.id))}/postpone`
+      `${SITE_URL}/recommendations/followup/${encodeURIComponent(token)}/postpone`
     );
   }
   const result = await applyPostpone(fu, postponeToParam);
@@ -161,12 +174,6 @@ interface PostponeResult {
 }
 
 async function applyPostpone(fu: FollowupRow, postponeToParam: string): Promise<PostponeResult> {
-  if (fu.status !== "pending") {
-    return { error: true, title: "Déjà traitée", message: "Cette relance a déjà été traitée." };
-  }
-  if (fu.report_count >= MAX_REPORTS) {
-    return { error: true, status: 409, title: "Limite atteinte", message: `Vous avez atteint la limite de ${MAX_REPORTS} reports pour cette étape.` };
-  }
   const target = new Date(postponeToParam);
   if (isNaN(target.getTime())) {
     return { error: true, title: "Date invalide", message: "Date invalide." };
@@ -178,30 +185,183 @@ async function applyPostpone(fu: FollowupRow, postponeToParam: string): Promise<
     return { error: true, title: "Date hors limites", message: "La date doit être comprise entre +1h et +1 an." };
   }
 
+  const actionability = await ensureRecommendationCanStillMove(fu);
+  if (!actionability.ok) {
+    return actionability;
+  }
+
+  const postponable = await resolvePostponableFollowup(fu);
+  if ("error" in postponable) {
+    return postponable;
+  }
+
+  if (postponable.reportCount >= MAX_REPORTS) {
+    return { error: true, status: 409, title: "Limite atteinte", message: `Vous avez atteint la limite de ${MAX_REPORTS} reports pour cette étape.` };
+  }
+
+  const nextReportCount = postponable.reportCount + 1;
+  const scheduledAt = target.toISOString();
+
+  if (postponable.kind === "update") {
+    const { error } = await supabaseAdmin
+      .schema("winelio")
+      .from("recommendation_followups")
+      .update({
+        scheduled_at: scheduledAt,
+        cycle_index: 1,
+        report_count: nextReportCount,
+        cancel_reason: null,
+      })
+      .eq("id", postponable.id)
+      .eq("status", "pending");
+
+    if (error) {
+      return { error: true, status: 500, title: "Erreur", message: "Impossible de reporter cette relance pour le moment." };
+    }
+  } else {
+    const { error } = await supabaseAdmin
+      .schema("winelio")
+      .from("recommendation_followups")
+      .insert({
+        recommendation_id: fu.recommendation_id,
+        after_step_order: fu.after_step_order,
+        cycle_index: 1,
+        scheduled_at: scheduledAt,
+        report_count: nextReportCount,
+      });
+
+    if (error) {
+      return { error: true, status: 500, title: "Erreur", message: "Impossible de reprogrammer cette relance pour le moment." };
+    }
+  }
+
+  if (fu.status !== "pending" && (fu.status === "sent" || fu.status === "superseded" || fu.cancel_reason === "pro_abandoned")) {
+    await supabaseAdmin
+      .schema("winelio")
+      .from("recommendation_followups")
+      .update({ status: "superseded", cancel_reason: "postponed" })
+      .eq("id", fu.id)
+      .in("status", ["sent", "superseded", "cancelled"]);
+  }
+
   await supabaseAdmin
     .schema("winelio")
-    .from("recommendation_followups")
-    .update({
-      scheduled_at: target.toISOString(),
-      cycle_index: 1,
-      report_count: fu.report_count + 1,
-    })
-    .eq("id", fu.id);
+    .from("recommendations")
+    .update({ abandoned_by_pro_at: null })
+    .eq("id", fu.recommendation_id);
 
   return {
     title: "Reportée",
     message: "OK",
-    scheduledAt: target.toISOString(),
+    scheduledAt,
     formattedDate: target.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }),
   };
 }
 
-function buildTokenForFollowup(_fid: string): string {
-  // Helper interne uniquement utilisé pour le redirect ci-dessus.
-  // Le token original est déjà dans l'URL côté pro, mais ici on renvoie vers la page sans regenerate.
-  // En pratique, on ne devrait jamais arriver ici (l'utilisateur passe par /postpone directement),
-  // mais on prévoit un fallback safe qui demande de revenir à l'email.
-  return "";
+type ActionabilityResult =
+  | { ok: true }
+  | { ok: false; error: true; status?: number; title: string; message: string };
+
+async function ensureRecommendationCanStillMove(fu: FollowupRow): Promise<ActionabilityResult> {
+  if (fu.status === "cancelled" && fu.cancel_reason !== "pro_abandoned") {
+    return {
+      ok: false,
+      error: true,
+      status: 409,
+      title: "Relance annulée",
+      message: messageForCancelReason(fu.cancel_reason),
+    };
+  }
+
+  const { data: rec } = await supabaseAdmin
+    .schema("winelio")
+    .from("recommendations")
+    .select("status")
+    .eq("id", fu.recommendation_id)
+    .single();
+
+  if (!rec) {
+    return { ok: false, error: true, status: 404, title: "Recommandation introuvable", message: "Cette recommandation n'existe plus." };
+  }
+  if (rec.status === "CANCELLED") {
+    return { ok: false, error: true, status: 409, title: "Recommandation annulée", message: "Cette recommandation a été annulée." };
+  }
+  if (rec.status === "TRANSFERRED") {
+    return { ok: false, error: true, status: 409, title: "Recommandation transférée", message: "Cette recommandation a déjà été transférée." };
+  }
+
+  const { data: laterSteps } = await supabaseAdmin
+    .schema("winelio")
+    .from("recommendation_steps")
+    .select("id, step:steps(order_index)")
+    .eq("recommendation_id", fu.recommendation_id)
+    .not("completed_at", "is", null);
+
+  const hasLaterStepDone = laterSteps?.some((row) => {
+    const step = Array.isArray(row.step) ? row.step[0] : row.step;
+    return (step?.order_index ?? 0) > fu.after_step_order;
+  });
+
+  if (hasLaterStepDone) {
+    return {
+      ok: false,
+      error: true,
+      status: 409,
+      title: "Étape déjà avancée",
+      message: "Cette recommandation a déjà avancé depuis cette relance.",
+    };
+  }
+
+  return { ok: true };
+}
+
+type PostponableFollowup =
+  | { kind: "update"; id: string; reportCount: number }
+  | { kind: "insert"; reportCount: number }
+  | { error: true; status?: number; title: string; message: string };
+
+async function resolvePostponableFollowup(fu: FollowupRow): Promise<PostponableFollowup> {
+  if (fu.status === "pending") {
+    return { kind: "update", id: fu.id, reportCount: fu.report_count };
+  }
+
+  const canUseEmailLink =
+    fu.status === "sent" ||
+    fu.status === "superseded" ||
+    (fu.status === "cancelled" && fu.cancel_reason === "pro_abandoned");
+
+  if (!canUseEmailLink) {
+    return { error: true, status: 409, title: "Déjà traitée", message: "Cette relance a déjà été traitée." };
+  }
+
+  const { data: pending, error } = await supabaseAdmin
+    .schema("winelio")
+    .from("recommendation_followups")
+    .select("id, report_count")
+    .eq("recommendation_id", fu.recommendation_id)
+    .eq("after_step_order", fu.after_step_order)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    return { error: true, status: 500, title: "Erreur", message: "Impossible de retrouver la prochaine relance." };
+  }
+
+  if (pending) {
+    return { kind: "update", id: pending.id, reportCount: pending.report_count };
+  }
+
+  return { kind: "insert", reportCount: fu.report_count };
+}
+
+function messageForCancelReason(reason: string | null): string {
+  if (reason === "next_step_done") return "L'étape suivante a déjà été complétée.";
+  if (reason === "reco_refused") return "Cette recommandation a été refusée.";
+  if (reason === "reco_transferred") return "Cette recommandation a été transférée.";
+  if (reason === "pro_abandoned") return "Le cycle de relance est déjà terminé.";
+  return "Cette relance n'est plus active.";
 }
 
 function htmlPage(title: string, message: string, variant: "success" | "error"): Response {
