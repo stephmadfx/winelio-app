@@ -6,7 +6,6 @@ import { MobileNav } from "@/components/mobile-nav";
 import { MobileHeader } from "@/components/mobile-header";
 import { DesktopHeader } from "@/components/desktop-header";
 import { AppBackground } from "@/components/AppBackground";
-import { ProfileIncompleteModal } from "@/components/profile-incomplete-modal";
 import { BugReportButton } from "@/components/bug-report-button";
 import { DemoSeedBanner } from "@/components/DemoSeedBanner";
 import { BetaBanner } from "@/components/BetaBanner";
@@ -72,14 +71,8 @@ export default async function ProtectedLayout({
   const professionalPromptDelayMs = isNewAccountForProPrompt ? 30_000 : 0;
   const showProfessionalPrompt = !!(
     profile &&
-    !profile.is_professional &&
     !profile.pro_engagement_accepted &&
     !profile.pro_prompt_dismissed_at
-  );
-  const showProfileIncompleteModal = !!(
-    (!profile || profile.is_professional) &&
-    !isProfileComplete &&
-    !showProfessionalPrompt
   );
 
   if (ageVerified === false) {
@@ -130,8 +123,6 @@ export default async function ProtectedLayout({
       <BetaBanner />
       {DEMO_MODE && <DemoSeedBanner />}
 
-      {/* Modal profil incomplet */}
-      {showProfileIncompleteModal && <ProfileIncompleteModal />}
       {showProfessionalPrompt && <ProfessionalPromptModal delayMs={professionalPromptDelayMs} />}
 
       {/* Desktop: sidebar + top bar avec greeting & avatar */}
