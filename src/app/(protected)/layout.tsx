@@ -15,7 +15,7 @@ import { ProfessionalPromptModal } from "@/components/professional-prompt-modal"
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 const PRO_PROMPT_DELAY_ROLLOUT_AT = new Date("2026-06-03T20:40:00.000Z");
-const PROFILE_SELECT = "first_name, last_name, phone, postal_code, city, address, birth_date, terms_accepted, avatar, is_professional, pro_engagement_accepted, pro_prompt_dismissed_at";
+const PROFILE_SELECT = "first_name, last_name, phone, postal_code, city, address, birth_date, terms_accepted, avatar, is_professional, pro_engagement_accepted";
 
 type ProfileCompletionRecord = {
   first_name: string | null;
@@ -29,7 +29,6 @@ type ProfileCompletionRecord = {
   avatar: string | null;
   is_professional: boolean | null;
   pro_engagement_accepted: boolean | null;
-  pro_prompt_dismissed_at: string | null;
 };
 
 function hasHeaderIdentity(profile: ProfileCompletionRecord | null) {
@@ -75,6 +74,16 @@ export default async function ProtectedLayout({
     }
   }
 
+  const { data: proPromptData, error: proPromptError } = await supabase
+    .from("profiles")
+    .select("pro_prompt_dismissed_at")
+    .eq("id", user.id)
+    .maybeSingle();
+  const proPromptDismissedAt = proPromptError
+    ? new Date().toISOString()
+    : (proPromptData as { pro_prompt_dismissed_at: string | null } | null)
+      ?.pro_prompt_dismissed_at ?? null;
+
   const isProfileComplete = !!(
     profile?.first_name?.trim() &&
     profile?.last_name?.trim() &&
@@ -91,7 +100,7 @@ export default async function ProtectedLayout({
   const showProfessionalPrompt = !!(
     profile &&
     !profile.pro_engagement_accepted &&
-    !profile.pro_prompt_dismissed_at
+    !proPromptDismissedAt
   );
 
   if (ageVerified === false) {
