@@ -32,7 +32,7 @@
 | POST | `/api/recommendations/complete-step` | user | Body `{ recommendation_id, step_id, quote_amount? }`. Valide étape (check completion_role REFERRER/PROFESSIONAL). Étape 6 → [DÉCLENCHE] Stripe checkout (stripe-checkout.ts). [DÉCLENCHE] notifyReferrerStep. |
 | POST | `/api/recommendations/[id]/refuse` | user (pro) | Pro refuse la reco (status PENDING → CANCELLED). [DÉCLENCHE] notifyRecoRefused. |
 | POST | `/api/recommendations/[id]/transfer` | user | Transfère la reco à un autre pro. [PERSISTE DANS] transferred_at, transfer_reason, original_recommendation_id. |
-| POST | `/api/recommendations/process-followups` | Bearer CRON_SECRET | Cron 15min. Scanne followups pending échus, envoie relances, programme cycles 2/3, pose abandoned_by_pro_at après cycle 3. [UTILISE] notifyProFollowup, notifyProAbandoned. |
+| POST | `/api/recommendations/process-followups` | Bearer CRON_SECRET | Cron 15min. Scanne followups pending échus, envoie relances, programme cycles 2/3, pose abandoned_by_pro_at 48h après le cycle 3 sans action. [UTILISE] notifyProFollowup, notifyProAbandoned. |
 | GET/POST | `/api/recommendations/followup-action` | token HMAC | Actions email (done/postpone/abandon). GET=done/redirect, POST=confirmation postpone/abandon. [UTILISE] verifyFollowupToken. |
 | POST | `/api/recommendations/cron-scraped-reminder` | Bearer CRON_SECRET | Relances pros scrapés 12h après création (si email placeholder et pas ouvert). 24h après → alerte referrer. [UTILISE] notifyScrapedReminder, notifyReferrerNoResponse. |
 

@@ -9,6 +9,7 @@ import { notifyProAbandoned } from "@/lib/notify-pro-abandoned";
 const BATCH_SIZE = 50;
 const DELAY_CYCLE_2_HOURS = 48;
 const DELAY_CYCLE_3_DAYS = 5;
+const THIRD_CYCLE_GRACE_HOURS = 48;
 
 export async function POST(req: Request) {
   const auth = req.headers.get("authorization") ?? "";
@@ -17,11 +18,12 @@ export async function POST(req: Request) {
   }
 
   const now = new Date().toISOString();
+  const abandoned = await abandonExpiredThirdCycleFollowups();
 
   const { data: pending, error } = await supabaseAdmin
     .schema("winelio")
     .from("recommendation_followups")
-    .select("id, recommendation_id, after_step_order, cycle_index")
+    .select("id, recommendation_id, after_step_order, cycle_index, report_count")
     .eq("status", "pending")
     .lte("scheduled_at", now)
     .order("scheduled_at", { ascending: true })
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   if (!pending || pending.length === 0) {
-    return NextResponse.json({ processed: 0 });
+    return NextResponse.json({ processed: 0, abandoned });
   }
 
   let sent = 0;
@@ -84,17 +86,11 @@ export async function POST(req: Request) {
             after_step_order: fu.after_step_order,
             cycle_index: fu.cycle_index + 1,
             scheduled_at: nextAt,
+            report_count: fu.report_count,
           });
       } else {
-        // Cycle 3 envoyé → marquer la reco comme abandonnée + notifier le referrer
-        await supabaseAdmin
-          .schema("winelio")
-          .from("recommendations")
-          .update({ abandoned_by_pro_at: new Date().toISOString() })
-          .eq("id", fu.recommendation_id)
-          .is("abandoned_by_pro_at", null);
-
-        await notifyProAbandoned(fu.recommendation_id);
+        // Cycle 3 envoyé : le pro garde une fenêtre d'action avant l'abandon.
+        // Le prochain passage du cron marquera l'abandon si aucune action n'a été faite.
       }
 
       sent++;
@@ -104,7 +100,94 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ processed: pending.length, sent, cancelled, failed });
+  return NextResponse.json({ processed: pending.length, sent, cancelled, failed, abandoned });
+}
+
+async function abandonExpiredThirdCycleFollowups(): Promise<number> {
+  const cutoff = new Date(Date.now() - THIRD_CYCLE_GRACE_HOURS * 60 * 60 * 1000).toISOString();
+
+  const { data: staleFollowups, error } = await supabaseAdmin
+    .schema("winelio")
+    .from("recommendation_followups")
+    .select("id, recommendation_id, after_step_order")
+    .eq("status", "sent")
+    .eq("cycle_index", 3)
+    .not("sent_at", "is", null)
+    .lte("sent_at", cutoff)
+    .order("sent_at", { ascending: true })
+    .limit(BATCH_SIZE);
+
+  if (error) {
+    console.error("[process-followups] abandon scan error:", error.message);
+    return 0;
+  }
+
+  let abandoned = 0;
+
+  for (const fu of staleFollowups ?? []) {
+    const reason = await checkCancelReason(fu.recommendation_id, fu.after_step_order);
+    if (reason) {
+      await supabaseAdmin
+        .schema("winelio")
+        .from("recommendation_followups")
+        .update({ status: "cancelled", cancel_reason: reason })
+        .eq("id", fu.id);
+      continue;
+    }
+
+    const hasPending = await hasPendingFollowup(fu.recommendation_id, fu.after_step_order);
+    if (hasPending) {
+      continue;
+    }
+
+    const { data: updatedRec, error: recError } = await supabaseAdmin
+      .schema("winelio")
+      .from("recommendations")
+      .update({ abandoned_by_pro_at: new Date().toISOString() })
+      .eq("id", fu.recommendation_id)
+      .is("abandoned_by_pro_at", null)
+      .select("id")
+      .maybeSingle();
+
+    if (recError) {
+      console.error(`[process-followups] abandon update error ${fu.recommendation_id}:`, recError.message);
+      continue;
+    }
+
+    await supabaseAdmin
+      .schema("winelio")
+      .from("recommendation_followups")
+      .update({ status: "cancelled", cancel_reason: "pro_abandoned" })
+      .eq("id", fu.id);
+
+    if (updatedRec) {
+      await notifyProAbandoned(fu.recommendation_id);
+      abandoned++;
+    }
+  }
+
+  return abandoned;
+}
+
+async function hasPendingFollowup(
+  recommendationId: string,
+  afterStepOrder: number
+): Promise<boolean> {
+  const { data, error } = await supabaseAdmin
+    .schema("winelio")
+    .from("recommendation_followups")
+    .select("id")
+    .eq("recommendation_id", recommendationId)
+    .eq("after_step_order", afterStepOrder)
+    .eq("status", "pending")
+    .limit(1);
+
+  if (error) {
+    console.error(`[process-followups] pending lookup error ${recommendationId}:`, error.message);
+    return true;
+  }
+
+  return (data?.length ?? 0) > 0;
 }
 
 async function checkCancelReason(
