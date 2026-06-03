@@ -12,7 +12,7 @@ import { e2eEmail } from "./helpers/env";
 const PLAN = {
   rate: 10,           // 10 % du dealAmount = baseCommission
   referrer: 60,       // 60 % de baseCommission
-  level: 4,           // 4 % par niveau MLM × 5
+  level: 3,           // 3 % par niveau MLM × 5
   platform: 14,
   affiliation: 1,
   cashback: 1,
@@ -21,7 +21,7 @@ const DEAL = 1000;
 const BASE = DEAL * PLAN.rate / 100;        // 100 €
 const expected = {
   recommendation: BASE * PLAN.referrer / 100,    // 60 €
-  level:          BASE * PLAN.level / 100,        // 4 €
+  level:          BASE * PLAN.level / 100,        // 3 €
   platform:       BASE * PLAN.platform / 100,     // 14 €
   affiliation:    BASE * PLAN.affiliation / 100,  // 1 €
   cashback:       BASE * PLAN.cashback / 100,     // 1 €
@@ -101,7 +101,7 @@ async function runFullRecoFlow(page: import("@playwright/test").Page, opts: {
 /* ──────────────────────────────────────────────────────────── */
 /* Test 1 : chaîne MLM complète → tous les % attendus           */
 /* ──────────────────────────────────────────────────────────── */
-test("commissions — chaîne MLM 6 niveaux : 60% + 5×4% + 14% + 1% + 1% Wins", async ({ page }) => {
+test("commissions — chaîne MLM 6 niveaux : 60% + 5×3% + 14% + 1% + 1% Wins", async ({ page }) => {
   const chain = await buildFullChain();
 
   const recoId = await runFullRecoFlow(page, {
@@ -127,7 +127,7 @@ test("commissions — chaîne MLM 6 niveaux : 60% + 5×4% + 14% + 1% + 1% Wins",
   expect(reco?.amount).toBeCloseTo(expected.recommendation, 2);
   expect(reco?.user_id).toBe(chain.referrer.id);
 
-  // 2) 5 niveaux MLM : 4 € chacun, à L1, L2, L3, L4, L5
+  // 2) 5 niveaux MLM : 3 € chacun, à L1, L2, L3, L4, L5
   const expectedLevels = [
     { type: "referral_level_1", recipientId: chain.l1.id },
     { type: "referral_level_2", recipientId: chain.l2.id },
@@ -155,7 +155,7 @@ test("commissions — chaîne MLM 6 niveaux : 60% + 5×4% + 14% + 1% + 1% Wins",
   expect(cb?.amount).toBeCloseTo(expected.cashback, 2);
   expect(cb?.user_id).toBe(chain.pro.id);
 
-  // 6) total distribué ≈ 96% × baseCommission
+  // 6) total distribué ≈ 91% × baseCommission
   const total = commissions!.reduce((s, c) => s + Number(c.amount), 0);
   const expectedTotal = expected.recommendation + 5 * expected.level
     + expected.platform + expected.affiliation + expected.cashback;
@@ -192,7 +192,7 @@ test("commissions — spillover : chaîne courte L0+L1 → niveaux 2-5 + affilia
 
   const byType = new Map(commissions!.map((c) => [c.type, c]));
 
-  // referrer touche bien 60 € + level_1 (root) touche 4 €
+  // referrer touche bien 60 € + level_1 (root) touche 3 €
   expect(Number(byType.get("recommendation")?.amount)).toBeCloseTo(expected.recommendation, 2);
   expect(Number(byType.get("referral_level_1")?.amount)).toBeCloseTo(expected.level, 2);
   expect(byType.get("referral_level_1")?.user_id).toBe(root.id);
@@ -203,10 +203,10 @@ test("commissions — spillover : chaîne courte L0+L1 → niveaux 2-5 + affilia
   expect(byType.has("referral_level_4")).toBe(false);
   expect(byType.has("referral_level_5")).toBe(false);
 
-  // platform_winelio = 14% + spillover (4 niveaux × 4% manquants)
+  // platform_winelio = 14% + spillover (4 niveaux × 3% manquants)
   // affiliation_bonus va au referrer (pro.sponsor=referrer existe), pas de spillover dessus
-  const undistributedLevels = 4 * expected.level;          // 16 €
-  const expectedPlatform = expected.platform + undistributedLevels;  // 30 €
+  const undistributedLevels = 4 * expected.level;          // 12 €
+  const expectedPlatform = expected.platform + undistributedLevels;  // 26 €
   expect(Number(byType.get("platform_winelio")?.amount)).toBeCloseTo(expectedPlatform, 1);
 });
 
@@ -347,7 +347,7 @@ test("commissions — pro sans sponsor : affiliation_bonus absorbé par platform
   // affiliation_bonus est absent
   expect(byType.has("affiliation_bonus")).toBe(false);
 
-  // platform_winelio absorbe les 1% d'affiliation + les 4×4% niveaux 2-5 manquants (chaîne courte)
+  // platform_winelio absorbe les 1% d'affiliation + les 4×3% niveaux 2-5 manquants (chaîne courte)
   const expectedPlatform = expected.platform + expected.affiliation + 4 * expected.level;
   expect(Number(byType.get("platform_winelio")?.amount)).toBeCloseTo(expectedPlatform, 1);
 

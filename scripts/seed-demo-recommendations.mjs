@@ -104,7 +104,7 @@ async function createRecommendations(referrerId, count, sponsorChain) {
       totalCommissions++;
 
       // Commissions réseau vers les sponsors (niveaux 1-5)
-      const LEVEL_RATES = [0.04, 0.04, 0.04, 0.04, 0.04];
+      const LEVEL_RATES = [0.03, 0.03, 0.03, 0.03, 0.03];
       for (let lvl = 0; lvl < Math.min(sponsorChain.length, 5); lvl++) {
         const sponsorId = sponsorChain[lvl];
         const levelCommission = Math.round(amount * LEVEL_RATES[lvl]);

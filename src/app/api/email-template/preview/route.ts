@@ -212,7 +212,7 @@ const TEMPLATES: Record<string, () => string> = {
     <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
     <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;">Bonjour <strong style="color:#2D3436;">${REFERRER}</strong>,<br><br><strong style="color:#2D3436;">Sophie Martin</strong> vient de s'inscrire avec votre code parrain. Bienvenue dans votre réseau&nbsp;!</p></td></tr>
     ${infoBlock(`<p style="margin:0 0 8px;color:#2D3436;font-size:13px;font-weight:600;">Ce que ça change pour vous :</p>
-    <p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Vous toucherez <strong style="color:#FF6B35;">4&nbsp;%</strong> de commission sur chaque recommandation aboutie de Sophie (niveau 1 du MLM), et 4&nbsp;% supplémentaires sur les filleuls qu'elle parrainera à son tour.</p>`)}
+    <p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Vous toucherez <strong style="color:#FF6B35;">3&nbsp;%</strong> de commission sur chaque recommandation aboutie de Sophie (niveau 1 du MLM), et 3&nbsp;% supplémentaires sur les filleuls qu'elle parrainera à son tour.</p>`)}
     ${cta(`${SITE}/network`, "Voir mon réseau →")}
   `),
 

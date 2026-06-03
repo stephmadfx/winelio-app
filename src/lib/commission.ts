@@ -126,7 +126,7 @@ export async function createCommissions(
     },
   ];
 
-  // Niveaux MLM (4% × 5) — les niveaux non distribués (chaîne trop courte) vont à la cagnotte
+  // Niveaux MLM (3% × 5) — les niveaux non distribués (chaîne trop courte) vont à la cagnotte
   let currentId = referrerId;
   let undistributed = 0;
   let chainBroken = false;

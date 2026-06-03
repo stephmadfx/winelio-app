@@ -624,7 +624,7 @@ const FLOW_NODES_DEF = [
   { id: "etape-5",         type: "action-orange",  label: "Étape 5 — Devis soumis",                      sublabel: "Le professionnel renseigne le montant du devis" },
   { id: "etape-7",         type: "action",         label: "Étape 7 — Paiement de la commission confirmé" },
   // Commissions
-  { id: "commissions",     type: "commissions",    label: "💰 Commissions créées automatiquement — 5 niveaux", sublabel: "Recommandeur 60% · Niveaux 1→5 : 4% · Professionnel 1% Gains · Winelio 14%" },
+  { id: "commissions",     type: "commissions",    label: "💰 Commissions créées automatiquement — 5 niveaux", sublabel: "Recommandeur 60% · Niveaux 1→5 : 3% · Professionnel 1% Gains · Winelio 14%" },
   // Négatifs
   { id: "rejetee",         type: "negative",       label: "❌ Rejetée" },
   { id: "annulee",         type: "negative",       label: "⏸ Annulée" },
