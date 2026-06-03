@@ -1,5 +1,5 @@
 -- Backfill cagnotte Winelio pour les commissions créées avant la migration 20260414
--- Calcul : plateforme 14% = (montant referrer / 60) * 14 (même logique que calculateCommissions)
+-- Calcul : plateforme 23% = (montant referrer / 60) * 23 (même logique que calculateCommissions)
 -- Idempotent via ON CONFLICT DO NOTHING
 
 INSERT INTO winelio.commission_transactions
@@ -7,7 +7,7 @@ INSERT INTO winelio.commission_transactions
 SELECT
   ct.recommendation_id,
   '00000000-0000-0000-0000-000000000001',
-  ROUND((ct.amount / 60.0 * 14.0)::numeric, 2),
+  ROUND((ct.amount / 60.0 * 23.0)::numeric, 2),
   'platform_winelio',
   0,
   'EARNED',

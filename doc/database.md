@@ -109,7 +109,7 @@ RLS : SELECT public.
 | commission_rate | numeric DEFAULT 10 | % appliqué sur le montant deal |
 | referrer_percentage | numeric DEFAULT 60 | |
 | level_1..5_percentage | numeric DEFAULT 3 each | niveaux MLM |
-| platform_percentage | numeric DEFAULT 14 | cagnotte Winelio [20260414_cagnotte_winelio.sql] |
+| platform_percentage | numeric DEFAULT 23 | cagnotte Winelio, tout le reste [20260414_cagnotte_winelio.sql] |
 | affiliation_percentage | numeric DEFAULT 1 | sponsor du pro [20260414_cagnotte_winelio.sql] |
 | cashback_wins_percentage | numeric DEFAULT 1 | cashback pro en Wins [20260414_cagnotte_winelio.sql] |
 | priority, conditions | int / jsonb | |

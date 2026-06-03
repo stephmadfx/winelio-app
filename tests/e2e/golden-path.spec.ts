@@ -124,7 +124,7 @@ test("golden path : reco standard 7 étapes + commissions MLM", async ({ page, c
   expect(commissions!.length).toBeGreaterThanOrEqual(5);
 
   const types = new Set(commissions!.map((c) => c.type));
-  // Au minimum : 60% referrer + 14% plateforme + au moins 1 niveau MLM
+  // Au minimum : 60% referrer + 23% plateforme + au moins 1 niveau MLM
   expect(types).toContain("recommendation");
   expect(types).toContain("platform_winelio");
   expect(

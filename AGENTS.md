@@ -150,7 +150,7 @@ Toutes les tables ont des politiques RLS actives. Les utilisateurs ne voient que
   - Niveau 2-5 : 3% chacun
   - Affiliation bonus (sponsor du pro) : 1%
   - Cashback pro (en Wins) : 1%
-  - Plateforme : 14%
+  - Plateforme : 23% (tout le reste)
 
 ### Wallet
 - **EUR** : total_earned, total_withdrawn, pending_commissions, available

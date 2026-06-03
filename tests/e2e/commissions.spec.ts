@@ -13,7 +13,7 @@ const PLAN = {
   rate: 10,           // 10 % du dealAmount = baseCommission
   referrer: 60,       // 60 % de baseCommission
   level: 3,           // 3 % par niveau MLM × 5
-  platform: 14,
+  platform: 23,       // tout le reste va a Winelio
   affiliation: 1,
   cashback: 1,
 };
@@ -22,7 +22,7 @@ const BASE = DEAL * PLAN.rate / 100;        // 100 €
 const expected = {
   recommendation: BASE * PLAN.referrer / 100,    // 60 €
   level:          BASE * PLAN.level / 100,        // 3 €
-  platform:       BASE * PLAN.platform / 100,     // 14 €
+  platform:       BASE * PLAN.platform / 100,     // 23 €
   affiliation:    BASE * PLAN.affiliation / 100,  // 1 €
   cashback:       BASE * PLAN.cashback / 100,     // 1 €
 };
@@ -101,7 +101,7 @@ async function runFullRecoFlow(page: import("@playwright/test").Page, opts: {
 /* ──────────────────────────────────────────────────────────── */
 /* Test 1 : chaîne MLM complète → tous les % attendus           */
 /* ──────────────────────────────────────────────────────────── */
-test("commissions — chaîne MLM 6 niveaux : 60% + 5×3% + 14% + 1% + 1% Wins", async ({ page }) => {
+test("commissions — chaîne MLM 6 niveaux : 60% + 5×3% + 23% + 1% + 1% Wins", async ({ page }) => {
   const chain = await buildFullChain();
 
   const recoId = await runFullRecoFlow(page, {
@@ -141,7 +141,7 @@ test("commissions — chaîne MLM 6 niveaux : 60% + 5×3% + 14% + 1% + 1% Wins",
     expect(c?.user_id, `${lvl.type} recipient`).toBe(lvl.recipientId);
   }
 
-  // 3) plateforme Winelio : 14 € (pro a un sponsor donc pas de spillover)
+  // 3) plateforme Winelio : 23 € (pro a un sponsor donc pas de spillover)
   const platform = byType.get("platform_winelio");
   expect(platform?.amount).toBeCloseTo(expected.platform, 2);
 
@@ -155,7 +155,7 @@ test("commissions — chaîne MLM 6 niveaux : 60% + 5×3% + 14% + 1% + 1% Wins",
   expect(cb?.amount).toBeCloseTo(expected.cashback, 2);
   expect(cb?.user_id).toBe(chain.pro.id);
 
-  // 6) total distribué ≈ 91% × baseCommission
+  // 6) total distribué = 100% × baseCommission
   const total = commissions!.reduce((s, c) => s + Number(c.amount), 0);
   const expectedTotal = expected.recommendation + 5 * expected.level
     + expected.platform + expected.affiliation + expected.cashback;
@@ -203,10 +203,10 @@ test("commissions — spillover : chaîne courte L0+L1 → niveaux 2-5 + affilia
   expect(byType.has("referral_level_4")).toBe(false);
   expect(byType.has("referral_level_5")).toBe(false);
 
-  // platform_winelio = 14% + spillover (4 niveaux × 3% manquants)
+  // platform_winelio = 23% + spillover (4 niveaux × 3% manquants)
   // affiliation_bonus va au referrer (pro.sponsor=referrer existe), pas de spillover dessus
   const undistributedLevels = 4 * expected.level;          // 12 €
-  const expectedPlatform = expected.platform + undistributedLevels;  // 26 €
+  const expectedPlatform = expected.platform + undistributedLevels;  // 35 €
   expect(Number(byType.get("platform_winelio")?.amount)).toBeCloseTo(expectedPlatform, 1);
 });
 

@@ -81,7 +81,7 @@ CREATE TABLE public.compensation_plans (
     level_3_percentage numeric DEFAULT 3,
     level_4_percentage numeric DEFAULT 3,
     level_5_percentage numeric DEFAULT 3,
-    platform_percentage numeric DEFAULT 14,
+    platform_percentage numeric DEFAULT 23,
     priority integer DEFAULT 0,
     conditions jsonb DEFAULT '[]'::jsonb,
     is_default boolean DEFAULT false,
