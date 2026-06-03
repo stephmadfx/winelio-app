@@ -68,3 +68,53 @@ export function WinelioLogo({ variant = "color", height = 44, className, gradien
     </span>
   );
 }
+
+export function WinelioLogoWithTagline({ variant = "color", height = 64, className, gradientId }: WinelioLogoProps) {
+  const taglineColor = variant === "color" ? "#636E72" : "rgba(255,255,255,0.65)";
+  const accentColor = variant === "white" ? "#ffffff" : "#FF6B35";
+  const dividerColor = variant === "white" ? "#ffffff" : "linear-gradient(90deg,#FF6B35,#F7931E)";
+
+  return (
+    <span
+      className={className}
+      style={{
+        display: "inline-flex",
+        flexDirection: "column",
+        alignItems: "center",
+      }}
+    >
+      <WinelioLogo
+        variant={variant}
+        height={height}
+        gradientId={gradientId ?? `wGrad-tagline-${variant}`}
+      />
+      <span
+        aria-hidden="true"
+        style={{
+          width: 48,
+          height: 2,
+          marginTop: 12,
+          marginLeft: 16,
+          borderRadius: 2,
+          background: dividerColor,
+        }}
+      />
+      <span
+        style={{
+          marginTop: 8,
+          marginLeft: 16,
+          color: taglineColor,
+          fontFamily: "var(--font-poppins), 'Helvetica Neue', Arial, sans-serif",
+          fontSize: Math.round(height * 0.2),
+          fontWeight: 400,
+          letterSpacing: "0.04em",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
+        }}
+      >
+        Recommandez. Connectez.{" "}
+        <strong style={{ color: accentColor, fontWeight: 700 }}>Développez.</strong>
+      </span>
+    </span>
+  );
+}

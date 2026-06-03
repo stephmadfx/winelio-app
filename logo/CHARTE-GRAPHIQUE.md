@@ -54,7 +54,7 @@ Direction : 135° (gauche-haut → droite-bas) pour les aplats, 90° (gauche →
 **Orange `#FF6B35`**
 - W du logo (départ du dégradé)
 - Boutons d'action principaux (CTA)
-- Mot "Gagnez." dans la tagline
+- Mot "Développez." dans la tagline
 - Éléments actifs dans la navigation
 
 **Charcoal `#2D3436`**
@@ -98,10 +98,10 @@ Caption      : Poppins 400 — 11-12px, letter-spacing +0.1em
 
 ## 4. Tagline
 
-> **Recommandez. Connectez. Gagnez.**
+> **Recommandez. Connectez. Développez.**
 
 - "Recommandez. Connectez." — Poppins Regular, couleur secondaire
-- **"Gagnez."** — Poppins Bold, couleur Orange `#FF6B35`
+- **"Développez."** — Poppins Bold, couleur Orange `#FF6B35`
 - Casse : première lettre en majuscule par mot (pas tout en majuscules)
 
 ---

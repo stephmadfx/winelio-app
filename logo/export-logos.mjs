@@ -102,7 +102,7 @@ function lockupTaglineHTML(wFill, textColor, tagColor, tagAccent, fontSize = 80,
   </div>
   <div style="width:48px;height:2px;background:linear-gradient(90deg,#FF6B35,#F7931E);border-radius:2px;margin-left:16px;"></div>
   <p style="font-size:${Math.round(fontSize*0.19)}px;font-weight:400;letter-spacing:0.04em;color:${tagColor};text-align:center;margin-left:16px;">
-    Recommandez. Connectez. <strong style="color:${tagAccent};font-weight:700;">Gagnez.</strong>
+    Recommandez. Connectez. <strong style="color:${tagAccent};font-weight:700;">Développez.</strong>
   </p>
 </div>`;
 }
@@ -152,7 +152,7 @@ function squareHTML(size, bg, wFill, textColor, tagColor, tagAccent) {
   <p style="font-size:${tagSize}px;font-weight:400;letter-spacing:0.04em;
              color:${tagColor};text-align:center;margin:0;
              font-family:'Poppins',sans-serif;">
-    Recommandez. Connectez. <strong style="color:${tagAccent};font-weight:700;">Gagnez.</strong>
+    Recommandez. Connectez. <strong style="color:${tagAccent};font-weight:700;">Développez.</strong>
   </p>
 </div>`;
 }
@@ -337,7 +337,7 @@ function taglineFO(tagColor, accentColor, fontSize = 18) {
     <div style="width:48px;height:2px;background:linear-gradient(90deg,#FF6B35,#F7931E);border-radius:2px;margin-left:16px;margin-top:4px;"></div>
     <p style="font-size:${fontSize}px;font-weight:400;letter-spacing:0.04em;color:${tagColor};
                text-align:center;margin:8px 0 0;margin-left:16px;font-family:'Poppins',sans-serif;">
-      Recommandez. Connectez. <strong style="color:${accentColor};font-weight:700;">Gagnez.</strong>
+      Recommandez. Connectez. <strong style="color:${accentColor};font-weight:700;">Développez.</strong>
     </p>`;
 }
 
