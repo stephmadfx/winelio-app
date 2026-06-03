@@ -11,6 +11,7 @@ import { BugReportButton } from "@/components/bug-report-button";
 import { DemoSeedBanner } from "@/components/DemoSeedBanner";
 import { BetaBanner } from "@/components/BetaBanner";
 import { isAtLeastAge } from "@/lib/age";
+import { ProfessionalPromptModal } from "@/components/professional-prompt-modal";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
@@ -23,6 +24,9 @@ type ProfileCompletionRecord = {
   address: string | null;
   birth_date: string | null;
   terms_accepted: boolean | null;
+  is_professional: boolean | null;
+  pro_engagement_accepted: boolean | null;
+  pro_prompt_dismissed_at: string | null;
 };
 
 export default async function ProtectedLayout({
@@ -47,7 +51,7 @@ export default async function ProtectedLayout({
 
   const { data: profileData } = await supabase
     .from("profiles")
-    .select("first_name, last_name, phone, postal_code, city, address, birth_date, terms_accepted, avatar")
+    .select("first_name, last_name, phone, postal_code, city, address, birth_date, terms_accepted, avatar, is_professional, pro_engagement_accepted, pro_prompt_dismissed_at")
     .eq("id", user.id)
     .single();
   const profile = profileData as (ProfileCompletionRecord & { avatar?: string | null }) | null;
@@ -62,6 +66,13 @@ export default async function ProtectedLayout({
     profile?.terms_accepted
   );
   const ageVerified = profile?.birth_date ? isAtLeastAge(profile.birth_date) : null;
+  const showProfessionalPrompt = !!(
+    isProfileComplete &&
+    profile &&
+    !profile.is_professional &&
+    !profile.pro_engagement_accepted &&
+    !profile.pro_prompt_dismissed_at
+  );
 
   if (ageVerified === false) {
     return (
@@ -113,6 +124,7 @@ export default async function ProtectedLayout({
 
       {/* Modal profil incomplet */}
       {!isProfileComplete && <ProfileIncompleteModal />}
+      {showProfessionalPrompt && <ProfessionalPromptModal />}
 
       {/* Desktop: sidebar + top bar avec greeting & avatar */}
       <div className="hidden lg:block">
