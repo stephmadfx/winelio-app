@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Play, RotateCcw, X } from "lucide-react";
 
 export const PRO_ONBOARDING_VIDEO_SRC = "/videos/pro-onboarding.mp4";
@@ -35,7 +36,23 @@ export function ProOnboardingVideoReplayButton({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
 
   const replay = () => {
     if (!videoRef.current) return;
@@ -54,7 +71,7 @@ export function ProOnboardingVideoReplayButton({
         {label}
       </button>
 
-      {open && (
+      {open && mounted && createPortal(
         <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-winelio-dark/85 p-3 backdrop-blur-sm sm:p-4">
           <div className="relative flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[min(92vw,420px)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-w-xl sm:rounded-3xl">
             <button
@@ -90,7 +107,8 @@ export function ProOnboardingVideoReplayButton({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
