@@ -70,9 +70,9 @@ export function MobileHeader({
   const [isOpen, setIsOpen] = useState(false);
   const [visible, setVisible] = useState(false); // contrôle le rendu DOM
 
-  const rawName = firstName ?? userEmail.split("@")[0];
+  const rawName = firstName?.trim() || "Mon profil";
   const displayName = rawName
-    ? rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase()
+    ? rawName.charAt(0).toUpperCase() + rawName.slice(1)
     : rawName;
   const initials = displayName.slice(0, 2).toUpperCase();
 

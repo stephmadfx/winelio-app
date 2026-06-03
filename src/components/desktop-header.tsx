@@ -15,7 +15,7 @@ export function DesktopHeader({
   avatar?: string | null;
   demoBanner?: boolean;
 }) {
-  const displayName = firstName ?? userEmail.split("@")[0];
+  const displayName = firstName?.trim() || "Mon profil";
 
   // Salutation calculée côté client uniquement pour éviter une mismatch hydration
   const [greeting, setGreeting] = useState("Bonjour,");
