@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Play, RotateCcw, X } from "lucide-react";
 
-export const PRO_ONBOARDING_VIDEO_SRC = "/videos/pro-onboarding.mp4";
+export const PRO_ONBOARDING_VIDEO_SRC =
+  "https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev/winelio/pro-onboarding.mp4";
 
 export function ProOnboardingVideoPlayer({
   autoPlay = false,
