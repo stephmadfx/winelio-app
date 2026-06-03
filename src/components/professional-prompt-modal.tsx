@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowRight, BriefcaseBusiness, CheckCircle2, Play, X } from "lucide-react";
 import { ProOnboardingVideoPlayer } from "@/components/pro-onboarding-video";
@@ -16,6 +17,7 @@ export function ProfessionalPromptModal({
   const pathname = usePathname();
   const router = useRouter();
   const videoWrapRef = useRef<HTMLDivElement | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [videoMode, setVideoMode] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
@@ -23,6 +25,21 @@ export function ProfessionalPromptModal({
   const [saving, setSaving] = useState(false);
 
   const hiddenOnThisPath = HIDDEN_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!visible || hiddenOnThisPath) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [hiddenOnThisPath, visible]);
 
   useEffect(() => {
     if (hiddenOnThisPath) return;
@@ -68,9 +85,9 @@ export function ProfessionalPromptModal({
     router.push("/profile/pro-onboarding");
   };
 
-  if (!visible || hiddenOnThisPath) return null;
+  if (!mounted || !visible || hiddenOnThisPath) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-winelio-dark/80 p-3 backdrop-blur-sm sm:p-4">
       <div className={`relative w-full overflow-hidden bg-white shadow-2xl ${
         videoMode
@@ -198,6 +215,7 @@ export function ProfessionalPromptModal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
