@@ -67,12 +67,12 @@ export default async function ProtectedLayout({
   );
   const ageVerified = profile?.birth_date ? isAtLeastAge(profile.birth_date) : null;
   const showProfessionalPrompt = !!(
-    isProfileComplete &&
     profile &&
     !profile.is_professional &&
     !profile.pro_engagement_accepted &&
     !profile.pro_prompt_dismissed_at
   );
+  const showProfileIncompleteModal = !isProfileComplete && !showProfessionalPrompt;
 
   if (ageVerified === false) {
     return (
@@ -123,7 +123,7 @@ export default async function ProtectedLayout({
       {DEMO_MODE && <DemoSeedBanner />}
 
       {/* Modal profil incomplet */}
-      {!isProfileComplete && <ProfileIncompleteModal />}
+      {showProfileIncompleteModal && <ProfileIncompleteModal />}
       {showProfessionalPrompt && <ProfessionalPromptModal />}
 
       {/* Desktop: sidebar + top bar avec greeting & avatar */}
