@@ -317,7 +317,7 @@ assignée au pro (badge "Abandonnée par le pro" côté referrer).
   - Niveau 2-5 : 3% chacun (`referral_level_2` … `referral_level_5`)
   - Affiliation bonus (sponsor du pro) : 1% (`affiliation_bonus`)
   - Cashback pro (en Wins) : 1% (`professional_cashback`)
-  - Cagnotte Winelio : 14% (`platform_winelio`) → toujours distribuée, même en mode démo
+  - Cagnotte Winelio : 23% (`platform_winelio`) → tout le reste, toujours distribué, même en mode démo
 
 ### Cagnotte Winelio
 - **UUID système fixe** : `00000000-0000-0000-0000-000000000001` (`WINELIO_SYSTEM_USER_ID`)

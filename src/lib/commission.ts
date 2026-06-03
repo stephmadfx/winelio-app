@@ -42,7 +42,7 @@ export function calculateCommissions(
     .map((pct, i) => ({ level: i + 1, amount: baseCommission * (pct / 100) }))
     .filter((lc) => lc.amount > 0);
 
-  const platform_commission   = baseCommission * ((plan.platform_percentage   ?? 14) / 100);
+  const platform_commission   = baseCommission * ((plan.platform_percentage   ?? 23) / 100);
   const affiliation_commission = baseCommission * ((plan.affiliation_percentage ?? 1)  / 100);
   const cashback_wins          = baseCommission * ((plan.cashback_wins_percentage ?? 1) / 100);
 
@@ -115,7 +115,7 @@ export async function createCommissions(
       level: 0,
       status: COMMISSION_STATUS.PENDING,
     },
-    // Cagnotte Winelio (14%)
+    // Cagnotte Winelio (23% : tout le reste après réseau, affiliation et cashback)
     {
       recommendation_id: recommendationId,
       user_id: WINELIO_SYSTEM_USER_ID,

@@ -224,7 +224,7 @@ test("chemin 6 : chaîne MLM courte → spillover sur platform_winelio", async (
     data: { recommendation_id: recoId, step_id: stepIdx.get(6) },
   });
 
-  // platform_winelio doit recevoir > 14 % de la commission (14% de base + spillover des niveaux 3-5)
+  // platform_winelio doit recevoir > 23 % de la commission (23% de base + spillover des niveaux 3-5)
   const { data: commissions } = await wn()
     .from("commission_transactions")
     .select("type, amount")
@@ -234,7 +234,7 @@ test("chemin 6 : chaîne MLM courte → spillover sur platform_winelio", async (
   expect(platform, "platform_winelio absent").toBeTruthy();
 
   const referrerCom = commissions?.find((c) => c.type === "recommendation");
-  // Si chaîne courte → platform > niveau classique (14% + spillover des niveaux manquants)
+  // Si chaîne courte → platform > niveau classique (23% + spillover des niveaux manquants)
   expect(Number(platform!.amount)).toBeGreaterThan(0);
   expect(Number(platform!.amount)).toBeLessThanOrEqual(Number(referrerCom!.amount));
 });

@@ -3,13 +3,13 @@
 
 -- ── 1. Colonnes dans compensation_plans ───────────────────────────────────────
 ALTER TABLE winelio.compensation_plans
-  ADD COLUMN IF NOT EXISTS platform_percentage    NUMERIC NOT NULL DEFAULT 14,
+  ADD COLUMN IF NOT EXISTS platform_percentage    NUMERIC NOT NULL DEFAULT 23,
   ADD COLUMN IF NOT EXISTS affiliation_percentage NUMERIC NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS cashback_wins_percentage NUMERIC NOT NULL DEFAULT 1;
 
 -- Mettre à jour le plan par défaut
 UPDATE winelio.compensation_plans
-SET platform_percentage     = 14,
+SET platform_percentage     = 23,
     affiliation_percentage  = 1,
     cashback_wins_percentage = 1
 WHERE is_default = true;
