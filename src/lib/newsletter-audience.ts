@@ -65,6 +65,27 @@ const first = <T>(value: T | T[] | null | undefined) =>
 
 const normalize = (value?: string | null) => value?.trim().toLowerCase() ?? "";
 
+const isTechnicalNewsletterEmail = (email?: string | null) => {
+  const value = normalize(email);
+  if (!value) return true;
+
+  return (
+    value.startsWith("removed-user-")
+    || value.endsWith("@deleted.winelio.local")
+    || value.endsWith("@winelio-demo.internal")
+    || value.endsWith("@demo-winelio.fr")
+    || value.endsWith("@kiparlo-demo.fr")
+    || value.endsWith("@winelio-scraped.local")
+    || value.endsWith("@winelio-pro.fr")
+    || value.endsWith("@kiparlo-pro.fr")
+    || value.endsWith("@yopmail.com")
+    || value.endsWith("@mailsac.com")
+    || value.includes("@winko")
+    || value === "testlocal@winelio.app"
+    || /^(demo|test)[._-]/.test(value)
+  );
+};
+
 const asIsoBoundary = (value: string | undefined, endOfDay = false) => {
   if (!value) return "";
   const date = new Date(value);
@@ -242,6 +263,23 @@ export const previewNewsletterAudience = async (filters: NewsletterAudienceFilte
       )
     `)
     .not("email", "is", null)
+    .not("email", "ilike", "removed-user-%")
+    .not("email", "ilike", "%@deleted.winelio.local")
+    .not("email", "ilike", "%@winelio-demo.internal")
+    .not("email", "ilike", "%@demo-winelio.fr")
+    .not("email", "ilike", "%@kiparlo-demo.fr")
+    .not("email", "ilike", "%@winelio-scraped.local")
+    .not("email", "ilike", "%@winelio-pro.fr")
+    .not("email", "ilike", "%@kiparlo-pro.fr")
+    .not("email", "ilike", "%@yopmail.com")
+    .not("email", "ilike", "%@mailsac.com")
+    .not("email", "ilike", "%@winko%")
+    .not("email", "ilike", "demo.%")
+    .not("email", "ilike", "demo_%")
+    .not("email", "ilike", "demo-%")
+    .not("email", "ilike", "test.%")
+    .not("email", "ilike", "test_%")
+    .not("email", "ilike", "test-%")
     .order("created_at", { ascending: false })
     .limit(10_000);
 
@@ -270,6 +308,7 @@ export const previewNewsletterAudience = async (filters: NewsletterAudienceFilte
   const recipients = ((data ?? []) as ProfileRow[])
     .filter((profile) => {
       if (!profile.email) return false;
+      if (isTechnicalNewsletterEmail(profile.email)) return false;
       if (filters.audienceType === "members" && profile.is_professional === true) return false;
       if (hasRequiredRelations && !relatedIds.has(profile.id)) return false;
       if (excludedIds.has(profile.id)) return false;
