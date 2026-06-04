@@ -117,5 +117,11 @@ export async function notifyReferrerStep(recommendationId: string, stepIndex: nu
   </td></tr></table>
 </body></html>`;
 
-  await queueEmail({ to: referrer.email, subject, html });
+  await queueEmail({
+    to: referrer.email,
+    subject,
+    html,
+    dedupeKey: `recommendation:${recommendationId}:step:${stepIndex}:referrer`,
+    throwOnError: true,
+  });
 }

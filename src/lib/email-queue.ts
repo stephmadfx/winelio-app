@@ -12,6 +12,14 @@ export interface QueueEmailParams {
   priority?: number;
   /** Délai avant envoi */
   scheduledAt?: Date;
+  /** Cle metier stable pour eviter les doublons lors des retries. */
+  dedupeKey?: string;
+  /** Remonte l'erreur aux appels critiques au lieu de seulement logger. */
+  throwOnError?: boolean;
+}
+
+export interface QueueEmailResult {
+  inserted: boolean;
 }
 
 /**
@@ -19,7 +27,7 @@ export interface QueueEmailParams {
  * L'envoi effectif est délégué au cron process-email-queue (max 600/h).
  * Ne pas utiliser pour les OTP (temps-réel) ni les emails avec pièce jointe PDF.
  */
-export async function queueEmail(params: QueueEmailParams): Promise<void> {
+export async function queueEmail(params: QueueEmailParams): Promise<QueueEmailResult> {
   const { error } = await supabaseAdmin
     .schema("winelio")
     .from("email_queue")
@@ -32,9 +40,21 @@ export async function queueEmail(params: QueueEmailParams): Promise<void> {
       reply_to:     params.replyTo ?? null,
       priority:     params.priority ?? 5,
       scheduled_at: params.scheduledAt?.toISOString() ?? new Date().toISOString(),
+      dedupe_key:   params.dedupeKey ?? null,
     });
 
   if (error) {
+    if (params.dedupeKey && error.code === "23505") {
+      return { inserted: false };
+    }
+
     console.error("[email-queue] Erreur insertion:", error.message);
+    if (params.throwOnError) {
+      throw error;
+    }
+
+    return { inserted: false };
   }
+
+  return { inserted: true };
 }
