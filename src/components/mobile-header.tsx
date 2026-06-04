@@ -250,7 +250,30 @@ export function MobileHeader({
             </nav>
 
             {/* Pied */}
-            <div className="px-4 py-5 border-t border-black/5">
+            <div className="px-4 py-5 border-t border-black/5 space-y-3">
+              <Link
+                href="/documents-legaux"
+                className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all ${
+                  pathname.startsWith("/documents-legaux")
+                    ? "bg-gradient-to-r from-winelio-orange to-winelio-amber text-white shadow-sm"
+                    : "text-winelio-gray hover:bg-winelio-orange/5 hover:text-winelio-dark"
+                }`}
+              >
+                <svg
+                  className="w-5 h-5 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={pathname.startsWith("/documents-legaux") ? 2 : 1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                Documents légaux
+              </Link>
               <SignOutButton variant="light" />
             </div>
           </div>
