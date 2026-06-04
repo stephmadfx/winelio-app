@@ -41,20 +41,18 @@ const navItems = [
     href: "/settings",
     icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
   },
+  {
+    label: "Documents légaux",
+    href: "/documents-legaux",
+    icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z",
+  },
 ];
 
 export function Sidebar({ userEmail, isSuperAdmin, demoBanner = false }: { userEmail: string; isSuperAdmin?: boolean; demoBanner?: boolean }) {
   const pathname = usePathname();
 
   return (
-    <aside
-      className="fixed left-0 w-64 bg-[#eff1f2] border-r border-black/5 flex flex-col"
-      style={
-        demoBanner
-          ? { top: "var(--beta-banner-h, 0px)", height: "calc(100vh - var(--beta-banner-h, 0px))" }
-          : { top: 0, height: "100vh" }
-      }
-    >
+    <aside className={`fixed left-0 w-64 bg-[#eff1f2] border-r border-black/5 flex flex-col ${demoBanner ? "top-6 h-[calc(100vh-1.5rem)]" : "top-0 h-screen"}`}>
 
       {/* Logo */}
       <div className="px-5 py-6 border-b border-black/5">
@@ -68,15 +66,10 @@ export function Sidebar({ userEmail, isSuperAdmin, demoBanner = false }: { userE
       <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-          const tourKey =
-            item.href === "/network" ? "sidebar-network" :
-            item.href === "/wallet" ? "sidebar-wallet" :
-            undefined;
           return (
             <Link
               key={item.href}
               href={item.href}
-              data-tour={tourKey}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 isActive
                   ? "bg-white text-winelio-orange shadow-sm shadow-black/5"

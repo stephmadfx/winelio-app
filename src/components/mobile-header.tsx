@@ -45,6 +45,11 @@ const navItems = [
     href: "/settings",
     icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
   },
+  {
+    label: "Documents légaux",
+    href: "/documents-legaux",
+    icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z",
+  },
 ];
 
 const ANIM_DURATION = 500;
@@ -70,10 +75,7 @@ export function MobileHeader({
   const [isOpen, setIsOpen] = useState(false);
   const [visible, setVisible] = useState(false); // contrôle le rendu DOM
 
-  const rawName = firstName?.trim() || "Mon profil";
-  const displayName = rawName
-    ? rawName.charAt(0).toUpperCase() + rawName.slice(1)
-    : rawName;
+  const displayName = firstName ?? userEmail.split("@")[0];
   const initials = displayName.slice(0, 2).toUpperCase();
 
   const hour = new Date().getHours();
@@ -106,35 +108,36 @@ export function MobileHeader({
     <>
       {/* ── Header bar ── */}
       <header
-        className="fixed left-0 right-0 z-50 bg-winelio-light/80 backdrop-blur-md border-b border-black/5 shadow-sm lg:hidden"
-        style={{ top: demoBanner ? "var(--beta-banner-h, 0px)" : 0 }}
+        className={`fixed left-0 right-0 z-50 bg-winelio-light/80 backdrop-blur-md border-b border-black/5 shadow-sm lg:hidden ${
+          demoBanner ? "top-6" : "top-0"
+        }`}
       >
-        <div className="flex items-center px-4 h-16 gap-2">
+        <div className="relative flex items-center justify-between px-4 h-16">
           {/* Gauche : logo */}
-          <Link href="/dashboard" aria-label="Winelio — Accueil" className="shrink-0">
+          <Link href="/dashboard" aria-label="Winelio — Accueil">
             <WinelioLogo variant="color" height={28} gradientId="wGrad-mheader" />
           </Link>
 
-          {/* Centre : avatar + greeting — flex-1 garantit qu'il ne déborde jamais */}
-          <div className="flex-1 flex items-center justify-center gap-2 overflow-hidden">
+          {/* Centre : avatar + greeting */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
             <ProfileAvatar
               name={displayName}
               avatar={avatar}
-              className="h-[30px] w-[30px] shrink-0 ring-2 ring-winelio-orange/20"
+              className="h-[30px] w-[30px] ring-2 ring-winelio-orange/20"
               initialsClassName="text-[10px] font-bold"
             />
-            <div className="flex flex-col items-start leading-none min-w-0">
+            <div className="flex flex-col items-start leading-none">
               <span className="text-[10px] uppercase tracking-widest text-winelio-gray font-bold">
                 {greeting}
               </span>
-              <span className="font-bold text-sm text-winelio-orange tracking-tight truncate">
+              <span className="font-bold text-sm text-winelio-orange tracking-tight">
                 {displayName} 👋
               </span>
             </div>
           </div>
 
           {/* Droite : bug + hamburger */}
-          <div className="shrink-0 flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5">
             <BugReportButton userId={userId} allBugReports={allBugReports} variant="inline" />
             <button
               onClick={openMenu}

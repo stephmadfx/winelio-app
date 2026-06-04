@@ -5,21 +5,19 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./lib/supabase/config";
 // Rate limiter en mémoire (best-effort, par process).
 // LIMITATION : en environnement multi-worker (ex: PM2 cluster), chaque worker a son propre
 // compteur. Pour une protection stricte, remplacer par un compteur Redis/Upstash.
-
-type Bucket = { count: number; resetAt: number };
-
-// Bucket générique : 60 req/min/IP toutes routes /api confondues
-const rateMap = new Map<string, Bucket>();
-const RATE_LIMIT = 60;
-const RATE_WINDOW_MS = 60_000;
+const rateMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 60; // requêtes max par fenêtre
+const RATE_WINDOW_MS = 60_000; // 1 minute
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
   const entry = rateMap.get(ip);
+
   if (!entry || now > entry.resetAt) {
     rateMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
     return false;
   }
+
   entry.count++;
   return entry.count > RATE_LIMIT;
 }
@@ -28,8 +26,11 @@ function isRateLimited(ip: string): boolean {
 if (typeof globalThis !== "undefined") {
   const timer = setInterval(() => {
     const now = Date.now();
-    for (const [key, val] of rateMap) if (now > val.resetAt) rateMap.delete(key);
+    for (const [key, val] of rateMap) {
+      if (now > val.resetAt) rateMap.delete(key);
+    }
   }, 5 * 60_000);
+  // Permet au process de se terminer sans attendre l'intervalle
   if (typeof timer === "object" && "unref" in timer) timer.unref();
 }
 
@@ -43,11 +44,6 @@ export async function middleware(request: NextRequest) {
       path.startsWith("/api/bugs/imap-debug") ||
       path.startsWith("/api/email/process-queue") ||
       path.startsWith("/api/stripe/cron-reminders") ||
-      path.startsWith("/api/recommendations/process-followups") ||
-      path.startsWith("/api/recommendations/cron-scraped-reminder") ||
-      path.startsWith("/api/recommendations/followup-action") ||
-      path.startsWith("/api/admin/auth-health") ||
-      path.startsWith("/recommendations/followup/") ||
       path.startsWith("/api/video/");
     const isExempt =
       path === "/staging-login" ||
@@ -75,20 +71,9 @@ export async function middleware(request: NextRequest) {
     "unknown";
 
   if (request.nextUrl.pathname.startsWith("/api/")) {
-    // Bypass rate-limit pour la suite E2E : header partagé via env.
-    // Le token doit être stocké côté serveur (E2E_BYPASS_TOKEN) ET côté
-    // tests (extraHTTPHeaders dans playwright.config.ts).
-    const bypassToken = request.headers.get("x-e2e-bypass-token");
-    const isE2EBypass =
-      !!process.env.E2E_BYPASS_TOKEN &&
-      bypassToken === process.env.E2E_BYPASS_TOKEN;
-
-    if (!isE2EBypass && isRateLimited(ip)) {
+    if (isRateLimited(ip)) {
       return new NextResponse("Too Many Requests", { status: 429 });
     }
-    // Note : rate-limit dédié OTP (5/heure/IP) est appliqué dans
-    // /api/auth/send-code lui-même pour pouvoir exempter les emails
-    // de test E2E (@winelio-e2e.local).
   }
 
   let supabaseResponse = NextResponse.next({ request });
@@ -133,12 +118,7 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/bugs/imap-debug") &&
     !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
     !request.nextUrl.pathname.startsWith("/api/email-track/") &&
-    !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders") &&
-    !request.nextUrl.pathname.startsWith("/api/recommendations/process-followups") &&
-    !request.nextUrl.pathname.startsWith("/api/recommendations/cron-scraped-reminder") &&
-    !request.nextUrl.pathname.startsWith("/api/recommendations/followup-action") &&
-    !request.nextUrl.pathname.startsWith("/api/admin/auth-health") &&
-    !request.nextUrl.pathname.startsWith("/api/staging-auth")
+    !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders")
   ) {
     if (!user) {
       return NextResponse.json(
@@ -158,16 +138,9 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
     !request.nextUrl.pathname.startsWith("/api/email-track/") &&
     !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders") &&
-    !request.nextUrl.pathname.startsWith("/api/recommendations/process-followups") &&
-    !request.nextUrl.pathname.startsWith("/api/recommendations/cron-scraped-reminder") &&
-    !request.nextUrl.pathname.startsWith("/api/recommendations/followup-action") &&
-    !request.nextUrl.pathname.startsWith("/api/admin/auth-health") &&
-    !request.nextUrl.pathname.startsWith("/recommendations/followup/") &&
     !request.nextUrl.pathname.startsWith("/claim") &&
     !request.nextUrl.pathname.startsWith("/conditions-generales-utilisation") &&
-    !request.nextUrl.pathname.startsWith("/monitoring/") &&
-    request.nextUrl.pathname !== "/staging-login" &&
-    request.nextUrl.pathname !== "/api/staging-auth" &&
+    !request.nextUrl.pathname.startsWith("/documents-legaux") &&
     request.nextUrl.pathname !== "/"
   ) {
     const url = request.nextUrl.clone();

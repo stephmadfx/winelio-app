@@ -42,7 +42,7 @@ export function calculateCommissions(
     .map((pct, i) => ({ level: i + 1, amount: baseCommission * (pct / 100) }))
     .filter((lc) => lc.amount > 0);
 
-  const platform_commission   = baseCommission * ((plan.platform_percentage   ?? 23) / 100);
+  const platform_commission   = baseCommission * ((plan.platform_percentage   ?? 14) / 100);
   const affiliation_commission = baseCommission * ((plan.affiliation_percentage ?? 1)  / 100);
   const cashback_wins          = baseCommission * ((plan.cashback_wins_percentage ?? 1) / 100);
 
@@ -54,9 +54,6 @@ export function calculateCommissions(
  * Idempotente : ne fait rien si des commissions existent déjà pour cette recommandation.
  * Utilise supabaseAdmin pour bypasser la RLS (pas de policy INSERT sur commission_transactions).
  * Le trigger DB `on_commission_change` met à jour user_wallet_summaries automatiquement.
- * Les commissions restent PENDING jusqu'au paiement Stripe du pro.
- * La commission directe du recommandeur reste PENDING tant que son avis qualifié
- * n'a pas été déposé.
  */
 export async function createCommissions(
   recommendationId: string,
@@ -113,20 +110,20 @@ export async function createCommissions(
       amount: referrer_commission,
       type: COMMISSION_TYPE.RECOMMENDATION,
       level: 0,
-      status: COMMISSION_STATUS.PENDING,
+      status: COMMISSION_STATUS.EARNED,
     },
-    // Cagnotte Winelio (23% : tout le reste après réseau, affiliation et cashback)
+    // Cagnotte Winelio (23% sur le plan standard actif)
     {
       recommendation_id: recommendationId,
       user_id: WINELIO_SYSTEM_USER_ID,
       amount: platform_commission,
       type: COMMISSION_TYPE.PLATFORM_WINELIO,
       level: 0,
-      status: COMMISSION_STATUS.PENDING,
+      status: COMMISSION_STATUS.EARNED,
     },
   ];
 
-  // Niveaux MLM (3% × 5) — les niveaux non distribués (chaîne trop courte) vont à la cagnotte
+  // Niveaux MLM (3% × 5 sur le plan standard actif) — les niveaux non distribués vont à la cagnotte
   let currentId = referrerId;
   let undistributed = 0;
   let chainBroken = false;
@@ -154,7 +151,7 @@ export async function createCommissions(
       amount: lc.amount,
       type: `referral_level_${lc.level}`,
       level: lc.level,
-      status: COMMISSION_STATUS.PENDING,
+      status: COMMISSION_STATUS.EARNED,
     });
 
     currentId = profile.sponsor_id;
@@ -175,7 +172,7 @@ export async function createCommissions(
         amount: affiliation_commission,
         type: COMMISSION_TYPE.AFFILIATION_BONUS,
         level: 0,
-        status: COMMISSION_STATUS.PENDING,
+        status: COMMISSION_STATUS.EARNED,
       });
     } else {
       undistributed += affiliation_commission;
@@ -198,7 +195,7 @@ export async function createCommissions(
       amount: cashback_wins,
       type: COMMISSION_TYPE.PROFESSIONAL_CASHBACK,
       level: 0,
-      status: COMMISSION_STATUS.PENDING,
+      status: COMMISSION_STATUS.EARNED,
     });
   }
 
