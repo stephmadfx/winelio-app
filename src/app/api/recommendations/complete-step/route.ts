@@ -53,13 +53,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Étape introuvable" }, { status: 404 });
     }
 
-    if (stepRow.completed_at) {
-      return NextResponse.json({ error: "Étape déjà complétée" }, { status: 400 });
-    }
-
     // Vérification des droits par rôle
     const step = Array.isArray(stepRow.step) ? stepRow.step[0] : stepRow.step;
     const role = step?.completion_role;
+    const stepIndex = step?.order_index ?? 0;
+
     if (role === "REFERRER" && user.id !== rec.referrer_id) {
       return NextResponse.json(
         { error: "Non autorisé : seul le recommandeur peut valider cette étape" },
@@ -73,7 +71,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const stepIndex = step?.order_index ?? 0;
+    if (stepRow.completed_at) {
+      await notifyReferrerStep(rec.id, stepIndex);
+      return NextResponse.json({ success: true, already_completed: true });
+    }
+
     const stepData: Record<string, unknown> = {};
 
     // Étape 5 : enregistrer le montant du devis + date prévue de fin de travaux
@@ -154,13 +156,13 @@ export async function POST(request: Request) {
       .update({ status: newStatus })
       .eq("id", rec.id);
 
-    // Notifier le referrer à chaque avancement pro (étapes 2–6)
-    notifyReferrerStep(rec.id, stepIndex).catch((err) =>
-      console.error("[complete-step] notifyReferrerStep error:", err)
-    );
+    // Notifier le referrer à chaque avancement pro. L'enfilement est attendu:
+    // l'etape ne doit plus passer silencieusement si la notification critique echoue.
+    await notifyReferrerStep(rec.id, stepIndex);
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error("[complete-step] error:", err);
     return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 });
   }
 }
