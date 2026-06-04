@@ -1,7 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { AppBackground } from "@/components/AppBackground";
+import { BetaBanner } from "@/components/BetaBanner";
+import { DemoSeedBanner } from "@/components/DemoSeedBanner";
+import { MobileHeader } from "@/components/mobile-header";
+import { MobileNav } from "@/components/mobile-nav";
 import { WinelioLogo } from "@/components/winelio-logo";
+import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/get-user";
 import { legalDocuments } from "@/lib/legal-documents";
 
 export const metadata: Metadata = {
@@ -9,16 +15,60 @@ export const metadata: Metadata = {
   description: "Mentions légales, CGU, CGV, affiliation et politique de confidentialité Winelio.",
 };
 
-export default function LegalDocumentsIndexPage() {
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+
+export default async function LegalDocumentsIndexPage() {
+  const user = await getUser();
+  const inApp = Boolean(user);
+  const isSuperAdmin = user?.app_metadata?.role === "super_admin";
+
+  let firstName: string | undefined;
+  let avatar: string | null | undefined;
+
+  if (user) {
+    const supabase = await createClient();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("first_name, avatar")
+      .eq("id", user.id)
+      .single();
+
+    firstName = profile?.first_name ?? undefined;
+    avatar = profile?.avatar ?? undefined;
+  }
+
   return (
     <div className="relative min-h-dvh overflow-hidden bg-winelio-light">
       <AppBackground />
-      <main className="relative z-10 mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-        <Link href="/" aria-label="Winelio — Accueil">
+      {inApp && (
+        <>
+          <BetaBanner />
+          {DEMO_MODE && <DemoSeedBanner />}
+          <MobileHeader
+            userEmail={user?.email ?? ""}
+            firstName={firstName}
+            avatar={avatar}
+            isSuperAdmin={isSuperAdmin}
+            demoBanner={DEMO_MODE}
+            userId={user?.id ?? ""}
+          />
+          <MobileNav />
+        </>
+      )}
+      <main
+        className={`relative z-10 mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 ${
+          inApp ? "pb-28 pt-24 lg:py-8" : "py-8"
+        }`}
+      >
+        <Link
+          href={inApp ? "/dashboard" : "/"}
+          aria-label="Winelio — Accueil"
+          className={inApp ? "hidden lg:inline-flex" : "inline-flex"}
+        >
           <WinelioLogo variant="color" height={40} gradientId="wGrad-legal-index" />
         </Link>
 
-        <section className="mt-10">
+        <section className={inApp ? "mt-2 lg:mt-10" : "mt-10"}>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-winelio-orange">
             Winelio
           </p>

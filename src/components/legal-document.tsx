@@ -147,9 +147,11 @@ const renderInline = (text: string) => {
 export function LegalDocument({
   markdown,
   currentSlug,
+  inApp = false,
 }: {
   markdown: string;
   currentSlug?: string;
+  inApp?: boolean;
 }) {
   const blocks = parseBlocks(markdown);
   const titleBlock = blocks.find(
@@ -161,12 +163,20 @@ export function LegalDocument({
   return (
     <div className="relative min-h-dvh overflow-hidden bg-winelio-light">
       <AppBackground />
-      <main className="relative z-10 mx-auto grid w-full max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:px-8">
+      <main
+        className={`relative z-10 mx-auto grid w-full max-w-6xl gap-6 px-4 lg:grid-cols-[240px_minmax(0,1fr)] lg:px-8 ${
+          inApp ? "pb-28 pt-24 lg:py-8" : "py-8"
+        }`}
+      >
         <aside className="lg:sticky lg:top-8 lg:h-fit">
-          <Link href="/" aria-label="Winelio — Accueil">
+          <Link
+            href={inApp ? "/dashboard" : "/"}
+            aria-label="Winelio — Accueil"
+            className={inApp ? "hidden lg:inline-flex" : "inline-flex"}
+          >
             <WinelioLogo variant="color" height={36} gradientId="wGrad-legal" />
           </Link>
-          <nav className="mt-6 space-y-1 rounded-2xl border border-black/5 bg-white/80 p-2 shadow-sm">
+          <nav className={`${inApp ? "mt-0 lg:mt-6" : "mt-6"} space-y-1 rounded-2xl border border-black/5 bg-white/80 p-2 shadow-sm`}>
             <Link
               href="/documents-legaux"
               className="block rounded-xl px-3 py-2 text-sm font-semibold text-winelio-dark hover:bg-winelio-orange/5"
