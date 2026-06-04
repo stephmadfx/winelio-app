@@ -27,6 +27,7 @@ export const BugReportButton = ({ userId, allBugReports = [], variant = "floatin
   const [reports, setReports] = useState<BugReport[]>(allBugReports);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [isRealtimeActive, setIsRealtimeActive] = useState(false);
 
   const seenKey = `bug-replies-seen-${userId}`;
   const getSeenIds = (): string[] => JSON.parse(localStorage.getItem(seenKey) ?? "[]");
@@ -66,12 +67,32 @@ export const BugReportButton = ({ userId, allBugReports = [], variant = "floatin
     window.history.replaceState({}, "", nextUrl);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const desktopQuery = window.matchMedia("(min-width: 1024px)");
+    const updateRealtimeState = () => {
+      setIsRealtimeActive(variant === "floating" ? desktopQuery.matches : !desktopQuery.matches);
+    };
+
+    updateRealtimeState();
+    desktopQuery.addEventListener("change", updateRealtimeState);
+
+    return () => {
+      desktopQuery.removeEventListener("change", updateRealtimeState);
+    };
+  }, [variant]);
+
   // Supabase Realtime — nouvelles réponses du support en temps réel
   useEffect(() => {
+    if (!isRealtimeActive) return;
+
     const supabase = createClient();
     const channel = supabase
-      .channel(`bug-reports-${userId}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "winelio", table: "bug_reports", filter: `user_id=eq.${userId}` },
+      .channel(`bug-reports-${variant}-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "winelio", table: "bug_reports", filter: `user_id=eq.${userId}` },
         (payload) => {
           const row = payload.new as { id: string; status: string; admin_reply: string };
           if (row.status !== "replied" || !row.admin_reply) return;
@@ -83,10 +104,12 @@ export const BugReportButton = ({ userId, allBugReports = [], variant = "floatin
             duration: 10000,
             action: { label: "Voir", onClick: () => { setReplyOpen(true); markReplySeen(reply.id); } },
           });
-        })
+        }
+      )
       .subscribe();
+
     return () => { supabase.removeChannel(channel); };
-  }, [userId]);
+  }, [isRealtimeActive, userId, variant]);
 
   const handleFloatingButtonClick = () => {
     if (hasUnread && pendingReplies.length > 0) { setReplyIndex(0); setReplyOpen(true); return; }
