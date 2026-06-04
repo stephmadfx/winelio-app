@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "grapesjs/dist/css/grapes.min.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -298,3 +299,49 @@ input, textarea, select {
 }
 .dark input::placeholder,
 .dark textarea::placeholder { color: #475569; }
+
+.newsletter-blocks .gjs-blocks-c {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  min-height: 0;
+}
+
+.newsletter-blocks .gjs-block-category {
+  grid-column: 1 / -1;
+  border: 0;
+  background: transparent;
+}
+
+.newsletter-blocks .gjs-title {
+  padding: 8px 4px;
+  color: #636E72;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.newsletter-blocks .gjs-block {
+  width: auto;
+  min-height: 54px;
+  margin: 0;
+  padding: 10px 8px;
+  border: 1px solid color-mix(in oklab, var(--border) 92%, transparent);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--foreground);
+  box-shadow: none;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.newsletter-blocks .gjs-block:hover {
+  border-color: #FF6B35;
+  color: #FF6B35;
+}
+
+.newsletter-blocks .gjs-block-label {
+  margin-top: 4px;
+  font-size: 11px;
+}

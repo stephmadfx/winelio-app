@@ -26,6 +26,11 @@ const navItems: NavItem[] = [
     icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
   },
   {
+    label: "Newsletter",
+    href: "/gestion-reseau/newsletters",
+    icon: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-18 8h18a2 2 0 002-2V7a2 2 0 00-2-2H3a2 2 0 00-2 2v7a2 2 0 002 2z",
+  },
+  {
     label: "Bugs & idées",
     href: "/gestion-reseau/bugs",
     icon: "M4 6h6v6H4zM14 6h6v12h-6zM4 14h6v4H4z",

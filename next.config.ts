@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const repoRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  outputFileTracingRoot: repoRoot,
   // pg doit rester en require() natif — le bundler webpack le transforme incorrectement
   serverExternalPackages: ["pg", "pg-pool"],
   async headers() {
