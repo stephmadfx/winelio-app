@@ -112,7 +112,7 @@ export const resolveNewsletterRecipients = async (
     return resolveUnreferencedProfessionalRecipients(manualEmails);
   }
 
-  let query = supabaseAdmin
+  let query: any = supabaseAdmin
     .from("profiles")
     .select("id, email, first_name, last_name, is_professional, is_active, companies!owner_id(source, deleted_at)")
     .not("email", "is", null)
