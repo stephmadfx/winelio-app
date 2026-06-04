@@ -8,7 +8,7 @@ Document de travail non substitutif a une consultation d'avocat. Les textes ci-d
 
 1. Mentions legales
 2. Conditions Generales d'Utilisation (CGU)
-3. Conditions Professionnels / CGV de commission d'intermediation
+3. Conditions Professionnels / CGV de commission d'intermédiation
 4. Reglement du programme d'affiliation et Winelio Rewards
 5. Politique de confidentialite
 
@@ -36,23 +36,23 @@ Document de travail non substitutif a une consultation d'avocat. Les textes ci-d
 ## Points coherents avec Winelio
 
 - Winelio est bien presente comme plateforme de mise en relation et non comme executant des prestations.
-- Les commissions affiliees sont rattachees a des prestations reelles, facturees et payees, ce qui est indispensable pour s'eloigner du risque de vente pyramidale.
+- Les commissions d'intermédiation affiliees sont rattachees a des prestations reelles, facturees et payees, ce qui est indispensable pour s'eloigner du risque de vente pyramidale.
 - Le wallet, les retraits, les frais de retrait inferieurs a 50 euros et les controles anti-fraude sont coherents avec la codebase.
 - Les documents internes confirment un workflow de recommandation en 7 etapes, un paiement Stripe au moment de l'etape 6 et une distribution MLM sur 5 niveaux.
 - Les archives Obsidian signalent deja un audit avocat MLM obligatoire avant ouverture publique et un risque particulier sur l'immobilier / loi Hoguet.
 
 ## Incoherences ou decisions a trancher
 
-### 1. Fait generateur de la commission
+### 1. Fait generateur de la commission d'intermédiation
 
-Le document initial dit : commission exigible lorsque la prestation est declaree terminee.
+Le document initial dit : commission d'intermédiation exigible lorsque la prestation est declaree terminee.
 
 La codebase actuelle indique :
 - etape 5 : montant du devis ;
-- etape 6 : travaux termines + paiement recu -> creation des commissions ;
+- etape 6 : travaux termines + paiement recu -> creation des commissions d'intermédiation ;
 - Stripe webhook : creation/distribution apres paiement de la session.
 
-Proposition retenue dans les brouillons : la commission Winelio devient exigible lorsque la mission issue de la mise en relation est realisee et/ou payee par le client final, selon les etapes applicatives, et les droits a reversement affilie ne sont acquis qu'apres encaissement effectif et absence de fraude/annulation.
+Proposition retenue dans les brouillons : la commission d'intermédiation Winelio devient exigible lorsque la mission issue de la mise en relation est realisee et/ou payee par le client final, selon les etapes applicatives, et les droits a reversement affilie ne sont acquis qu'apres encaissement effectif et absence de fraude/annulation.
 
 ### 2. Total de repartition MLM
 
@@ -77,7 +77,7 @@ Decision necessaire : si la regle juridique est "parrainage obligatoire", il fau
 
 ### 4. Statut fiscal/social des affilies
 
-Si un particulier recoit regulierement des commissions, il devra probablement declarer ces revenus et peut devoir disposer d'un statut adapte. Les CGU doivent eviter toute promesse de revenu net ou garanti.
+Si un particulier recoit regulierement des commissions d'intermédiation, il devra probablement declarer ces revenus et peut devoir disposer d'un statut adapte. Les CGU doivent eviter toute promesse de revenu net ou garanti.
 
 Proposition retenue : Winelio peut suspendre les retraits tant que les justificatifs requis ne sont pas fournis ; l'utilisateur reste seul responsable de ses declarations fiscales et sociales.
 
@@ -89,13 +89,13 @@ Proposition retenue : Winelio ne se presente pas comme prestataire de services d
 
 ### 6. Immobilier / loi Hoguet
 
-Les archives Obsidian signalent un risque eleve si Winelio remunere un apporteur d'affaires en pourcentage d'une commission d'agent immobilier.
+Les archives Obsidian signalent un risque eleve si Winelio remunere un apporteur d'affaires en pourcentage d'une commission d'intermédiation liee a une operation d'agent immobilier.
 
 Proposition retenue : exclure temporairement les activites soumises a la loi Hoguet, sauf parcours specifique valide juridiquement, carte professionnelle/mandat/regime de remuneration conforme.
 
 ### 7. Droit de retractation
 
-La commission Winelio vise les professionnels, donc B2B. Mais des utilisateurs personnes physiques peuvent utiliser la plateforme et certains contrats avec Winelio pourraient etre conclus a distance.
+La commission d'intermédiation Winelio vise les professionnels, donc B2B. Mais des utilisateurs personnes physiques peuvent utiliser la plateforme et certains contrats avec Winelio pourraient etre conclus a distance.
 
 Proposition retenue : mention de principe du droit de retractation pour les consommateurs lorsque applicable, avec renvoi a un parcours distinct si Winelio vend un service payant a un consommateur.
 

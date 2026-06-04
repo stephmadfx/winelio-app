@@ -35,25 +35,25 @@ BEGIN
 
 est edite par :
 
-- Denomination sociale : [A COMPLETER]
-- Forme juridique : [A COMPLETER]
-- Capital social : [A COMPLETER]
-- Siege social : [A COMPLETER]
-- SIREN / SIRET : [A COMPLETER]
-- RCS : [A COMPLETER]
-- Numero TVA intracommunautaire : [A COMPLETER, si applicable]
-- Directeur de la publication : [A COMPLETER]
+- Denomination sociale : en attente de validation
+- Forme juridique : en attente de validation
+- Capital social : en attente de validation
+- Siege social : en attente de validation
+- SIREN / SIRET : en attente de validation
+- RCS : en attente de validation
+- Numero TVA intracommunautaire : en attente de validation, si applicable
+- Directeur de la publication : en attente de validation
 - Email : contact@winelio.app
-- Telephone : [A COMPLETER]
+- Telephone : en attente de validation
 
 Ci-apres "Winelio".$DOC1S1$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 2, '2', 'Hebergement', $DOC1S2$Le service est heberge par :
 
-- Hebergeur applicatif / infrastructure : [A COMPLETER : Coolify auto-heberge sur VPS Hostinger ?]
-- Adresse : [A COMPLETER]
-- Telephone : [A COMPLETER]
-- Site web : [A COMPLETER]
+- Hebergeur applicatif / infrastructure : en attente de validation
+- Adresse : en attente de validation
+- Telephone : en attente de validation
+- Site web : en attente de validation
 
 La base de donnees et certains services techniques peuvent etre operes sur une infrastructure Supabase auto-hebergee par Winelio ou pour son compte.$DOC1S2$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
@@ -61,7 +61,7 @@ La base de donnees et certains services techniques peuvent etre operes sur une i
 
 - a des utilisateurs de recommander des professionnels ;
 - a des professionnels de recevoir et suivre des opportunites commerciales ;
-- a Winelio de percevoir une commission d'intermediation lorsque les conditions contractuelles sont reunies ;
+- a Winelio de percevoir une commission d'intermédiation lorsque les conditions contractuelles sont reunies ;
 - a certains utilisateurs eligibles de recevoir des reversements lies a des prestations reelles, facturees et payees.
 
 Winelio n'execute pas les prestations proposees par les professionnels references et n'est pas partie au contrat conclu entre le client final et le professionnel.$DOC1S3$);
@@ -78,7 +78,7 @@ contact@winelio.app
 
 Pour les demandes relatives aux donnees personnelles :
 
-[A COMPLETER : dpo@winelio.app ou privacy@winelio.app]$DOC1S5$);
+Contact RGPD en attente de validation. Dans l'intervalle, les demandes peuvent etre adressees a contact@winelio.app.$DOC1S5$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 6, '6', 'References legales', $DOC1S6$Ces mentions legales sont etablies notamment au regard de l'article 6 de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'economie numerique.
 
@@ -112,13 +112,13 @@ Winelio est une plateforme de mise en relation professionnelle par recommandatio
 - la recommandation de professionnels a des contacts ou clients potentiels ;
 - le suivi d'opportunites commerciales ;
 - l'acces a un reseau de parrainage limite a cinq niveaux ;
-- l'affichage d'une cagnotte et, sous conditions, la demande de reversement de commissions.
+- l'affichage d'une cagnotte et, sous conditions, la demande de reversement de commissions d'intermédiation.
 
 Winelio agit comme operateur de plateforme et intermediaire de mise en relation. Winelio ne fournit pas elle-meme les prestations proposees par les professionnels et n'est pas partie au contrat conclu entre un client final et un professionnel.$DOC2S1$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 2, '2', 'Definitions', $DOC2S2$"Utilisateur" designe toute personne disposant d'un compte Winelio.
 
-"Affilie" designe un utilisateur pouvant recommander des professionnels ou contacts, participer au programme d'affiliation et, lorsque les conditions sont reunies, percevoir des commissions d'intermediation.
+"Affilie" designe un utilisateur pouvant recommander des professionnels ou contacts, participer au programme d'affiliation et, lorsque les conditions sont reunies, percevoir des commissions d'intermédiation.
 
 "Professionnel" designe tout utilisateur ayant active un compte professionnel afin de recevoir et gerer des recommandations via Winelio.
 
@@ -126,9 +126,9 @@ Winelio agit comme operateur de plateforme et intermediaire de mise en relation.
 
 "Recommandation" designe une opportunite transmise via la plateforme a un professionnel.
 
-"Commission Winelio" designe la commission d'intermediation due par le professionnel a Winelio dans les conditions prevues aux Conditions Professionnels / CGV.
+"Commission d'intermédiation Winelio" designe la commission d'intermédiation due par le professionnel a Winelio dans les conditions prevues aux Conditions Professionnels / CGV.
 
-"Reversement affilie" designe la part de commission pouvant etre creditee a un utilisateur eligible, sous reserve des conditions du programme d'affiliation.$DOC2S2$);
+"Reversement affilie" designe la part de commission d'intermédiation pouvant etre creditee a un utilisateur eligible, sous reserve des conditions du programme d'affiliation.$DOC2S2$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 3, '3', 'Acceptation des CGU', $DOC2S3$L'utilisation de Winelio implique l'acceptation pleine et entiere des presentes CGU.
 
@@ -155,7 +155,7 @@ L'utilisateur doit informer Winelio sans delai en cas d'acces non autorise, susp
 - referencer des professionnels ;
 - transmettre des recommandations ;
 - organiser un workflow de suivi ;
-- collecter certaines informations necessaires au calcul des commissions ;
+- collecter certaines informations necessaires au calcul des commissions d'intermédiation ;
 - notifier les parties ;
 - mettre a disposition des outils de paiement operes par des prestataires tiers.
 
@@ -191,8 +191,8 @@ Source : https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000032227258$DO
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 9, '9', 'Cagnotte, gains affiches et retraits', $DOC2S9$Les montants affiches dans le wallet ou la cagnotte peuvent comprendre :
 
-- des commissions acquises ;
-- des commissions en attente ;
+- des commissions d'intermédiation acquises ;
+- des commissions d'intermédiation en attente ;
 - des montants soumis a verification ;
 - des avantages internes en Wins.
 
@@ -217,7 +217,7 @@ Winelio peut demander des justificatifs d'identite, d'activite, de statut fiscal
 
 Winelio ne fournit pas de conseil fiscal, social ou comptable personnalise.
 
-Winelio peut suspendre les reversements si elle estime que l'utilisateur ne dispose pas des justificatifs ou du statut necessaires a la perception reguliere de commissions.$DOC2S10$);
+Winelio peut suspendre les reversements si elle estime que l'utilisateur ne dispose pas des justificatifs ou du statut necessaires a la perception reguliere de commissions d'intermédiation.$DOC2S10$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 11, '11', 'Comportements interdits', $DOC2S11$Il est interdit de :
 
@@ -228,16 +228,16 @@ Winelio peut suspendre les reversements si elle estime que l'utilisateur ne disp
 - manipuler le systeme de recommandation ou le reseau de parrainage ;
 - generer de fausses recommandations ;
 - contourner la plateforme apres une mise en relation ;
-- tenter d'obtenir une commission sans prestation reelle ;
+- tenter d'obtenir une commission d'intermédiation sans prestation reelle ;
 - utiliser des scripts, robots ou automatisations non autorises ;
 - porter atteinte a la securite, a l'integrite ou au fonctionnement de Winelio.$DOC2S11$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
-  VALUES (v_document_id, 12, '12', 'Anti-contournement', $DOC2S12$Lorsqu'une mise en relation a ete initiee par Winelio, les utilisateurs s'engagent a ne pas organiser volontairement l'operation hors plateforme dans le but d'eviter la commission ou le suivi contractuel.
+  VALUES (v_document_id, 12, '12', 'Anti-contournement', $DOC2S12$Lorsqu'une mise en relation a ete initiee par Winelio, les utilisateurs s'engagent a ne pas organiser volontairement l'operation hors plateforme dans le but d'eviter la commission d'intermédiation ou le suivi contractuel.
 
 En cas de contournement, Winelio peut notamment :
 
 - suspendre ou resilier les comptes concernes ;
-- annuler les commissions ou avantages ;
+- annuler les commissions d'intermédiation ou avantages ;
 - reclamer les sommes dues ;
 - demander reparation du prejudice subi.$DOC2S12$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
@@ -273,7 +273,7 @@ Chaque utilisateur reste responsable de la liceite des donnees personnelles qu'i
 
 Les sommes disponibles et definitivement acquises a la date du deces peuvent etre reversees aux ayants droit legalement reconnus, apres verification des pieces necessaires.
 
-Les commissions, bonus, avantages ou reversements generes posterieurement au deces cessent automatiquement, sauf obligation legale contraire ou decision expresse de Winelio.$DOC2S16$);
+Les commissions d'intermédiation, bonus, avantages ou reversements generes posterieurement au deces cessent automatiquement, sauf obligation legale contraire ou decision expresse de Winelio.$DOC2S16$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 17, '17', 'Droit applicable et litiges', $DOC2S17$Les presentes CGU sont soumises au droit francais.
 
@@ -331,7 +331,7 @@ Les activites soumises a la loi n° 70-9 du 2 janvier 1970, dite loi Hoguet, not
 
 Si Winelio ouvre un parcours dedie aux agents immobiliers ou professions assimilees, celui-ci devra faire l'objet de conditions specifiques, d'une signature adaptee et, le cas echeant, de controles relatifs a la carte professionnelle, aux mandats, a l'assurance et a la garantie financiere.$DOC3S3$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
-  VALUES (v_document_id, 4, '4', 'Nature du service Winelio', $DOC3S4$Winelio fournit un service d'intermediation commerciale et technique.
+  VALUES (v_document_id, 4, '4', 'Nature du service Winelio', $DOC3S4$Winelio fournit un service d'intermédiation commerciale et technique.
 
 Winelio peut notamment :
 
@@ -339,8 +339,8 @@ Winelio peut notamment :
 - permettre au Professionnel d'accepter, refuser ou transferer une opportunite ;
 - fournir un workflow de suivi ;
 - envoyer des notifications et relances ;
-- calculer la commission due ;
-- emettre ou faciliter l'emission d'une facture de commission ;
+- calculer la commission d'intermédiation due ;
+- emettre ou faciliter l'emission d'une facture de commission d'intermédiation ;
 - mettre a disposition un lien de paiement via un prestataire tiers.
 
 Winelio n'est pas partie au contrat de prestation conclu entre le Professionnel et le Client final. Le Professionnel reste seul responsable de ses devis, prestations, garanties, assurances, delais, factures, obligations fiscales et obligations envers le Client final.$DOC3S4$);
@@ -352,19 +352,19 @@ Cette autorisation est :
 - non exclusive ;
 - limitee au fonctionnement de la plateforme ;
 - revocable dans les conditions de resiliation ;
-- a titre onereux lorsque la mise en relation aboutit a une operation generant une commission.
+- a titre onereux lorsque la mise en relation aboutit a une operation generant une commission d'intermédiation.
 
 Cette autorisation ne confere pas a Winelio le pouvoir de conclure un contrat au nom du Professionnel, sauf accord ecrit distinct.$DOC3S5$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
-  VALUES (v_document_id, 6, '6', 'Commission d''intermediation', $DOC3S6$### 6.1 Principe
+  VALUES (v_document_id, 6, '6', 'Commission d''intermédiation', $DOC3S6$### 6.1 Principe
 
-Le Professionnel doit a Winelio une commission d'intermediation lorsqu'une recommandation transmise ou facilitee via Winelio aboutit a une prestation, commande, mission, contrat ou operation payee par le Client final.
+Le Professionnel doit a Winelio une commission d'intermédiation lorsqu'une recommandation transmise ou facilitee via Winelio aboutit a une prestation, commande, mission, contrat ou operation payee par le Client final.
 
 ### 6.2 Base de calcul
 
-Sauf bareme particulier affiche dans la plateforme ou accepte par ecrit, la commission est calculee sur le montant TTC de la facture emise par le Professionnel au Client final au titre de l'operation issue de la mise en relation Winelio.
+Sauf bareme particulier affiche dans la plateforme ou accepte par ecrit, la commission d'intermédiation est calculee sur le montant TTC de la facture emise par le Professionnel au Client final au titre de l'operation issue de la mise en relation Winelio.
 
-Si le Professionnel n'est pas assujetti a la TVA, la commission est calculee sur le montant facture au Client final.
+Si le Professionnel n'est pas assujetti a la TVA, la commission d'intermédiation est calculee sur le montant facture au Client final.
 
 ### 6.3 Taux
 
@@ -373,18 +373,18 @@ Bareme de travail a valider :
 - 10 % du montant TTC de la prestation jusqu'a 25 000 euros TTC ;
 - 5 % sur la part du montant TTC excedant 25 000 euros TTC.
 
-Point a valider avant publication : le seuil de 25 000 euros doit etre precise. Il peut s'agir, selon la decision commerciale retenue, d'un seuil par mission, par client final, par professionnel ou par annee civile.
+Point en attente de validation finale : le seuil de 25 000 euros doit etre precise. Il peut s'agir, selon la decision commerciale retenue, d'un seuil par mission, par client final, par professionnel ou par annee civile.
 
 ### 6.4 Fait generateur
 
-La commission devient exigible lorsque les conditions suivantes sont reunies :
+La commission d'intermédiation devient exigible lorsque les conditions suivantes sont reunies :
 
 - le Client final a ete mis en relation avec le Professionnel via Winelio ou a la suite d'une recommandation issue de Winelio ;
 - le Client final a accepte une offre, un devis, une commande ou un contrat du Professionnel ;
 - la prestation a ete realisee et/ou payee selon le workflow applicable ;
-- le montant necessaire au calcul de la commission a ete declare ou justifie.
+- le montant necessaire au calcul de la commission d'intermédiation a ete declare ou justifie.
 
-Les droits a reversement affilie ne deviennent definitivement acquis qu'apres encaissement effectif de la commission Winelio et expiration des controles applicables.
+Les droits a reversement affilie ne deviennent definitivement acquis qu'apres encaissement effectif de la commission d'intermédiation Winelio et expiration des controles applicables.
 
 ### 6.5 Declaration du montant reel
 
@@ -392,7 +392,7 @@ Le Professionnel s'engage a declarer le montant reel facture au Client final et 
 
 Toute sous-declaration, omission volontaire ou fausse declaration constitue un manquement grave.$DOC3S6$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
-  VALUES (v_document_id, 7, '7', 'Facturation et paiement', $DOC3S7$Winelio emet ou fait emettre une facture correspondant a la commission due.
+  VALUES (v_document_id, 7, '7', 'Facturation et paiement', $DOC3S7$Winelio emet ou fait emettre une facture correspondant a la commission d'intermédiation due.
 
 Le paiement peut etre effectue :
 
@@ -407,7 +407,7 @@ Sauf mention contraire sur la facture ou dans l'application, les sommes dues par
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 8, '8', 'Retard ou defaut de paiement', $DOC3S8$En cas de retard de paiement, des penalites de retard sont exigibles de plein droit le jour suivant la date de reglement figurant sur la facture.
 
-Le taux des penalites de retard est fixe a [A COMPLETER : par exemple taux BCE + 10 points, ou autre taux conforme], sans pouvoir etre inferieur au minimum legal applicable.
+Le taux des penalites de retard est en attente de validation finale, sans pouvoir etre inferieur au minimum legal applicable.
 
 Une indemnite forfaitaire pour frais de recouvrement de 40 euros est due par tout professionnel en situation de retard de paiement, sans prejudice d'une indemnisation complementaire si les frais reels de recouvrement sont superieurs.
 
@@ -425,14 +425,14 @@ En cas de defaut de paiement, Winelio peut :
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 9, '9', 'Interdiction de contournement', $DOC3S9$Le Professionnel s'interdit de contourner Winelio apres une mise en relation, notamment :
 
-- en invitant le Client final a poursuivre hors plateforme afin d'eviter la commission ;
+- en invitant le Client final a poursuivre hors plateforme afin d'eviter la commission d'intermédiation ;
 - en omettant de declarer une operation issue de Winelio ;
 - en declarant un montant inferieur au montant reel ;
-- en utilisant une autre entite, un sous-traitant ou un compte tiers pour eviter la commission.
+- en utilisant une autre entite, un sous-traitant ou un compte tiers pour eviter la commission d'intermédiation.
 
 En cas de contournement, Winelio peut reclamer :
 
-- la commission qui aurait du etre payee ;
+- la commission d'intermédiation qui aurait du etre payee ;
 - les penalites de retard applicables ;
 - les frais de recouvrement ;
 - des dommages et interets en reparation du prejudice subi.
@@ -479,11 +479,11 @@ Winelio n'est pas responsable :
 - de la mauvaise execution d'une prestation par le Professionnel ;
 - d'une erreur due a des informations inexactes fournies par le Professionnel.
 
-Dans les limites permises par la loi, la responsabilite de Winelio est limitee aux commissions effectivement encaissees par Winelio au titre de l'operation litigieuse au cours des trois derniers mois precedant le fait generateur.$DOC3S12$);
+Dans les limites permises par la loi, la responsabilite de Winelio est limitee aux commissions d'intermédiation effectivement encaissees par Winelio au titre de l'operation litigieuse au cours des trois derniers mois precedant le fait generateur.$DOC3S12$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 13, '13', 'Duree et resiliation', $DOC3S13$Les presentes Conditions Professionnels s'appliquent tant que le Professionnel utilise le service professionnel Winelio.
 
-Le Professionnel peut demander la resiliation de son compte professionnel. Les commissions dues au titre des mises en relation initiees avant la resiliation restent exigibles.
+Le Professionnel peut demander la resiliation de son compte professionnel. Les commissions d'intermédiation dues au titre des mises en relation initiees avant la resiliation restent exigibles.
 
 Winelio peut suspendre ou resilier l'acces professionnel en cas de manquement, fraude, defaut de paiement, risque juridique, perte d'une autorisation professionnelle ou comportement portant atteinte au service.$DOC3S13$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
@@ -521,13 +521,13 @@ A defaut d'accord, le litige sera soumis aux juridictions competentes dans les c
   END IF;
 
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
-  VALUES (v_document_id, 1, '1', 'Objet', $DOC4S1$Le present reglement definit les conditions dans lesquelles un utilisateur Winelio peut participer au programme d'affiliation et recevoir, sous conditions, des commissions ou avantages lies a des recommandations ayant abouti a des prestations reelles.
+  VALUES (v_document_id, 1, '1', 'Objet', $DOC4S1$Le present reglement definit les conditions dans lesquelles un utilisateur Winelio peut participer au programme d'affiliation et recevoir, sous conditions, des commissions d'intermédiation ou avantages lies a des recommandations ayant abouti a des prestations reelles.
 
 Il complete les CGU et les Conditions Professionnels.$DOC4S1$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 2, '2', 'Principe fondamental', $DOC4S2$Le programme Winelio repose exclusivement sur des prestations reelles, fournies par des professionnels, facturees et payees.
 
-Aucune commission, prime, remuneration ou avantage financier n'est verse pour :
+Aucune commission d'intermédiation, prime, remuneration ou avantage financier n'est verse pour :
 
 - la simple inscription d'un utilisateur ;
 - la simple invitation d'une personne ;
@@ -535,7 +535,7 @@ Aucune commission, prime, remuneration ou avantage financier n'est verse pour :
 - l'achat d'un droit d'entree ;
 - la progression du nombre de personnes recrutees.
 
-Les commissions sont uniquement calculees sur une commission d'intermediation effectivement due et encaissee par Winelio au titre d'une operation reelle.
+Les commissions d'intermédiation sont uniquement calculees sur une commission d'intermédiation effectivement due et encaissee par Winelio au titre d'une operation reelle.
 
 Cette clause est essentielle afin d'ecarter tout mecanisme de vente pyramidale prohibe par l'article L121-15 du Code de la consommation.
 
@@ -560,9 +560,9 @@ Winelio peut suspendre, remplacer ou desactiver un code parrain en cas de fraude
 
 Les codes de parrainage supprimes peuvent etre reserves definitivement afin d'eviter toute confusion ou reutilisation abusive.$DOC4S4$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
-  VALUES (v_document_id, 5, '5', 'Repartition de travail', $DOC4S5$Sous reserve de validation commerciale et comptable, la commission d'intermediation Winelio peut etre repartie selon le schema suivant :
+  VALUES (v_document_id, 5, '5', 'Repartition de travail', $DOC4S5$Sous reserve de validation commerciale et comptable, la commission d'intermédiation Winelio peut etre repartie selon le schema suivant :
 
-- recommandeur direct : 60 % de la commission Winelio ;
+- recommandeur direct : 60 % de la commission d'intermédiation Winelio ;
 - sponsor de niveau 1 : 3 % ;
 - sponsor de niveau 2 : 3 % ;
 - sponsor de niveau 3 : 3 % ;
@@ -572,22 +572,22 @@ Les codes de parrainage supprimes peuvent etre reserves definitivement afin d'ev
 - cashback professionnel en Wins : 1 % ;
 - cagnotte / plateforme Winelio : 23 %.
 
-Cette repartition totalise 100 % de la commission Winelio. Elle correspond au plan standard actif constate en base le 2026-06-04.
+Cette repartition totalise 100 % de la commission d'intermédiation Winelio. Elle correspond au plan standard actif constate en base le 2026-06-04.
 
 Les pourcentages peuvent varier selon les plans de compensation, categories, operations, offres promotionnelles ou modifications du programme, sous reserve d'information des utilisateurs.$DOC4S5$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
-  VALUES (v_document_id, 6, '6', 'Conditions d''acquisition', $DOC4S6$Une commission affiliee n'est acquise que si :
+  VALUES (v_document_id, 6, '6', 'Conditions d''acquisition', $DOC4S6$Une commission d'intermédiation affiliee n'est acquise que si :
 
 - la recommandation est licite et conforme aux CGU ;
 - le professionnel accepte et traite la recommandation ;
 - une prestation reelle est conclue avec le Client final ;
 - le montant facture est declare ou justifie ;
-- la commission Winelio est due et effectivement encaissee ;
+- la commission d'intermédiation Winelio est due et effectivement encaissee ;
 - aucun remboursement, annulation, litige bloquant, fraude ou contournement n'est constate.
 
 Winelio peut afficher des montants "en attente", "estimes" ou "pending". Ces montants ne constituent pas un droit definitif au paiement.$DOC4S6$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
-  VALUES (v_document_id, 7, '7', 'Spillover et chaines incompletes', $DOC4S7$Si un niveau de parrainage n'existe pas, si un compte est suspendu, si un beneficiaire est ineligible ou si une commission ne peut pas etre distribuee, la part correspondante peut etre :
+  VALUES (v_document_id, 7, '7', 'Spillover et chaines incompletes', $DOC4S7$Si un niveau de parrainage n'existe pas, si un compte est suspendu, si un beneficiaire est ineligible ou si une commission d'intermédiation ne peut pas etre distribuee, la part correspondante peut etre :
 
 - conservee en attente ;
 - affectee a la cagnotte Winelio ;
@@ -596,11 +596,11 @@ Winelio peut afficher des montants "en attente", "estimes" ou "pending". Ces mon
 
 Le traitement depend du plan de compensation en vigueur au moment de l'operation.$DOC4S7$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
-  VALUES (v_document_id, 8, '8', 'Bonus d''affiliation professionnel', $DOC4S8$Lorsqu'un professionnel rejoint Winelio grace a un utilisateur et genere ensuite une commission Winelio, un bonus peut etre attribue au sponsor du professionnel.
+  VALUES (v_document_id, 8, '8', 'Bonus d''affiliation professionnel', $DOC4S8$Lorsqu'un professionnel rejoint Winelio grace a un utilisateur et genere ensuite une commission d'intermédiation Winelio, un bonus peut etre attribue au sponsor du professionnel.
 
-Bareme de travail : 1 % de la commission Winelio effectivement encaissee.
+Bareme de travail : 1 % de la commission d'intermédiation Winelio effectivement encaissee.
 
-Ce bonus ne constitue pas une remuneration pour simple recrutement. Il est conditionne a une operation reelle generatrice de commission.$DOC4S8$);
+Ce bonus ne constitue pas une remuneration pour simple recrutement. Il est conditionne a une operation reelle generatrice de commission d'intermédiation.$DOC4S8$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 9, '9', 'Winelio Rewards / Wins', $DOC4S9$Winelio peut attribuer des Wins ou avantages internes a certains professionnels actifs.
 
@@ -612,11 +612,11 @@ Les Wins :
 - ne constituent pas un salaire, revenu garanti ou instrument financier ;
 - peuvent etre utilises uniquement pour des avantages, remises, services promotionnels ou offres partenaires definis par Winelio.
 
-Bareme de travail : 1 % des commissions Winelio generees par le professionnel, attribue en Wins selon les conditions affichees dans l'application.
+Bareme de travail : 1 % des commissions d'intermédiation Winelio generees par le professionnel, attribue en Wins selon les conditions affichees dans l'application.
 
 Winelio peut modifier, suspendre ou arreter le programme Rewards, sous reserve des droits deja definitivement acquis.$DOC4S9$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
-  VALUES (v_document_id, 10, '10', 'Retraits', $DOC4S10$Les commissions disponibles peuvent faire l'objet d'une demande de retrait selon les moyens proposes par Winelio.
+  VALUES (v_document_id, 10, '10', 'Retraits', $DOC4S10$Les commissions d'intermédiation disponibles peuvent faire l'objet d'une demande de retrait selon les moyens proposes par Winelio.
 
 Les retraits sont soumis :
 
@@ -651,7 +651,7 @@ Winelio peut demander tout justificatif necessaire avant de proceder a un retrai
 - contournement de Winelio ;
 - pression commerciale trompeuse promettant des revenus garantis.
 
-En cas de fraude ou suspicion serieuse, Winelio peut suspendre le compte, bloquer les retraits, annuler les commissions, demander le remboursement des sommes indues et engager toute action utile.$DOC4S12$);
+En cas de fraude ou suspicion serieuse, Winelio peut suspendre le compte, bloquer les retraits, annuler les commissions d'intermédiation, demander le remboursement des sommes indues et engager toute action utile.$DOC4S12$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 13, '13', 'Absence de lien de subordination', $DOC4S13$Les affilies agissent en toute independance.
 
@@ -663,7 +663,7 @@ L'affilie ne peut pas engager Winelio, signer au nom de Winelio ou presenter Win
 
 Il est interdit de promettre des gains automatiques, garantis ou principalement lies au recrutement.
 
-Toute presentation publique du programme doit rappeler que les commissions dependent de prestations reelles et du respect des conditions Winelio.$DOC4S14$);
+Toute presentation publique du programme doit rappeler que les commissions d'intermédiation dependent de prestations reelles et du respect des conditions Winelio.$DOC4S14$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 15, '15', 'Modification du programme', $DOC4S15$Winelio peut modifier le programme, les taux, les conditions d'eligibilite, les seuils, les frais ou les modalites de retrait.
 
@@ -702,14 +702,14 @@ Sources de reference :
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 2, '2', 'Responsable du traitement', $DOC5S2$Le responsable du traitement est :
 
-- Denomination : [A COMPLETER]
-- Forme juridique : [A COMPLETER]
-- Adresse du siege : [A COMPLETER]
-- Email de contact RGPD : [A COMPLETER : dpo@winelio.app ou privacy@winelio.app]
+- Denomination : en attente de validation
+- Forme juridique : en attente de validation
+- Adresse du siege : en attente de validation
+- Email de contact RGPD : en attente de validation. Dans l'intervalle, les demandes peuvent etre adressees a contact@winelio.app.
 
 Winelio determine les finalites et les moyens essentiels des traitements realises dans le cadre de la plateforme. Les professionnels utilisant Winelio restent responsables des traitements qu'ils realisent pour leur propre compte avec leurs clients, prospects, collaborateurs ou partenaires.$DOC5S2$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
-  VALUES (v_document_id, 3, '3', 'En resume', $DOC5S3$Winelio traite les donnees personnelles uniquement pour faire fonctionner la plateforme, securiser les comptes, gerer les recommandations, calculer les commissions, traiter les retraits, respecter ses obligations legales et ameliorer le service.
+  VALUES (v_document_id, 3, '3', 'En resume', $DOC5S3$Winelio traite les donnees personnelles uniquement pour faire fonctionner la plateforme, securiser les comptes, gerer les recommandations, calculer les commissions d'intermédiation, traiter les retraits, respecter ses obligations legales et ameliorer le service.
 
 Winelio ne vend pas les donnees personnelles des utilisateurs.
 
@@ -722,7 +722,7 @@ Les donnees transmises par un utilisateur au sujet d'un tiers, notamment dans un
 - donnees de compte : identifiant, role, statut professionnel, sponsor, code parrain, historique d'acceptation des documents contractuels ;
 - donnees professionnelles : SIRET, SIREN, denomination, categorie, zone d'intervention, justificatifs, assurances, informations publiques d'entreprise, statut de verification ;
 - donnees de recommandation : description du besoin, contact recommande, professionnel pressenti, statut, montant du devis ou de la facture, historique des etapes, commentaires operationnels ;
-- donnees financieres : cagnotte, commissions, retraits, frais, informations necessaires a l'execution d'un reversement ;
+- donnees financieres : cagnotte, commissions d'intermédiation, retraits, frais, informations necessaires a l'execution d'un reversement ;
 - donnees de paiement : informations traitees par les prestataires de paiement, sans stockage par Winelio des donnees completes de carte bancaire ;
 - donnees de signature et de preuve : date, heure, adresse IP, version du document accepte, preuve d'acceptation, empreinte du document si applicable ;
 - donnees techniques : adresse IP, logs de connexion, navigateur, terminal, horodatages, evenements de securite ;
@@ -755,7 +755,7 @@ Winelio peut supprimer, bloquer ou limiter le traitement d'une recommandation si
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 7, '7', 'Finalites, bases legales et durees de conservation', $DOC5S7$Les donnees ne sont conservees que pendant la duree necessaire aux finalites poursuivies, puis supprimees ou archivees lorsque cela est requis pour respecter une obligation legale, etablir une preuve ou gerer un litige.
 
-Les durees ci-dessous sont des durees de travail a valider avant publication definitive.
+Les durees ci-dessous sont publiees en attente de validation finale.
 
 | Traitement | Finalite | Base legale | Duree indicative |
 | --- | --- | --- | --- |
@@ -763,7 +763,7 @@ Les durees ci-dessous sont des durees de travail a valider avant publication def
 | Parrainage obligatoire et reseau | Verifier le code parrain, rattacher le compte a un sponsor, prevenir les abus du reseau | Execution du contrat et interet legitime de securisation | Duree du compte, puis jusqu'a 5 ans apres la derniere activite |
 | Recommandations et mise en relation | Transmettre une opportunite, suivre le workflow, notifier les parties, documenter l'avancement | Execution du contrat et interet legitime des parties a organiser la mise en relation | Duree de traitement de la recommandation, puis jusqu'a 5 ans pour preuve |
 | Gestion des professionnels | Verifier le SIRET, la categorie, la zone, les justificatifs et le statut professionnel | Execution du contrat, obligation legale selon l'activite, interet legitime de securisation | Duree du compte professionnel, puis jusqu'a 5 ans, ou plus si obligation legale |
-| Commissions, wallet et retraits | Calculer les commissions, gerer les soldes, valider les demandes de retrait, prevenir la fraude | Execution du contrat, obligations legales comptables et fiscales, interet legitime anti-fraude | Donnees operationnelles pendant la relation, pieces comptables jusqu'a 10 ans |
+| Commissions d'intermédiation, wallet et retraits | Calculer les commissions d'intermédiation, gerer les soldes, valider les demandes de retrait, prevenir la fraude | Execution du contrat, obligations legales comptables et fiscales, interet legitime anti-fraude | Donnees operationnelles pendant la relation, pieces comptables jusqu'a 10 ans |
 | Paiements | Executer ou faciliter les paiements, encaissements, reversements et relances | Execution du contrat, obligations legales, interet legitime de recouvrement | Selon le prestataire et les obligations comptables, justificatifs jusqu'a 10 ans |
 | Emails transactionnels et notifications | Envoyer les OTP, invitations, alertes, relances et informations de suivi | Execution du contrat et interet legitime | Duree necessaire a l'envoi et a la preuve, puis jusqu'a 3 ans selon le contexte |
 | Mesure d'ouverture et de clic des emails | Suivre la delivrabilite, securiser les envois, prouver l'envoi, ameliorer les relances | Interet legitime, sous reserve du droit d'opposition | Jusqu'a 13 mois pour les traceurs, ou jusqu'a la duree de preuve applicable |
@@ -788,7 +788,7 @@ Les durees ci-dessous sont des durees de travail a valider avant publication def
 
 Les sous-traitants doivent traiter les donnees uniquement sur instruction de Winelio, offrir des garanties suffisantes, aider Winelio a respecter ses obligations RGPD lorsque cela est applicable, et encadrer leurs propres sous-traitants.
 
-Prestataires a valider et completer avant publication :
+Prestataires en attente de validation finale :
 
 - Supabase : authentification, base de donnees, stockage et services associes ;
 - hebergeur VPS / Coolify / infrastructure : hebergement applicatif et technique ;
@@ -801,7 +801,7 @@ Prestataires a valider et completer avant publication :
 
 Dans ce cas, Winelio met en place ou verifie l'existence de garanties appropriees, notamment clauses contractuelles types de la Commission europeenne, regles d'entreprise contraignantes, mesures supplementaires de securite ou recours a des prestataires offrant des garanties conformes au RGPD.
 
-Point a completer avant publication : confirmer la liste exacte des prestataires, leurs pays de traitement et les garanties contractuelles applicables.$DOC5S10$);
+Point en attente de validation finale : confirmer la liste exacte des prestataires, leurs pays de traitement et les garanties contractuelles applicables.$DOC5S10$);
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 11, '11', 'Droits des personnes', $DOC5S11$Conformement au RGPD, les personnes concernees peuvent disposer, selon les cas et les bases legales applicables, des droits suivants :
 
@@ -818,7 +818,7 @@ Point a completer avant publication : confirmer la liste exacte des prestataires
 
 Pour exercer ces droits :
 
-[A COMPLETER : dpo@winelio.app ou privacy@winelio.app]
+Contact RGPD en attente de validation. Dans l'intervalle, les demandes peuvent etre adressees a contact@winelio.app.
 
 Winelio pourra demander une verification d'identite lorsque cela est necessaire pour proteger les donnees de la personne concernee.
 
@@ -872,7 +872,7 @@ En cas de modification substantielle, les utilisateurs seront informes par tout 
   INSERT INTO winelio.document_sections (document_id, order_index, article_number, title, content)
   VALUES (v_document_id, 17, '17', 'Information au titre du RGPD', $DOC5S17$L'article 13 du RGPD impose notamment d'informer les personnes sur l'identite du responsable de traitement, les finalites, les bases legales, les destinataires, les durees de conservation, les droits et l'existence d'un recours aupres d'une autorite de controle.
 
-Cette politique a vocation a fournir cette information de maniere claire et accessible, sous reserve de completer les informations d'identification et la liste exacte des prestataires avant publication definitive.$DOC5S17$);
+Cette politique a vocation a fournir cette information de maniere claire et accessible. Les informations d'identification administrative et la liste exacte des prestataires seront completees apres validation finale.$DOC5S17$);
 
 END $$;
 

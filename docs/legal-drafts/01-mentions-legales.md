@@ -42,7 +42,7 @@ Winelio est une plateforme numerique de mise en relation professionnelle par rec
 
 - a des utilisateurs de recommander des professionnels ;
 - a des professionnels de recevoir et suivre des opportunites commerciales ;
-- a Winelio de percevoir une commission d'intermediation lorsque les conditions contractuelles sont reunies ;
+- a Winelio de percevoir une commission d'intermédiation lorsque les conditions contractuelles sont reunies ;
 - a certains utilisateurs eligibles de recevoir des reversements lies a des prestations reelles, facturees et payees.
 
 Winelio n'execute pas les prestations proposees par les professionnels references et n'est pas partie au contrat conclu entre le client final et le professionnel.

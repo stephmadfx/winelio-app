@@ -30,7 +30,7 @@ Winelio determine les finalites et les moyens essentiels des traitements realise
 
 ## 3. En resume
 
-Winelio traite les donnees personnelles uniquement pour faire fonctionner la plateforme, securiser les comptes, gerer les recommandations, calculer les commissions, traiter les retraits, respecter ses obligations legales et ameliorer le service.
+Winelio traite les donnees personnelles uniquement pour faire fonctionner la plateforme, securiser les comptes, gerer les recommandations, calculer les commissions d'intermédiation, traiter les retraits, respecter ses obligations legales et ameliorer le service.
 
 Winelio ne vend pas les donnees personnelles des utilisateurs.
 
@@ -45,7 +45,7 @@ Winelio peut traiter les categories de donnees suivantes, selon le role de la pe
 - donnees de compte : identifiant, role, statut professionnel, sponsor, code parrain, historique d'acceptation des documents contractuels ;
 - donnees professionnelles : SIRET, SIREN, denomination, categorie, zone d'intervention, justificatifs, assurances, informations publiques d'entreprise, statut de verification ;
 - donnees de recommandation : description du besoin, contact recommande, professionnel pressenti, statut, montant du devis ou de la facture, historique des etapes, commentaires operationnels ;
-- donnees financieres : cagnotte, commissions, retraits, frais, informations necessaires a l'execution d'un reversement ;
+- donnees financieres : cagnotte, commissions d'intermédiation, retraits, frais, informations necessaires a l'execution d'un reversement ;
 - donnees de paiement : informations traitees par les prestataires de paiement, sans stockage par Winelio des donnees completes de carte bancaire ;
 - donnees de signature et de preuve : date, heure, adresse IP, version du document accepte, preuve d'acceptation, empreinte du document si applicable ;
 - donnees techniques : adresse IP, logs de connexion, navigateur, terminal, horodatages, evenements de securite ;
@@ -92,7 +92,7 @@ Les durees ci-dessous sont publiees en attente de validation finale.
 | Parrainage obligatoire et reseau | Verifier le code parrain, rattacher le compte a un sponsor, prevenir les abus du reseau | Execution du contrat et interet legitime de securisation | Duree du compte, puis jusqu'a 5 ans apres la derniere activite |
 | Recommandations et mise en relation | Transmettre une opportunite, suivre le workflow, notifier les parties, documenter l'avancement | Execution du contrat et interet legitime des parties a organiser la mise en relation | Duree de traitement de la recommandation, puis jusqu'a 5 ans pour preuve |
 | Gestion des professionnels | Verifier le SIRET, la categorie, la zone, les justificatifs et le statut professionnel | Execution du contrat, obligation legale selon l'activite, interet legitime de securisation | Duree du compte professionnel, puis jusqu'a 5 ans, ou plus si obligation legale |
-| Commissions, wallet et retraits | Calculer les commissions, gerer les soldes, valider les demandes de retrait, prevenir la fraude | Execution du contrat, obligations legales comptables et fiscales, interet legitime anti-fraude | Donnees operationnelles pendant la relation, pieces comptables jusqu'a 10 ans |
+| Commissions d'intermédiation, wallet et retraits | Calculer les commissions d'intermédiation, gerer les soldes, valider les demandes de retrait, prevenir la fraude | Execution du contrat, obligations legales comptables et fiscales, interet legitime anti-fraude | Donnees operationnelles pendant la relation, pieces comptables jusqu'a 10 ans |
 | Paiements | Executer ou faciliter les paiements, encaissements, reversements et relances | Execution du contrat, obligations legales, interet legitime de recouvrement | Selon le prestataire et les obligations comptables, justificatifs jusqu'a 10 ans |
 | Emails transactionnels et notifications | Envoyer les OTP, invitations, alertes, relances et informations de suivi | Execution du contrat et interet legitime | Duree necessaire a l'envoi et a la preuve, puis jusqu'a 3 ans selon le contexte |
 | Mesure d'ouverture et de clic des emails | Suivre la delivrabilite, securiser les envois, prouver l'envoi, ameliorer les relances | Interet legitime, sous reserve du droit d'opposition | Jusqu'a 13 mois pour les traceurs, ou jusqu'a la duree de preuve applicable |

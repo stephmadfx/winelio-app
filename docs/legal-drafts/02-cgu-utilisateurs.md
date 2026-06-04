@@ -12,7 +12,7 @@ Winelio est une plateforme de mise en relation professionnelle par recommandatio
 - la recommandation de professionnels a des contacts ou clients potentiels ;
 - le suivi d'opportunites commerciales ;
 - l'acces a un reseau de parrainage limite a cinq niveaux ;
-- l'affichage d'une cagnotte et, sous conditions, la demande de reversement de commissions.
+- l'affichage d'une cagnotte et, sous conditions, la demande de reversement de commissions d'intermédiation.
 
 Winelio agit comme operateur de plateforme et intermediaire de mise en relation. Winelio ne fournit pas elle-meme les prestations proposees par les professionnels et n'est pas partie au contrat conclu entre un client final et un professionnel.
 
@@ -20,7 +20,7 @@ Winelio agit comme operateur de plateforme et intermediaire de mise en relation.
 
 "Utilisateur" designe toute personne disposant d'un compte Winelio.
 
-"Affilie" designe un utilisateur pouvant recommander des professionnels ou contacts, participer au programme d'affiliation et, lorsque les conditions sont reunies, percevoir des commissions d'intermediation.
+"Affilie" designe un utilisateur pouvant recommander des professionnels ou contacts, participer au programme d'affiliation et, lorsque les conditions sont reunies, percevoir des commissions d'intermédiation.
 
 "Professionnel" designe tout utilisateur ayant active un compte professionnel afin de recevoir et gerer des recommandations via Winelio.
 
@@ -28,9 +28,9 @@ Winelio agit comme operateur de plateforme et intermediaire de mise en relation.
 
 "Recommandation" designe une opportunite transmise via la plateforme a un professionnel.
 
-"Commission Winelio" designe la commission d'intermediation due par le professionnel a Winelio dans les conditions prevues aux Conditions Professionnels / CGV.
+"Commission d'intermédiation Winelio" designe la commission d'intermédiation due par le professionnel a Winelio dans les conditions prevues aux Conditions Professionnels / CGV.
 
-"Reversement affilie" designe la part de commission pouvant etre creditee a un utilisateur eligible, sous reserve des conditions du programme d'affiliation.
+"Reversement affilie" designe la part de commission d'intermédiation pouvant etre creditee a un utilisateur eligible, sous reserve des conditions du programme d'affiliation.
 
 ## 3. Acceptation des CGU
 
@@ -65,7 +65,7 @@ Winelio fournit un service technique et commercial de mise en relation. A ce tit
 - referencer des professionnels ;
 - transmettre des recommandations ;
 - organiser un workflow de suivi ;
-- collecter certaines informations necessaires au calcul des commissions ;
+- collecter certaines informations necessaires au calcul des commissions d'intermédiation ;
 - notifier les parties ;
 - mettre a disposition des outils de paiement operes par des prestataires tiers.
 
@@ -107,8 +107,8 @@ Source : https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000032227258
 
 Les montants affiches dans le wallet ou la cagnotte peuvent comprendre :
 
-- des commissions acquises ;
-- des commissions en attente ;
+- des commissions d'intermédiation acquises ;
+- des commissions d'intermédiation en attente ;
 - des montants soumis a verification ;
 - des avantages internes en Wins.
 
@@ -135,7 +135,7 @@ Les utilisateurs sont seuls responsables de leurs obligations fiscales, sociales
 
 Winelio ne fournit pas de conseil fiscal, social ou comptable personnalise.
 
-Winelio peut suspendre les reversements si elle estime que l'utilisateur ne dispose pas des justificatifs ou du statut necessaires a la perception reguliere de commissions.
+Winelio peut suspendre les reversements si elle estime que l'utilisateur ne dispose pas des justificatifs ou du statut necessaires a la perception reguliere de commissions d'intermédiation.
 
 ## 11. Comportements interdits
 
@@ -148,18 +148,18 @@ Il est interdit de :
 - manipuler le systeme de recommandation ou le reseau de parrainage ;
 - generer de fausses recommandations ;
 - contourner la plateforme apres une mise en relation ;
-- tenter d'obtenir une commission sans prestation reelle ;
+- tenter d'obtenir une commission d'intermédiation sans prestation reelle ;
 - utiliser des scripts, robots ou automatisations non autorises ;
 - porter atteinte a la securite, a l'integrite ou au fonctionnement de Winelio.
 
 ## 12. Anti-contournement
 
-Lorsqu'une mise en relation a ete initiee par Winelio, les utilisateurs s'engagent a ne pas organiser volontairement l'operation hors plateforme dans le but d'eviter la commission ou le suivi contractuel.
+Lorsqu'une mise en relation a ete initiee par Winelio, les utilisateurs s'engagent a ne pas organiser volontairement l'operation hors plateforme dans le but d'eviter la commission d'intermédiation ou le suivi contractuel.
 
 En cas de contournement, Winelio peut notamment :
 
 - suspendre ou resilier les comptes concernes ;
-- annuler les commissions ou avantages ;
+- annuler les commissions d'intermédiation ou avantages ;
 - reclamer les sommes dues ;
 - demander reparation du prejudice subi.
 
@@ -203,7 +203,7 @@ En cas de deces d'un utilisateur, Winelio peut suspendre puis cloturer le compte
 
 Les sommes disponibles et definitivement acquises a la date du deces peuvent etre reversees aux ayants droit legalement reconnus, apres verification des pieces necessaires.
 
-Les commissions, bonus, avantages ou reversements generes posterieurement au deces cessent automatiquement, sauf obligation legale contraire ou decision expresse de Winelio.
+Les commissions d'intermédiation, bonus, avantages ou reversements generes posterieurement au deces cessent automatiquement, sauf obligation legale contraire ou decision expresse de Winelio.
 
 ## 17. Droit applicable et litiges
 

@@ -1,4 +1,4 @@
-# Conditions Professionnels / CGV de commission d'intermediation - Winelio
+# Conditions Professionnels / CGV de commission d'intermédiation - Winelio
 
 Version publiee - 2026-06-04
 
@@ -42,7 +42,7 @@ Si Winelio ouvre un parcours dedie aux agents immobiliers ou professions assimil
 
 ## 4. Nature du service Winelio
 
-Winelio fournit un service d'intermediation commerciale et technique.
+Winelio fournit un service d'intermédiation commerciale et technique.
 
 Winelio peut notamment :
 
@@ -50,8 +50,8 @@ Winelio peut notamment :
 - permettre au Professionnel d'accepter, refuser ou transferer une opportunite ;
 - fournir un workflow de suivi ;
 - envoyer des notifications et relances ;
-- calculer la commission due ;
-- emettre ou faciliter l'emission d'une facture de commission ;
+- calculer la commission d'intermédiation due ;
+- emettre ou faciliter l'emission d'une facture de commission d'intermédiation ;
 - mettre a disposition un lien de paiement via un prestataire tiers.
 
 Winelio n'est pas partie au contrat de prestation conclu entre le Professionnel et le Client final. Le Professionnel reste seul responsable de ses devis, prestations, garanties, assurances, delais, factures, obligations fiscales et obligations envers le Client final.
@@ -65,21 +65,21 @@ Cette autorisation est :
 - non exclusive ;
 - limitee au fonctionnement de la plateforme ;
 - revocable dans les conditions de resiliation ;
-- a titre onereux lorsque la mise en relation aboutit a une operation generant une commission.
+- a titre onereux lorsque la mise en relation aboutit a une operation generant une commission d'intermédiation.
 
 Cette autorisation ne confere pas a Winelio le pouvoir de conclure un contrat au nom du Professionnel, sauf accord ecrit distinct.
 
-## 6. Commission d'intermediation
+## 6. Commission d'intermédiation
 
 ### 6.1 Principe
 
-Le Professionnel doit a Winelio une commission d'intermediation lorsqu'une recommandation transmise ou facilitee via Winelio aboutit a une prestation, commande, mission, contrat ou operation payee par le Client final.
+Le Professionnel doit a Winelio une commission d'intermédiation lorsqu'une recommandation transmise ou facilitee via Winelio aboutit a une prestation, commande, mission, contrat ou operation payee par le Client final.
 
 ### 6.2 Base de calcul
 
-Sauf bareme particulier affiche dans la plateforme ou accepte par ecrit, la commission est calculee sur le montant TTC de la facture emise par le Professionnel au Client final au titre de l'operation issue de la mise en relation Winelio.
+Sauf bareme particulier affiche dans la plateforme ou accepte par ecrit, la commission d'intermédiation est calculee sur le montant TTC de la facture emise par le Professionnel au Client final au titre de l'operation issue de la mise en relation Winelio.
 
-Si le Professionnel n'est pas assujetti a la TVA, la commission est calculee sur le montant facture au Client final.
+Si le Professionnel n'est pas assujetti a la TVA, la commission d'intermédiation est calculee sur le montant facture au Client final.
 
 ### 6.3 Taux
 
@@ -92,14 +92,14 @@ Point en attente de validation finale : le seuil de 25 000 euros doit etre preci
 
 ### 6.4 Fait generateur
 
-La commission devient exigible lorsque les conditions suivantes sont reunies :
+La commission d'intermédiation devient exigible lorsque les conditions suivantes sont reunies :
 
 - le Client final a ete mis en relation avec le Professionnel via Winelio ou a la suite d'une recommandation issue de Winelio ;
 - le Client final a accepte une offre, un devis, une commande ou un contrat du Professionnel ;
 - la prestation a ete realisee et/ou payee selon le workflow applicable ;
-- le montant necessaire au calcul de la commission a ete declare ou justifie.
+- le montant necessaire au calcul de la commission d'intermédiation a ete declare ou justifie.
 
-Les droits a reversement affilie ne deviennent definitivement acquis qu'apres encaissement effectif de la commission Winelio et expiration des controles applicables.
+Les droits a reversement affilie ne deviennent definitivement acquis qu'apres encaissement effectif de la commission d'intermédiation Winelio et expiration des controles applicables.
 
 ### 6.5 Declaration du montant reel
 
@@ -109,7 +109,7 @@ Toute sous-declaration, omission volontaire ou fausse declaration constitue un m
 
 ## 7. Facturation et paiement
 
-Winelio emet ou fait emettre une facture correspondant a la commission due.
+Winelio emet ou fait emettre une facture correspondant a la commission d'intermédiation due.
 
 Le paiement peut etre effectue :
 
@@ -146,14 +146,14 @@ En cas de defaut de paiement, Winelio peut :
 
 Le Professionnel s'interdit de contourner Winelio apres une mise en relation, notamment :
 
-- en invitant le Client final a poursuivre hors plateforme afin d'eviter la commission ;
+- en invitant le Client final a poursuivre hors plateforme afin d'eviter la commission d'intermédiation ;
 - en omettant de declarer une operation issue de Winelio ;
 - en declarant un montant inferieur au montant reel ;
-- en utilisant une autre entite, un sous-traitant ou un compte tiers pour eviter la commission.
+- en utilisant une autre entite, un sous-traitant ou un compte tiers pour eviter la commission d'intermédiation.
 
 En cas de contournement, Winelio peut reclamer :
 
-- la commission qui aurait du etre payee ;
+- la commission d'intermédiation qui aurait du etre payee ;
 - les penalites de retard applicables ;
 - les frais de recouvrement ;
 - des dommages et interets en reparation du prejudice subi.
@@ -206,13 +206,13 @@ Winelio n'est pas responsable :
 - de la mauvaise execution d'une prestation par le Professionnel ;
 - d'une erreur due a des informations inexactes fournies par le Professionnel.
 
-Dans les limites permises par la loi, la responsabilite de Winelio est limitee aux commissions effectivement encaissees par Winelio au titre de l'operation litigieuse au cours des trois derniers mois precedant le fait generateur.
+Dans les limites permises par la loi, la responsabilite de Winelio est limitee aux commissions d'intermédiation effectivement encaissees par Winelio au titre de l'operation litigieuse au cours des trois derniers mois precedant le fait generateur.
 
 ## 13. Duree et resiliation
 
 Les presentes Conditions Professionnels s'appliquent tant que le Professionnel utilise le service professionnel Winelio.
 
-Le Professionnel peut demander la resiliation de son compte professionnel. Les commissions dues au titre des mises en relation initiees avant la resiliation restent exigibles.
+Le Professionnel peut demander la resiliation de son compte professionnel. Les commissions d'intermédiation dues au titre des mises en relation initiees avant la resiliation restent exigibles.
 
 Winelio peut suspendre ou resilier l'acces professionnel en cas de manquement, fraude, defaut de paiement, risque juridique, perte d'une autorisation professionnelle ou comportement portant atteinte au service.
 
