@@ -42,7 +42,7 @@ export async function POST(
 
   if (!(await hasPaidProfessionalCommission(rec.id))) {
     return NextResponse.json(
-      { error: "Avis en attente : le professionnel doit d'abord régler sa commission Winelio." },
+      { error: "Avis en attente : le professionnel doit d'abord régler sa commission d'intermédiation Winelio." },
       { status: 409 }
     );
   }

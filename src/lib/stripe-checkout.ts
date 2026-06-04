@@ -94,7 +94,7 @@ export async function createStripeCheckoutSession(
         price_data: {
           currency: "eur",
           product_data: {
-            name: `Commission Winelio — ${clientName}`,
+            name: `Commission d'intermédiation Winelio — ${clientName}`,
             description: `Recommandation #${recommendationId.slice(0, 8)} · Montant du deal : ${reco.amount} €`,
           },
           unit_amount: Math.round(commissionAmount * 100),

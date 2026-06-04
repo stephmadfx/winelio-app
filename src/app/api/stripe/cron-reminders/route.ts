@@ -62,7 +62,7 @@ export async function GET(req: Request) {
             {
               price_data: {
                 currency: "eur",
-                product_data: { name: `Commission Winelio — ${clientName} (relance)` },
+                product_data: { name: `Commission d'intermédiation Winelio — ${clientName} (relance)` },
                 unit_amount: Math.round(session.amount * 100),
               },
               quantity: 1,

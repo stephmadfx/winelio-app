@@ -84,7 +84,7 @@ export async function advanceRecommendationStep(
   if (orderIndex === 6) {
     // Étape 6 = "Travaux terminés + Paiement reçu" : le pro vient d'être payé
     // par son client, on déclenche immédiatement le checkout Stripe pour qu'il
-    // règle sa commission Winelio. (Avant le 2026-05-04 c'était à l'étape 7,
+    // règle sa commission d'intermédiation Winelio. (Avant le 2026-05-04 c'était à l'étape 7,
     // ce qui retardait le time-to-cash sans valeur ajoutée — l'étape 7 est
     // désormais une simple clôture sans effet financier.)
     try {

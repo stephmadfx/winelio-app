@@ -142,10 +142,10 @@ function buildReferralEmail(
                     </p>
                     ${level === 1 ? `
                     <p style="margin:12px 0 0;color:#636E72;font-size:13px;line-height:1.6;">
-                      En tant que parrain direct, vous bénéficierez d'une commission sur chaque recommandation validée de ce nouveau membre.
+                      En tant que parrain direct, vous bénéficierez d'une commission d'intermédiation sur chaque recommandation validée de ce nouveau membre.
                     </p>` : `
                     <p style="margin:12px 0 0;color:#636E72;font-size:13px;line-height:1.6;">
-                      Votre réseau grandit ! Vous percevrez une commission sur les recommandations validées au niveau&nbsp;${level}.
+                      Votre réseau grandit ! Vous percevrez une commission d'intermédiation sur les recommandations validées au niveau&nbsp;${level}.
                     </p>
                     ${buildChainHtml(chain)}`}
                   </td>
@@ -297,8 +297,8 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
       `${memberName} vient de rejoindre Winelio en tant que ${levelLabel} dans votre réseau.`,
       "",
       level === 1
-        ? "En tant que parrain direct, vous bénéficierez d'une commission sur chaque recommandation validée de ce nouveau membre."
-        : `Votre réseau grandit ! Vous percevrez une commission sur les recommandations validées au niveau ${level}.`,
+        ? "En tant que parrain direct, vous bénéficierez d'une commission d'intermédiation sur chaque recommandation validée de ce nouveau membre."
+        : `Votre réseau grandit ! Vous percevrez une commission d'intermédiation sur les recommandations validées au niveau ${level}.`,
       ...(chainText ? ["", chainText] : []),
       "",
       `Voir mon réseau : ${SITE_URL}/network`,

@@ -8,7 +8,7 @@ const EMAIL_LABELS: Record<string, string> = {
   "relance-scraped":     '⏱ Relance automatique → Pro scrappé (H+12)',
   "alerte-recommandeur": '📭 Alerte → Recommandeur (H+36)',
   "reco-refusee":        '📧 Recommandation déclinée → Recommandeur',
-  "commission":          '📧 Commission à régler → Professionnel',
+  "commission":          "📧 Commission d'intermédiation à régler → Professionnel",
   "step-2":  '✉️ Étape 2 — Reco acceptée → Recommandeur',
   "step-3":  '✉️ Étape 3 — Contact établi → Recommandeur',
   "step-4":  '✉️ Étape 4 — RDV fixé → Recommandeur',

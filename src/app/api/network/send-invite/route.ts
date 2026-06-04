@@ -145,7 +145,7 @@ function buildInviteEmail(
                           </table>
                         </td>
                         <td style="padding-left:14px;vertical-align:middle;">
-                          <span style="color:#2D3436;font-size:14px;line-height:1.5;">Gagnez des commissions sur chaque recommandation validée</span>
+                          <span style="color:#2D3436;font-size:14px;line-height:1.5;">Gagnez des commissions d'intermédiation sur chaque recommandation validée</span>
                         </td>
                       </tr>
                     </table>
