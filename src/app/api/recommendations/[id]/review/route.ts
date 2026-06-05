@@ -6,6 +6,7 @@ import {
   unlockRecommendationCommissions,
   validateRecommendationReview,
 } from "@/lib/recommendation-review";
+import { notifyReferrerCommissionCredited } from "@/lib/notify-commission-credited";
 
 export async function POST(
   request: Request,
@@ -67,5 +68,9 @@ export async function POST(
   }
 
   const payout = await unlockRecommendationCommissions(rec.id);
+  await notifyReferrerCommissionCredited(rec.id).catch((err) =>
+    console.error("[recommendation-review] Échec notification cagnotte:", err)
+  );
+
   return NextResponse.json({ success: true, payout });
 }
