@@ -43,6 +43,7 @@ export async function middleware(request: NextRequest) {
       path.startsWith("/api/bugs/imap-poll") ||
       path.startsWith("/api/bugs/imap-debug") ||
       path.startsWith("/api/email/process-queue") ||
+      path.startsWith("/api/stripe/webhook") ||
       path.startsWith("/api/stripe/cron-reminders") ||
       path.startsWith("/api/video/");
     const isExempt =
@@ -118,6 +119,7 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/bugs/imap-debug") &&
     !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
     !request.nextUrl.pathname.startsWith("/api/email-track/") &&
+    !request.nextUrl.pathname.startsWith("/api/stripe/webhook") &&
     !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders")
   ) {
     if (!user) {
@@ -137,6 +139,7 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/bugs/imap-debug") &&
     !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
     !request.nextUrl.pathname.startsWith("/api/email-track/") &&
+    !request.nextUrl.pathname.startsWith("/api/stripe/webhook") &&
     !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders") &&
     !request.nextUrl.pathname.startsWith("/claim") &&
     !request.nextUrl.pathname.startsWith("/conditions-generales-utilisation") &&
