@@ -1,9 +1,12 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { COMMISSION_TYPE, COMMISSION_STATUS, WINELIO_SYSTEM_USER_ID } from "@/lib/constants";
+import { calculateCommissionBaseAmount } from "@/lib/commission-rate";
 
 interface CompensationPlan {
   id: string;
   commission_rate: number;
+  high_amount_threshold?: number | null;
+  high_amount_commission_rate?: number | null;
   referrer_percentage: number;
   level_1_percentage: number;
   level_2_percentage: number;
@@ -27,7 +30,7 @@ export function calculateCommissions(
   dealAmount: number,
   plan: CompensationPlan
 ): CommissionResult {
-  const baseCommission = dealAmount * (plan.commission_rate / 100);
+  const { amount: baseCommission } = calculateCommissionBaseAmount(dealAmount, plan);
   const referrer_commission = baseCommission * (plan.referrer_percentage / 100);
 
   const levelPercentages = [

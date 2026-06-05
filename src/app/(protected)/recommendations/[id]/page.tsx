@@ -126,6 +126,9 @@ export default function RecommendationDetailPage() {
   const [quoteAmount, setQuoteAmount] = useState("");
   const [expectedDelay, setExpectedDelay] = useState<string>("");
   const [customExpectedDate, setCustomExpectedDate] = useState<string>("");
+  const [amountInput, setAmountInput] = useState("");
+  const [savingAmount, setSavingAmount] = useState(false);
+  const [amountError, setAmountError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
   const [paymentCheckDone, setPaymentCheckDone] = useState(false);
@@ -166,6 +169,7 @@ export default function RecommendationDetailPage() {
         professional: normalize(rec.professional) as RecommendationDetail["professional"],
         referrer: normalize(rec.referrer) as RecommendationDetail["referrer"],
       });
+      setAmountInput(rec.amount != null ? String(rec.amount) : "");
       const mapped = (recSteps as StepRow[]).map((s) => ({
         ...s,
         step: Array.isArray(s.step) ? s.step[0] ?? null : s.step,
@@ -272,6 +276,28 @@ export default function RecommendationDetailPage() {
       setReviewError("Erreur réseau lors de l'envoi de l'avis.");
     }
     setReviewSubmitting(false);
+  };
+
+  const handleUpdateAmount = async () => {
+    if (!recommendation) return;
+    setSavingAmount(true);
+    setAmountError(null);
+    try {
+      const res = await fetch(`/api/recommendations/${recommendation.id}/amount`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: amountInput }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAmountError(data.error ?? "Impossible de modifier le devis");
+      } else {
+        await fetchData();
+      }
+    } catch {
+      setAmountError("Erreur réseau lors de la modification du devis");
+    }
+    setSavingAmount(false);
   };
 
   if (loading) {
@@ -502,13 +528,13 @@ export default function RecommendationDetailPage() {
           </div>
 
           {/* Amount card */}
-          {recommendation.amount != null && (
+          {(recommendation.amount != null || userId === recommendation.professional_id) && (
             <div className="mt-5 overflow-hidden rounded-2xl bg-gradient-to-r from-winelio-dark to-[#3d4042] p-5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-white/40">Montant du deal</p>
                   <p className="mt-1 text-3xl font-black text-white tabular-nums">
-                    {recommendation.amount.toLocaleString("fr-FR")}
+                    {(recommendation.amount ?? 0).toLocaleString("fr-FR")}
                     <span className="ml-1 text-xl font-semibold text-white/50">€</span>
                   </p>
                 </div>
@@ -518,12 +544,40 @@ export default function RecommendationDetailPage() {
                   </svg>
                 </div>
               </div>
-              {recommendation.amount > 0 && (
+              {userId === recommendation.professional_id && (
+                <div className="mt-4 rounded-xl bg-white/8 p-3">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/50">
+                    Devis final (€)
+                  </label>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <input
+                      type="number"
+                      value={amountInput}
+                      onChange={(e) => setAmountInput(e.target.value)}
+                      min="0"
+                      step="0.01"
+                      className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white px-3 py-2 text-sm font-semibold text-winelio-dark outline-none focus:border-winelio-orange"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleUpdateAmount}
+                      disabled={savingAmount || !amountInput}
+                      className="rounded-lg bg-winelio-orange px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-winelio-amber disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {savingAmount ? "Enregistrement..." : "Enregistrer"}
+                    </button>
+                  </div>
+                  {amountError && (
+                    <p className="mt-2 text-xs font-medium text-red-200">{amountError}</p>
+                  )}
+                </div>
+              )}
+              {(recommendation.amount ?? 0) > 0 && (
                 <div className="mt-3 flex items-center gap-2">
                   <div className="flex-1 h-1 rounded-full bg-white/10">
                     <div className="h-full w-3/5 rounded-full bg-gradient-to-r from-winelio-orange to-winelio-amber" />
                   </div>
-                  <span className="text-xs text-white/40 font-medium">~{Math.round(recommendation.amount * 0.06).toLocaleString("fr-FR")} € commissions estimées</span>
+                  <span className="text-xs text-white/40 font-medium">~{Math.round((recommendation.amount ?? 0) * 0.1).toLocaleString("fr-FR")} € commission Winelio estimée</span>
                 </div>
               )}
             </div>

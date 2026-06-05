@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { hasPaidProfessionalCommission } from "@/lib/recommendation-review";
+import {
+  getProfessionalLeadAccessBlock,
+  isFutureLeadBlocked,
+} from "@/lib/professional-lead-access";
 
 // Statuts où le pro a accepté (ou plus loin dans le workflow)
 // → le referrer peut voir l'identité complète du pro.
@@ -48,6 +52,20 @@ export async function GET(
   const isAdmin = user.app_metadata?.role === "super_admin";
   if (!isReferrer && !isPro && !isAdmin) {
     return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+  }
+
+  if (isPro && !isAdmin) {
+    const leadAccessBlock = await getProfessionalLeadAccessBlock(user.id);
+    if (isFutureLeadBlocked(rec, leadAccessBlock)) {
+      return NextResponse.json(
+        {
+          error:
+            "Accès suspendu : réglez votre commission d'intermédiation Winelio en attente pour consulter les nouveaux leads.",
+          leadAccessBlock,
+        },
+        { status: 403 }
+      );
+    }
   }
 
   // Règle anti-court-circuit :
