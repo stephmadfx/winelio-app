@@ -20,6 +20,12 @@ interface Recommendation {
   } | null;
 }
 
+interface LeadAccessBlock {
+  recommendationId: string;
+  amount: number;
+  blockedSince: string;
+}
+
 const STATUS_LABELS: Record<string, string> = {
   PENDING:           "En attente",
   ACCEPTED:          "Acceptée",
@@ -106,6 +112,7 @@ export default function RecommendationsPage() {
   const [statusFilter, setStatusFilter] = useState<Status>("all");
   // allRecommendations: always the full unfiltered list for the current tab
   const [allRecommendations, setAllRecommendations] = useState<Recommendation[]>([]);
+  const [leadAccessBlock, setLeadAccessBlock] = useState<LeadAccessBlock | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch ALL recommendations for current tab via server API
@@ -116,10 +123,12 @@ export default function RecommendationsPage() {
       const res = await fetch(`/api/recommendations/list?tab=${tab}`);
       if (!res.ok) {
         setAllRecommendations([]);
+        setLeadAccessBlock(null);
         setLoading(false);
         return;
       }
-      const { recommendations } = await res.json();
+      const { recommendations, leadAccessBlock: block } = await res.json();
+      setLeadAccessBlock(block ?? null);
       setAllRecommendations(
         (recommendations ?? []).map((r: Record<string, unknown>) => {
           const pro = Array.isArray(r.professional) ? r.professional[0] ?? null : r.professional;
@@ -259,6 +268,16 @@ export default function RecommendationsPage() {
           </button>
         ))}
       </div>
+
+      {tab === "received" && leadAccessBlock && (
+        <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+          <p className="font-bold">Accès aux nouveaux leads suspendu</p>
+          <p className="mt-1 text-amber-800">
+            Une commission Winelio de {leadAccessBlock.amount.toLocaleString("fr-FR")} € est en attente de paiement.
+            Réglez-la depuis l'email Stripe reçu pour consulter les prochains leads.
+          </p>
+        </div>
+      )}
 
       {/* ── List ── */}
       {loading ? (

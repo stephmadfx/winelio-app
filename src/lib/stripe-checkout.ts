@@ -1,6 +1,7 @@
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendCommissionPaymentEmail } from "@/lib/notify-commission-payment";
+import { calculateCommissionBaseAmount, type CommissionRatePlan } from "@/lib/commission-rate";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app";
 
@@ -13,6 +14,17 @@ export async function createStripeCheckoutSession(
   recommendationId: string
 ): Promise<string> {
   // ── 1. Vérification idempotente ──────────────────────────────────────────────
+  const { data: paid } = await supabaseAdmin
+    .from("stripe_payment_sessions")
+    .select("id")
+    .eq("recommendation_id", recommendationId)
+    .eq("status", "paid")
+    .maybeSingle();
+
+  if (paid) {
+    return `${APP_URL}?commission=already-paid`;
+  }
+
   const { data: existing } = await supabaseAdmin
     .from("stripe_payment_sessions")
     .select("stripe_session_id")
@@ -51,26 +63,26 @@ export async function createStripeCheckoutSession(
   }
 
   // ── 3. Résoudre le plan de commission ────────────────────────────────────────
-  let commissionRate = 10; // taux par défaut
+  let resolvedPlan: CommissionRatePlan | null = null;
   if (reco.compensation_plan_id) {
     const { data: plan } = await supabaseAdmin
       .from("compensation_plans")
-      .select("commission_rate")
+      .select("*")
       .eq("id", reco.compensation_plan_id)
       .single();
-    if (plan) commissionRate = plan.commission_rate;
+    resolvedPlan = plan;
   } else {
     const { data: defaultPlan } = await supabaseAdmin
       .from("compensation_plans")
-      .select("commission_rate")
+      .select("*")
       .eq("is_default", true)
       .eq("is_active", true)
       .single();
-    if (defaultPlan) commissionRate = defaultPlan.commission_rate;
+    resolvedPlan = defaultPlan;
   }
 
-  const commissionAmount =
-    Math.round(reco.amount * (commissionRate / 100) * 100) / 100;
+  const { amount: commissionAmount, rate: commissionRate } =
+    calculateCommissionBaseAmount(reco.amount, resolvedPlan);
 
   // ── 4. Récupérer l'email du professionnel ────────────────────────────────────
   const { data: proAuth } = await supabaseAdmin.auth.admin.getUserById(
@@ -94,7 +106,7 @@ export async function createStripeCheckoutSession(
         price_data: {
           currency: "eur",
           product_data: {
-            name: `Commission Winelio — ${clientName}`,
+            name: `Commission d'intermédiation Winelio — ${clientName}`,
             description: `Recommandation #${recommendationId.slice(0, 8)} · Montant du deal : ${reco.amount} €`,
           },
           unit_amount: Math.round(commissionAmount * 100),
@@ -105,6 +117,8 @@ export async function createStripeCheckoutSession(
     metadata: {
       recommendation_id: recommendationId,
       professional_id: reco.professional_id,
+      deal_amount: String(reco.amount),
+      commission_rate: String(commissionRate),
     },
     success_url: `${APP_URL}?commission=paid`,
     cancel_url: `${APP_URL}?commission=cancelled`,

@@ -1,9 +1,12 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { COMMISSION_TYPE, COMMISSION_STATUS, WINELIO_SYSTEM_USER_ID } from "@/lib/constants";
+import { calculateCommissionBaseAmount } from "@/lib/commission-rate";
 
 interface CompensationPlan {
   id: string;
   commission_rate: number;
+  high_amount_threshold?: number | null;
+  high_amount_commission_rate?: number | null;
   referrer_percentage: number;
   level_1_percentage: number;
   level_2_percentage: number;
@@ -27,7 +30,7 @@ export function calculateCommissions(
   dealAmount: number,
   plan: CompensationPlan
 ): CommissionResult {
-  const baseCommission = dealAmount * (plan.commission_rate / 100);
+  const { amount: baseCommission } = calculateCommissionBaseAmount(dealAmount, plan);
   const referrer_commission = baseCommission * (plan.referrer_percentage / 100);
 
   const levelPercentages = [
@@ -112,7 +115,7 @@ export async function createCommissions(
       level: 0,
       status: COMMISSION_STATUS.EARNED,
     },
-    // Cagnotte Winelio (14%)
+    // Cagnotte Winelio (23% sur le plan standard actif)
     {
       recommendation_id: recommendationId,
       user_id: WINELIO_SYSTEM_USER_ID,
@@ -123,7 +126,7 @@ export async function createCommissions(
     },
   ];
 
-  // Niveaux MLM (4% × 5) — les niveaux non distribués (chaîne trop courte) vont à la cagnotte
+  // Niveaux MLM (3% × 5 sur le plan standard actif) — les niveaux non distribués vont à la cagnotte
   let currentId = referrerId;
   let undistributed = 0;
   let chainBroken = false;

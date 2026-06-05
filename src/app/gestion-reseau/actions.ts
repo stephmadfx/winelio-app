@@ -82,7 +82,9 @@ export async function advanceRecommendationStep(
   const orderIndex = (stepData as { order_index: number } | null | undefined)?.order_index;
 
   if (orderIndex === 7) {
-    // Déclencher le paiement Stripe de la commission pro
+    // Étape 7 = "Affaire terminée" : le pro reçoit un lien Stripe Checkout
+    // pour régler volontairement sa commission d'intermédiation Winelio.
+    // Aucun débit automatique n'est lancé depuis la carte sauvegardée.
     try {
       await createStripeCheckoutSession(recommendationId);
     } catch (err) {
