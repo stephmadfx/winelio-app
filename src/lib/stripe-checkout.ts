@@ -120,8 +120,8 @@ export async function createStripeCheckoutSession(
       deal_amount: String(reco.amount),
       commission_rate: String(commissionRate),
     },
-    success_url: `${APP_URL}?commission=paid`,
-    cancel_url: `${APP_URL}?commission=cancelled`,
+    success_url: `${APP_URL}/commission/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${APP_URL}/commission/success?status=cancelled`,
     // Stripe maximum : 24h (86400s)
     expires_at: Math.floor(Date.now() / 1000) + 86400,
   });

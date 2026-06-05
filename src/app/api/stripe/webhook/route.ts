@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createCommissions } from "@/lib/commission";
+import { notifyReferrerCommissionCredited } from "@/lib/notify-commission-credited";
 import { unlockRecommendationCommissions } from "@/lib/recommendation-review";
 import type Stripe from "stripe";
 
@@ -79,6 +80,9 @@ export async function POST(req: Request) {
     .eq("id", paymentSession.id);
 
   await unlockRecommendationCommissions(reco.id);
+  await notifyReferrerCommissionCredited(reco.id).catch((err) =>
+    console.error("[stripe-webhook] Échec notification cagnotte:", err)
+  );
 
   return NextResponse.json({ received: true });
 }
