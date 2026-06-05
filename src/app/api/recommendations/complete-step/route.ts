@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createCommissions } from "@/lib/commission";
 import { RECOMMENDATION_STATUS } from "@/lib/constants";
 import { notifyReferrerStep } from "@/lib/notify-referrer-step";
+import { createStripeCheckoutSession } from "@/lib/stripe-checkout";
 
-// Étape 6 = "Travaux terminés + Paiement reçu" → commissions déclenchées
-// Étape 7 = "Affaire terminée" (ancienne étape 8 renumérotée)
+// Étape 7 = "Affaire terminée" → email Stripe Checkout pour la commission pro.
+// Les commissions MLM sont créées uniquement par le webhook Stripe après paiement.
 const STATUS_BY_STEP: Record<number, string> = {
   1: RECOMMENDATION_STATUS.PENDING,
   2: RECOMMENDATION_STATUS.ACCEPTED,
@@ -72,6 +72,9 @@ export async function POST(request: Request) {
     }
 
     if (stepRow.completed_at) {
+      if (stepIndex === 7) {
+        await createStripeCheckoutSession(rec.id);
+      }
       await notifyReferrerStep(rec.id, stepIndex);
       return NextResponse.json({ success: true, already_completed: true });
     }
@@ -125,36 +128,16 @@ export async function POST(request: Request) {
       })
       .eq("id", stepRow.id);
 
-    // Étape 6 : "Travaux terminés + Paiement reçu"
-    //   → commissions MLM créées (referrer + niveaux + cagnotte + cashback)
-    //   → checkout Stripe pour facturer le pro (le pro vient d'être payé par
-    //     son client, c'est le moment naturel de lui facturer la part Winelio).
-    //
-    // L'étape 7 ne déclenche plus rien côté financier : c'est juste une clôture
-    // administrative.
-    if (stepIndex === 6 && rec.amount) {
-      await createCommissions(
-        rec.id,
-        rec.referrer_id,
-        rec.professional_id,
-        rec.amount,
-        rec.compensation_plan_id ?? null
-      );
-
-      try {
-        const { createStripeCheckoutSession } = await import("@/lib/stripe-checkout");
-        await createStripeCheckoutSession(rec.id);
-      } catch (err) {
-        console.error("[complete-step] Erreur création session Stripe étape 6:", err);
-      }
-    }
-
     // Mettre à jour le statut de la recommandation
     const newStatus = STATUS_BY_STEP[stepIndex] ?? rec.status;
     await supabase
       .from("recommendations")
       .update({ status: newStatus })
       .eq("id", rec.id);
+
+    if (stepIndex === 7) {
+      await createStripeCheckoutSession(rec.id);
+    }
 
     // Notifier le referrer à chaque avancement pro. L'enfilement est attendu:
     // l'etape ne doit plus passer silencieusement si la notification critique echoue.

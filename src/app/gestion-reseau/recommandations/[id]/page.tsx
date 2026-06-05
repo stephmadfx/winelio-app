@@ -37,24 +37,28 @@ export default async function AdminRecoDetail({
 
   if (!reco) notFound();
 
-  // Résoudre le commission_rate depuis le plan ou plan par défaut
-  let commissionRate: number | null = null;
+  // Résoudre le plan de commission depuis la recommandation ou le plan par défaut.
+  let commissionPlan: {
+    commission_rate: number | null;
+    high_amount_threshold?: number | null;
+    high_amount_commission_rate?: number | null;
+  } | null = null;
   if (reco.compensation_plan_id) {
     const { data: plan } = await supabaseAdmin
       .from("compensation_plans")
-      .select("commission_rate")
+      .select("*")
       .eq("id", reco.compensation_plan_id)
       .single();
-    commissionRate = plan?.commission_rate ?? null;
+    commissionPlan = plan;
   }
-  if (commissionRate === null) {
+  if (!commissionPlan) {
     const { data: defaultPlan } = await supabaseAdmin
       .from("compensation_plans")
-      .select("commission_rate")
+      .select("*")
       .eq("is_default", true)
       .eq("is_active", true)
       .single();
-    commissionRate = defaultPlan?.commission_rate ?? null;
+    commissionPlan = defaultPlan;
   }
 
   const steps = ((reco.recommendation_steps ?? []) as unknown as StepRow[]).sort(
@@ -71,7 +75,9 @@ export default async function AdminRecoDetail({
           id: reco.id,
           status: reco.status,
           amount: reco.amount,
-          commission_rate: commissionRate,
+          commission_rate: commissionPlan?.commission_rate ?? null,
+          high_amount_threshold: commissionPlan?.high_amount_threshold ?? null,
+          high_amount_commission_rate: commissionPlan?.high_amount_commission_rate ?? null,
           referrer: referrer ?? null,
           professional: professional ?? null,
         }}

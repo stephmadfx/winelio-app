@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { calculateCommissionBaseAmount } from "@/lib/commission-rate";
 
 // ── Types exportés (utilisés par page.tsx) ──────────────────────────────────
 
@@ -29,6 +30,8 @@ export type RecoSummary = {
   status: string;
   amount: number | null;
   commission_rate: number | null;
+  high_amount_threshold?: number | null;
+  high_amount_commission_rate?: number | null;
   referrer: { first_name: string | null; last_name: string | null; email: string | null } | null;
   professional: { first_name: string | null; last_name: string | null; email: string | null } | null;
 };
@@ -89,6 +92,10 @@ export function RecoJourneyView({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [generalInput, setGeneralInput] = useState("");
   const [stepInputs, setStepInputs] = useState<Record<string, string>>({});
+  const [amountInput, setAmountInput] = useState(reco.amount != null ? String(reco.amount) : "");
+  const [currentAmount, setCurrentAmount] = useState<number | null>(reco.amount);
+  const [amountError, setAmountError] = useState<string | null>(null);
+  const [savingAmount, setSavingAmount] = useState(false);
   const [, startTransition] = useTransition();
 
   // Couleurs par auteur (ordre d'apparition dans les annotations)
@@ -116,8 +123,8 @@ export function RecoJourneyView({
 
   // Commission calculée
   const commissionAmount =
-    reco.amount && reco.commission_rate
-      ? Math.round(reco.amount * (reco.commission_rate / 100) * 100) / 100
+    currentAmount
+      ? calculateCommissionBaseAmount(currentAmount, reco).amount
       : null;
 
   async function handleAddAnnotation(stepId: string | null) {
@@ -147,6 +154,28 @@ export function RecoJourneyView({
       await onAdvanceStep(reco.id, stepId);
       setPendingStepId(null);
     });
+  }
+
+  async function handleUpdateAmount() {
+    setSavingAmount(true);
+    setAmountError(null);
+    try {
+      const res = await fetch(`/api/recommendations/${reco.id}/amount`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: amountInput }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAmountError(data.error ?? "Impossible de modifier le devis");
+      } else {
+        setCurrentAmount(Number(data.amount));
+        setAmountInput(String(data.amount));
+      }
+    } catch {
+      setAmountError("Erreur réseau lors de la modification du devis");
+    }
+    setSavingAmount(false);
   }
 
   // ── Sous-composant : bulle d'annotation ──────────────────────────────────
@@ -239,7 +268,7 @@ export function RecoJourneyView({
             {[
               { label: "Referrer",      value: referrerName,      className: "text-foreground" },
               { label: "Professionnel", value: professionalName,  className: "text-foreground" },
-              { label: "Montant deal",  value: reco.amount ? `${Number(reco.amount).toLocaleString("fr-FR")} €` : "—", className: "text-green-400 font-bold" },
+              { label: "Montant deal",  value: currentAmount ? `${Number(currentAmount).toLocaleString("fr-FR")} €` : "—", className: "text-green-400 font-bold" },
               { label: "Commission",    value: commissionAmount ? `${commissionAmount.toLocaleString("fr-FR")} €` : "—", className: "text-winelio-orange font-bold" },
             ].map(({ label, value, className }) => (
               <div key={label} className="bg-background/50 border border-border rounded-xl p-3">
@@ -247,6 +276,31 @@ export function RecoJourneyView({
                 <p className={`text-sm ${className}`}>{value}</p>
               </div>
             ))}
+          </div>
+
+          <div className="mb-4 bg-background/30 border border-border rounded-xl p-3">
+            <label className="mb-2 block text-xs font-semibold text-muted-foreground">
+              Modifier le devis final
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={amountInput}
+                onChange={(event) => setAmountInput(event.target.value)}
+                min="0"
+                step="0.01"
+                className="min-w-0 flex-1 bg-background/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:border-winelio-orange/50 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={handleUpdateAmount}
+                disabled={savingAmount || !amountInput}
+                className="bg-gradient-to-br from-winelio-orange to-winelio-amber text-white rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-40 hover:opacity-90 transition-opacity"
+              >
+                {savingAmount ? "..." : "Enregistrer"}
+              </button>
+            </div>
+            {amountError && <p className="mt-2 text-xs text-red-400">{amountError}</p>}
           </div>
 
           {/* Zone commentaires généraux */}
