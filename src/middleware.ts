@@ -50,6 +50,7 @@ export async function middleware(request: NextRequest) {
       path === "/staging-login" ||
       path === "/api/staging-auth" ||
       isCronApi ||
+      path.startsWith("/commission/success") ||
       path.startsWith("/_next/") ||
       path.startsWith("/favicon");
 
@@ -141,6 +142,7 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/email-track/") &&
     !request.nextUrl.pathname.startsWith("/api/stripe/webhook") &&
     !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders") &&
+    !request.nextUrl.pathname.startsWith("/commission/success") &&
     !request.nextUrl.pathname.startsWith("/claim") &&
     !request.nextUrl.pathname.startsWith("/conditions-generales-utilisation") &&
     !request.nextUrl.pathname.startsWith("/documents-legaux") &&
