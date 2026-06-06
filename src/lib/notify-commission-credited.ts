@@ -5,6 +5,13 @@ import { he } from "@/lib/html-escape";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app";
+const NETWORK_COMMISSION_TYPES = [
+  COMMISSION_TYPE.REFERRAL_LEVEL_1,
+  COMMISSION_TYPE.REFERRAL_LEVEL_2,
+  COMMISSION_TYPE.REFERRAL_LEVEL_3,
+  COMMISSION_TYPE.REFERRAL_LEVEL_4,
+  COMMISSION_TYPE.REFERRAL_LEVEL_5,
+];
 
 function normalizeOne<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? value[0] ?? null : value ?? null;
@@ -90,6 +97,46 @@ function buildCreditedEmail(firstName: string, clientName: string, amount: numbe
   return emailShell(content);
 }
 
+function buildNetworkCreditedEmail(
+  firstName: string,
+  clientName: string,
+  amount: number,
+  level: number
+): string {
+  const amountStr = amount.toFixed(2).replace(".", ",");
+  const walletUrl = `${APP_URL}/wallet`;
+
+  const content = `
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr><td align="center">
+        <table cellpadding="0" cellspacing="0" border="0">
+          <tr><td align="center" style="width:52px;height:52px;background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:13px;color:#ffffff;font-size:20px;font-weight:800;line-height:52px;text-align:center;vertical-align:middle;">N${level}</td></tr>
+        </table>
+      </td></tr>
+      <tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr>
+      <tr><td align="center"><h1 style="color:#2D3436;font-size:22px;font-weight:700;margin:0;">Votre réseau vous rapporte une commission</h1></td></tr>
+      <tr><td style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr>
+      <tr><td align="center"><p style="color:#636E72;font-size:15px;margin:0;">Bonjour <strong style="color:#2D3436;">${he(firstName)}</strong>,</p></td></tr>
+      <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr><td style="background:#FFF5F0;border-left:3px solid #FF6B35;border-radius:0 8px 8px 0;padding:16px 20px;">
+        <p style="margin:0;color:#2D3436;font-size:15px;font-weight:600;">Commission réseau niveau ${level}</p>
+        <p style="margin:8px 0 0;color:#636E72;font-size:14px;line-height:1.6;">Une recommandation a abouti dans votre réseau Winelio${clientName ? ` pour ${he(clientName)}` : ""}.</p>
+        <p style="margin:12px 0 0;color:#FF6B35;font-size:24px;font-weight:800;">+${amountStr}&nbsp;€</p>
+      </td></tr>
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    </table>
+    <p style="color:#636E72;font-size:14px;line-height:1.6;text-align:center;margin:0 0 20px;">
+      Cette commission est maintenant visible dans votre wallet Winelio.
+    </p>
+    ${ctaButton("Voir mon wallet →", walletUrl)}`;
+
+  return emailShell(content);
+}
+
 export async function notifyReferrerCommissionCredited(
   recommendationId: string
 ): Promise<void> {
@@ -147,4 +194,71 @@ export async function notifyReferrerCommissionCredited(
     priority: 4,
     dedupeKey: `commission-credited:${recommendationId}:${rec.referrer_id}`,
   });
+}
+
+export async function notifyNetworkCommissionsCredited(
+  recommendationId: string
+): Promise<void> {
+  const { data: rec } = await supabaseAdmin
+    .from("recommendations")
+    .select("id, contact:contacts(first_name, last_name)")
+    .eq("id", recommendationId)
+    .single();
+
+  if (!rec) return;
+
+  const { data: commissions } = await supabaseAdmin
+    .from("commission_transactions")
+    .select("id, user_id, amount, type, level")
+    .eq("recommendation_id", recommendationId)
+    .eq("status", "EARNED")
+    .in("type", NETWORK_COMMISSION_TYPES);
+
+  if (!commissions?.length) return;
+
+  const contact = normalizeOne<{
+    first_name?: string | null;
+    last_name?: string | null;
+  }>(rec.contact);
+  const clientName =
+    `${contact?.first_name ?? ""} ${contact?.last_name ?? ""}`.trim();
+
+  await Promise.allSettled(
+    commissions.map(async (commission) => {
+      const userId = commission.user_id;
+      const amount = Number(commission.amount);
+      const level = Number(commission.level || String(commission.type).replace("referral_level_", ""));
+
+      if (!userId || !amount || !level) return;
+
+      const [profileResult, authResult] = await Promise.all([
+        supabaseAdmin
+          .from("profiles")
+          .select("first_name")
+          .eq("id", userId)
+          .single(),
+        supabaseAdmin.auth.admin.getUserById(userId),
+      ]);
+
+      const email = authResult.data?.user?.email;
+      if (!email) {
+        console.error(
+          `[notify-commission-credited] Email introuvable pour networkUserId=${userId}`
+        );
+        return;
+      }
+
+      const firstName = profileResult.data?.first_name || "Membre";
+      const amountStr = amount.toFixed(2).replace(".", ",");
+
+      await queueEmail({
+        to: email,
+        subject: `Commission réseau créditée — +${amountStr} €`,
+        html: buildNetworkCreditedEmail(firstName, clientName, amount, level),
+        text: `Bonjour ${firstName},\n\nVotre réseau Winelio vous rapporte une commission niveau ${level} de ${amount.toFixed(2)} €${clientName ? ` grâce à une recommandation aboutie pour ${clientName}` : ""}.\n\nVoir votre wallet : ${APP_URL}/wallet\n\n© 2026 Winelio`,
+        priority: 4,
+        dedupeKey: `network-commission-credited:${commission.id}`,
+      });
+    })
+  );
 }
