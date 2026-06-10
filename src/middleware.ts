@@ -121,7 +121,12 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
     !request.nextUrl.pathname.startsWith("/api/email-track/") &&
     !request.nextUrl.pathname.startsWith("/api/stripe/webhook") &&
-    !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders")
+    !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders") &&
+    // Crons authentifiés par CRON_SECRET (Bearer) dans la route elle-même :
+    !request.nextUrl.pathname.startsWith("/api/recommendations/cron-scraped-reminder") &&
+    !request.nextUrl.pathname.startsWith("/api/recommendations/process-followups") &&
+    !request.nextUrl.pathname.startsWith("/api/pros/cron-onboarding-reminder") &&
+    !request.nextUrl.pathname.startsWith("/api/admin/auth-health")
   ) {
     if (!user) {
       return NextResponse.json(
@@ -142,6 +147,10 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/email-track/") &&
     !request.nextUrl.pathname.startsWith("/api/stripe/webhook") &&
     !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders") &&
+    !request.nextUrl.pathname.startsWith("/api/recommendations/cron-scraped-reminder") &&
+    !request.nextUrl.pathname.startsWith("/api/recommendations/process-followups") &&
+    !request.nextUrl.pathname.startsWith("/api/pros/cron-onboarding-reminder") &&
+    !request.nextUrl.pathname.startsWith("/api/admin/auth-health") &&
     !request.nextUrl.pathname.startsWith("/commission/success") &&
     !request.nextUrl.pathname.startsWith("/claim") &&
     !request.nextUrl.pathname.startsWith("/conditions-generales-utilisation") &&
