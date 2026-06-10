@@ -23,7 +23,7 @@ export default async function ProcessusPage() {
               <span className="text-[#FF6B35]">recommandation</span>
             </h1>
             <p className="text-[12px] text-gray-400 mt-0.5">
-              Vue d&apos;ensemble · 8 étapes · Générique — Cliquez sur un nœud pour ajouter une note
+              Vue d&apos;ensemble · 7 étapes + facturation, relances et avis — Cliquez sur un nœud pour ajouter une note
             </p>
           </div>
           <span className="text-[11px] bg-[#FFF5F0] border border-[#FF6B35] text-[#FF6B35] font-bold rounded-full px-3 py-1">
