@@ -131,6 +131,7 @@ export default function RecommendationDetailPage() {
   const [amountError, setAmountError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
+  const [contactMasked, setContactMasked] = useState(false);
   const [paymentCheckDone, setPaymentCheckDone] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
@@ -161,7 +162,8 @@ export default function RecommendationDetailPage() {
     setLoading(true);
     const res = await fetch(`/api/recommendations/${id}`);
     if (res.ok) {
-      const { recommendation: rec, steps: recSteps, payout: payoutInfo } = await res.json();
+      const { recommendation: rec, steps: recSteps, payout: payoutInfo, contactMasked: masked } = await res.json();
+      setContactMasked(!!masked);
       const normalize = (v: unknown) => (Array.isArray(v) ? v[0] ?? null : v);
       setRecommendation({
         ...rec,
@@ -389,7 +391,9 @@ export default function RecommendationDetailPage() {
             {/* Row 2 : coordonnées sur leur propre bloc, pleine largeur */}
             {recommendation.contact && (() => {
               const isPro = paymentCheckDone && userId === recommendation.professional_id;
-              const shouldMask = isPro && hasPaymentMethod === false;
+              // L'API masque déjà les coordonnées côté serveur (contactMasked) ;
+              // le check hasPaymentMethod reste en filet de sécurité UI.
+              const shouldMask = contactMasked || (isPro && hasPaymentMethod === false);
               // Pendant le chargement : masque si on est potentiellement le pro
               const isLoading = !paymentCheckDone;
               if (isLoading) {
@@ -1025,6 +1029,8 @@ export default function RecommendationDetailPage() {
         onSaved={() => {
           setHasPaymentMethod(true);
           setPaymentDialogOpen(false);
+          // Recharger la reco : l'API renvoie désormais les vraies coordonnées.
+          fetchData();
         }}
       />
     </div>

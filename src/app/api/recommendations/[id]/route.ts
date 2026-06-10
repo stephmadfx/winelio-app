@@ -54,6 +54,10 @@ export async function GET(
     return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
   }
 
+  // Tant que le pro n'a pas enregistré de carte bancaire, les coordonnées du
+  // client sont masquées côté serveur (pas seulement dans l'UI).
+  let contactMasked = false;
+
   if (isPro && !isAdmin) {
     const leadAccessBlock = await getProfessionalLeadAccessBlock(user.id);
     if (isFutureLeadBlocked(rec, leadAccessBlock)) {
@@ -65,6 +69,29 @@ export async function GET(
         },
         { status: 403 }
       );
+    }
+
+    const { data: proProfile } = await supabaseAdmin
+      .schema("winelio")
+      .from("profiles")
+      .select("stripe_payment_method_id")
+      .eq("id", user.id)
+      .single();
+
+    if (!proProfile?.stripe_payment_method_id) {
+      contactMasked = true;
+      const contactArr = Array.isArray(rec.contact) ? rec.contact : rec.contact ? [rec.contact] : [];
+      const contact = contactArr[0] as { first_name?: string | null; last_name?: string | null } | undefined;
+      rec.contact = {
+        first_name: contact?.first_name ?? null,
+        last_name: contact?.last_name ?? null,
+        email: null,
+        phone: null,
+        address: null,
+        city: null,
+        postal_code: null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any;
     }
   }
 
@@ -117,6 +144,7 @@ export async function GET(
   return NextResponse.json({
     recommendation: rec,
     steps: recSteps ?? [],
+    contactMasked,
     payout: {
       professional_paid: professionalPaid,
       review,
