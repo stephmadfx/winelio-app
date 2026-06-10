@@ -53,7 +53,7 @@ export const ProfessionalList = ({ professionals, selectedProId, onSelect, geoGr
         const label = p.company_name ?? p.company_alias ?? (p.first_name ?? "Professionnel");
         const isSelected = selectedProId === p.id;
         return (
-          <button key={p.id} onClick={() => onSelect(p.id)}
+          <button key={p.entry_key} onClick={() => onSelect(p.id)}
             className={`w-full flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all cursor-pointer ${
               isSelected ? "border-winelio-orange bg-winelio-orange/5 shadow-sm shadow-winelio-orange/10" : "border-transparent bg-white hover:border-winelio-orange/20 shadow-sm"
             }`}>

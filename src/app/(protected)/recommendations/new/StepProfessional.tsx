@@ -55,28 +55,58 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
   useEffect(() => {
     let query = supabase
       .from("profiles")
-      .select("id, first_name, last_name, city, latitude, longitude, companies(name, alias, source, categories(name))")
+      .select("id, first_name, last_name, city, latitude, longitude, companies(id, name, alias, source, deleted_at, categories(name))")
       .eq("is_professional", true)
       .order("last_name");
     if (userId) query = query.neq("id", userId);
     query.then(({ data, error }) => {
       if (error) { console.error("[StepProfessional] query error:", error); return; }
-      let results: Professional[] = (data ?? []).map((p) => {
-        const company = Array.isArray(p.companies) ? p.companies[0] : p.companies;
-        const cat = company?.categories;
-        const catName = Array.isArray(cat) ? cat[0]?.name ?? null : (cat as { name: string } | null)?.name ?? null;
-        const source = (company as { source?: string | null } | null)?.source ?? null;
-        return {
+      type CompanyRow = {
+        id: string;
+        name: string | null;
+        alias: string | null;
+        source: string | null;
+        deleted_at: string | null;
+        categories: { name: string } | { name: string }[] | null;
+      };
+      // Un pro multi-activités a une fiche par activité : on affiche une entrée
+      // par fiche active pour qu'il soit trouvable dans chacune de ses catégories.
+      let results: Professional[] = (data ?? []).flatMap((p) => {
+        const companiesRaw = Array.isArray(p.companies) ? p.companies : p.companies ? [p.companies] : [];
+        const activeCompanies = (companiesRaw as CompanyRow[]).filter((c) => !c.deleted_at);
+
+        const base = {
           id: p.id, first_name: p.first_name, last_name: p.last_name,
-          company_name: company?.name ?? null,
-          company_alias: (company as { alias?: string | null } | null)?.alias ?? null,
-          category_name: catName, city: p.city, latitude: p.latitude, longitude: p.longitude,
+          city: p.city, latitude: p.latitude, longitude: p.longitude,
           distance: userLocation && p.latitude && p.longitude ? haversineKm(userLocation.lat, userLocation.lng, p.latitude, p.longitude) : null,
           avg_rating: null,
           review_count: 0,
-          is_claimed: source === "owner",
           last_active_at: fakeLastActive(p.id),
         };
+
+        if (activeCompanies.length === 0) {
+          return [{
+            ...base,
+            entry_key: p.id,
+            company_name: null,
+            company_alias: null,
+            category_name: null,
+            is_claimed: false,
+          }];
+        }
+
+        return activeCompanies.map((company) => {
+          const cat = company.categories;
+          const catName = Array.isArray(cat) ? cat[0]?.name ?? null : cat?.name ?? null;
+          return {
+            ...base,
+            entry_key: `${p.id}:${company.id}`,
+            company_name: company.name ?? null,
+            company_alias: company.alias ?? null,
+            category_name: catName,
+            is_claimed: company.source === "owner",
+          };
+        });
       });
       if (proSearch.length >= 2) {
         const q = proSearch.toLowerCase();

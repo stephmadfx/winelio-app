@@ -7,6 +7,8 @@ export interface Contact {
 }
 
 export interface Professional {
+  /** Clé unique d'affichage : un pro multi-fiches apparaît une fois par fiche. */
+  entry_key: string;
   id: string;
   first_name: string | null;
   last_name: string | null;
