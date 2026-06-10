@@ -98,6 +98,9 @@ export async function createCommissions(
   const { referrer_commission, level_commissions, platform_commission, affiliation_commission, cashback_wins } =
     calculateCommissions(amount, plan);
 
+  // Toutes les commissions naissent PENDING. C'est unlockRecommendationCommissions
+  // qui passe en EARNED : les parts réseau/cagnotte dès le paiement du pro (webhook),
+  // la part du recommandeur seulement après dépôt de son avis qualifié.
   const commissions: Array<{
     recommendation_id: string;
     user_id: string;
@@ -113,7 +116,7 @@ export async function createCommissions(
       amount: referrer_commission,
       type: COMMISSION_TYPE.RECOMMENDATION,
       level: 0,
-      status: COMMISSION_STATUS.EARNED,
+      status: COMMISSION_STATUS.PENDING,
     },
     // Cagnotte Winelio (23% sur le plan standard actif)
     {
@@ -122,7 +125,7 @@ export async function createCommissions(
       amount: platform_commission,
       type: COMMISSION_TYPE.PLATFORM_WINELIO,
       level: 0,
-      status: COMMISSION_STATUS.EARNED,
+      status: COMMISSION_STATUS.PENDING,
     },
   ];
 
@@ -154,7 +157,7 @@ export async function createCommissions(
       amount: lc.amount,
       type: `referral_level_${lc.level}`,
       level: lc.level,
-      status: COMMISSION_STATUS.EARNED,
+      status: COMMISSION_STATUS.PENDING,
     });
 
     currentId = profile.sponsor_id;
@@ -175,7 +178,7 @@ export async function createCommissions(
         amount: affiliation_commission,
         type: COMMISSION_TYPE.AFFILIATION_BONUS,
         level: 0,
-        status: COMMISSION_STATUS.EARNED,
+        status: COMMISSION_STATUS.PENDING,
       });
     } else {
       undistributed += affiliation_commission;
@@ -198,7 +201,7 @@ export async function createCommissions(
       amount: cashback_wins,
       type: COMMISSION_TYPE.PROFESSIONAL_CASHBACK,
       level: 0,
-      status: COMMISSION_STATUS.EARNED,
+      status: COMMISSION_STATUS.PENDING,
     });
   }
 

@@ -137,6 +137,105 @@ function buildNetworkCreditedEmail(
   return emailShell(content);
 }
 
+function buildReviewRequestedEmail(firstName: string, clientName: string, amount: number, recoUrl: string): string {
+  const amountStr = amount.toFixed(2).replace(".", ",");
+
+  const content = `
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr><td align="center">
+        <table cellpadding="0" cellspacing="0" border="0">
+          <tr><td align="center" style="width:52px;height:52px;background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:13px;color:#ffffff;font-size:26px;font-weight:800;line-height:52px;text-align:center;vertical-align:middle;">⭐</td></tr>
+        </table>
+      </td></tr>
+      <tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr>
+      <tr><td align="center"><h1 style="color:#2D3436;font-size:22px;font-weight:700;margin:0;">Plus qu'un avis pour débloquer votre cagnotte</h1></td></tr>
+      <tr><td style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr>
+      <tr><td align="center"><p style="color:#636E72;font-size:15px;margin:0;">Bonjour <strong style="color:#2D3436;">${he(firstName)}</strong>,</p></td></tr>
+      <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr><td style="background:#FFF5F0;border-left:3px solid #FF6B35;border-radius:0 8px 8px 0;padding:16px 20px;">
+        <p style="margin:0;color:#2D3436;font-size:15px;font-weight:600;">Client : ${he(clientName)}</p>
+        <p style="margin:8px 0 0;color:#636E72;font-size:14px;line-height:1.6;">Le professionnel a réglé sa commission d'intermédiation Winelio. Il ne reste qu'une étape : <strong style="color:#2D3436;">déposez votre avis</strong> sur cette recommandation pour créditer votre cagnotte.</p>
+        <p style="margin:12px 0 0;color:#FF6B35;font-size:24px;font-weight:800;">+${amountStr}&nbsp;€ en attente</p>
+      </td></tr>
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    </table>
+    <p style="color:#636E72;font-size:14px;line-height:1.6;text-align:center;margin:0 0 20px;">
+      Une note et trois réponses rapides — moins de 2 minutes.
+    </p>
+    ${ctaButton("Déposer mon avis →", recoUrl)}`;
+
+  return emailShell(content);
+}
+
+/**
+ * Email envoyé au recommandeur quand le pro a payé sa commission :
+ * sa part (60%) reste PENDING tant qu'il n'a pas déposé son avis qualifié.
+ */
+export async function notifyReferrerReviewRequested(
+  recommendationId: string
+): Promise<void> {
+  const { data: rec } = await supabaseAdmin
+    .from("recommendations")
+    .select("id, referrer_id, contact:contacts(first_name, last_name)")
+    .eq("id", recommendationId)
+    .single();
+
+  if (!rec?.referrer_id) return;
+
+  const { data: commission } = await supabaseAdmin
+    .from("commission_transactions")
+    .select("amount")
+    .eq("recommendation_id", recommendationId)
+    .eq("user_id", rec.referrer_id)
+    .eq("type", COMMISSION_TYPE.RECOMMENDATION)
+    .eq("status", "PENDING")
+    .maybeSingle();
+
+  // Déjà débloquée (avis déjà déposé) ou inexistante → rien à demander.
+  if (!commission?.amount) return;
+
+  const [profileResult, authResult] = await Promise.all([
+    supabaseAdmin
+      .from("profiles")
+      .select("first_name")
+      .eq("id", rec.referrer_id)
+      .single(),
+    supabaseAdmin.auth.admin.getUserById(rec.referrer_id),
+  ]);
+
+  const email = authResult.data?.user?.email;
+  if (!email) {
+    console.error(
+      `[notify-commission-credited] Email introuvable pour referrerId=${rec.referrer_id}`
+    );
+    return;
+  }
+
+  const contact = normalizeOne<{
+    first_name?: string | null;
+    last_name?: string | null;
+  }>(rec.contact);
+  const clientName =
+    `${contact?.first_name ?? ""} ${contact?.last_name ?? ""}`.trim() ||
+    "votre client";
+  const firstName = profileResult.data?.first_name || "Membre";
+  const amount = Number(commission.amount);
+  const recoUrl = `${APP_URL}/recommendations/${recommendationId}`;
+
+  await queueEmail({
+    to: email,
+    subject: `Votre avis débloque +${amount.toFixed(2).replace(".", ",")} € de cagnotte`,
+    html: buildReviewRequestedEmail(firstName, clientName, amount, recoUrl),
+    text: `Bonjour ${firstName},\n\nLe professionnel a réglé sa commission d'intermédiation Winelio pour ${clientName}. Déposez votre avis sur la recommandation pour débloquer votre cagnotte de ${amount.toFixed(2)} €.\n\nDéposer mon avis : ${recoUrl}\n\n© 2026 Winelio`,
+    priority: 4,
+    dedupeKey: `review-requested:${recommendationId}:${rec.referrer_id}`,
+  });
+}
+
 export async function notifyReferrerCommissionCredited(
   recommendationId: string
 ): Promise<void> {

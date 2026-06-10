@@ -533,18 +533,18 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           </g>
 
           {/* Emails crédités */}
-          <g style={{ cursor: "pointer" }} onClick={() => click("email-credite", '📧 "Cagnotte créditée" → Recommandeur · "Commission réseau créditée" → Parrains')}>
+          <g style={{ cursor: "pointer" }} onClick={() => click("email-credite", '📧 "Commission réseau créditée" → Parrains · "Votre avis débloque votre cagnotte" → Recommandeur')}>
             <rect x={170} y={1264} width={660} height={40} rx={8} fill="#F7931E" filter="url(#sh)" />
             <text x={500} y={1288} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
-              📧 &quot;Cagnotte créditée&quot; → Recommandeur · &quot;Commission réseau créditée&quot; → Parrains N1–5
+              📧 &quot;Commission réseau créditée&quot; → Parrains N1–5 · &quot;Votre avis débloque votre cagnotte&quot; → Recommandeur
             </text>
             {ann.has("email-credite") && <Badge x={824} y={1270} />}
           </g>
 
           {/* Avis du recommandeur */}
           <RectNode id="avis-recommandeur" x={300} y={1328} w={400} h={44} fill="white" stroke="#2D3436"
-            label="⭐ Avis du recommandeur"
-            sublabel="Possible après paiement de la commission pro · note + 3 réponses"
+            label="⭐ Avis du recommandeur (note + 3 réponses)"
+            sublabel="Débloque sa cagnotte (60 %) · 📧 « Cagnotte créditée »"
             onClick={click} hasBadge={ann.has("avis-recommandeur")} />
 
           {/* Fin */}

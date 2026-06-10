@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createCommissions } from "@/lib/commission";
 import {
   notifyNetworkCommissionsCredited,
-  notifyReferrerCommissionCredited,
+  notifyReferrerReviewRequested,
 } from "@/lib/notify-commission-credited";
 import { unlockRecommendationCommissions } from "@/lib/recommendation-review";
 import type Stripe from "stripe";
@@ -86,8 +86,10 @@ export async function POST(req: Request) {
   await notifyNetworkCommissionsCredited(reco.id).catch((err) =>
     console.error("[stripe-webhook] Échec notifications réseau:", err)
   );
-  await notifyReferrerCommissionCredited(reco.id).catch((err) =>
-    console.error("[stripe-webhook] Échec notification cagnotte:", err)
+  // La part du recommandeur reste PENDING jusqu'à son avis : on l'invite à le déposer.
+  // L'email "Cagnotte créditée" partira depuis la route review, après l'avis.
+  await notifyReferrerReviewRequested(reco.id).catch((err) =>
+    console.error("[stripe-webhook] Échec invitation avis:", err)
   );
 
   return NextResponse.json({ received: true });
