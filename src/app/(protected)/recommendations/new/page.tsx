@@ -32,6 +32,7 @@ export default function NewRecommendationPage() {
 
   // Step 2
   const [selectedProId, setSelectedProId] = useState<string | null>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
 
   // Step 3
   const [description, setDescription] = useState("");
@@ -105,6 +106,7 @@ export default function NewRecommendationPage() {
         body: JSON.stringify({
           selectedContactId,
           selectedProId,
+          selectedCompanyId,
           description,
           urgency,
           selfForMe,
@@ -170,7 +172,14 @@ export default function NewRecommendationPage() {
           contactErrors={contactErrors} setContactErrors={setContactErrors}
           wantsToJoin={wantsToJoin} setWantsToJoin={setWantsToJoin} />
       )}
-      {step === 2 && <StepProfessional userId={userId} selectedProId={selectedProId} onSelect={setSelectedProId} />}
+      {step === 2 && (
+        <StepProfessional
+          userId={userId}
+          selectedProId={selectedProId}
+          selectedCompanyId={selectedCompanyId}
+          onSelect={(id, companyId) => { setSelectedProId(id); setSelectedCompanyId(companyId); }}
+        />
+      )}
       {step === 3 && <StepProject description={description} urgency={urgency} onDescriptionChange={setDescription} onUrgencyChange={setUrgency} />}
 
       <StickyFormActions>

@@ -17,3 +17,19 @@ export function pickActiveCompany<T extends { deleted_at?: string | null }>(
   const arr = Array.isArray(raw) ? (raw as T[]) : [raw as T];
   return arr.find((c) => !c?.deleted_at) ?? null;
 }
+
+/**
+ * Résout la fiche entreprise d'une recommandation : privilégie la fiche
+ * explicitement choisie à la création (recommendations.company_id, embed
+ * `chosen_company:companies!recommendations_company_id_fkey(...)`), et
+ * retombe sur la première fiche active du pro pour les recos antérieures
+ * à la colonne company_id (ou si la fiche choisie a été supprimée).
+ */
+export function resolveRecommendationCompany<T extends { deleted_at?: string | null }>(
+  chosenRaw: unknown,
+  fallbackCompanies: unknown,
+): T | null {
+  const chosen = pickActiveCompany<T>(chosenRaw);
+  if (chosen) return chosen;
+  return pickActiveCompany<T>(fallbackCompanies);
+}

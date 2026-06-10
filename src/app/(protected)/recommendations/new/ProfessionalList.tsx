@@ -4,7 +4,8 @@ import { formatRelativeTime } from "@/lib/fake-last-active";
 interface ProfessionalListProps {
   professionals: Professional[];
   selectedProId: string | null;
-  onSelect: (id: string) => void;
+  selectedCompanyId: string | null;
+  onSelect: (id: string, companyId: string | null) => void;
   geoGranted: boolean;
   radius: number;
   onExpandRadius: () => void;
@@ -32,7 +33,7 @@ const StarRating = ({ avg, count }: { avg: number; count: number }) => (
   </span>
 );
 
-export const ProfessionalList = ({ professionals, selectedProId, onSelect, geoGranted, radius, onExpandRadius, isSuperAdmin }: ProfessionalListProps) => {
+export const ProfessionalList = ({ professionals, selectedProId, selectedCompanyId, onSelect, geoGranted, radius, onExpandRadius, isSuperAdmin }: ProfessionalListProps) => {
   if (professionals.length === 0) return (
     <div className="rounded-2xl border border-winelio-gray/10 bg-white py-12 text-center">
       <p className="text-sm font-medium text-winelio-dark">Aucun résultat</p>
@@ -51,9 +52,9 @@ export const ProfessionalList = ({ professionals, selectedProId, onSelect, geoGr
     <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
       {professionals.map((p) => {
         const label = p.company_name ?? p.company_alias ?? (p.first_name ?? "Professionnel");
-        const isSelected = selectedProId === p.id;
+        const isSelected = selectedProId === p.id && selectedCompanyId === p.company_id;
         return (
-          <button key={p.entry_key} onClick={() => onSelect(p.id)}
+          <button key={p.entry_key} onClick={() => onSelect(p.id, p.company_id)}
             className={`w-full flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all cursor-pointer ${
               isSelected ? "border-winelio-orange bg-winelio-orange/5 shadow-sm shadow-winelio-orange/10" : "border-transparent bg-white hover:border-winelio-orange/20 shadow-sm"
             }`}>

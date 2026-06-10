@@ -2,7 +2,7 @@ import { queueEmail } from "@/lib/email-queue";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
-import { pickActiveCompany } from "@/lib/pick-active-company";
+import { resolveRecommendationCompany } from "@/lib/pick-active-company";
 import { formatDisplayName } from "@/lib/utils";
 
 /**
@@ -23,6 +23,7 @@ export async function notifyContactAccepted(recommendationId: string) {
       `id,
        contact:contacts(first_name, last_name, email),
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name),
+       chosen_company:companies!recommendations_company_id_fkey(name, deleted_at),
        professional:profiles!recommendations_professional_id_fkey(first_name, last_name, email, phone, stripe_payment_method_id, companies(name, deleted_at))`
     )
     .eq("id", recommendationId)
@@ -36,7 +37,7 @@ export async function notifyContactAccepted(recommendationId: string) {
   const contact  = normalize<{ first_name: string | null; last_name: string | null; email: string | null }>(rec.contact);
   const referrer = normalize<{ first_name: string | null; last_name: string | null }>(rec.referrer);
   const pro      = normalize<{ first_name: string | null; last_name: string | null; email: string | null; phone: string | null; stripe_payment_method_id: string | null; companies: unknown }>(rec.professional);
-  const company  = pickActiveCompany<{ name: string | null; deleted_at: string | null }>(pro?.companies);
+  const company  = resolveRecommendationCompany<{ name: string | null; deleted_at: string | null }>(rec.chosen_company, pro?.companies);
 
   if (!contact?.email) return;
 

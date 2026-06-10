@@ -2,7 +2,7 @@ import { queueEmail } from "@/lib/email-queue";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
-import { pickActiveCompany } from "@/lib/pick-active-company";
+import { resolveRecommendationCompany } from "@/lib/pick-active-company";
 import { formatDisplayName } from "@/lib/utils";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
@@ -14,6 +14,7 @@ export async function notifyRecoRefused(recommendationId: string) {
     .select(
       `id,
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name, email),
+       chosen_company:companies!recommendations_company_id_fkey(name, deleted_at),
        professional:profiles!recommendations_professional_id_fkey(first_name, last_name, companies(name, deleted_at)),
        contact:contacts(first_name, last_name)`
     )
@@ -31,7 +32,7 @@ export async function notifyRecoRefused(recommendationId: string) {
 
   if (!referrer?.email) return;
 
-  const company = pickActiveCompany<{ name: string | null; deleted_at: string | null }>(pro?.companies);
+  const company = resolveRecommendationCompany<{ name: string | null; deleted_at: string | null }>(rec.chosen_company, pro?.companies);
   const proName = company?.name || formatDisplayName(pro?.first_name, pro?.last_name, "Le professionnel");
   const contactName = formatDisplayName(contact?.first_name, contact?.last_name, "votre contact");
   const referrerFirstName = referrer.first_name || "Bonjour";

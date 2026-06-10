@@ -25,6 +25,7 @@ type ContactFormData = {
 type Body = {
   selectedContactId: string | null;
   selectedProId: string;
+  selectedCompanyId?: string | null;
   description: string;
   urgency: "urgent" | "normal" | "flexible";
   selfForMe: boolean;
@@ -90,12 +91,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Contact et professionnel requis" }, { status: 400 });
   }
 
+  // Fiche (activité) choisie dans le sélecteur : on ne la garde que si elle
+  // appartient bien au pro sélectionné et n'est pas supprimée.
+  let companyId: string | null = null;
+  if (body.selectedCompanyId) {
+    const { data: company } = await supabaseAdmin
+      .schema("winelio")
+      .from("companies")
+      .select("id")
+      .eq("id", body.selectedCompanyId)
+      .eq("owner_id", body.selectedProId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    companyId = company?.id ?? null;
+  }
+
   const { data: recommendation, error: recError } = await supabaseAdmin
     .schema("winelio")
     .from("recommendations")
     .insert({
       referrer_id: currentUserId,
       professional_id: body.selectedProId,
+      company_id: companyId,
       contact_id: contactId,
       project_description: body.description,
       urgency_level: body.urgency,

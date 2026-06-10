@@ -11,7 +11,7 @@ import { queueEmail } from "@/lib/email-queue";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
-import { pickActiveCompany } from "@/lib/pick-active-company";
+import { resolveRecommendationCompany } from "@/lib/pick-active-company";
 import { formatDisplayName } from "@/lib/utils";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.app").replace(/\/$/, "");
@@ -121,6 +121,7 @@ export async function notifyNewRecommendation(recommendationId: string) {
     .from("recommendations")
     .select(
       `id, referrer_id, project_description, urgency_level,
+       chosen_company:companies!recommendations_company_id_fkey(name, email, source, deleted_at),
        professional:profiles!recommendations_professional_id_fkey(id, first_name, email, companies(name, email, source, deleted_at)),
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name),
        contact:contacts(first_name, last_name)`
@@ -142,7 +143,7 @@ export async function notifyNewRecommendation(recommendationId: string) {
 
   if (!pro) return;
 
-  const company = pickActiveCompany<{ name: string | null; email: string | null; source: string | null; deleted_at: string | null }>(pro.companies);
+  const company = resolveRecommendationCompany<{ name: string | null; email: string | null; source: string | null; deleted_at: string | null }>(rec.chosen_company, pro.companies);
 
   // Collecter les adresses valides. On ignore les emails factices (@kiparlo-pro.fr).
   const isPlaceholderEmail = (e: string | null) => !!e && /@kiparlo-pro\.fr$/i.test(e);

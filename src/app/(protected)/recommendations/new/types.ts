@@ -10,6 +10,8 @@ export interface Professional {
   /** Clé unique d'affichage : un pro multi-fiches apparaît une fois par fiche. */
   entry_key: string;
   id: string;
+  /** Fiche entreprise (activité) représentée par cette entrée. */
+  company_id: string | null;
   first_name: string | null;
   last_name: string | null;
   company_name: string | null;

@@ -10,7 +10,8 @@ import { fakeLastActive } from "@/lib/fake-last-active";
 interface StepProfessionalProps {
   userId: string | null;
   selectedProId: string | null;
-  onSelect: (id: string) => void;
+  selectedCompanyId: string | null;
+  onSelect: (id: string, companyId: string | null) => void;
 }
 
 const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -21,7 +22,7 @@ const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfessionalProps) => {
+export const StepProfessional = ({ userId, selectedProId, selectedCompanyId, onSelect }: StepProfessionalProps) => {
   const supabase = createClient();
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -71,7 +72,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
       };
       // Un pro multi-activités a une fiche par activité : on affiche une entrée
       // par fiche active pour qu'il soit trouvable dans chacune de ses catégories.
-      let results: Professional[] = (data ?? []).flatMap((p) => {
+      let results: Professional[] = (data ?? []).flatMap((p): Professional[] => {
         const companiesRaw = Array.isArray(p.companies) ? p.companies : p.companies ? [p.companies] : [];
         const activeCompanies = (companiesRaw as CompanyRow[]).filter((c) => !c.deleted_at);
 
@@ -88,6 +89,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
           return [{
             ...base,
             entry_key: p.id,
+            company_id: null,
             company_name: null,
             company_alias: null,
             category_name: null,
@@ -101,6 +103,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
           return {
             ...base,
             entry_key: `${p.id}:${company.id}`,
+            company_id: company.id,
             company_name: company.name ?? null,
             company_alias: company.alias ?? null,
             category_name: catName,
@@ -218,6 +221,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
       <ProfessionalList
         professionals={professionals}
         selectedProId={selectedProId}
+        selectedCompanyId={selectedCompanyId}
         onSelect={onSelect}
         geoGranted={geoStatus === "granted"}
         radius={radius}
