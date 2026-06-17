@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { WITHDRAWAL_STATUS } from "@/lib/constants";
+import { WITHDRAWAL_STATUS, COMMISSION_TYPE } from "@/lib/constants";
 
 /**
  * Recalcule le wallet d'un utilisateur depuis zéro.
@@ -12,11 +12,17 @@ import { WITHDRAWAL_STATUS } from "@/lib/constants";
 export async function recalculateWallet(userId: string): Promise<void> {
   const { data: earned } = await supabaseAdmin
     .from("commission_transactions")
-    .select("amount")
+    .select("amount, type")
     .eq("user_id", userId)
     .eq("status", "EARNED");
 
-  const totalEarned = (earned ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
+  const totalEarned = (earned ?? [])
+    .filter((t) => t.type !== COMMISSION_TYPE.PROFESSIONAL_CASHBACK)
+    .reduce((s, t) => s + (t.amount ?? 0), 0);
+
+  const totalWins = (earned ?? [])
+    .filter((t) => t.type === COMMISSION_TYPE.PROFESSIONAL_CASHBACK)
+    .reduce((s, t) => s + (t.amount ?? 0), 0);
 
   const { data: withdrawn } = await supabaseAdmin
     .from("withdrawals")
@@ -28,11 +34,22 @@ export async function recalculateWallet(userId: string): Promise<void> {
 
   const { data: pending } = await supabaseAdmin
     .from("commission_transactions")
-    .select("amount")
+    .select("amount, type")
     .eq("user_id", userId)
     .eq("status", "PENDING");
 
-  const totalPending = (pending ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
+  const totalPending = (pending ?? [])
+    .filter((t) => t.type !== COMMISSION_TYPE.PROFESSIONAL_CASHBACK)
+    .reduce((s, t) => s + (t.amount ?? 0), 0);
+
+  // Récupérer les redeemed_wins existants pour ne pas les écraser
+  const { data: currentWallet } = await supabaseAdmin
+    .from("user_wallet_summaries")
+    .select("redeemed_wins")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const redeemedWins = currentWallet?.redeemed_wins ?? 0;
 
   await supabaseAdmin.from("user_wallet_summaries").upsert(
     {
@@ -41,7 +58,10 @@ export async function recalculateWallet(userId: string): Promise<void> {
       total_withdrawn: totalWithdrawn,
       pending_commissions: totalPending,
       available: Math.max(0, totalEarned - totalWithdrawn),
+      total_wins: totalWins,
+      available_wins: Math.max(0, totalWins - redeemedWins),
     },
     { onConflict: "user_id" }
   );
 }
+
