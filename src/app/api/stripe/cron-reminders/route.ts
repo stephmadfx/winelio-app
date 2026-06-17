@@ -62,7 +62,7 @@ export async function GET(req: Request) {
             {
               price_data: {
                 currency: "eur",
-                product_data: { name: `Commission Winelio — ${clientName} (relance)` },
+                product_data: { name: `Commission d'intermédiation Winelio — ${clientName} (relance)` },
                 unit_amount: Math.round(session.amount * 100),
               },
               quantity: 1,
@@ -72,8 +72,8 @@ export async function GET(req: Request) {
             recommendation_id: session.recommendation_id,
             professional_id: (reco as { professional_id: string }).professional_id,
           },
-          success_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://winelio.app"}?commission=paid`,
-          cancel_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://winelio.app"}?commission=cancelled`,
+          success_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://winelio.app"}/commission/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://winelio.app"}/commission/success?status=cancelled`,
           expires_at: Math.floor(Date.now() / 1000) + 86400,
         });
 

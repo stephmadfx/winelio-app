@@ -647,7 +647,7 @@ async function createCommissionsForReco(reco: {
     status: "EARNED",
   });
 
-  // Remonter la chaîne de parrainage (niveaux 1-5 : 4% chacun)
+  // Remonter la chaîne de parrainage (niveaux 1-5 : 3% chacun)
   let currentId = reco.referrer_id;
   for (let level = 1; level <= 5; level++) {
     const { data: profile } = await supabaseAdmin

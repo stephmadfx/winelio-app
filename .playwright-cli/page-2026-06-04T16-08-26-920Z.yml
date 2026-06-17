@@ -1,0 +1,47 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic:
+      - img
+    - generic [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e7]
+        - generic [ref=e9]: inelio
+      - generic [ref=e10]:
+        - generic [ref=e12]:
+          - button "Code par email" [ref=e13]
+          - button "Mot de passe" [ref=e14]
+        - generic [ref=e15]:
+          - generic [ref=e16]:
+            - paragraph [ref=e17]: Connexion
+            - heading "Se connecter" [level=2] [ref=e18]
+            - paragraph [ref=e19]: Connectez-vous avec votre email et votre mot de passe.
+          - img [ref=e21]
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - text: Adresse email
+            - textbox "Adresse email" [ref=e25]:
+              - /placeholder: vous@exemple.com
+          - generic [ref=e26]:
+            - text: Mot de passe
+            - textbox "Mot de passe" [ref=e27]:
+              - /placeholder: ••••••••
+          - button "Se connecter" [ref=e28]
+        - generic [ref=e29]:
+          - button "Code par email →" [ref=e30]
+          - button "Mot de passe oublié ?" [ref=e31]
+  - region "Gestion des cookies" [ref=e32]:
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - img [ref=e36]
+        - generic [ref=e38]:
+          - heading "Cookies et confidentialité" [level=2] [ref=e39]
+          - paragraph [ref=e40]: Winelio utilise des cookies nécessaires pour sécuriser la connexion et faire fonctionner l'application. Les préférences locales servent aussi à mémoriser votre parcours, comme le parrainage ou la vidéo d'accueil.
+          - link "En savoir plus" [ref=e41] [cursor=pointer]:
+            - /url: /conditions-generales-utilisation
+      - generic [ref=e42]:
+        - button "Continuer sans accepter" [ref=e43]
+        - button "Accepter" [ref=e44]
+        - button "Fermer le bandeau cookies" [ref=e45]:
+          - img [ref=e46]
+  - region "Notifications alt+T"
+  - alert [ref=e49]

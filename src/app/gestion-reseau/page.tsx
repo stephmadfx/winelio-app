@@ -260,7 +260,7 @@ export default async function AdminDashboard() {
       <div className="rounded-xl p-5 bg-gradient-to-r from-amber-500/20 to-winelio-orange/20 border border-winelio-orange/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <p className="text-xs font-semibold text-winelio-orange uppercase tracking-widest mb-1">
-            💰 Cagnotte Winelio (14 %)
+            💰 Cagnotte Winelio (23 %)
           </p>
           <p className="text-3xl font-bold text-white">
             {kpis.cagnotteTotal.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €

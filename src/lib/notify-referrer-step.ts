@@ -2,6 +2,8 @@ import { queueEmail } from "@/lib/email-queue";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
+import { pickActiveCompany } from "@/lib/pick-active-company";
+import { formatDisplayName } from "@/lib/utils";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
 
@@ -10,7 +12,7 @@ type StepInfo = {
   subject: (proName: string, contactName: string) => string;
   title: (proName: string, contactName: string) => string;
   body: (proName: string, contactName: string) => string;
-  highlight?: boolean; // commissions mentionnées
+  highlight?: boolean; // commissions d'intermédiation mentionnées
 };
 
 const STEP_MESSAGES: Record<number, StepInfo> = {
@@ -36,13 +38,13 @@ const STEP_MESSAGES: Record<number, StepInfo> = {
     emoji: "📄",
     subject: (pro, contact) => `${pro} a soumis un devis à ${contact}`,
     title:   () => `Devis soumis`,
-    body:    (pro, contact) => `<strong style="color:#2D3436;">${he(pro)}</strong> a soumis un devis à <strong style="color:#2D3436;">${he(contact)}</strong>. Si le client l'accepte, votre commission sera calculée sur ce montant.`,
+    body:    (pro, contact) => `<strong style="color:#2D3436;">${he(pro)}</strong> a soumis un devis à <strong style="color:#2D3436;">${he(contact)}</strong>. Si le client l'accepte, votre commission d'intermédiation sera calculée sur ce montant.`,
   },
   6: {
     emoji: "✅",
-    subject: (pro, contact) => `Affaire conclue — vos commissions sont en route !`,
+    subject: (pro, contact) => `Affaire conclue — vos commissions d'intermédiation sont en route !`,
     title:   () => `Travaux terminés — affaire conclue !`,
-    body:    (pro, contact) => `<strong style="color:#2D3436;">${he(pro)}</strong> a confirmé que les travaux sont terminés et que le paiement de <strong style="color:#2D3436;">${he(contact)}</strong> a été reçu.<br><br>Vos <strong style="color:#FF6B35;">commissions sont en cours de traitement</strong> et seront bientôt disponibles dans votre wallet Winelio.`,
+    body:    (pro, contact) => `<strong style="color:#2D3436;">${he(pro)}</strong> a confirmé que les travaux sont terminés et que le paiement de <strong style="color:#2D3436;">${he(contact)}</strong> a été reçu.<br><br>Vos <strong style="color:#FF6B35;">commissions d'intermédiation sont en cours de traitement</strong> et seront bientôt disponibles dans votre wallet Winelio.`,
     highlight: true,
   },
   7: {
@@ -63,7 +65,7 @@ export async function notifyReferrerStep(recommendationId: string, stepIndex: nu
     .select(
       `id,
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name, email),
-       professional:profiles!recommendations_professional_id_fkey(first_name, last_name, companies(name)),
+       professional:profiles!recommendations_professional_id_fkey(first_name, last_name, companies(name, deleted_at)),
        contact:contacts(first_name, last_name)`
     )
     .eq("id", recommendationId)
@@ -76,13 +78,13 @@ export async function notifyReferrerStep(recommendationId: string, stepIndex: nu
 
   const referrer = normalize<{ first_name: string | null; last_name: string | null; email: string | null }>(rec.referrer);
   const pro      = normalize<{ first_name: string | null; last_name: string | null; companies: unknown }>(rec.professional);
-  const company  = normalize<{ name: string | null }>(pro?.companies);
+  const company  = pickActiveCompany<{ name: string | null; deleted_at: string | null }>(pro?.companies);
   const contact  = normalize<{ first_name: string | null; last_name: string | null }>(rec.contact);
 
   if (!referrer?.email) return;
 
-  const proName      = company?.name || [pro?.first_name, pro?.last_name].filter(Boolean).join(" ") || "Le professionnel";
-  const contactName  = [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || "votre contact";
+  const proName      = company?.name || formatDisplayName(pro?.first_name, pro?.last_name, "Le professionnel");
+  const contactName  = formatDisplayName(contact?.first_name, contact?.last_name, "votre contact");
   const referrerFirst = referrer.first_name || "Bonjour";
   const recoUrl      = `${SITE_URL}/recommendations/${recommendationId}`;
 
@@ -108,7 +110,7 @@ export async function notifyReferrerStep(recommendationId: string, stepIndex: nu
           <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
           <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;">${body}</p></td></tr>
           <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
-          ${info.highlight ? `<tr><td style="background:#FFF5F0;border-left:3px solid #FF6B35;padding:16px 20px;border-radius:4px;"><p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Retrouvez le détail de vos commissions dans votre <strong>wallet Winelio</strong> dès leur validation.</p></td></tr><tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>` : ""}
+          ${info.highlight ? `<tr><td style="background:#FFF5F0;border-left:3px solid #FF6B35;padding:16px 20px;border-radius:4px;"><p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Retrouvez le détail de vos commissions d'intermédiation dans votre <strong>wallet Winelio</strong> dès leur validation.</p></td></tr><tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>` : ""}
           <tr><td align="center"><table cellpadding="0" cellspacing="0" border="0"><tr><td><a href="${recoUrl}" style="display:inline-block;background:linear-gradient(135deg,#FF6B35,#F7931E);color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;font-size:15px;">Voir la recommandation →</a></td></tr></table></td></tr>
         </table>
       </td></tr>

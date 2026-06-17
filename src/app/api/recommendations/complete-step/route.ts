@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { RECOMMENDATION_STATUS } from "@/lib/constants";
 import { notifyReferrerStep } from "@/lib/notify-referrer-step";
+import { notifyContactAccepted } from "@/lib/notify-contact-accepted";
 import { createStripeCheckoutSession } from "@/lib/stripe-checkout";
 
 // Étape 7 = "Affaire terminée" → email Stripe Checkout pour la commission pro.
@@ -76,6 +77,9 @@ export async function POST(request: Request) {
         await createStripeCheckoutSession(rec.id);
       }
       await notifyReferrerStep(rec.id, stepIndex);
+      if (stepIndex === 2) {
+        await notifyContactAccepted(rec.id);
+      }
       return NextResponse.json({ success: true, already_completed: true });
     }
 
@@ -117,6 +121,11 @@ export async function POST(request: Request) {
     // Notifier le referrer à chaque avancement pro. L'enfilement est attendu:
     // l'etape ne doit plus passer silencieusement si la notification critique echoue.
     await notifyReferrerStep(rec.id, stepIndex);
+
+    // Étape 2 : prévenir aussi le client que le pro a accepté et va le contacter.
+    if (stepIndex === 2) {
+      await notifyContactAccepted(rec.id);
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

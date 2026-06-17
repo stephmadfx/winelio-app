@@ -45,6 +45,11 @@ const navItems = [
     href: "/settings",
     icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
   },
+  {
+    label: "Documents légaux",
+    href: "/documents-legaux",
+    icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z",
+  },
 ];
 
 const ANIM_DURATION = 500;
@@ -245,7 +250,30 @@ export function MobileHeader({
             </nav>
 
             {/* Pied */}
-            <div className="px-4 py-5 border-t border-black/5">
+            <div className="px-4 py-5 border-t border-black/5 space-y-3">
+              <Link
+                href="/documents-legaux"
+                className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all ${
+                  pathname.startsWith("/documents-legaux")
+                    ? "bg-gradient-to-r from-winelio-orange to-winelio-amber text-white shadow-sm"
+                    : "text-winelio-gray hover:bg-winelio-orange/5 hover:text-winelio-dark"
+                }`}
+              >
+                <svg
+                  className="w-5 h-5 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={pathname.startsWith("/documents-legaux") ? 2 : 1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                Documents légaux
+              </Link>
               <SignOutButton variant="light" />
             </div>
           </div>

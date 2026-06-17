@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
+import { notifyContactAccepted } from "@/lib/notify-contact-accepted";
 
 /**
  * POST /api/stripe/payment-method
  *
  * Après confirmation client d'un SetupIntent, persiste le payment_method_id
- * sur le profil pour permettre un débit off-session à l'étape 7.
+ * sur le profil. La carte sert de gage de sérieux et débloque l'accès aux
+ * coordonnées des leads. AUCUN débit automatique n'est lancé depuis cette
+ * carte (promesse affichée au pro) : la commission se règle via un lien
+ * Stripe Checkout volontaire à l'étape 7.
  *
  * Body : { setupIntentId: string }
  */
@@ -55,6 +59,22 @@ export async function POST(req: Request) {
         stripe_payment_method_saved_at: new Date().toISOString(),
       })
       .eq("id", user.id);
+
+    // Le pro a maintenant réellement accès à ses leads : prévenir les clients
+    // des recos acceptées mais pas encore notifiées (dédupliqué par reco).
+    try {
+      const { data: acceptedRecs } = await supabaseAdmin
+        .from("recommendations")
+        .select("id")
+        .eq("professional_id", user.id)
+        .eq("status", "ACCEPTED");
+
+      for (const r of acceptedRecs ?? []) {
+        await notifyContactAccepted(r.id);
+      }
+    } catch (err) {
+      console.error("[payment-method] notifyContactAccepted failed:", err);
+    }
 
     return NextResponse.json({
       success: true,

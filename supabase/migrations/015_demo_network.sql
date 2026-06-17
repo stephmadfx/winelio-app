@@ -253,7 +253,7 @@ BEGIN
         now() - ((floor(random() * 20))::text  || ' days')::interval
       );
 
-      -- Commission pour reco validée (niveau 1 = 4% de la commission 10%)
+      -- Commission pour reco validée (niveau 1 = 3% de la commission 10%)
       IF v_status = ANY(v_valid_st) THEN
         INSERT INTO winelio.commission_transactions
           (user_id, recommendation_id, amount, level, type, status,

@@ -136,14 +136,14 @@ Plans de commission MLM. Définit les taux de redistribution.
 | `name` | `text` | NOT NULL | Nom du plan (ex: "Standard") |
 | `commission_rate` | `decimal` | | Taux global de commission (%) |
 | `referrer_percentage` | `decimal` | | Part du referrer (60%) |
-| `level_1_percentage` | `decimal` | | Part parrain N1 (4%) |
-| `level_2_percentage` | `decimal` | | Part parrain N2 (4%) |
-| `level_3_percentage` | `decimal` | | Part parrain N3 (4%) |
-| `level_4_percentage` | `decimal` | | Part parrain N4 (4%) |
-| `level_5_percentage` | `decimal` | | Part parrain N5 (4%) |
+| `level_1_percentage` | `decimal` | | Part parrain N1 (3%) |
+| `level_2_percentage` | `decimal` | | Part parrain N2 (3%) |
+| `level_3_percentage` | `decimal` | | Part parrain N3 (3%) |
+| `level_4_percentage` | `decimal` | | Part parrain N4 (3%) |
+| `level_5_percentage` | `decimal` | | Part parrain N5 (3%) |
 | `affiliation_bonus_percentage` | `decimal` | | Bonus sponsor du professionnel (1%) |
 | `cashback_wins_percentage` | `decimal` | | Cashback Wins professionnel (1%) |
-| `platform_percentage` | `decimal` | | Part plateforme (14%) |
+| `platform_percentage` | `decimal` | | Part plateforme (23%) |
 | `created_at` | `timestamptz` | DEFAULT NOW() | |
 
 ---

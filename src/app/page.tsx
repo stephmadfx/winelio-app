@@ -39,6 +39,18 @@ export default function Home() {
               Créer un compte
             </Link>
           </div>
+
+          <nav className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] font-semibold text-winelio-gray">
+            <Link href="/documents-legaux/mentions-legales" className="hover:text-winelio-orange">
+              Mentions légales
+            </Link>
+            <Link href="/documents-legaux/conditions-generales-utilisation" className="hover:text-winelio-orange">
+              CGU
+            </Link>
+            <Link href="/documents-legaux/politique-confidentialite" className="hover:text-winelio-orange">
+              Confidentialité
+            </Link>
+          </nav>
         </div>
       </main>
     </div>

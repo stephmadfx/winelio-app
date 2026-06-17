@@ -108,6 +108,7 @@ export default function RecommendationDetailPage() {
   const [amountError, setAmountError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
+  const [contactMasked, setContactMasked] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [transferTarget, setTransferTarget] = useState("");
@@ -132,7 +133,8 @@ export default function RecommendationDetailPage() {
     setLoading(true);
     const res = await fetch(`/api/recommendations/${id}`);
     if (res.ok) {
-      const { recommendation: rec, steps: recSteps } = await res.json();
+      const { recommendation: rec, steps: recSteps, contactMasked: masked } = await res.json();
+      setContactMasked(!!masked);
       const normalize = (v: unknown) => (Array.isArray(v) ? v[0] ?? null : v);
       setRecommendation({
         ...rec,
@@ -292,9 +294,11 @@ export default function RecommendationDetailPage() {
               <Avatar name={contactName} />
               <div className="flex-1 min-w-0">
                 <h1 className="text-xl font-black text-white truncate sm:text-2xl">{contactName}</h1>
-                {recommendation.contact?.email && (() => {
+                {(recommendation.contact?.email || contactMasked) && (() => {
                   const isPro = userId === recommendation.professional_id;
-                  const shouldMask = isPro && hasPaymentMethod === false;
+                  // L'API masque déjà les coordonnées côté serveur (contactMasked) ;
+                  // le check hasPaymentMethod reste en filet de sécurité UI.
+                  const shouldMask = contactMasked || (isPro && hasPaymentMethod === false);
                   if (shouldMask) {
                     return (
                       <div className="mt-1 inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-2.5 py-1 rounded-lg">
@@ -313,8 +317,8 @@ export default function RecommendationDetailPage() {
                   }
                   return (
                     <p className={`mt-0.5 text-sm truncate ${cfg.heroText}`}>
-                      {recommendation.contact.email}
-                      {recommendation.contact.phone ? ` · ${recommendation.contact.phone}` : ""}
+                      {recommendation.contact?.email}
+                      {recommendation.contact?.phone ? ` · ${recommendation.contact.phone}` : ""}
                     </p>
                   );
                 })()}
@@ -702,6 +706,8 @@ export default function RecommendationDetailPage() {
         onSaved={() => {
           setHasPaymentMethod(true);
           setPaymentDialogOpen(false);
+          // Recharger la reco : l'API renvoie désormais les vraies coordonnées.
+          fetchData();
         }}
       />
     </div>

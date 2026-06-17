@@ -257,7 +257,7 @@
 [CORE] Logique Métier
 ├── src/lib/commission.ts [UTILITY]
 │       calculateCommissions() · createCommissions()
-│       Distribue : 60% referrer · 4%×5 niveaux · 14% plateforme · 1% Wins
+│       Distribue : 60% referrer · 3%×5 niveaux · 23% plateforme · 1% Wins
 ├── src/lib/assign-sponsor.ts [UTILITY]
 │       assignSponsorIfNeeded(userId, sponsorCode?)
 │       Fallback : round-robin is_founder=true via RPC
@@ -311,7 +311,7 @@ POST /api/recommendations/complete-step {step: 6}
   → recommendation_steps.completed_at = NOW()
   → createCommissions() [IDEMPOTENT]
       → calcule montant depuis recommendation_steps.data (step devis)
-      → commission_transactions INSERT (60% referrer + 5×4% niveaux)
+      → commission_transactions INSERT (60% referrer + 5×3% niveaux)
       → user_wallet_summaries UPDATE (recalcul available)
 ```
 

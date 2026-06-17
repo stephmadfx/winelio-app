@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { WalletCard } from "@/components/wallet-card";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { AffiliateSimulator } from "@/components/affiliate-simulator";
 
 type Transaction = {
   id: string;
@@ -145,6 +146,8 @@ export default async function WalletPage() {
           icon="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
         />
       </div>
+
+      <AffiliateSimulator />
 
       {/* Recent Transactions */}
       <Card className="!rounded-2xl !py-0 overflow-hidden">

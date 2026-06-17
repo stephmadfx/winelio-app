@@ -75,14 +75,14 @@ function buildPaymentLinkEmail(
         </table>
       </td></tr>
       <tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr>
-      <tr><td align="center"><h1 style="color:#2D3436;font-size:22px;font-weight:700;margin:0;">Commission à régler</h1></td></tr>
+      <tr><td align="center"><h1 style="color:#2D3436;font-size:22px;font-weight:700;margin:0;">Commission d'intermédiation à régler</h1></td></tr>
       <tr><td style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr>
       <tr><td align="center"><p style="color:#636E72;font-size:15px;margin:0;">Bonjour <strong style="color:#2D3436;">${he(proFirstName)}</strong>,</p></td></tr>
       <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
     </table>
     ${infoBlock(`
       <p style="margin:0;color:#2D3436;font-size:15px;font-weight:600;">Client : ${he(clientName)}</p>
-      <p style="margin:8px 0 0;color:#636E72;font-size:14px;">Le paiement de votre client a été confirmé. Voici la commission Winelio à régler :</p>
+      <p style="margin:8px 0 0;color:#636E72;font-size:14px;">Le paiement de votre client a été confirmé. Voici la commission d'intermédiation Winelio à régler :</p>
       <p style="margin:12px 0 0;color:#FF6B35;font-size:24px;font-weight:800;">${amountStr}&nbsp;€</p>
     `)}
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -91,7 +91,7 @@ function buildPaymentLinkEmail(
     <p style="color:#636E72;font-size:13px;text-align:center;margin:0 0 20px;">
       Ce lien est valable <strong style="color:#2D3436;">24 heures</strong>. Un rappel vous sera envoyé si nécessaire.
     </p>
-    ${ctaButton("Payer ma commission →", checkoutUrl)}
+    ${ctaButton("Payer ma commission d'intermédiation →", checkoutUrl)}
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr>
     </table>
@@ -119,14 +119,14 @@ function buildReminderEmail(
         </table>
       </td></tr>
       <tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr>
-      <tr><td align="center"><h1 style="color:#2D3436;font-size:22px;font-weight:700;margin:0;">Rappel — Commission en attente</h1></td></tr>
+      <tr><td align="center"><h1 style="color:#2D3436;font-size:22px;font-weight:700;margin:0;">Rappel — Commission d'intermédiation en attente</h1></td></tr>
       <tr><td style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr>
       <tr><td align="center"><p style="color:#636E72;font-size:15px;margin:0;">Bonjour <strong style="color:#2D3436;">${he(proFirstName)}</strong>,</p></td></tr>
       <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
     </table>
     ${infoBlock(`
       <p style="margin:0;color:#2D3436;font-size:15px;font-weight:600;">Client : ${he(clientName)}</p>
-      <p style="margin:8px 0 0;color:#636E72;font-size:14px;">Votre commission Winelio n'a pas encore été réglée.</p>
+      <p style="margin:8px 0 0;color:#636E72;font-size:14px;">Votre commission d'intermédiation Winelio n'a pas encore été réglée.</p>
       <p style="margin:12px 0 0;color:#FF6B35;font-size:24px;font-weight:800;">${amountStr}&nbsp;€</p>
     `)}
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -135,7 +135,7 @@ function buildReminderEmail(
     <p style="color:#636E72;font-size:13px;text-align:center;margin:0 0 20px;">
       Merci de procéder au règlement dès que possible pour maintenir votre accès à la plateforme.
     </p>
-    ${ctaButton("Payer ma commission →", checkoutUrl)}`;
+    ${ctaButton("Payer ma commission d'intermédiation →", checkoutUrl)}`;
 
   return emailShell(content);
 }
@@ -151,13 +151,13 @@ function buildAlertEmail(recipientFirstName: string): string {
         </table>
       </td></tr>
       <tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr>
-      <tr><td align="center"><h1 style="color:#2D3436;font-size:22px;font-weight:700;margin:0;">Information — Commission non réglée</h1></td></tr>
+      <tr><td align="center"><h1 style="color:#2D3436;font-size:22px;font-weight:700;margin:0;">Information — Commission d'intermédiation non réglée</h1></td></tr>
       <tr><td style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr>
       <tr><td align="center"><p style="color:#636E72;font-size:15px;margin:0;">Bonjour <strong style="color:#2D3436;">${he(recipientFirstName)}</strong>,</p></td></tr>
       <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
     </table>
     <p style="color:#636E72;font-size:14px;line-height:1.6;margin:0 0 20px;">
-      Nous vous informons que la commission liée à votre dossier n'a pas encore été réglée par le professionnel concerné.
+      Nous vous informons que la commission d'intermédiation liée à votre dossier n'a pas encore été réglée par le professionnel concerné.
       Notre équipe prend en charge le suivi de cette situation.
     </p>
     <p style="color:#636E72;font-size:14px;line-height:1.6;margin:0 0 20px;">
@@ -200,9 +200,9 @@ export async function sendCommissionPaymentEmail(
 
   await queueEmail({
     to: email,
-    subject: `Commission Winelio — ${clientName} — ${amount.toFixed(2).replace(".", ",")} €`,
+    subject: `Commission d'intermédiation Winelio — ${clientName} — ${amount.toFixed(2).replace(".", ",")} €`,
     html: buildPaymentLinkEmail(firstName, clientName, amount, checkoutUrl),
-    text: `Bonjour ${firstName},\n\nVotre commission Winelio pour le client ${clientName} est de ${amount.toFixed(2)} €.\n\nRéglez-la ici : ${checkoutUrl}\n\n© 2026 Winelio`,
+    text: `Bonjour ${firstName},\n\nVotre commission d'intermédiation Winelio pour le client ${clientName} est de ${amount.toFixed(2)} €.\n\nRéglez-la ici : ${checkoutUrl}\n\n© 2026 Winelio`,
     priority: 5,
   });
 }
@@ -227,9 +227,9 @@ export async function sendCommissionReminderEmail(
 
   await queueEmail({
     to: email,
-    subject: `Rappel — Commission en attente ${amount.toFixed(2).replace(".", ",")} €`,
+    subject: `Rappel — Commission d'intermédiation en attente ${amount.toFixed(2).replace(".", ",")} €`,
     html: buildReminderEmail(firstName, clientName, amount, checkoutUrl),
-    text: `Bonjour ${firstName},\n\nRappel : votre commission Winelio de ${amount.toFixed(2)} € pour ${clientName} n'a pas encore été réglée.\n\nLien de paiement : ${checkoutUrl}\n\n© 2026 Winelio`,
+    text: `Bonjour ${firstName},\n\nRappel : votre commission d'intermédiation Winelio de ${amount.toFixed(2)} € pour ${clientName} n'a pas encore été réglée.\n\nLien de paiement : ${checkoutUrl}\n\n© 2026 Winelio`,
     priority: 5,
   });
 }
@@ -270,9 +270,9 @@ export async function sendCommissionAlertEmails(
     recipients.map(({ email, firstName }) =>
       queueEmail({
         to: email,
-        subject: "Information — Commission non réglée",
+        subject: "Information — Commission d'intermédiation non réglée",
         html: buildAlertEmail(firstName),
-        text: `Bonjour ${firstName},\n\nNous vous informons que la commission liée à votre dossier n'a pas encore été réglée. Notre équipe assure le suivi.\n\nContact : support@winelio.app\n\n© 2026 Winelio`,
+        text: `Bonjour ${firstName},\n\nNous vous informons que la commission d'intermédiation liée à votre dossier n'a pas encore été réglée. Notre équipe assure le suivi.\n\nContact : support@winelio.app\n\n© 2026 Winelio`,
         priority: 5,
       })
     )

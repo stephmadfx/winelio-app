@@ -34,7 +34,12 @@ export async function GET(req: Request) {
     .eq(column, user.id);
 
   if (leadAccessBlock) {
-    query = query.lte("created_at", leadAccessBlock.blockedSince);
+    // Bloque uniquement les recos à l'étape 6+ (devis validé → facturation Stripe pro)
+    // créées APRÈS le blocage. Les recos plus jeunes restent visibles : elles n'ont
+    // pas pu déclencher de commission Stripe.
+    query = query.or(
+      `created_at.lte.${leadAccessBlock.blockedSince},status.in.(PENDING,ACCEPTED,CONTACT_MADE,MEETING_SCHEDULED,QUOTE_SUBMITTED)`
+    );
   }
 
   const { data, error } = await query.order("created_at", { ascending: false });
