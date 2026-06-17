@@ -102,7 +102,7 @@ function RangeControl({
 
 export function AffiliateSimulator() {
   const [dealAmount, setDealAmount] = useState(5000);
-  const [commissionRate, setCommissionRate] = useState(10);
+  const commissionRate = 10;
   const [directRecommendations, setDirectRecommendations] = useState(3);
   const [activeNetworkLevels, setActiveNetworkLevels] = useState(5);
   const [directActiveMembers, setDirectActiveMembers] = useState(4);
@@ -160,20 +160,13 @@ export function AffiliateSimulator() {
   }, [
     activeNetworkLevels,
     activeRelaysPerMember,
-    commissionRate,
     dealAmount,
     directActiveMembers,
     directRecommendations,
     networkDealsPerMember,
   ]);
 
-  const distribution = [
-    { label: "Direct", percentage: DIRECT_REFERRER_SHARE },
-    { label: "Reseau 5 niveaux", percentage: NETWORK_LEVEL_SHARE * MAX_NETWORK_LEVELS },
-    { label: "Winelio", percentage: PLATFORM_SHARE },
-    { label: "Affiliation", percentage: AFFILIATION_SHARE },
-    { label: "Wins pro", percentage: CASHBACK_SHARE },
-  ];
+
 
   return (
     <section
@@ -203,7 +196,7 @@ export function AffiliateSimulator() {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-4 xl:grid-cols-2">
+          <div className="mt-6">
             <label className="block rounded-xl border border-winelio-gray/10 bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/8">
               <span className="flex items-center gap-2 text-sm font-semibold text-winelio-dark dark:text-white">
                 <Home className="size-4 text-winelio-orange" />
@@ -238,17 +231,6 @@ export function AffiliateSimulator() {
                 onChange={(event) => setDealAmount(Number(event.target.value))}
               />
             </label>
-
-            <RangeControl
-              helper="Taux preleve au professionnel sur le montant du deal."
-              label="Commission Winelio"
-              max={20}
-              min={1}
-              step={0.5}
-              suffix="%"
-              value={commissionRate}
-              onChange={setCommissionRate}
-            />
           </div>
 
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -400,40 +382,7 @@ export function AffiliateSimulator() {
             </div>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-white/10 bg-white/8 p-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <p className="flex items-center gap-2 text-sm font-bold">
-                <Percent className="size-4 text-winelio-amber" />
-                Repartition d'un deal
-              </p>
-              <span className="rounded-lg bg-white/10 px-2.5 py-1 text-xs font-bold text-white/75">
-                base 100%
-              </span>
-            </div>
 
-            <div className="h-3 overflow-hidden rounded-full bg-white/12">
-              <div className="flex h-full w-full">
-                {distribution.map((part, index) => (
-                  <div
-                    key={part.label}
-                    className={levelAccentClasses[index]}
-                    style={{ width: `${part.percentage}%` }}
-                  />
-                ))}
-              </div>
-            </div>
-            <div className="mt-3 grid gap-2 text-xs text-white/62 sm:grid-cols-2">
-              {distribution.map((part, index) => (
-                <div key={part.label} className="flex items-center gap-2">
-                  <span
-                    className={`h-2.5 w-2.5 rounded-full ${levelAccentClasses[index]}`}
-                  />
-                  <span className="flex-1">{part.label}</span>
-                  <span className="font-bold text-white">{part.percentage}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
 
           <div className="mt-5 rounded-2xl border border-white/10 bg-white/8 p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
