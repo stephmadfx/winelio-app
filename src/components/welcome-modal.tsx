@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import confetti from "canvas-confetti";
 
 const REDIRECT_DELAY_S = 4;
 
@@ -25,19 +24,24 @@ export function WelcomeModal({
 
     // Confettis 🎉
     const colors = ["#FF6B35", "#F7931E", "#FFD166", "#06D6A0", "#118AB2"];
-    const fire = (particleRatio: number, opts: confetti.Options) => {
-      confetti({
-        origin: { y: 0.6 },
-        colors,
-        particleCount: Math.floor(220 * particleRatio),
-        ...opts,
-      });
-    };
-    fire(0.25, { spread: 26, startVelocity: 55 });
-    fire(0.2, { spread: 60 });
-    fire(0.35, { spread: 100, decay: 0.91, scalar: 0.9 });
-    fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
-    fire(0.1, { spread: 120, startVelocity: 45 });
+    import("canvas-confetti").then((module) => {
+      const confettiFn = module.default;
+      const fire = (particleRatio: number, opts: any) => {
+        confettiFn({
+          origin: { y: 0.6 },
+          colors,
+          particleCount: Math.floor(220 * particleRatio),
+          ...opts,
+        });
+      };
+      fire(0.25, { spread: 26, startVelocity: 55 });
+      fire(0.2, { spread: 60 });
+      fire(0.35, { spread: 100, decay: 0.91, scalar: 0.9 });
+      fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+      fire(0.1, { spread: 120, startVelocity: 45 });
+    }).catch((err) => {
+      console.error("[welcome-modal] Confetti load error:", err);
+    });
 
     // Compte à rebours puis redirection auto vers le dashboard
     const interval = setInterval(() => {

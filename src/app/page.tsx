@@ -1,11 +1,13 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { AppBackground } from "@/components/AppBackground";
 import { NetworkBackground } from "@/components/NetworkBackground";
 import { BetaBanner } from "@/components/BetaBanner";
 import { LandingHero } from "@/components/LandingHero";
 import { getUser } from "@/lib/supabase/get-user";
 import { WinelioLogoWithTagline } from "@/components/winelio-logo";
+import { PromoVideo } from "@/components/PromoVideo";
 
 export default async function Home() {
   const user = await getUser();

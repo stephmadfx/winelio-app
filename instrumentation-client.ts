@@ -23,18 +23,21 @@ function isIgnoredBrowserNoise(event: Sentry.Event, hint: Sentry.EventHint): boo
   return isNativeShareCancel || isSafariMediaControlsNoise;
 }
 
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  environment: process.env.NEXT_PUBLIC_APP_URL?.includes("dev2") ? "staging" : "production",
-  tracesSampleRate: 0.1,
-  enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
-  replaysSessionSampleRate: 0,
-  replaysOnErrorSampleRate: 0,
-  beforeSend(event, hint) {
-    if (isIgnoredBrowserNoise(event, hint)) return null;
-    return event;
-  },
-});
+const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+
+if (dsn) {
+  Sentry.init({
+    dsn,
+    environment: process.env.NEXT_PUBLIC_APP_URL?.includes("dev2") ? "staging" : "production",
+    tracesSampleRate: 0.1,
+    replaysSessionSampleRate: 0,
+    replaysOnErrorSampleRate: 0,
+    beforeSend(event, hint) {
+      if (isIgnoredBrowserNoise(event, hint)) return null;
+      return event;
+    },
+  });
+}
 
 // Expose Sentry sur window pour pouvoir tester depuis la console (test E2E).
 // Aucun risque de sécurité : le SDK est de toute façon chargé côté client.

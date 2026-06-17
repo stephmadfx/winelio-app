@@ -129,6 +129,9 @@ export default function RecommendationDetailPage() {
   const [amountError, setAmountError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
+  const [paymentCheckDone, setPaymentCheckDone] = useState(false);
+  const [expectedDelay, setExpectedDelay] = useState("4w");
+  const [customExpectedDate, setCustomExpectedDate] = useState("");
   const [contactMasked, setContactMasked] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
@@ -159,7 +162,7 @@ export default function RecommendationDetailPage() {
     setLoading(true);
     const res = await fetch(`/api/recommendations/${id}`);
     if (res.ok) {
-      const { recommendation: rec, steps: recSteps, contactMasked: masked } = await res.json();
+      const { recommendation: rec, steps: recSteps, contactMasked: masked, payout: payoutInfo } = await res.json();
       setContactMasked(!!masked);
       const normalize = (v: unknown) => (Array.isArray(v) ? v[0] ?? null : v);
       setRecommendation({
@@ -273,6 +276,30 @@ export default function RecommendationDetailPage() {
       setAmountError("Erreur réseau lors de la modification du devis");
     }
     setSavingAmount(false);
+  };
+
+  const handleSubmitReview = async () => {
+    if (!recommendation) return;
+    setReviewSubmitting(true);
+    setReviewError(null);
+    try {
+      const res = await fetch(`/api/recommendations/${recommendation.id}/review`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating: reviewRating, answers: reviewAnswers }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setReviewError(data.error ?? "Avis invalide.");
+      } else {
+        setReviewRating(0);
+        setReviewAnswers(["", "", ""]);
+        await fetchData();
+      }
+    } catch {
+      setReviewError("Erreur réseau lors de l'envoi de l'avis.");
+    }
+    setReviewSubmitting(false);
   };
 
   if (loading) {

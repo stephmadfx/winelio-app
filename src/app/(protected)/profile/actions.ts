@@ -8,7 +8,6 @@ import { getAuditContext, getDocumentHash, logOnboardingEvent } from "@/lib/audi
 import { isAtLeastAge } from "@/lib/age";
 import { verifySiren } from "@/lib/siren";
 import { notifyNewReferral } from "@/lib/notify-new-referral";
-import { verifySiren } from "@/lib/siren";
 import { checkNafCode } from "@/lib/naf-rules";
 
 const POSTAL_CODE_RE = /^\d{5}$/;

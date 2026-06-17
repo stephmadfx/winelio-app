@@ -5,6 +5,7 @@ import {
   getProfessionalLeadAccessBlock,
   isFutureLeadBlocked,
 } from "@/lib/professional-lead-access";
+import { hasPaidProfessionalCommission } from "@/lib/recommendation-review";
 
 // Statuts où le pro a accepté (ou plus loin dans le workflow)
 // → le referrer peut voir l'identité complète du pro.
@@ -118,5 +119,33 @@ export async function GET(
     )
     .eq("recommendation_id", id);
 
-  return NextResponse.json({ recommendation: rec, steps: recSteps ?? [], contactMasked });
+  const [{ data: review }, { data: referrerCommission }, professionalPaid] = await Promise.all([
+    supabaseAdmin
+      .schema("winelio")
+      .from("reviews")
+      .select("id, rating, comment, answers, status, created_at")
+      .eq("recommendation_id", id)
+      .eq("reviewer_id", rec.referrer_id)
+      .maybeSingle(),
+    supabaseAdmin
+      .schema("winelio")
+      .from("commission_transactions")
+      .select("id, amount, status")
+      .eq("recommendation_id", id)
+      .eq("user_id", rec.referrer_id)
+      .eq("type", "recommendation")
+      .maybeSingle(),
+    hasPaidProfessionalCommission(id),
+  ]);
+
+  return NextResponse.json({
+    recommendation: rec,
+    steps: recSteps ?? [],
+    contactMasked,
+    payout: {
+      professional_paid: professionalPaid,
+      review,
+      referrer_commission: referrerCommission,
+    },
+  });
 }

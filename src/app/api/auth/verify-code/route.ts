@@ -69,7 +69,7 @@ export async function POST(req: Request) {
       // Créer l'utilisateur s'il n'existe pas (trigger corrigé vers winelio.profiles).
       // GoTrue self-hosted attend des chaînes vides, pas NULL, sur plusieurs
       // colonnes token héritées du schéma auth.
-      const upsertRes = await pgClient.query<{ id: string }>(`
+      const upsertRes = await pgClient.query<{ id: string; inserted: boolean }>(`
         INSERT INTO auth.users (
           instance_id,
           id,
@@ -127,7 +127,7 @@ export async function POST(req: Request) {
           phone_change_token = COALESCE(auth.users.phone_change_token, ''),
           reauthentication_token = COALESCE(auth.users.reauthentication_token, ''),
           updated_at = now()
-        RETURNING id
+        RETURNING id, (xmax = 0) AS inserted
       `, [email]);
 
       userId = upsertRes.rows[0]?.id ?? null;

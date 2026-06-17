@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
   Calculator,
   Home,
   Network,
-  Percent,
   PiggyBank,
+  RefreshCw,
   SlidersHorizontal,
   TrendingUp,
   Users,
@@ -34,13 +34,6 @@ const formatNumber = (value: number, maximumFractionDigits = 1) =>
 const clampNumber = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
-const projectPresets = [
-  { label: "Cuisine", value: 12000 },
-  { label: "Salle de bain", value: 8500 },
-  { label: "Isolation", value: 15000 },
-  { label: "Honoraires", value: 4000 },
-];
-
 const levelAccentClasses = [
   "bg-winelio-orange",
   "bg-winelio-amber",
@@ -49,65 +42,67 @@ const levelAccentClasses = [
   "bg-winelio-dark",
 ];
 
-type RangeControlProps = {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  suffix?: string;
-  helper?: string;
-  onChange: (value: number) => void;
-};
-
-function RangeControl({
-  label,
-  value,
-  min,
-  max,
-  step,
-  suffix,
-  helper,
-  onChange,
-}: RangeControlProps) {
-  return (
-    <label className="block rounded-xl border border-winelio-gray/10 bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/8">
-      <span className="flex items-center justify-between gap-3">
-        <span className="text-sm font-semibold text-winelio-dark dark:text-white">
-          {label}
-        </span>
-        <span className="min-w-[4.5rem] rounded-lg bg-winelio-light px-2.5 py-1 text-right text-sm font-black tabular-nums text-winelio-dark dark:bg-white/10 dark:text-white">
-          {formatNumber(value)}
-          {suffix ? ` ${suffix}` : ""}
-        </span>
-      </span>
-      <input
-        aria-label={label}
-        className="mt-3 h-2 w-full cursor-pointer accent-winelio-orange"
-        max={max}
-        min={min}
-        step={step}
-        type="range"
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-      />
-      {helper ? (
-        <span className="mt-1 block text-xs leading-5 text-winelio-gray dark:text-white/55">
-          {helper}
-        </span>
-      ) : null}
-    </label>
-  );
-}
+// Scénarios de simulation de réseau montrant le potentiel de recommandation
+const SCENARIOS = [
+  {
+    name: "Scénario Bâtisseur",
+    description: "Une partie de vos partenaires s'active efficacement et déploie le réseau sur 5 niveaux.",
+    directRecommendations: 2,
+    directActiveMembers: 4,
+    activeRelaysPerMember: 1.5,
+    networkDealsPerMember: 0.8,
+    activeNetworkLevels: 5,
+  },
+  {
+    name: "Scénario Duplication",
+    description: "Le potentiel de la recommandation en cascade : votre réseau grandit naturellement jusqu'à 5 niveaux grâce à des partenaires engagés.",
+    directRecommendations: 3,
+    directActiveMembers: 5,
+    activeRelaysPerMember: 1.6,
+    networkDealsPerMember: 1.0,
+    activeNetworkLevels: 5,
+  },
+  {
+    name: "Scénario Ambassadeur Actif",
+    description: "Vous recommandez très régulièrement et vos partenaires transmettent la méthode avec régularité sur 5 niveaux.",
+    directRecommendations: 4,
+    directActiveMembers: 6,
+    activeRelaysPerMember: 1.3,
+    networkDealsPerMember: 0.75,
+    activeNetworkLevels: 5,
+  },
+  {
+    name: "Scénario Club Winelio",
+    description: "Un réseau plus concentré mais très dynamique où l'entraide génère un maximum de deals et de commissions.",
+    directRecommendations: 1,
+    directActiveMembers: 3,
+    activeRelaysPerMember: 1.8,
+    networkDealsPerMember: 1.2,
+    activeNetworkLevels: 5,
+  }
+];
 
 export function AffiliateSimulator() {
   const [dealAmount, setDealAmount] = useState(5000);
   const commissionRate = 10;
-  const [directRecommendations, setDirectRecommendations] = useState(3);
-  const [activeNetworkLevels, setActiveNetworkLevels] = useState(5);
-  const [directActiveMembers, setDirectActiveMembers] = useState(4);
-  const [activeRelaysPerMember, setActiveRelaysPerMember] = useState(1.5);
-  const [networkDealsPerMember, setNetworkDealsPerMember] = useState(1);
+  
+  // Utiliser un index fixe par défaut pour le SSR, puis randomiser au montage
+  const [scenarioIndex, setScenarioIndex] = useState(0);
+
+  useEffect(() => {
+    const randomIndex = Math.floor(Math.random() * SCENARIOS.length);
+    setScenarioIndex(randomIndex);
+  }, []);
+
+  const scenario = SCENARIOS[scenarioIndex];
+
+  const {
+    directRecommendations,
+    activeNetworkLevels,
+    directActiveMembers,
+    activeRelaysPerMember,
+    networkDealsPerMember,
+  } = scenario;
 
   const results = useMemo(() => {
     const baseCommission = dealAmount * (commissionRate / 100);
@@ -124,7 +119,7 @@ export function AffiliateSimulator() {
       previousLevelMembers = members;
 
       const active = level <= activeNetworkLevels;
-      const monthlyDeals = active ? members * networkDealsPerMember : 0;
+      const monthlyDeals = active ? Math.round(members * networkDealsPerMember) : 0;
       const gain = monthlyDeals * baseCommission * (NETWORK_LEVEL_SHARE / 100);
 
       return {
@@ -166,8 +161,6 @@ export function AffiliateSimulator() {
     networkDealsPerMember,
   ]);
 
-
-
   return (
     <section
       id="simulateur"
@@ -184,11 +177,11 @@ export function AffiliateSimulator() {
                 Simulateur de gains
               </div>
               <h2 className="mt-3 text-xl font-bold text-winelio-dark sm:text-2xl dark:text-white">
-                Direct + reseau, avec niveaux a 3%
+                Direct + réseau, avec niveaux à 3%
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-winelio-gray dark:text-white/68">
-                Projection indicative basee sur le plan standard Winelio :
-                commission pro, part directe et reseau MLM jusqu'a 5 niveaux.
+                Projection indicative basée sur le plan standard Winelio :
+                commission pro, part directe et réseau MLM jusqu'à 5 niveaux.
               </p>
             </div>
             <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-winelio-dark text-white shadow-lg shadow-winelio-dark/15 dark:bg-white dark:text-winelio-dark">
@@ -196,11 +189,12 @@ export function AffiliateSimulator() {
             </div>
           </div>
 
+          {/* Deal Amount Slider Control */}
           <div className="mt-6">
             <label className="block rounded-xl border border-winelio-gray/10 bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/8">
               <span className="flex items-center gap-2 text-sm font-semibold text-winelio-dark dark:text-white">
                 <Home className="size-4 text-winelio-orange" />
-                Montant moyen du deal
+                Montant moyen du deal (travaux)
               </span>
               <div className="mt-3 flex items-center rounded-xl border border-winelio-gray/15 bg-white px-3 py-2 dark:border-white/10 dark:bg-black/20">
                 <input
@@ -233,90 +227,74 @@ export function AffiliateSimulator() {
             </label>
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {projectPresets.map((preset) => (
+          {/* Active Scenario Card */}
+          <div className="mt-5 rounded-2xl border border-winelio-orange/20 bg-gradient-to-br from-orange-50/50 to-amber-50/30 p-5 dark:from-winelio-orange/5 dark:to-winelio-amber/5">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-winelio-orange/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-winelio-orange dark:bg-winelio-orange/20">
+                <Network className="size-3" />
+                Simulation Réseau
+              </span>
               <button
-                key={preset.label}
-                className="rounded-xl border border-winelio-gray/10 bg-white px-3 py-2 text-sm font-semibold text-winelio-dark shadow-sm transition hover:-translate-y-0.5 hover:border-winelio-orange/35 hover:text-winelio-orange dark:border-white/10 dark:bg-white/8 dark:text-white"
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-3.5 py-1.5 text-xs font-extrabold text-winelio-dark shadow-sm border border-winelio-gray/15 hover:border-winelio-orange/30 hover:text-winelio-orange transition active:scale-95 dark:bg-white/10 dark:text-white dark:border-white/10 cursor-pointer animate-none"
                 type="button"
-                onClick={() => setDealAmount(preset.value)}
+                onClick={() => {
+                  setScenarioIndex((prev) => (prev + 1) % SCENARIOS.length);
+                }}
               >
-                <span>{preset.label}</span>
-                <span className="mt-0.5 block text-[11px] font-medium text-winelio-gray dark:text-white/55">
-                  {formatCurrency(preset.value)}
-                </span>
+                <RefreshCw className="size-3 text-winelio-orange hover:rotate-180 transition-transform duration-500" />
+                Autre scénario
               </button>
-            ))}
-          </div>
+            </div>
 
-          <div className="mt-5 grid gap-4 xl:grid-cols-2">
-            <RangeControl
-              helper={`${DIRECT_REFERRER_SHARE}% de la commission Winelio par recommandation directe.`}
-              label="Recos directes par mois"
-              max={20}
-              min={0}
-              step={1}
-              value={directRecommendations}
-              onChange={setDirectRecommendations}
-            />
-            <RangeControl
-              helper="Nombre de filleuls directs qui generent eux-memes des deals."
-              label="Filleuls directs actifs"
-              max={30}
-              min={0}
-              step={1}
-              value={directActiveMembers}
-              onChange={setDirectActiveMembers}
-            />
-            <RangeControl
-              helper="Moyenne de relais actifs creee par membre a chaque niveau."
-              label="Relais actifs par membre"
-              max={4}
-              min={0}
-              step={0.25}
-              value={activeRelaysPerMember}
-              onChange={setActiveRelaysPerMember}
-            />
-            <RangeControl
-              helper="Activite moyenne des membres de votre reseau."
-              label="Deals par membre reseau"
-              max={6}
-              min={0}
-              step={0.25}
-              value={networkDealsPerMember}
-              onChange={setNetworkDealsPerMember}
-            />
-          </div>
+            <h3 className="mt-4 text-base font-extrabold text-winelio-dark dark:text-white">
+              {scenario.name}
+            </h3>
+            <p className="mt-1.5 text-xs leading-relaxed text-winelio-gray dark:text-white/60">
+              {scenario.description}
+            </p>
 
-          <div className="mt-5 rounded-xl border border-winelio-gray/10 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/8">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
-                <Network className="size-4 text-emerald-600" />
-                <p className="text-sm font-semibold text-winelio-dark dark:text-white">
-                  Profondeur reseau simulee
-                </p>
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-winelio-gray/10 bg-white p-3 shadow-sm dark:border-white/5 dark:bg-black/10">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-winelio-gray dark:text-white/40">
+                  Vos recos
+                </span>
+                <span className="mt-1 block text-base font-black text-winelio-dark dark:text-white">
+                  {directRecommendations} / mois
+                </span>
               </div>
-              <div className="grid grid-cols-6 gap-1 rounded-xl bg-winelio-light p-1 dark:bg-black/20">
-                {[0, 1, 2, 3, 4, 5].map((level) => (
-                  <button
-                    key={level}
-                    className={`h-9 min-w-9 rounded-lg px-2 text-sm font-black transition ${
-                      activeNetworkLevels === level
-                        ? "bg-winelio-dark text-white shadow-sm dark:bg-white dark:text-winelio-dark"
-                        : "text-winelio-gray hover:bg-white dark:text-white/60 dark:hover:bg-white/10"
-                    }`}
-                    type="button"
-                    onClick={() => setActiveNetworkLevels(level)}
-                  >
-                    {level}
-                  </button>
-                ))}
+              <div className="rounded-xl border border-winelio-gray/10 bg-white p-3 shadow-sm dark:border-white/5 dark:bg-black/10">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-winelio-gray dark:text-white/40">
+                  Partenaires
+                </span>
+                <span className="mt-1 block text-base font-black text-winelio-dark dark:text-white">
+                  {directActiveMembers} direct(s)
+                </span>
+              </div>
+              <div className="rounded-xl border border-winelio-gray/10 bg-white p-3 shadow-sm dark:border-white/5 dark:bg-black/10">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-winelio-gray dark:text-white/40">
+                  Bouche-à-oreille
+                </span>
+                <span className="mt-1 block text-base font-black text-winelio-dark dark:text-white">
+                  x{activeRelaysPerMember} / membre
+                </span>
+              </div>
+              <div className="rounded-xl border border-winelio-gray/10 bg-white p-3 shadow-sm dark:border-white/5 dark:bg-black/10">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-winelio-gray dark:text-white/40">
+                  Deals par membre
+                </span>
+                <span className="mt-1 block text-base font-black text-winelio-dark dark:text-white">
+                  {networkDealsPerMember} / membre
+                </span>
+              </div>
+              <div className="rounded-xl border border-winelio-gray/10 bg-white p-3 shadow-sm dark:border-white/5 dark:bg-black/10">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-winelio-gray dark:text-white/40">
+                  Niveaux du réseau
+                </span>
+                <span className="mt-1 block text-base font-black text-winelio-dark dark:text-white">
+                  {activeNetworkLevels} niveaux
+                </span>
               </div>
             </div>
-            <p className="mt-3 text-xs leading-5 text-winelio-gray dark:text-white/55">
-              Le reseau est remunere a {NETWORK_LEVEL_SHARE}% par niveau actif,
-              de N1 a N5.
-            </p>
           </div>
         </div>
 
@@ -337,11 +315,21 @@ export function AffiliateSimulator() {
                 </p>
                 <ArrowUpRight className="mb-1 size-6 text-winelio-amber" />
               </div>
-              <p className="mt-3 text-sm leading-6 text-white/58">
-                {formatCurrency(dealAmount)} x {formatNumber(commissionRate)}%
-                = {formatCurrency(results.baseCommission)} de commission par
-                deal.
-              </p>
+              <div className="mt-4 space-y-2 border-t border-white/10 pt-4 text-xs text-white/70">
+                <p className="leading-relaxed">
+                  Sur un deal de <span className="font-bold text-white">{formatCurrency(dealAmount)}</span>, le professionnel verse <span className="font-bold text-winelio-amber">{formatCurrency(results.baseCommission)}</span> (10% de commission).
+                </p>
+                <div className="flex flex-col gap-1.5 pl-2 border-l-2 border-winelio-orange/50">
+                  <p>
+                    • <span className="font-bold text-white">Direct (60%) :</span> Vous touchez{" "}
+                    <span className="font-bold text-white">{formatCurrency(results.directPerDeal)}</span> sur vos recommandations directes.
+                  </p>
+                  <p>
+                    • <span className="font-bold text-white">Réseau (3%) :</span> Vous touchez{" "}
+                    <span className="font-bold text-white">{formatCurrency(results.baseCommission * 0.03)}</span> par deal réalisé dans votre réseau (niveaux 1 à 5).
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="rounded-xl bg-white px-4 py-3 text-winelio-dark">
@@ -361,13 +349,14 @@ export function AffiliateSimulator() {
             <div className="rounded-xl bg-white px-4 py-3 text-winelio-dark">
               <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-winelio-gray">
                 <Users className="size-3.5 text-emerald-600" />
-                Reseau
+                Réseau
               </p>
               <p className="mt-1 text-xl font-black">
                 {formatCurrency(results.networkMonthlyGain)}
               </p>
               <p className="mt-1 text-xs text-winelio-gray">
-                {formatNumber(results.networkMonthlyDeals)} deals x 3%
+                {formatNumber(results.networkMonthlyDeals)} deals x{" "}
+                {formatCurrency(results.baseCommission * 0.03)}
               </p>
             </div>
 
@@ -382,11 +371,9 @@ export function AffiliateSimulator() {
             </div>
           </div>
 
-
-
           <div className="mt-5 rounded-2xl border border-white/10 bg-white/8 p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <p className="text-sm font-bold">Detail reseau</p>
+              <p className="text-sm font-bold">Détail réseau</p>
               <span className="text-xs font-semibold text-white/55">
                 {NETWORK_LEVEL_SHARE}% par niveau
               </span>

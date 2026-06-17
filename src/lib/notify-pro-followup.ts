@@ -141,11 +141,13 @@ export async function notifyProFollowup(ctx: FollowupContext): Promise<string | 
   </td></tr></table>
 </body></html>`;
 
-  return await queueEmail({
+  const result = await queueEmail({
     to:      recipientEmail,
     toName:  proFirstName || undefined,
     subject,
     html,
     priority: cycleIndex === 3 ? 3 : 5,
   });
+
+  return result.id ?? null;
 }

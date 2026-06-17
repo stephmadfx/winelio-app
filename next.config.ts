@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import path from "path";
 import { fileURLToPath } from "url";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const repoRoot = path.dirname(fileURLToPath(import.meta.url));
 
@@ -50,16 +51,24 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  // Token Sentry pour upload des source maps (à mettre dans Coolify : SENTRY_AUTH_TOKEN)
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  // Pas de logs de build verbeux
-  silent: !process.env.CI,
-  // Désactivé localement (no DSN) ; activé en prod si DSN posé
-  disableLogger: true,
-  // Tunnel pour contourner les ad-blockers qui bloquent ingest.sentry.io
-  tunnelRoute: "/monitoring/sentry",
-  // N'upload pas les source maps si pas de token (build local non bloqué)
-  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
-});
+const isSentryEnabled = !!(
+  process.env.SENTRY_ORG ||
+  process.env.SENTRY_DSN ||
+  process.env.NEXT_PUBLIC_SENTRY_DSN
+);
+
+export default isSentryEnabled
+  ? withSentryConfig(nextConfig, {
+      // Token Sentry pour upload des source maps (à mettre dans Coolify : SENTRY_AUTH_TOKEN)
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      // Pas de logs de build verbeux
+      silent: !process.env.CI,
+      // Désactivé localement (no DSN) ; activé en prod si DSN posé
+      disableLogger: true,
+      // Tunnel pour contourner les ad-blockers qui bloquent ingest.sentry.io
+      tunnelRoute: "/monitoring/sentry",
+      // N'upload pas les source maps si pas de token (build local non bloqué)
+      sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+    })
+  : nextConfig;

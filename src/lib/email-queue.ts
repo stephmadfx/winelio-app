@@ -21,6 +21,7 @@ export interface QueueEmailParams {
 
 export interface QueueEmailResult {
   inserted: boolean;
+  id?: string | null;
 }
 
 /**
@@ -28,10 +29,10 @@ export interface QueueEmailResult {
  * L'envoi effectif est délégué au cron process-email-queue (max 600/h).
  * Ne pas utiliser pour les OTP (temps-réel) ni les emails avec pièce jointe PDF.
  *
- * @returns id de la ligne email_queue créée, ou null si échec d'insertion
+ * @returns QueueEmailResult contenant le statut et l'id créé
  */
 export async function queueEmail(params: QueueEmailParams): Promise<QueueEmailResult> {
-  const { error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .schema("winelio")
     .from("email_queue")
     .insert({
@@ -44,11 +45,13 @@ export async function queueEmail(params: QueueEmailParams): Promise<QueueEmailRe
       priority:     params.priority ?? 5,
       scheduled_at: params.scheduledAt?.toISOString() ?? new Date().toISOString(),
       dedupe_key:   params.dedupeKey ?? null,
-    });
+    })
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     if (params.dedupeKey && error.code === "23505") {
-      return { inserted: false };
+      return { inserted: false, id: null };
     }
 
     console.error("[email-queue] Erreur insertion:", error.message);
@@ -56,8 +59,8 @@ export async function queueEmail(params: QueueEmailParams): Promise<QueueEmailRe
       throw error;
     }
 
-    return { inserted: false };
+    return { inserted: false, id: null };
   }
 
-  return { inserted: true };
+  return { inserted: true, id: data?.id ?? null };
 }
