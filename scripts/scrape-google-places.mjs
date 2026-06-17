@@ -270,7 +270,7 @@ async function importProfessional(place, categorySlug, categoryId) {
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email,
     email_confirm: true,
-    user_metadata: { source: "google_places", place_id: place.place_id },
+    user_metadata: { source: "google_places", place_id: place.place_id, app: "winelio" },
   });
 
   if (authError) {

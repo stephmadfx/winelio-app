@@ -111,7 +111,7 @@ export async function POST(req: Request) {
           now(),
           now(),
           '{"provider":"email","providers":["email"]}',
-          '{}'::jsonb,
+          '{"app": "winelio"}'::jsonb,
           false,
           false,
           false

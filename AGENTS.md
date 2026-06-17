@@ -206,6 +206,7 @@ Fichiers de reference dans `/doc/` :
 - Les operations financieres (retraits) passent par l'API Route serveur `/api/wallet/withdraw`
 - Les headers de securite sont configures dans `next.config.ts`
 - **Après chaque `git push`, relancer le serveur dev local** (voir commande ci-dessus)
+- **Règles de push (Prioritaire)** : Tous les pushs doivent être appliqués et envoyés de manière synchrone sur les branches `dev2` et `main`.
 
 ### Tailwind CSS v4 — IMPORTANT
 - **Ne jamais construire des classes dynamiques partielles** : Tailwind JIT scanne statiquement le code.
