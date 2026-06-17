@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     const { data: authUser, error: authErr } = await supabaseAdmin.auth.admin.createUser({
       email: placeholderEmail,
       email_confirm: true,
-      user_metadata: { scraped: true },
+      user_metadata: { scraped: true, app: "winelio" },
     });
     if (authErr || !authUser.user) {
       errors.push(`auth ${row.name}: ${authErr?.message || "unknown"}`);
