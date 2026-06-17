@@ -111,7 +111,7 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
                         </td>
                         <td style="padding-left:12px;vertical-align:top;">
                           <p style="font-weight:700;color:#2D3436;font-size:14px;margin:0 0 4px;">Recommandation directe</p>
-                          <p style="color:#636E72;font-size:13px;line-height:1.5;margin:0;">Touchez <strong style="color:#FF6B35;">60% de la commission</strong> sur chaque mise en relation aboutie.</p>
+                          <p style="color:#636E72;font-size:13px;line-height:1.5;margin:0;">Touchez <strong style="color:#FF6B35;">60% de la commission d'intermédiation</strong> sur chaque mise en relation aboutie.</p>
                         </td>
                       </tr>
                     </table>
@@ -136,7 +136,7 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
                         </td>
                         <td style="padding-left:12px;vertical-align:top;">
                           <p style="font-weight:700;color:#2D3436;font-size:14px;margin:0 0 4px;">Votre réseau sur 5 niveaux</p>
-                          <p style="color:#636E72;font-size:13px;line-height:1.5;margin:0;">Invitez des membres et percevez une commission sur leurs recommandations validées.</p>
+                          <p style="color:#636E72;font-size:13px;line-height:1.5;margin:0;">Invitez des membres et percevez une commission d'intermédiation sur leurs recommandations validées.</p>
                         </td>
                       </tr>
                     </table>

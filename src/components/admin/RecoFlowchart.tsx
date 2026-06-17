@@ -516,8 +516,17 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
             {ann.has("commissions") && <Badge x={914} y={1008} />}
           </g>
 
-          {/* Étape 7 — Affaire terminée (clôture administrative, sans effet financier) */}
-          <RectNode id="etape-7" x={300} y={1056} w={400} h={42} fill="white" stroke="#2D3436"
+          {/* Email commission d'intermédiation */}
+          <g style={{ cursor: "pointer" }} onClick={() => click("email-commission", '📧 Email "Commission d\'intermédiation à régler" → Professionnel')}>
+            <rect x={170} y={1056} width={660} height={34} rx={8} fill="#F7931E" filter="url(#sh)" />
+            <text x={500} y={1070} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
+              📧 Email &quot;Commission d&apos;intermédiation à régler&quot; → Professionnel (J+0 · Relance J+2 · Alerte J+4)
+            </text>
+            {ann.has("email-commission") && <Badge x={824} y={1062} />}
+          </g>
+
+          {/* Étape 7 — Affaire terminée */}
+          <RectNode id="etape-7" x={300} y={1110} w={400} h={42} fill="white" stroke="#2D3436"
             label="Étape 7 — Affaire terminée"
             sublabel="Clôture administrative (sans effet financier)"
             onClick={click} hasBadge={ann.has("etape-7")} />

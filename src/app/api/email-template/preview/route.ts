@@ -108,12 +108,12 @@ const TEMPLATES: Record<string, () => string> = {
 
   "commission": () => wrap(`
     ${icon("💰")}
-    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Commission à régler</h1></td></tr>
+    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Commission d'intermédiation à régler</h1></td></tr>
     <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
-    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;">Suite à la recommandation de <strong style="color:#2D3436;">${REFERRER}</strong>, les travaux pour <strong style="color:#2D3436;">${CONTACT}</strong> sont terminés. Réglez votre commission Winelio.</p></td></tr>
-    ${infoBlock(`<p style="margin:0 0 8px;color:#2D3436;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Montant de la commission</p>
+    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;">Suite à la recommandation de <strong style="color:#2D3436;">${REFERRER}</strong>, les travaux pour <strong style="color:#2D3436;">${CONTACT}</strong> sont terminés. Réglez votre commission d'intermédiation Winelio.</p></td></tr>
+    ${infoBlock(`<p style="margin:0 0 8px;color:#2D3436;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Montant de la commission d'intermédiation</p>
     <p style="margin:0;color:#FF6B35;font-size:28px;font-weight:800;">180,00 €</p>`)}
-    ${cta(SITE, "Régler ma commission →")}
+    ${cta(SITE, "Régler ma commission d'intermédiation →")}
   `),
 
   "step-2": () => wrap(`
@@ -144,7 +144,7 @@ const TEMPLATES: Record<string, () => string> = {
     ${icon("📄")}
     <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Devis soumis</h1></td></tr>
     <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
-    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;"><strong style="color:#2D3436;">${PRO}</strong> a soumis un devis à <strong style="color:#2D3436;">${CONTACT}</strong>. Si le client l'accepte, votre commission sera calculée sur ce montant.</p></td></tr>
+    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;"><strong style="color:#2D3436;">${PRO}</strong> a soumis un devis à <strong style="color:#2D3436;">${CONTACT}</strong>. Si le client l'accepte, votre commission d'intermédiation sera calculée sur ce montant.</p></td></tr>
     ${cta(`${SITE}/recommendations/demo`, "Voir la recommandation →")}
   `),
 
@@ -152,8 +152,8 @@ const TEMPLATES: Record<string, () => string> = {
     ${icon("✅")}
     <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Travaux terminés — affaire conclue&nbsp;!</h1></td></tr>
     <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
-    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;"><strong style="color:#2D3436;">${PRO}</strong> a confirmé que les travaux sont terminés et que le paiement de <strong style="color:#2D3436;">${CONTACT}</strong> a été reçu.<br><br>Vos <strong style="color:#FF6B35;">commissions sont en cours de traitement</strong>.</p></td></tr>
-    ${infoBlock(`<p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Retrouvez le détail de vos commissions dans votre <strong>wallet Winelio</strong> dès leur validation.</p>`)}
+    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;"><strong style="color:#2D3436;">${PRO}</strong> a confirmé que les travaux sont terminés et que le paiement de <strong style="color:#2D3436;">${CONTACT}</strong> a été reçu.<br><br>Vos <strong style="color:#FF6B35;">commissions d'intermédiation sont en cours de traitement</strong>.</p></td></tr>
+    ${infoBlock(`<p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Retrouvez le détail de vos commissions d'intermédiation dans votre <strong>wallet Winelio</strong> dès leur validation.</p>`)}
     ${cta(`${SITE}/recommendations/demo`, "Voir la recommandation →")}
   `),
 
@@ -202,7 +202,7 @@ const TEMPLATES: Record<string, () => string> = {
     ${infoBlock(`<p style="margin:0 0 6px;color:#2D3436;font-size:13px;font-weight:600;">3 étapes pour démarrer :</p>
     <p style="margin:0 0 4px;color:#636E72;font-size:14px;line-height:1.6;">1. <strong>Complétez votre profil</strong> (photo, bio, ville)</p>
     <p style="margin:0 0 4px;color:#636E72;font-size:14px;line-height:1.6;">2. <strong>Recommandez un pro</strong> que vous connaissez à vos contacts</p>
-    <p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">3. <strong>Suivez vos commissions</strong> dans votre wallet</p>`)}
+    <p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">3. <strong>Suivez vos commissions d'intermédiation</strong> dans votre wallet</p>`)}
     ${cta(`${SITE}/dashboard`, "Découvrir mon dashboard →")}
   `),
 
@@ -212,7 +212,7 @@ const TEMPLATES: Record<string, () => string> = {
     <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
     <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;">Bonjour <strong style="color:#2D3436;">${REFERRER}</strong>,<br><br><strong style="color:#2D3436;">Sophie Martin</strong> vient de s'inscrire avec votre code parrain. Bienvenue dans votre réseau&nbsp;!</p></td></tr>
     ${infoBlock(`<p style="margin:0 0 8px;color:#2D3436;font-size:13px;font-weight:600;">Ce que ça change pour vous :</p>
-    <p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Vous toucherez <strong style="color:#FF6B35;">3&nbsp;%</strong> de commission sur chaque recommandation aboutie de Sophie (niveau 1 du MLM), et 3&nbsp;% supplémentaires sur les filleuls qu'elle parrainera à son tour.</p>`)}
+    <p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Vous toucherez <strong style="color:#FF6B35;">3&nbsp;%</strong> de commission d'intermédiation sur chaque recommandation aboutie de Sophie (niveau 1 du MLM), et 3&nbsp;% supplémentaires sur les filleuls qu'elle parrainera à son tour.</p>`)}
     ${cta(`${SITE}/network`, "Voir mon réseau →")}
   `),
 

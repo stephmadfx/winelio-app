@@ -115,12 +115,20 @@ export function SavePaymentMethodDialog({ open, onClose, onSaved }: Props) {
             tester l&apos;ensemble du parcours.
           </div>
         ) : (
-          <div className="rounded-xl bg-winelio-light/60 border border-winelio-orange/20 p-3 mb-4 text-xs text-winelio-dark leading-relaxed">
-            Pour accéder aux coordonnées du lead, enregistrez une carte bancaire.
-            <br />
-            <strong>0 € prélevé maintenant</strong> — la commission Winelio de 10 % sera
-            prélevée automatiquement au moment du paiement du client (étape 7).
-          </div>
+          <>
+            <div className="rounded-xl bg-winelio-light/60 border border-winelio-orange/20 p-3 mb-3 text-xs text-winelio-dark leading-relaxed">
+              Pour accéder aux coordonnées du lead, enregistrez une carte bancaire.
+              Cette étape sert uniquement à <strong>valider votre sérieux</strong> en
+              tant que professionnel — c&apos;est un gage de confiance pour nos
+              recommandeurs et leurs contacts.
+            </div>
+            <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 mb-4 text-xs text-emerald-900 leading-relaxed">
+              🔒 <strong>En aucun cas Winelio ne prélèvera automatiquement une somme
+              sur votre carte.</strong> 0 € aujourd&apos;hui, et aucun débit ne sera
+              jamais lancé sans votre accord : la commission d&apos;intermédiation se
+              règle plus tard, par vous-même, via un lien de paiement sécurisé.
+            </div>
+          </>
         )}
 
         {DEMO_MODE && demoProcessing && (

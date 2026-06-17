@@ -1,5 +1,5 @@
 export const REVIEW_QUESTIONS = [
-  "Le professionnel a-t-il respecté ses engagements, les délais et le budget annoncé ?",
-  "Comment évaluez-vous la qualité de la prestation et de la communication ?",
-  "Recommanderiez-vous ce professionnel à votre réseau ? Pourquoi ?",
+  "Comment s'est deroule le suivi avec le professionnel ?",
+  "Le resultat final correspond-il a ce qui avait ete annonce ?",
+  "Que souhaitez-vous retenir de cette recommandation ?",
 ] as const;

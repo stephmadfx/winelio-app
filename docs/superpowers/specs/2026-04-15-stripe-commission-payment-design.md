@@ -37,7 +37,7 @@ Session mise à jour : status='paid', paid_at=now()
 
 `commission_amount = deal_amount × (commission_rate / 100)`
 
-Le `commission_rate` est défini dans le `compensation_plan` associé à la recommandation (ou le plan par défaut). Ce montant total est ce que le professionnel paie — il est ensuite distribué au réseau MLM selon la répartition existante (60% référent, 3%×5 niveaux, 1% affiliation, 1% cashback Wins, 23% cagnotte Winelio).
+Le `commission_rate` est défini dans le `compensation_plan` associé à la recommandation (ou le plan par défaut). Ce montant total est ce que le professionnel paie — il est ensuite distribué intégralement au réseau MLM selon la répartition existante (60% référent, 3%×5 niveaux, 1% affiliation, 1% cashback Wins, 23% cagnotte Winelio).
 
 ## Changement clé dans la logique existante
 

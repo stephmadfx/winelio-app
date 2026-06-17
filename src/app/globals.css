@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "grapesjs/dist/css/grapes.min.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -298,57 +299,133 @@ input, textarea, select {
 }
 .dark input::placeholder,
 .dark textarea::placeholder { color: #475569; }
-/* ───────── Driver.js (visite guidée dashboard) — palette Winelio ───────── */
-.driver-popover {
-  border-radius: 16px;
-  box-shadow: 0 20px 50px rgba(45, 52, 54, 0.18);
-  font-family: inherit;
+
+.newsletter-blocks .gjs-blocks-c {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  min-height: 0;
 }
-.driver-popover-title {
-  color: #2D3436;
-  font-weight: 700;
-  font-size: 16px;
+
+.newsletter-blocks .gjs-block-category {
+  grid-column: 1 / -1;
+  border: 0;
+  background: transparent;
 }
-.driver-popover-description {
+
+.newsletter-blocks .gjs-title {
+  padding: 8px 4px;
   color: #636E72;
-  line-height: 1.55;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
-.driver-popover-progress-text {
+
+.newsletter-blocks .gjs-block {
+  width: auto;
+  min-height: 54px;
+  margin: 0;
+  padding: 10px 8px;
+  border: 1px solid color-mix(in oklab, var(--border) 92%, transparent);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--foreground);
+  box-shadow: none;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.newsletter-blocks .gjs-block:hover {
+  border-color: #FF6B35;
   color: #FF6B35;
-  font-weight: 600;
 }
-.driver-popover-next-btn,
-.driver-popover-done-btn {
-  background: linear-gradient(135deg, #FF6B35, #F7931E) !important;
-  border: none !important;
-  color: #fff !important;
-  text-shadow: none !important;
-  padding: 8px 14px !important;
-  border-radius: 10px !important;
-  font-weight: 600 !important;
-  font-size: 13px !important;
+
+.newsletter-blocks .gjs-block-label {
+  margin-top: 4px;
+  font-size: 11px;
 }
-.driver-popover-next-btn:hover,
-.driver-popover-done-btn:hover {
-  filter: brightness(1.05);
+
+.newsletter-studio {
+  color: #2D3436;
 }
-.driver-popover-prev-btn {
-  color: #636E72 !important;
-  background: transparent !important;
-  border: 1px solid #E5E7EB !important;
-  border-radius: 10px !important;
-  padding: 8px 14px !important;
-  font-weight: 500 !important;
-  font-size: 13px !important;
-  text-shadow: none !important;
+
+.newsletter-studio input,
+.newsletter-studio select,
+.newsletter-studio textarea {
+  min-height: 42px;
+  border-color: rgba(45, 52, 54, 0.1);
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(135deg, rgba(255, 107, 53, 0.18), rgba(45, 52, 54, 0.08)) border-box;
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 1px 2px rgba(45, 52, 54, 0.04);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
-.driver-popover-close-btn {
-  color: #9CA3AF !important;
+
+.newsletter-studio input:focus,
+.newsletter-studio select:focus,
+.newsletter-studio textarea:focus {
+  border-color: rgba(255, 107, 53, 0.65);
+  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.1), 0 8px 24px rgba(45, 52, 54, 0.08);
 }
-.driver-popover-close-btn:hover {
-  color: #2D3436 !important;
+
+.newsletter-side-panel {
+  border-color: rgba(255, 107, 53, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 40px rgba(45, 52, 54, 0.06);
+  backdrop-filter: blur(12px);
 }
-.driver-active-element {
-  outline: 3px solid rgba(255, 107, 53, 0.55) !important;
-  border-radius: 12px !important;
+
+.newsletter-canvas-panel {
+  background:
+    linear-gradient(90deg, rgba(45, 52, 54, 0.035) 1px, transparent 1px),
+    linear-gradient(rgba(45, 52, 54, 0.035) 1px, transparent 1px),
+    #fff;
+  background-size: 28px 28px;
+}
+
+.newsletter-editor .gjs-one-bg,
+.newsletter-editor .gjs-two-color {
+  background-color: #fff;
+  color: #2D3436;
+}
+
+.newsletter-editor .gjs-cv-canvas {
+  background: #f2f4f5;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.newsletter-editor .gjs-frame-wrapper {
+  border-radius: 18px;
+  box-shadow: 0 22px 60px rgba(45, 52, 54, 0.16);
+}
+
+.newsletter-editor .gjs-toolbar {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(45, 52, 54, 0.16);
+}
+
+.newsletter-blocks .gjs-blocks-c {
+  grid-template-columns: 1fr;
+}
+
+.newsletter-blocks .gjs-block {
+  min-height: 46px;
+  border-color: rgba(255, 107, 53, 0.12);
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(45, 52, 54, 0.045);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+}
+
+.newsletter-blocks .gjs-block:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(255, 107, 53, 0.12);
+}
+
+.dark .newsletter-studio {
+  color: #f8fafc;
 }

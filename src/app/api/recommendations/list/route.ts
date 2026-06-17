@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getProfessionalLeadAccessBlock } from "@/lib/professional-lead-access";
 
 /**
  * Liste les recommandations du user connecté, filtrées par rôle.
@@ -16,19 +17,10 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const tab = searchParams.get("tab") === "received" ? "received" : "sent";
   const column = tab === "sent" ? "referrer_id" : "professional_id";
-  const countOnly = searchParams.get("countOnly") === "true";
+  const leadAccessBlock =
+    tab === "received" ? await getProfessionalLeadAccessBlock(user.id) : null;
 
-  if (countOnly) {
-    const { count, error } = await supabaseAdmin
-      .schema("winelio")
-      .from("recommendations")
-      .select("id", { count: "exact", head: true })
-      .eq(column, user.id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ count: count ?? 0 });
-  }
-
-  const { data, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .schema("winelio")
     .from("recommendations")
     .select(
@@ -39,12 +31,22 @@ export async function GET(req: Request) {
          companies!owner_id(alias, city, category:categories(name))
        )`
     )
-    .eq(column, user.id)
-    .order("created_at", { ascending: false });
+    .eq(column, user.id);
+
+  if (leadAccessBlock) {
+    // Bloque uniquement les recos à l'étape 6+ (devis validé → facturation Stripe pro)
+    // créées APRÈS le blocage. Les recos plus jeunes restent visibles : elles n'ont
+    // pas pu déclencher de commission Stripe.
+    query = query.or(
+      `created_at.lte.${leadAccessBlock.blockedSince},status.in.(PENDING,ACCEPTED,CONTACT_MADE,MEETING_SCHEDULED,QUOTE_SUBMITTED)`
+    );
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ recommendations: data ?? [] });
+  return NextResponse.json({ recommendations: data ?? [], leadAccessBlock });
 }

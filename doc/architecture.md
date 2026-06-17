@@ -270,13 +270,74 @@
 | `/gestion-reseau/*` | `src/app/gestion-reseau/layout.tsx` | super_admin JWT + redirect dashboard |
 | Middleware global | `src/middleware.ts` | Rate-limit + redirection auth + staging password |
 
-## Pages publiques notables
+[CORE] Logique Métier
+├── src/lib/commission.ts [UTILITY]
+│       calculateCommissions() · createCommissions()
+│       Distribue : 60% referrer · 3%×5 niveaux · 23% plateforme · 1% Wins
+├── src/lib/assign-sponsor.ts [UTILITY]
+│       assignSponsorIfNeeded(userId, sponsorCode?)
+│       Fallback : round-robin is_founder=true via RPC
+├── src/lib/notify-new-referral.ts [UTILITY]
+│       Envoie email aux 5 niveaux de sponsors
+│       [UTILISE] nodemailer, supabaseAdmin
+├── src/lib/geocode.ts [UTILITY]
+│       API Adresse GouV (api-adresse.data.gouv.fr)
+│       Retourne lat/lon pour les entreprises
+├── src/lib/generate-alias.ts [UTILITY]
+│       Génère alias unique #XXXXXX (6 hex chars)
+│       [PERSISTE DANS] companies (vérif unicité)
+├── src/lib/feed-utils.ts [UTILITY]
+│       Types FeedEvent · formatUserName() · feedEventIcon()
+├── src/lib/company-display.ts [UTILITY]
+│       getCompanyDisplay() · affichage conditionnel user/admin
+├── src/lib/html-escape.ts [UTILITY]
+│       he(string) · protection XSS dans emails HTML
+├── src/lib/email-logo.ts [UTILITY]
+│       LOGO_IMG_HTML · <img> R2 inline pour emails
+└── src/lib/utils.ts [UTILITY]
+        cn() · clsx + tailwind-merge
 
-| Page | Description |
-|---|---|
-| `/` | Landing page (LandingHero + PromoVideo) |
-| `/claim/[recommendationId]` | Claim reco scrapée — pro inconnu s'inscrit et revendique sa fiche |
-| `/conditions-generales-utilisation` | CGU publiques |
-| `/recommendations/followup/[token]/postpone` | Report relance (tokenisé HMAC, pas de session) |
-| `/recommendations/followup/[token]/abandon` | Abandon relance (tokenisé HMAC) |
-| `/staging-login` | Auth basique dev2.winelio.app |
+[HOOK] Hooks React
+└── src/hooks/useKeyboardScroll.ts [HOOK]
+        Navigation clavier ↑↓ · [UTILISE] KeyboardScrollProvider
+```
+
+---
+
+## FLUX CRITIQUES
+
+### Flux Auth (OTP → Session)
+```
+User (email) → /auth/login
+  → POST /api/auth/send-code
+      → otp_codes UPSERT + SMTP email
+  → POST /api/auth/verify-code
+      → otp_codes vérif + delete
+      → generateLink() → session tokens
+      → cookies HttpOnly
+      → assignSponsorIfNeeded()
+          → profiles.sponsor_id = sponsor trouvé
+          → OU : RPC get_next_open_registration_sponsor()
+  → redirect /dashboard
+```
+
+### Flux Commission (étape 6)
+```
+POST /api/recommendations/complete-step {step: 6}
+  → recommendation_steps.completed_at = NOW()
+  → createCommissions() [IDEMPOTENT]
+      → calcule montant depuis recommendation_steps.data (step devis)
+      → commission_transactions INSERT (60% referrer + 5×3% niveaux)
+      → user_wallet_summaries UPDATE (recalcul available)
+```
+
+### Flux Retrait
+```
+POST /api/wallet/withdraw {amount, method, details}
+  → vérif session + solde disponible
+  → RPC process_withdrawal() [TRANSACTION ATOMIQUE]
+      → withdrawals INSERT (pending)
+      → user_wallet_summaries.available -= amount
+  → Admin : gestion-reseau/retraits → validateWithdrawal()
+      → withdrawals.status = approved/paid/rejected
+```

@@ -13,6 +13,14 @@ export interface QueueEmailParams {
   priority?: number;
   /** Délai avant envoi */
   scheduledAt?: Date;
+  /** Cle metier stable pour eviter les doublons lors des retries. */
+  dedupeKey?: string;
+  /** Remonte l'erreur aux appels critiques au lieu de seulement logger. */
+  throwOnError?: boolean;
+}
+
+export interface QueueEmailResult {
+  inserted: boolean;
 }
 
 /**
@@ -22,14 +30,8 @@ export interface QueueEmailParams {
  *
  * @returns id de la ligne email_queue créée, ou null si échec d'insertion
  */
-export async function queueEmail(params: QueueEmailParams): Promise<string | null> {
-  const disabledReason = getEmailDisabledReason();
-  if (disabledReason) {
-    console.warn(`[email-queue] Email non mis en file: ${disabledReason}`);
-    return null;
-  }
-
-  const { data, error } = await supabaseAdmin
+export async function queueEmail(params: QueueEmailParams): Promise<QueueEmailResult> {
+  const { error } = await supabaseAdmin
     .schema("winelio")
     .from("email_queue")
     .insert({
@@ -41,13 +43,21 @@ export async function queueEmail(params: QueueEmailParams): Promise<string | nul
       reply_to:     params.replyTo ?? null,
       priority:     params.priority ?? 5,
       scheduled_at: params.scheduledAt?.toISOString() ?? new Date().toISOString(),
-    })
-    .select("id")
-    .single();
+      dedupe_key:   params.dedupeKey ?? null,
+    });
 
   if (error) {
+    if (params.dedupeKey && error.code === "23505") {
+      return { inserted: false };
+    }
+
     console.error("[email-queue] Erreur insertion:", error.message);
-    return null;
+    if (params.throwOnError) {
+      throw error;
+    }
+
+    return { inserted: false };
   }
-  return data?.id ?? null;
+
+  return { inserted: true };
 }

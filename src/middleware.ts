@@ -42,6 +42,7 @@ export async function middleware(request: NextRequest) {
       path.startsWith("/api/bugs/imap-poll") ||
       path.startsWith("/api/bugs/imap-debug") ||
       path.startsWith("/api/email/process-queue") ||
+      path.startsWith("/api/stripe/webhook") ||
       path.startsWith("/api/stripe/cron-reminders") ||
       path.startsWith("/api/recommendations/process-followups") ||
       path.startsWith("/api/recommendations/cron-scraped-reminder") ||
@@ -53,6 +54,7 @@ export async function middleware(request: NextRequest) {
       path === "/staging-login" ||
       path === "/api/staging-auth" ||
       isCronApi ||
+      path.startsWith("/commission/success") ||
       path.startsWith("/_next/") ||
       path.startsWith("/favicon");
 
@@ -133,12 +135,8 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/bugs/imap-debug") &&
     !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
     !request.nextUrl.pathname.startsWith("/api/email-track/") &&
-    !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders") &&
-    !request.nextUrl.pathname.startsWith("/api/recommendations/process-followups") &&
-    !request.nextUrl.pathname.startsWith("/api/recommendations/cron-scraped-reminder") &&
-    !request.nextUrl.pathname.startsWith("/api/recommendations/followup-action") &&
-    !request.nextUrl.pathname.startsWith("/api/admin/auth-health") &&
-    !request.nextUrl.pathname.startsWith("/api/staging-auth")
+    !request.nextUrl.pathname.startsWith("/api/stripe/webhook") &&
+    !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders")
   ) {
     if (!user) {
       return NextResponse.json(
@@ -157,17 +155,12 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api/bugs/imap-debug") &&
     !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
     !request.nextUrl.pathname.startsWith("/api/email-track/") &&
+    !request.nextUrl.pathname.startsWith("/api/stripe/webhook") &&
     !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders") &&
-    !request.nextUrl.pathname.startsWith("/api/recommendations/process-followups") &&
-    !request.nextUrl.pathname.startsWith("/api/recommendations/cron-scraped-reminder") &&
-    !request.nextUrl.pathname.startsWith("/api/recommendations/followup-action") &&
-    !request.nextUrl.pathname.startsWith("/api/admin/auth-health") &&
-    !request.nextUrl.pathname.startsWith("/recommendations/followup/") &&
+    !request.nextUrl.pathname.startsWith("/commission/success") &&
     !request.nextUrl.pathname.startsWith("/claim") &&
     !request.nextUrl.pathname.startsWith("/conditions-generales-utilisation") &&
-    !request.nextUrl.pathname.startsWith("/monitoring/") &&
-    request.nextUrl.pathname !== "/staging-login" &&
-    request.nextUrl.pathname !== "/api/staging-auth" &&
+    !request.nextUrl.pathname.startsWith("/documents-legaux") &&
     request.nextUrl.pathname !== "/"
   ) {
     const url = request.nextUrl.clone();

@@ -69,7 +69,7 @@ export async function POST(req: Request) {
       // Créer l'utilisateur s'il n'existe pas (trigger corrigé vers winelio.profiles).
       // GoTrue self-hosted attend des chaînes vides, pas NULL, sur plusieurs
       // colonnes token héritées du schéma auth.
-      const upsertRes = await pgClient.query<{ id: string; inserted: boolean }>(`
+      const upsertRes = await pgClient.query<{ id: string }>(`
         INSERT INTO auth.users (
           instance_id,
           id,
@@ -111,7 +111,7 @@ export async function POST(req: Request) {
           now(),
           now(),
           '{"provider":"email","providers":["email"]}',
-          '{"app":"winelio"}'::jsonb,
+          '{}'::jsonb,
           false,
           false,
           false
@@ -127,7 +127,7 @@ export async function POST(req: Request) {
           phone_change_token = COALESCE(auth.users.phone_change_token, ''),
           reauthentication_token = COALESCE(auth.users.reauthentication_token, ''),
           updated_at = now()
-        RETURNING id, (xmax = 0) AS inserted
+        RETURNING id
       `, [email]);
 
       userId = upsertRes.rows[0]?.id ?? null;
@@ -169,8 +169,7 @@ export async function POST(req: Request) {
                'sub', id::text,
                'email', email,
                'email_verified', true,
-               'phone_verified', false,
-               'app', 'winelio'
+               'phone_verified', false
              )
          WHERE id = $2`,
         [tempPassword, userId]
@@ -200,22 +199,6 @@ export async function POST(req: Request) {
           identity_data = excluded.identity_data,
           updated_at = now()
       `, [userId]);
-
-      // Filet de sécurité : garantit qu'un profil existe pour ce user.
-      // Le trigger handle_new_user filtre sur raw_user_meta_data->>'app' = 'winelio'
-      // et ne se déclenche pas si le INSERT auth.users devient un ON CONFLICT UPDATE.
-      // Sans ce filet, des comptes ressuscitent sans profil et /profile boucle.
-      await pgClient.query(
-        `INSERT INTO winelio.profiles (id, email, sponsor_code)
-         VALUES ($1, $2, winelio.generate_unique_sponsor_code())
-         ON CONFLICT (id) DO NOTHING`,
-        [userId, email]
-      );
-      await pgClient.query(
-        `INSERT INTO winelio.user_wallet_summaries (user_id) VALUES ($1)
-         ON CONFLICT (user_id) DO NOTHING`,
-        [userId]
-      );
 
       await pgClient.query("COMMIT");
     } catch (pgErr) {

@@ -137,36 +137,21 @@ Restructuration : migration 20260427 supprime l'ancienne étape 7 "Paiement reç
 
 ### `recommendations`
 
-| Colonne | Type | Notes |
-|---|---|---|
-| id | uuid PK | |
-| referrer_id | uuid FK profiles(id) NOT NULL | |
-| professional_id | uuid FK profiles(id) NOT NULL | |
-| company_id | uuid FK companies(id) | |
-| contact_id | uuid FK contacts(id) | |
-| compensation_plan_id | uuid FK compensation_plans(id) | |
-| project_description | text | |
-| urgency_level | text DEFAULT 'normal' CHECK ('low','normal','high','urgent') | |
-| status | text CHECK (...) | voir enum ci-dessous |
-| amount | numeric | montant deal (saisi à étape 5) |
-| professional_response_at, contact_made_at, validation_date | timestamptz | |
-| rejection_reason | text | |
-| expires_at | timestamptz DEFAULT now()+7j | |
-| email_opened_at, email_clicked_at | timestamptz | tracking pixel/CTA [20260422_email_tracking.sql] |
-| scraped_reminder_sent_at | timestamptz | relance 12h scraped [20260426_scraped_reminder.sql] |
-| referrer_no_response_notified_at | timestamptz | alerte referrer 24h [20260426_referrer_no_response.sql] |
-| transferred_at, transfer_reason | timestamptz / text | [20260429_transfer_recommendation.sql] |
-| original_recommendation_id | uuid FK recommendations(id) | [20260429_transfer_recommendation.sql] |
-| expected_completion_at | timestamptz | date fin travaux saisie étape 5 [20260501_recommendation_followups.sql] |
-| abandoned_by_pro_at | timestamptz | fin cycle 3 relances sans réponse [20260501_recommendation_followups.sql] |
-| is_demo | boolean DEFAULT false | [015_demo_network.sql] |
-| created_at, updated_at | timestamptz | |
-
-**Statuts valides** : PENDING, ACCEPTED, CONTACT_MADE, MEETING_SCHEDULED, QUOTE_SUBMITTED, QUOTE_VALIDATED, PAYMENT_RECEIVED, COMPLETED, REJECTED, TRANSFERRED, EXPIRED, CANCELLED (noté dans le code).
-
-**Contrainte** : `referrer_id <> professional_id` [014_no_self_recommendation.sql] (exception : auto-reco "pour moi-même" contournée côté app).
-
-RLS : SELECT/UPDATE pour referrer ou professional_id = auth.uid(). INSERT pour referrer_id = auth.uid().
+| Colonne | Type | Contraintes | Description |
+|---------|------|-------------|-------------|
+| `id` | `uuid` | PK | |
+| `name` | `text` | NOT NULL | Nom du plan (ex: "Standard") |
+| `commission_rate` | `decimal` | | Taux global de commission (%) |
+| `referrer_percentage` | `decimal` | | Part du referrer (60%) |
+| `level_1_percentage` | `decimal` | | Part parrain N1 (3%) |
+| `level_2_percentage` | `decimal` | | Part parrain N2 (3%) |
+| `level_3_percentage` | `decimal` | | Part parrain N3 (3%) |
+| `level_4_percentage` | `decimal` | | Part parrain N4 (3%) |
+| `level_5_percentage` | `decimal` | | Part parrain N5 (3%) |
+| `affiliation_bonus_percentage` | `decimal` | | Bonus sponsor du professionnel (1%) |
+| `cashback_wins_percentage` | `decimal` | | Cashback Wins professionnel (1%) |
+| `platform_percentage` | `decimal` | | Part plateforme (23%) |
+| `created_at` | `timestamptz` | DEFAULT NOW() | |
 
 ---
 

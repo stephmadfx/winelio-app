@@ -124,11 +124,12 @@ export default function RecommendationDetailPage() {
   const [completing, setCompleting] = useState(false);
   const [refusing, setRefusing] = useState(false);
   const [quoteAmount, setQuoteAmount] = useState("");
-  const [expectedDelay, setExpectedDelay] = useState<string>("");
-  const [customExpectedDate, setCustomExpectedDate] = useState<string>("");
+  const [amountInput, setAmountInput] = useState("");
+  const [savingAmount, setSavingAmount] = useState(false);
+  const [amountError, setAmountError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
-  const [paymentCheckDone, setPaymentCheckDone] = useState(false);
+  const [contactMasked, setContactMasked] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [transferTarget, setTransferTarget] = useState("");
@@ -158,7 +159,8 @@ export default function RecommendationDetailPage() {
     setLoading(true);
     const res = await fetch(`/api/recommendations/${id}`);
     if (res.ok) {
-      const { recommendation: rec, steps: recSteps, payout: payoutInfo } = await res.json();
+      const { recommendation: rec, steps: recSteps, contactMasked: masked } = await res.json();
+      setContactMasked(!!masked);
       const normalize = (v: unknown) => (Array.isArray(v) ? v[0] ?? null : v);
       setRecommendation({
         ...rec,
@@ -166,6 +168,7 @@ export default function RecommendationDetailPage() {
         professional: normalize(rec.professional) as RecommendationDetail["professional"],
         referrer: normalize(rec.referrer) as RecommendationDetail["referrer"],
       });
+      setAmountInput(rec.amount != null ? String(rec.amount) : "");
       const mapped = (recSteps as StepRow[]).map((s) => ({
         ...s,
         step: Array.isArray(s.step) ? s.step[0] ?? null : s.step,
@@ -250,28 +253,26 @@ export default function RecommendationDetailPage() {
     setRefusing(false);
   };
 
-  const handleSubmitReview = async () => {
+  const handleUpdateAmount = async () => {
     if (!recommendation) return;
-    setReviewSubmitting(true);
-    setReviewError(null);
+    setSavingAmount(true);
+    setAmountError(null);
     try {
-      const res = await fetch(`/api/recommendations/${recommendation.id}/review`, {
-        method: "POST",
+      const res = await fetch(`/api/recommendations/${recommendation.id}/amount`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rating: reviewRating, answers: reviewAnswers }),
+        body: JSON.stringify({ amount: amountInput }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setReviewError(data.error ?? "Avis invalide.");
+        setAmountError(data.error ?? "Impossible de modifier le devis");
       } else {
-        setReviewRating(0);
-        setReviewAnswers(["", "", ""]);
         await fetchData();
       }
     } catch {
-      setReviewError("Erreur réseau lors de l'envoi de l'avis.");
+      setAmountError("Erreur réseau lors de la modification du devis");
     }
-    setReviewSubmitting(false);
+    setSavingAmount(false);
   };
 
   if (loading) {
@@ -345,10 +346,36 @@ export default function RecommendationDetailPage() {
             {/* Row 1 : nom + badge status. Nom en entier (pas tronqué), peut wrapper */}
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <h1 className="text-lg sm:text-2xl font-black text-white leading-tight break-words">
-                  {contactName}
-                </h1>
-                <p className={`text-xs ${cfg.heroText} opacity-70 mt-1`}>
+                <h1 className="text-xl font-black text-white truncate sm:text-2xl">{contactName}</h1>
+                {(recommendation.contact?.email || contactMasked) && (() => {
+                  const isPro = userId === recommendation.professional_id;
+                  // L'API masque déjà les coordonnées côté serveur (contactMasked) ;
+                  // le check hasPaymentMethod reste en filet de sécurité UI.
+                  const shouldMask = contactMasked || (isPro && hasPaymentMethod === false);
+                  if (shouldMask) {
+                    return (
+                      <div className="mt-1 inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-2.5 py-1 rounded-lg">
+                        <span className="text-sm select-none blur-sm">
+                          ••••••@••••.com · 06 •• •• •• ••
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentDialogOpen(true)}
+                          className="text-[10px] font-bold uppercase tracking-wider bg-white text-winelio-orange px-2 py-1 rounded-md hover:bg-winelio-light transition-colors"
+                        >
+                          💳 Accéder
+                        </button>
+                      </div>
+                    );
+                  }
+                  return (
+                    <p className={`mt-0.5 text-sm truncate ${cfg.heroText}`}>
+                      {recommendation.contact?.email}
+                      {recommendation.contact?.phone ? ` · ${recommendation.contact.phone}` : ""}
+                    </p>
+                  );
+                })()}
+                <p className={`mt-1 text-xs ${cfg.heroText} opacity-70`}>
                   {new Date(recommendation.created_at).toLocaleDateString("fr-FR", {
                     day: "numeric", month: "long", year: "numeric",
                   })}
@@ -502,13 +529,13 @@ export default function RecommendationDetailPage() {
           </div>
 
           {/* Amount card */}
-          {recommendation.amount != null && (
+          {(recommendation.amount != null || userId === recommendation.professional_id) && (
             <div className="mt-5 overflow-hidden rounded-2xl bg-gradient-to-r from-winelio-dark to-[#3d4042] p-5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-white/40">Montant du deal</p>
                   <p className="mt-1 text-3xl font-black text-white tabular-nums">
-                    {recommendation.amount.toLocaleString("fr-FR")}
+                    {(recommendation.amount ?? 0).toLocaleString("fr-FR")}
                     <span className="ml-1 text-xl font-semibold text-white/50">€</span>
                   </p>
                 </div>
@@ -518,12 +545,40 @@ export default function RecommendationDetailPage() {
                   </svg>
                 </div>
               </div>
-              {recommendation.amount > 0 && (
+              {userId === recommendation.professional_id && (
+                <div className="mt-4 rounded-xl bg-white/8 p-3">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/50">
+                    Devis final (€)
+                  </label>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <input
+                      type="number"
+                      value={amountInput}
+                      onChange={(e) => setAmountInput(e.target.value)}
+                      min="0"
+                      step="0.01"
+                      className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white px-3 py-2 text-sm font-semibold text-winelio-dark outline-none focus:border-winelio-orange"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleUpdateAmount}
+                      disabled={savingAmount || !amountInput}
+                      className="rounded-lg bg-winelio-orange px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-winelio-amber disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {savingAmount ? "Enregistrement..." : "Enregistrer"}
+                    </button>
+                  </div>
+                  {amountError && (
+                    <p className="mt-2 text-xs font-medium text-red-200">{amountError}</p>
+                  )}
+                </div>
+              )}
+              {(recommendation.amount ?? 0) > 0 && (
                 <div className="mt-3 flex items-center gap-2">
                   <div className="flex-1 h-1 rounded-full bg-white/10">
                     <div className="h-full w-3/5 rounded-full bg-gradient-to-r from-winelio-orange to-winelio-amber" />
                   </div>
-                  <span className="text-xs text-white/40 font-medium">~{Math.round(recommendation.amount * 0.06).toLocaleString("fr-FR")} € commissions estimées</span>
+                  <span className="text-xs text-white/40 font-medium">~{Math.round((recommendation.amount ?? 0) * 0.1).toLocaleString("fr-FR")} € commission Winelio estimée</span>
                 </div>
               )}
             </div>
@@ -971,6 +1026,8 @@ export default function RecommendationDetailPage() {
         onSaved={() => {
           setHasPaymentMethod(true);
           setPaymentDialogOpen(false);
+          // Recharger la reco : l'API renvoie désormais les vraies coordonnées.
+          fetchData();
         }}
       />
     </div>

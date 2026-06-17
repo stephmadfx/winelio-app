@@ -274,7 +274,6 @@ export function NetworkGraph({ userId, userName, userAvatar, rootLabel, maxLevel
       return next;
     });
   }, []);
-
   // ── Single fetch for entire tree ─────────────────
   const fetchTree = useCallback(async (): Promise<GraphNode[]> => {
     const res = await fetch(`/api/network/tree?userId=${userId}&maxLevel=${maxLevel}`);
@@ -315,9 +314,9 @@ export function NetworkGraph({ userId, userName, userAvatar, rootLabel, maxLevel
 
       // Initialize transform after render
       requestAnimationFrame(() => applyTransform());
+
     })();
   }, [userId, userName, userAvatar, fetchTree, applyTransform]);
-
 
 
   const toggleExpand = useCallback((nodeId: string) => {

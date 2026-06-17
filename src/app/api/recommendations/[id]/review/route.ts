@@ -6,6 +6,7 @@ import {
   unlockRecommendationCommissions,
   validateRecommendationReview,
 } from "@/lib/recommendation-review";
+import { notifyReferrerCommissionCredited } from "@/lib/notify-commission-credited";
 
 export async function POST(
   request: Request,
@@ -42,7 +43,7 @@ export async function POST(
 
   if (!(await hasPaidProfessionalCommission(rec.id))) {
     return NextResponse.json(
-      { error: "Avis en attente : le professionnel doit d'abord régler sa commission Winelio." },
+      { error: "Avis en attente : le professionnel doit d'abord régler sa commission d'intermédiation Winelio." },
       { status: 409 }
     );
   }
@@ -67,5 +68,9 @@ export async function POST(
   }
 
   const payout = await unlockRecommendationCommissions(rec.id);
+  await notifyReferrerCommissionCredited(rec.id).catch((err) =>
+    console.error("[recommendation-review] Échec notification cagnotte:", err)
+  );
+
   return NextResponse.json({ success: true, payout });
 }
