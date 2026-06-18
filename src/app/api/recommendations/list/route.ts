@@ -20,6 +20,20 @@ export async function GET(req: Request) {
   const leadAccessBlock =
     tab === "received" ? await getProfessionalLeadAccessBlock(user.id) : null;
 
+  const countOnly = searchParams.get("countOnly") === "true";
+  if (countOnly) {
+    const { count, error } = await supabaseAdmin
+      .schema("winelio")
+      .from("recommendations")
+      .select("*", { count: "exact", head: true })
+      .eq(column, user.id);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ count: count ?? 0 });
+  }
+
   let query = supabaseAdmin
     .schema("winelio")
     .from("recommendations")

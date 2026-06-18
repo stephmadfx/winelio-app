@@ -167,7 +167,7 @@ export default function RecommendationsPage() {
   // Counts always derived from the full unfiltered list
   const counts = useMemo(() => ({
     total:     allRecommendations.length,
-    pending:   allRecommendations.filter((r) => r.status === "PENDING").length,
+    pending:   allRecommendations.filter((r) => ["PENDING", "ACCEPTED", "CONTACT_MADE", "MEETING_SCHEDULED", "QUOTE_SUBMITTED"].includes(r.status)).length,
     completed: allRecommendations.filter((r) => r.status === "COMPLETED").length,
   }), [allRecommendations]);
 
@@ -176,6 +176,11 @@ export default function RecommendationsPage() {
     if (statusFilter === "all") return allRecommendations;
     if (statusFilter === "CANCELLED") {
       return allRecommendations.filter((r) => CANCELLED_STATUSES.includes(r.status));
+    }
+    if (statusFilter === "PENDING") {
+      return allRecommendations.filter((r) =>
+        ["PENDING", "ACCEPTED", "CONTACT_MADE", "MEETING_SCHEDULED", "QUOTE_SUBMITTED"].includes(r.status)
+      );
     }
     return allRecommendations.filter((r) => r.status === statusFilter);
   }, [allRecommendations, statusFilter]);
