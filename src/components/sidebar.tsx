@@ -48,17 +48,12 @@ const navItems = [
   },
 ];
 
-export function Sidebar({ userEmail, isSuperAdmin, demoBanner = false }: { userEmail: string; isSuperAdmin?: boolean; demoBanner?: boolean }) {
+export function Sidebar({ userEmail, isSuperAdmin }: { userEmail: string; isSuperAdmin?: boolean }) {
   const pathname = usePathname();
 
   return (
     <aside
-      className="fixed left-0 w-64 bg-[#eff1f2] border-r border-black/5 flex flex-col"
-      style={
-        demoBanner
-          ? { top: "var(--beta-banner-h, 0px)", height: "calc(100vh - var(--beta-banner-h, 0px))" }
-          : { top: 0, height: "100vh" }
-      }
+      className="fixed left-0 top-0 h-screen w-64 bg-[#eff1f2] border-r border-black/5 flex flex-col"
     >
 
       {/* Logo */}

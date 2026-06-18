@@ -59,7 +59,6 @@ export function MobileHeader({
   firstName,
   avatar,
   isSuperAdmin,
-  demoBanner = false,
   userId,
   allBugReports = [],
 }: {
@@ -67,7 +66,6 @@ export function MobileHeader({
   firstName?: string;
   avatar?: string | null;
   isSuperAdmin?: boolean;
-  demoBanner?: boolean;
   userId: string;
   allBugReports?: BugReport[];
 }) {
@@ -111,8 +109,7 @@ export function MobileHeader({
     <>
       {/* ── Header bar ── */}
       <header
-        className="fixed left-0 right-0 z-50 bg-winelio-light/80 backdrop-blur-md border-b border-black/5 shadow-sm lg:hidden"
-        style={{ top: demoBanner ? "var(--beta-banner-h, 0px)" : 0 }}
+        className="fixed left-0 right-0 top-0 z-50 bg-winelio-light/80 backdrop-blur-md border-b border-black/5 shadow-sm lg:hidden"
       >
         <div className="flex items-center px-4 h-16 gap-2">
           {/* Gauche : logo */}

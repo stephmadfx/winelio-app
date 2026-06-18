@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { BetaBanner } from "@/components/BetaBanner";
 import { DemoSeedBanner } from "@/components/DemoSeedBanner";
 import { LegalDocument } from "@/components/legal-document";
 import { MobileHeader } from "@/components/mobile-header";
@@ -63,14 +62,12 @@ export default async function LegalDocumentPage({ params }: PageProps) {
     <>
       {inApp && (
         <>
-          <BetaBanner />
           {DEMO_MODE && <DemoSeedBanner />}
           <MobileHeader
             userEmail={user?.email ?? ""}
             firstName={firstName}
             avatar={avatar}
             isSuperAdmin={isSuperAdmin}
-            demoBanner={DEMO_MODE}
             userId={user?.id ?? ""}
           />
           <MobileNav />

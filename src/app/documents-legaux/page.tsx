@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { AppBackground } from "@/components/AppBackground";
-import { BetaBanner } from "@/components/BetaBanner";
 import { DemoSeedBanner } from "@/components/DemoSeedBanner";
 import { MobileHeader } from "@/components/mobile-header";
 import { MobileNav } from "@/components/mobile-nav";
@@ -42,14 +41,12 @@ export default async function LegalDocumentsIndexPage() {
       <AppBackground />
       {inApp && (
         <>
-          <BetaBanner />
           {DEMO_MODE && <DemoSeedBanner />}
           <MobileHeader
             userEmail={user?.email ?? ""}
             firstName={firstName}
             avatar={avatar}
             isSuperAdmin={isSuperAdmin}
-            demoBanner={DEMO_MODE}
             userId={user?.id ?? ""}
           />
           <MobileNav />

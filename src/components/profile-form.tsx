@@ -115,9 +115,10 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
       // Première complétion du profil
       if (result.firstCompletion) {
         setShowWelcome(true);
-        if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
-          triggerDemoSeed();
-        }
+        // Desactive pour la production
+        // if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
+        //   triggerDemoSeed();
+        // }
       }
     } else {
       setAutoSaveStatus("error");

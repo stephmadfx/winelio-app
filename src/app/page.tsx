@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AppBackground } from "@/components/AppBackground";
 import { NetworkBackground } from "@/components/NetworkBackground";
-import { BetaBanner } from "@/components/BetaBanner";
 import { LandingHero } from "@/components/LandingHero";
 import { getUser } from "@/lib/supabase/get-user";
 import { WinelioLogoWithTagline } from "@/components/winelio-logo";
@@ -15,10 +14,9 @@ export default async function Home() {
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-winelio-light">
-      <BetaBanner />
       <AppBackground />
       <NetworkBackground />
-      <main className="relative z-10 flex min-h-dvh items-center justify-center px-4 pt-[calc(var(--beta-banner-h,28px)+12px)]">
+      <main className="relative z-10 flex min-h-dvh items-center justify-center px-4 pt-12">
         <div className="w-full max-w-sm text-center">
           <WinelioLogoWithTagline variant="color" height={64} />
 

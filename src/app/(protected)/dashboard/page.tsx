@@ -668,9 +668,6 @@ export default async function DashboardPage() {
                     </svg>
                     <h3 className="font-bold text-base">Mon Portefeuille</h3>
                   </div>
-                  <span className="inline-flex items-center gap-1 bg-white/25 backdrop-blur-sm px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide border border-white/30">
-                    🧪 Phase bêta
-                  </span>
                 </div>
                 <div>
                   <p className="text-white/70 text-sm">Solde disponible</p>
@@ -684,12 +681,7 @@ export default async function DashboardPage() {
                     {Number(totalWins).toLocaleString("fr-FR")} Wins
                   </div>
                 </div>
-                <div className="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/20">
-                  <p className="text-[11px] leading-snug text-white/95">
-                    <strong>⚠️ Montants fictifs</strong> — En aucun cas il ne s&apos;agit d&apos;argent réel.
-                    L&apos;application est en phase de test (bêta).
-                  </p>
-                </div>
+
                 <Link
                   href="/wallet/withdraw"
                   className="block w-full py-2.5 bg-white text-winelio-orange font-bold text-sm text-center rounded-xl hover:bg-winelio-light transition-colors shadow-sm"

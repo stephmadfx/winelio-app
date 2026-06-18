@@ -9,7 +9,6 @@ import { DesktopHeader } from "@/components/desktop-header";
 import { AppBackground } from "@/components/AppBackground";
 import { BugReportButton } from "@/components/bug-report-button";
 import { DemoSeedBanner } from "@/components/DemoSeedBanner";
-import { BetaBanner } from "@/components/BetaBanner";
 import { isAtLeastAge } from "@/lib/age";
 import { ProfessionalPromptModal } from "@/components/professional-prompt-modal";
 
@@ -107,10 +106,8 @@ export default async function ProtectedLayout({
     return (
       <div
         className="relative min-h-dvh bg-winelio-light dark:bg-slate-900 transition-colors duration-200"
-        style={DEMO_MODE ? { paddingTop: "var(--beta-banner-h, 0px)" } : undefined}
       >
         <AppBackground />
-        <BetaBanner />
         {DEMO_MODE && <DemoSeedBanner />}
 
         <div className="relative z-10 flex min-h-dvh items-center justify-center px-4 py-10">
@@ -148,20 +145,18 @@ export default async function ProtectedLayout({
   return (
     <div className="relative min-h-dvh bg-winelio-light dark:bg-slate-900 transition-colors duration-200">
       <AppBackground />
-      <BetaBanner />
       {DEMO_MODE && <DemoSeedBanner />}
 
       {showProfessionalPrompt && <ProfessionalPromptModal delayMs={professionalPromptDelayMs} />}
 
       {/* Desktop: sidebar + top bar avec greeting & avatar */}
       <div className="hidden lg:block">
-        <Sidebar userEmail={user.email ?? ""} isSuperAdmin={isSuperAdmin} demoBanner={DEMO_MODE} />
+        <Sidebar userEmail={user.email ?? ""} isSuperAdmin={isSuperAdmin} />
       </div>
       <DesktopHeader
         userEmail={user.email ?? ""}
         firstName={profile?.first_name ?? undefined}
         avatar={profile?.avatar ?? undefined}
-        demoBanner={DEMO_MODE}
       />
 
       {/* Mobile: header + bottom nav */}
@@ -170,7 +165,6 @@ export default async function ProtectedLayout({
         firstName={profile?.first_name ?? undefined}
         avatar={profile?.avatar ?? undefined}
         isSuperAdmin={isSuperAdmin}
-        demoBanner={DEMO_MODE}
         userId={user.id}
         allBugReports={allBugReports ?? []}
       />
@@ -179,9 +173,8 @@ export default async function ProtectedLayout({
       {/* Bug report button — mobile: dans le header / desktop: floating */}
       <BugReportButton userId={user.id} allBugReports={allBugReports ?? []} />
 
-      {/* Main content: adaptatif mobile/desktop. Le padding-top inclut la hauteur réelle du bandeau démo (var --beta-banner-h, 0 si absent) + la hauteur du header (4rem mobile et desktop). Sur desktop on ajoute 1.5rem pour aérer le contenu sous le header. */}
       <main
-        className="relative z-10 pb-24 px-4 lg:pb-8 lg:ml-64 lg:px-8 pt-[calc(var(--beta-banner-h,0px)+4rem)] lg:pt-[calc(var(--beta-banner-h,0px)+4rem+1.5rem)]"
+        className="relative z-10 pb-24 px-4 lg:pb-8 lg:ml-64 lg:px-8 pt-16 lg:pt-[5.5rem]"
       >
         {children}
       </main>

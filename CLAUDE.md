@@ -28,7 +28,7 @@ Winelio (nom de marque) / Winelio (nom technique du repo) est une plateforme de 
 src/
 ├── app/
 │   ├── (protected)/                  # Routes authentifiées (sidebar + nav mobile)
-│   │   ├── layout.tsx                # Sidebar + DemoBanner + BetaBanner + AppBackground
+│   │   ├── layout.tsx                # Sidebar + DemoSeedBanner + AppBackground
 │   │   ├── dashboard/                # Tableau de bord
 │   │   ├── profile/                  # Profil utilisateur (avatar, infos perso)
 │   │   ├── companies/                # Gestion entreprises (liste + /new)
@@ -93,7 +93,6 @@ src/
 │   ├── network-feed.tsx              # Feed d'événements réseau
 │   ├── step-timeline.tsx             # Timeline workflow 7 étapes
 │   ├── PromoVideo.tsx                # Player vidéo landing
-│   ├── BetaBanner.tsx                # Bandeau bêta
 │   ├── DemoSeedBanner.tsx            # Bandeau mode démo
 │   ├── referral-buttons.tsx          # Copier / Inviter / Partager (QR + email)
 │   └── [utils composants app : sidebar, mobile-nav, mobile-header, wallet-card, ...]

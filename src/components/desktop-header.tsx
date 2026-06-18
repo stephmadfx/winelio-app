@@ -8,12 +8,10 @@ export function DesktopHeader({
   userEmail,
   firstName,
   avatar,
-  demoBanner = false,
 }: {
   userEmail: string;
   firstName?: string;
   avatar?: string | null;
-  demoBanner?: boolean;
 }) {
   const displayName = firstName?.trim() || "Mon profil";
 
@@ -26,8 +24,7 @@ export function DesktopHeader({
 
   return (
     <header
-      className="hidden lg:flex fixed left-64 right-0 z-30 items-center justify-end gap-4 px-8 h-16 bg-winelio-light/80 backdrop-blur-md border-b border-black/5"
-      style={{ top: demoBanner ? "var(--beta-banner-h, 0px)" : 0 }}
+      className="hidden lg:flex fixed left-64 right-0 top-0 z-30 items-center justify-end gap-4 px-8 h-16 bg-winelio-light/80 backdrop-blur-md border-b border-black/5"
     >
       <Link
         href="/profile"
