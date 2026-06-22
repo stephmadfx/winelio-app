@@ -59,6 +59,14 @@ export default async function WalletPage() {
     .order("created_at", { ascending: false })
     .limit(5);
 
+  // Fetch active compensation plan
+  const { data: activePlan } = await supabase
+    .from("compensation_plans")
+    .select("*")
+    .eq("is_default", true)
+    .eq("is_active", true)
+    .single();
+
   // Fetch recent withdrawals
   const { data: withdrawals } = await supabase
     .from("withdrawals")
@@ -147,7 +155,7 @@ export default async function WalletPage() {
         />
       </div>
 
-      <AffiliateSimulator />
+      <AffiliateSimulator plan={activePlan} />
 
       {/* Recent Transactions */}
       <Card className="!rounded-2xl !py-0 overflow-hidden">

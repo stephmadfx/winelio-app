@@ -1,412 +1,477 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import {
-  ArrowUpRight,
-  Calculator,
-  Home,
-  Network,
-  PiggyBank,
-  RefreshCw,
-  SlidersHorizontal,
-  TrendingUp,
-  Users,
-} from "lucide-react";
+import { useState, useMemo } from "react";
+import { User, Network, Trophy, TrendingUp } from "lucide-react";
 import { AnimatedCounter } from "@/components/animated-counter";
 
-const DIRECT_REFERRER_SHARE = 60;
-const NETWORK_LEVEL_SHARE = 3;
-const PLATFORM_SHARE = 23;
-const AFFILIATION_SHARE = 1;
-const CASHBACK_SHARE = 1;
-const MAX_NETWORK_LEVELS = 5;
+const F_FACTOR = 0.704; // Factor of downline deal activity/success to match illustration
 
-const formatCurrency = (value: number, maximumFractionDigits = 0) =>
-  new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits,
-  }).format(value);
+interface AffiliateSimulatorProps {
+  plan?: {
+    commission_rate?: string | number | null;
+    referrer_percentage?: string | number | null;
+    level_1_percentage?: string | number | null;
+    level_2_percentage?: string | number | null;
+    level_3_percentage?: string | number | null;
+    level_4_percentage?: string | number | null;
+    level_5_percentage?: string | number | null;
+    high_amount_threshold?: string | number | null;
+    high_amount_commission_rate?: string | number | null;
+  } | null;
+}
 
-const formatNumber = (value: number, maximumFractionDigits = 1) =>
-  new Intl.NumberFormat("fr-FR", { maximumFractionDigits }).format(value);
-
-const clampNumber = (value: number, min: number, max: number) =>
-  Math.min(Math.max(value, min), max);
-
-const levelAccentClasses = [
-  "bg-winelio-orange",
-  "bg-winelio-amber",
-  "bg-emerald-500",
-  "bg-sky-500",
-  "bg-winelio-dark",
-];
-
-// Scénarios de simulation de réseau montrant le potentiel de recommandation
-const SCENARIOS = [
-  {
-    name: "Scénario Bâtisseur",
-    description: "Une partie de vos partenaires s'active efficacement et déploie le réseau sur 5 niveaux.",
-    directRecommendations: 2,
-    directActiveMembers: 4,
-    activeRelaysPerMember: 1.5,
-    networkDealsPerMember: 0.8,
-    activeNetworkLevels: 5,
-  },
-  {
-    name: "Scénario Duplication",
-    description: "Le potentiel de la recommandation en cascade : votre réseau grandit naturellement jusqu'à 5 niveaux grâce à des partenaires engagés.",
-    directRecommendations: 3,
-    directActiveMembers: 5,
-    activeRelaysPerMember: 1.6,
-    networkDealsPerMember: 1.0,
-    activeNetworkLevels: 5,
-  },
-  {
-    name: "Scénario Ambassadeur Actif",
-    description: "Vous recommandez très régulièrement et vos partenaires transmettent la méthode avec régularité sur 5 niveaux.",
-    directRecommendations: 4,
-    directActiveMembers: 6,
-    activeRelaysPerMember: 1.3,
-    networkDealsPerMember: 0.75,
-    activeNetworkLevels: 5,
-  },
-  {
-    name: "Scénario Club Winelio",
-    description: "Un réseau plus concentré mais très dynamique où l'entraide génère un maximum de deals et de commissions.",
-    directRecommendations: 1,
-    directActiveMembers: 3,
-    activeRelaysPerMember: 1.8,
-    networkDealsPerMember: 1.2,
-    activeNetworkLevels: 5,
-  }
-];
-
-export function AffiliateSimulator() {
-  const [dealAmount, setDealAmount] = useState(5000);
-  const commissionRate = 10;
+export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
+  // State for Personnel section
+  const [dealAmount, setDealAmount] = useState(30000);
   
-  // Utiliser un index fixe par défaut pour le SSR, puis randomiser au montage
-  const [scenarioIndex, setScenarioIndex] = useState(0);
+  // State for Réseau section
+  const [networkEnabled, setNetworkEnabled] = useState(true);
+  const [avgDealAmount, setAvgDealAmount] = useState(30000);
+  const [level1, setLevel1] = useState(35);
+  const [level2, setLevel2] = useState(20);
+  const [level3, setLevel3] = useState(10);
+  const [level4, setLevel4] = useState(5);
+  const [level5, setLevel5] = useState(3);
+  const [pareto, setPareto] = useState(20); // Pareto active percentage
 
-  useEffect(() => {
-    const randomIndex = Math.floor(Math.random() * SCENARIOS.length);
-    setScenarioIndex(randomIndex);
-  }, []);
+  // Resolve plan numbers with robust fallbacks
+  const getPlanNumber = (val: string | number | null | undefined, fallback: number): number => {
+    if (val === null || val === undefined) return fallback;
+    const num = Number(val);
+    return Number.isFinite(num) ? num : fallback;
+  };
 
-  const scenario = SCENARIOS[scenarioIndex];
+  const planBaseRate = getPlanNumber(plan?.commission_rate, 10);
+  const planReferrerPct = getPlanNumber(plan?.referrer_percentage, 60);
+  const planL1Pct = getPlanNumber(plan?.level_1_percentage, 3);
+  const planL2Pct = getPlanNumber(plan?.level_2_percentage, 3);
+  const planL3Pct = getPlanNumber(plan?.level_3_percentage, 3);
+  const planL4Pct = getPlanNumber(plan?.level_4_percentage, 3);
+  const planL5Pct = getPlanNumber(plan?.level_5_percentage, 3);
 
-  const {
-    directRecommendations,
-    activeNetworkLevels,
-    directActiveMembers,
-    activeRelaysPerMember,
-    networkDealsPerMember,
-  } = scenario;
+  const highAmountThreshold = plan?.high_amount_threshold ? Number(plan.high_amount_threshold) : 25000;
+  const highAmountCommissionRate = plan?.high_amount_commission_rate !== undefined && plan?.high_amount_commission_rate !== null 
+    ? Number(plan.high_amount_commission_rate) 
+    : null;
 
+  // Calculations
   const results = useMemo(() => {
-    const baseCommission = dealAmount * (commissionRate / 100);
-    const directPerDeal = baseCommission * (DIRECT_REFERRER_SHARE / 100);
-    const directMonthlyGain = directPerDeal * directRecommendations;
+    // 1. Resolve commission rate for personal dealAmount
+    let personalCommRate = planBaseRate;
+    if (highAmountCommissionRate !== null && dealAmount > highAmountThreshold) {
+      personalCommRate = highAmountCommissionRate;
+    }
+    const personalBaseCommission = dealAmount * (personalCommRate / 100);
+    const personalGain = personalBaseCommission * (planReferrerPct / 100);
 
-    let previousLevelMembers = directActiveMembers;
-    const networkLevels = Array.from({ length: MAX_NETWORK_LEVELS }, (_, index) => {
-      const level = index + 1;
-      const members =
-        level === 1
-          ? directActiveMembers
-          : Math.round(previousLevelMembers * activeRelaysPerMember);
-      previousLevelMembers = members;
+    // 2. Resolve commission rate for average network deal amount
+    let networkCommRate = planBaseRate;
+    if (highAmountCommissionRate !== null && avgDealAmount > highAmountThreshold) {
+      networkCommRate = highAmountCommissionRate;
+    }
 
-      const active = level <= activeNetworkLevels;
-      const monthlyDeals = active ? Math.round(members * networkDealsPerMember) : 0;
-      const gain = monthlyDeals * baseCommission * (NETWORK_LEVEL_SHARE / 100);
+    let networkGain = 0;
+    let actL1 = 0, actL2 = 0, actL3 = 0, actL4 = 0, actL5 = 0;
 
-      return {
-        active,
-        gain,
-        level,
-        members: active ? members : 0,
-        monthlyDeals,
-      };
-    });
+    if (networkEnabled) {
+      const baseCommNetwork = avgDealAmount * (networkCommRate / 100);
+      const paretoFactor = pareto / 100;
 
-    const networkMonthlyGain = networkLevels.reduce(
-      (sum, level) => sum + level.gain,
-      0
-    );
-    const networkMonthlyDeals = networkLevels.reduce(
-      (sum, level) => sum + level.monthlyDeals,
-      0
-    );
-    const monthlyGain = directMonthlyGain + networkMonthlyGain;
-    const yearlyGain = monthlyGain * 12;
+      // Active members calculation per level
+      // Niveau 1 active members
+      actL1 = level1 * paretoFactor;
+      // Niveau 2 active members (recursive sponsored by Level 1 active)
+      actL2 = actL1 * level2 * paretoFactor * F_FACTOR;
+      // Niveau 3 active members
+      actL3 = actL2 * level3 * paretoFactor * F_FACTOR;
+      // Niveau 4 active members
+      actL4 = actL3 * level4 * paretoFactor * F_FACTOR;
+      // Niveau 5 active members
+      actL5 = actL4 * level5 * paretoFactor * F_FACTOR;
+
+      // Round active members to 1 decimal place as in math explanation
+      const rL1 = Math.round(actL1 * 10) / 10;
+      const rL2 = Math.round(actL2 * 10) / 10;
+      const rL3 = Math.round(actL3 * 10) / 10;
+      const rL4 = Math.round(actL4 * 10) / 10;
+      const rL5 = Math.round(actL5 * 10) / 10;
+
+      // Calculate network gain per level based on the plan percentages
+      const gainL1 = rL1 * baseCommNetwork * (planL1Pct / 100);
+      const gainL2 = rL2 * baseCommNetwork * (planL2Pct / 100);
+      const gainL3 = rL3 * baseCommNetwork * (planL3Pct / 100);
+      const gainL4 = rL4 * baseCommNetwork * (planL4Pct / 100);
+      const gainL5 = rL5 * baseCommNetwork * (planL5Pct / 100);
+
+      networkGain = gainL1 + gainL2 + gainL3 + gainL4 + gainL5;
+    }
+
+    const totalMonthly = personalGain + networkGain;
 
     return {
-      baseCommission,
-      directMonthlyGain,
-      directPerDeal,
-      monthlyGain,
-      networkLevels,
-      networkMonthlyDeals,
-      networkMonthlyGain,
-      yearlyGain,
+      personalGain,
+      networkGain,
+      totalMonthly,
     };
   }, [
-    activeNetworkLevels,
-    activeRelaysPerMember,
     dealAmount,
-    directActiveMembers,
-    directRecommendations,
-    networkDealsPerMember,
+    networkEnabled,
+    avgDealAmount,
+    level1,
+    level2,
+    level3,
+    level4,
+    level5,
+    pareto,
+    planBaseRate,
+    planReferrerPct,
+    planL1Pct,
+    planL2Pct,
+    planL3Pct,
+    planL4Pct,
+    planL5Pct,
+    highAmountThreshold,
+    highAmountCommissionRate
   ]);
 
-  return (
-    <section
-      id="simulateur"
-      className="scroll-mt-24 overflow-hidden rounded-2xl border border-winelio-gray/10 bg-white shadow-[0_24px_70px_-46px_rgba(45,52,54,0.45)] dark:border-white/10 dark:bg-card"
-    >
-      <div className="h-1 w-full bg-gradient-to-r from-winelio-orange via-winelio-amber to-emerald-500" />
+  // Utility to generate dynamic slider track gradient background
+  const getSliderBackground = (value: number, max: number) => {
+    const pct = (value / max) * 100;
+    return `linear-gradient(to right, #FF6B35 0%, #F7931E ${pct}%, #E2E8F0 ${pct}%, #E2E8F0 100%)`;
+  };
 
-      <div className="grid gap-0 lg:grid-cols-[minmax(0,1.08fr)_minmax(23rem,0.92fr)]">
-        <div className="bg-[#fbfcfc] p-4 sm:p-6 lg:p-7 dark:bg-white/5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-winelio-orange/20 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-winelio-orange shadow-sm dark:bg-white/10">
-                <Calculator className="size-3.5" />
-                Simulateur de gains
-              </div>
-              <h2 className="mt-3 text-xl font-bold text-winelio-dark sm:text-2xl dark:text-white">
-                Direct + réseau, avec niveaux à 3%
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-winelio-gray dark:text-white/68">
-                Projection indicative basée sur le plan standard Winelio :
-                commission pro, part directe et réseau MLM jusqu'à 5 niveaux.
-              </p>
+  return (
+    <div className="w-full max-w-4xl mx-auto my-8 font-sans">
+      <style dangerouslySetInnerHTML={{ __html: `
+        .winelio-range-input {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 100%;
+          height: 8px;
+          border-radius: 9999px;
+          outline: none;
+          transition: background 0.15s ease-in-out;
+        }
+        .winelio-range-input::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: #ffffff;
+          border: 4px solid #FF6B35;
+          cursor: pointer;
+          box-shadow: 0 4px 10px rgba(255, 107, 53, 0.3);
+          transition: transform 0.1s ease;
+        }
+        .winelio-range-input::-webkit-slider-thumb:hover {
+          transform: scale(1.15);
+        }
+        .winelio-range-input::-moz-range-thumb {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: #ffffff;
+          border: 4px solid #FF6B35;
+          cursor: pointer;
+          box-shadow: 0 4px 10px rgba(255, 107, 53, 0.3);
+          transition: transform 0.1s ease;
+        }
+        .winelio-range-input::-moz-range-thumb:hover {
+          transform: scale(1.15);
+        }
+      `}} />
+
+      {/* Main Title */}
+      <div className="text-center mb-8">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-winelio-dark dark:text-white tracking-tight">
+          Simulateur de gains
+        </h1>
+        <div className="h-1 w-12 mx-auto mt-3 rounded-full bg-gradient-to-r from-winelio-orange to-winelio-amber" />
+      </div>
+
+      <div className="flex flex-col gap-6">
+        {/* ================= SECTION PERSONNEL ================= */}
+        <div className="bg-white dark:bg-card border border-winelio-gray/10 dark:border-white/10 rounded-3xl p-6 shadow-[0_20px_50px_-24px_rgba(45,52,54,0.08)]">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-2xl bg-orange-50 dark:bg-winelio-orange/10 flex items-center justify-center text-winelio-orange">
+              <User className="w-5 h-5" />
             </div>
-            <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-winelio-dark text-white shadow-lg shadow-winelio-dark/15 dark:bg-white dark:text-winelio-dark">
-              <SlidersHorizontal className="size-5" />
-            </div>
+            <h2 className="text-lg font-bold text-winelio-dark dark:text-white">
+              Personnel
+            </h2>
           </div>
 
-          {/* Deal Amount Slider Control */}
-          <div className="mt-6">
-            <label className="block rounded-xl border border-winelio-gray/10 bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/8">
-              <span className="flex items-center gap-2 text-sm font-semibold text-winelio-dark dark:text-white">
-                <Home className="size-4 text-winelio-orange" />
-                Montant moyen du deal (travaux)
-              </span>
-              <div className="mt-3 flex items-center rounded-xl border border-winelio-gray/15 bg-white px-3 py-2 dark:border-white/10 dark:bg-black/20">
-                <input
-                  className="min-w-0 flex-1 bg-transparent text-lg font-bold text-winelio-dark outline-none dark:text-white"
-                  inputMode="numeric"
-                  max={500000}
-                  min={0}
-                  type="number"
-                  value={dealAmount}
-                  onChange={(event) =>
-                    setDealAmount(
-                      clampNumber(Number(event.target.value) || 0, 0, 500000)
-                    )
-                  }
-                />
-                <span className="text-sm font-semibold text-winelio-gray dark:text-white/60">
-                  EUR
+          <div className="space-y-6">
+            <div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+                <span className="text-sm font-semibold text-winelio-gray dark:text-white/70">
+                  Montant du deal
+                </span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={dealAmount}
+                    min={0}
+                    max={1000000}
+                    onChange={(e) => setDealAmount(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-24 text-right px-3 py-1.5 font-bold border border-winelio-gray/15 dark:border-white/10 rounded-xl bg-white dark:bg-black/20 text-winelio-dark dark:text-white outline-none focus:border-winelio-orange transition"
+                  />
+                  <span className="text-sm font-bold text-winelio-dark dark:text-white">€</span>
+                </div>
+              </div>
+
+              <input
+                type="range"
+                min={0}
+                max={30000}
+                step={500}
+                value={Math.min(dealAmount, 30000)}
+                onChange={(e) => setDealAmount(parseInt(e.target.value))}
+                className="winelio-range-input cursor-pointer"
+                style={{
+                  background: getSliderBackground(Math.min(dealAmount, 30000), 30000)
+                }}
+              />
+
+              {/* Slider Ticks */}
+              <div className="flex justify-between mt-2 px-1 text-[10px] sm:text-xs font-bold text-winelio-gray/60 dark:text-white/40">
+                <span>0 €</span>
+                <span>7 500 €</span>
+                <span>15 000 €</span>
+                <span>22 500 €</span>
+                <span>30 000 €</span>
+              </div>
+            </div>
+
+            {/* Personal Gain Output Card */}
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-orange-50/50 dark:bg-winelio-orange/5 border border-winelio-orange/10">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center text-white">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-semibold text-winelio-dark dark:text-white/80">
+                  Gain perso
                 </span>
               </div>
-              <input
-                aria-label="Montant moyen du deal"
-                className="mt-3 h-2 w-full cursor-pointer accent-winelio-orange"
-                max={50000}
-                min={500}
-                step={500}
-                type="range"
-                value={Math.min(dealAmount, 50000)}
-                onChange={(event) => setDealAmount(Number(event.target.value))}
-              />
-            </label>
+              <span className="text-xl sm:text-2xl font-black text-winelio-orange">
+                <AnimatedCounter to={results.personalGain} suffix=" €" decimals={2} />
+              </span>
+            </div>
           </div>
+        </div>
 
-          {/* Active Scenario Card */}
-          <div className="mt-5 rounded-2xl border border-winelio-orange/20 bg-gradient-to-br from-orange-50/50 to-amber-50/30 p-5 dark:from-winelio-orange/5 dark:to-winelio-amber/5">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-winelio-orange/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-winelio-orange dark:bg-winelio-orange/20">
-                <Network className="size-3" />
-                Simulation Réseau
+        {/* ================= SECTION RÉSEAU ================= */}
+        <div className="bg-white dark:bg-card border border-winelio-gray/10 dark:border-white/10 rounded-3xl p-6 shadow-[0_20px_50px_-24px_rgba(45,52,54,0.08)]">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-orange-50 dark:bg-winelio-orange/10 flex items-center justify-center text-winelio-orange">
+                <Network className="w-5 h-5" />
+              </div>
+              <h2 className="text-lg font-bold text-winelio-dark dark:text-white">
+                Réseau
+              </h2>
+            </div>
+
+            {/* Network Toggle Switch */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs sm:text-sm font-semibold text-winelio-gray dark:text-white/70">
+                Réseau activé
               </span>
               <button
-                className="inline-flex items-center gap-2 rounded-xl bg-white px-3.5 py-1.5 text-xs font-extrabold text-winelio-dark shadow-sm border border-winelio-gray/15 hover:border-winelio-orange/30 hover:text-winelio-orange transition active:scale-95 dark:bg-white/10 dark:text-white dark:border-white/10 cursor-pointer animate-none"
                 type="button"
-                onClick={() => {
-                  setScenarioIndex((prev) => (prev + 1) % SCENARIOS.length);
-                }}
+                onClick={() => setNetworkEnabled(!networkEnabled)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  networkEnabled ? "bg-winelio-orange" : "bg-gray-200 dark:bg-gray-700"
+                }`}
               >
-                <RefreshCw className="size-3 text-winelio-orange hover:rotate-180 transition-transform duration-500" />
-                Autre scénario
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    networkEnabled ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
               </button>
             </div>
-
-            <h3 className="mt-4 text-base font-extrabold text-winelio-dark dark:text-white">
-              {scenario.name}
-            </h3>
-            <p className="mt-1.5 text-xs leading-relaxed text-winelio-gray dark:text-white/60">
-              {scenario.description}
-            </p>
-
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-winelio-gray/10 bg-white p-3 shadow-sm dark:border-white/5 dark:bg-black/10">
-                <span className="block text-[10px] font-bold uppercase tracking-wider text-winelio-gray dark:text-white/40">
-                  Vos recos
-                </span>
-                <span className="mt-1 block text-base font-black text-winelio-dark dark:text-white">
-                  {directRecommendations} / mois
-                </span>
-              </div>
-              <div className="rounded-xl border border-winelio-gray/10 bg-white p-3 shadow-sm dark:border-white/5 dark:bg-black/10">
-                <span className="block text-[10px] font-bold uppercase tracking-wider text-winelio-gray dark:text-white/40">
-                  Partenaires
-                </span>
-                <span className="mt-1 block text-base font-black text-winelio-dark dark:text-white">
-                  {directActiveMembers} direct(s)
-                </span>
-              </div>
-              <div className="rounded-xl border border-winelio-gray/10 bg-white p-3 shadow-sm dark:border-white/5 dark:bg-black/10">
-                <span className="block text-[10px] font-bold uppercase tracking-wider text-winelio-gray dark:text-white/40">
-                  Bouche-à-oreille
-                </span>
-                <span className="mt-1 block text-base font-black text-winelio-dark dark:text-white">
-                  x{activeRelaysPerMember} / membre
-                </span>
-              </div>
-              <div className="rounded-xl border border-winelio-gray/10 bg-white p-3 shadow-sm dark:border-white/5 dark:bg-black/10">
-                <span className="block text-[10px] font-bold uppercase tracking-wider text-winelio-gray dark:text-white/40">
-                  Deals par membre
-                </span>
-                <span className="mt-1 block text-base font-black text-winelio-dark dark:text-white">
-                  {networkDealsPerMember} / membre
-                </span>
-              </div>
-              <div className="rounded-xl border border-winelio-gray/10 bg-white p-3 shadow-sm dark:border-white/5 dark:bg-black/10">
-                <span className="block text-[10px] font-bold uppercase tracking-wider text-winelio-gray dark:text-white/40">
-                  Niveaux du réseau
-                </span>
-                <span className="mt-1 block text-base font-black text-winelio-dark dark:text-white">
-                  {activeNetworkLevels} niveaux
-                </span>
-              </div>
-            </div>
           </div>
-        </div>
 
-        <div className="bg-winelio-dark p-4 text-white sm:p-6 lg:p-7">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-white/8 p-5">
-              <p className="text-sm font-medium text-white/65">
-                Projection mensuelle totale
-              </p>
-              <div className="mt-3 flex items-end gap-2">
-                <p className="text-4xl font-black leading-none tracking-normal text-white sm:text-5xl">
-                  <AnimatedCounter
-                    key={results.monthlyGain}
-                    decimals={0}
-                    suffix=" EUR"
-                    to={results.monthlyGain}
+          <div className={`space-y-6 transition-all duration-300 ${networkEnabled ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
+            {/* Average Deal Amount */}
+            <div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+                <span className="text-sm font-semibold text-winelio-gray dark:text-white/70">
+                  Montant moyen du deal
+                </span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={avgDealAmount}
+                    min={0}
+                    max={1000000}
+                    onChange={(e) => setAvgDealAmount(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-24 text-right px-3 py-1.5 font-bold border border-winelio-gray/15 dark:border-white/10 rounded-xl bg-white dark:bg-black/20 text-winelio-dark dark:text-white outline-none focus:border-winelio-orange transition"
                   />
-                </p>
-                <ArrowUpRight className="mb-1 size-6 text-winelio-amber" />
-              </div>
-              <div className="mt-4 space-y-2 border-t border-white/10 pt-4 text-xs text-white/70">
-                <p className="leading-relaxed">
-                  Sur un deal de <span className="font-bold text-white">{formatCurrency(dealAmount)}</span>, le professionnel verse <span className="font-bold text-winelio-amber">{formatCurrency(results.baseCommission)}</span> (10% de commission).
-                </p>
-                <div className="flex flex-col gap-1.5 pl-2 border-l-2 border-winelio-orange/50">
-                  <p>
-                    • <span className="font-bold text-white">Direct (60%) :</span> Vous touchez{" "}
-                    <span className="font-bold text-white">{formatCurrency(results.directPerDeal)}</span> sur vos recommandations directes.
-                  </p>
-                  <p>
-                    • <span className="font-bold text-white">Réseau (3%) :</span> Vous touchez{" "}
-                    <span className="font-bold text-white">{formatCurrency(results.baseCommission * 0.03)}</span> par deal réalisé dans votre réseau (niveaux 1 à 5).
-                  </p>
+                  <span className="text-sm font-bold text-winelio-dark dark:text-white">€</span>
                 </div>
               </div>
+
+              <input
+                type="range"
+                min={0}
+                max={30000}
+                step={500}
+                value={Math.min(avgDealAmount, 30000)}
+                onChange={(e) => setAvgDealAmount(parseInt(e.target.value))}
+                className="winelio-range-input cursor-pointer"
+                style={{
+                  background: getSliderBackground(Math.min(avgDealAmount, 30000), 30000)
+                }}
+              />
+
+              <div className="flex justify-between mt-2 px-1 text-[10px] sm:text-xs font-bold text-winelio-gray/60 dark:text-white/40">
+                <span>0 €</span>
+                <span>7 500 €</span>
+                <span>15 000 €</span>
+                <span>22 500 €</span>
+                <span>30 000 €</span>
+              </div>
             </div>
 
-            <div className="rounded-xl bg-white px-4 py-3 text-winelio-dark">
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-winelio-gray">
-                <TrendingUp className="size-3.5 text-winelio-orange" />
-                Direct
-              </p>
-              <p className="mt-1 text-xl font-black">
-                {formatCurrency(results.directMonthlyGain)}
-              </p>
-              <p className="mt-1 text-xs text-winelio-gray">
-                {directRecommendations} recos x{" "}
-                {formatCurrency(results.directPerDeal)}
-              </p>
-            </div>
+            {/* Nombre de Filleuls Section */}
+            <div className="border-t border-winelio-gray/5 dark:border-white/5 pt-6 space-y-5">
+              <h3 className="text-sm font-bold text-winelio-dark dark:text-white uppercase tracking-wider">
+                Nombre de filleuls
+              </h3>
 
-            <div className="rounded-xl bg-white px-4 py-3 text-winelio-dark">
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-winelio-gray">
-                <Users className="size-3.5 text-emerald-600" />
-                Réseau
-              </p>
-              <p className="mt-1 text-xl font-black">
-                {formatCurrency(results.networkMonthlyGain)}
-              </p>
-              <p className="mt-1 text-xs text-winelio-gray">
-                {formatNumber(results.networkMonthlyDeals)} deals x{" "}
-                {formatCurrency(results.baseCommission * 0.03)}
-              </p>
-            </div>
-
-            <div className="sm:col-span-2 rounded-xl bg-gradient-to-br from-winelio-orange to-winelio-amber px-4 py-3 text-white">
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-white/80">
-                <PiggyBank className="size-3.5" />
-                Projection annuelle
-              </p>
-              <p className="mt-1 text-2xl font-black">
-                {formatCurrency(results.yearlyGain)}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-5 rounded-2xl border border-white/10 bg-white/8 p-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <p className="text-sm font-bold">Détail réseau</p>
-              <span className="text-xs font-semibold text-white/55">
-                {NETWORK_LEVEL_SHARE}% par niveau
-              </span>
-            </div>
-            <div className="space-y-2">
-              {results.networkLevels.map((level, index) => (
-                <div
-                  key={level.level}
-                  className={`grid grid-cols-[3.25rem_1fr_5.5rem] items-center gap-3 rounded-xl border px-3 py-2 ${
-                    level.active
-                      ? "border-white/10 bg-white/8"
-                      : "border-white/5 bg-black/10 opacity-45"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`h-2.5 w-2.5 rounded-full ${levelAccentClasses[index]}`}
+              {/* Levels 1 to 5 sliders */}
+              {[
+                { label: "Niveau 1", val: level1, setVal: setLevel1 },
+                { label: "Niveau 2", val: level2, setVal: setLevel2 },
+                { label: "Niveau 3", val: level3, setVal: setLevel3 },
+                { label: "Niveau 4", val: level4, setVal: setLevel4 },
+                { label: "Niveau 5", val: level5, setVal: setLevel5 },
+              ].map((lvl) => (
+                <div key={lvl.label} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <span className="text-xs sm:text-sm font-semibold text-winelio-gray dark:text-white/70 w-20">
+                    {lvl.label}
+                  </span>
+                  
+                  <div className="flex-1 flex items-center gap-4">
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={lvl.val}
+                      onChange={(e) => lvl.setVal(parseInt(e.target.value))}
+                      className="winelio-range-input cursor-pointer flex-1"
+                      style={{
+                        background: getSliderBackground(lvl.val, 100)
+                      }}
                     />
-                    <span className="text-sm font-black">N{level.level}</span>
+                    
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={0}
+                        max={1000}
+                        value={lvl.val}
+                        onChange={(e) => lvl.setVal(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-14 text-right px-2 py-1 text-sm font-bold border border-winelio-gray/15 dark:border-white/10 rounded-lg bg-white dark:bg-black/20 text-winelio-dark dark:text-white outline-none focus:border-winelio-orange transition"
+                      />
+                      <span className="text-[10px] font-semibold text-winelio-gray/70 dark:text-white/50 w-16">
+                        filleul(s)
+                      </span>
+                    </div>
                   </div>
-                  <p className="min-w-0 text-xs text-white/58">
-                    {level.members} membres actifs ·{" "}
-                    {formatNumber(level.monthlyDeals)} deals/mois
-                  </p>
-                  <p className="text-right text-sm font-black">
-                    {formatCurrency(level.gain)}
-                  </p>
                 </div>
               ))}
+
+              {/* Levels Ticks Label */}
+              <div className="flex justify-between pr-24 pl-20 text-[10px] font-bold text-winelio-gray/40 dark:text-white/30 select-none">
+                <span>0</span>
+                <span>25</span>
+                <span>50</span>
+                <span>75</span>
+                <span>100</span>
+              </div>
+            </div>
+
+            {/* Pareto active percentage */}
+            <div className="border-t border-winelio-gray/5 dark:border-white/5 pt-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+                <span className="text-sm font-bold text-winelio-dark dark:text-white">
+                  Filleuls actifs — Loi de Pareto
+                </span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={pareto}
+                    min={0}
+                    max={100}
+                    onChange={(e) => setPareto(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                    className="w-16 text-right px-3 py-1.5 font-bold border border-winelio-gray/15 dark:border-white/10 rounded-xl bg-white dark:bg-black/20 text-winelio-dark dark:text-white outline-none focus:border-winelio-orange transition"
+                  />
+                  <span className="text-sm font-bold text-winelio-dark dark:text-white">%</span>
+                </div>
+              </div>
+
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={pareto}
+                onChange={(e) => setPareto(parseInt(e.target.value))}
+                className="winelio-range-input cursor-pointer"
+                style={{
+                  background: getSliderBackground(pareto, 100)
+                }}
+              />
+
+              <div className="flex justify-between mt-2 px-1 text-[10px] sm:text-xs font-bold text-winelio-gray/60 dark:text-white/40">
+                <span>0 %</span>
+                <span>50 %</span>
+                <span>100 %</span>
+              </div>
+            </div>
+
+            {/* Network Gain Output Card */}
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-orange-50/50 dark:bg-winelio-orange/5 border border-winelio-orange/10">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center text-white">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-semibold text-winelio-dark dark:text-white/80">
+                  Gain réseau
+                </span>
+              </div>
+              <span className="text-xl sm:text-2xl font-black text-winelio-orange">
+                <AnimatedCounter to={results.networkGain} suffix=" €" decimals={2} />
+              </span>
             </div>
           </div>
         </div>
+
+        {/* ================= BOTTOM PANEL: MONTANT MENSUEL ================= */}
+        <div className="bg-[#1E2528] dark:bg-black/40 border border-white/5 rounded-3xl p-6 shadow-xl text-white">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-winelio-amber">
+                <Trophy className="w-5 h-5" />
+              </div>
+              <span className="text-base font-bold tracking-wide">
+                Montant mensuel
+              </span>
+            </div>
+            <span className="text-3xl sm:text-4xl font-black text-white">
+              <AnimatedCounter to={results.totalMonthly} suffix=" €" decimals={2} />
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom Disclaimer */}
+        <p className="text-center text-[10px] sm:text-xs text-winelio-gray/70 dark:text-white/40 leading-relaxed max-w-lg mx-auto">
+          Les résultats sont estimatifs et peuvent varier en fonction des paramètres et des performances réelles.
+        </p>
       </div>
-    </section>
+    </div>
   );
 }
