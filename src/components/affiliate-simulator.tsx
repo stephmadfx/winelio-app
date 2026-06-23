@@ -22,16 +22,16 @@ interface AffiliateSimulatorProps {
 
 export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
   // State for Personnel section
-  const [dealAmount, setDealAmount] = useState(30000);
+  const [dealAmount, setDealAmount] = useState(5000);
   
   // State for Réseau section
   const [networkEnabled, setNetworkEnabled] = useState(true);
-  const [avgDealAmount, setAvgDealAmount] = useState(30000);
-  const [level1, setLevel1] = useState(35);
-  const [level2, setLevel2] = useState(20);
-  const [level3, setLevel3] = useState(10);
-  const [level4, setLevel4] = useState(5);
-  const [level5, setLevel5] = useState(3);
+  const [avgDealAmount, setAvgDealAmount] = useState(2500);
+  const [level1, setLevel1] = useState(4);
+  const [level2, setLevel2] = useState(16);
+  const [level3, setLevel3] = useState(23);
+  const [level4, setLevel4] = useState(37);
+  const [level5, setLevel5] = useState(50);
   const [pareto, setPareto] = useState(20); // Pareto active percentage
 
   // Resolve plan numbers with robust fallbacks
