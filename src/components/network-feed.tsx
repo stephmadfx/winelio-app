@@ -61,15 +61,16 @@ export function NetworkFeed({
       supabase.removeChannel(channelRef.current)
     }
 
+    const uniqueSuffix = Math.random().toString(36).slice(2, 9)
     const channel = supabase
-      .channel("network-feed-realtime")
+      .channel(`network-feed-realtime-${uniqueSuffix}`)
 
       // Commission EARNED > 100€
       .on(
         "postgres_changes",
         {
           event: "UPDATE",
-          schema: "public",
+          schema: "winelio",
           table: "commission_transactions",
           filter: "status=eq.EARNED",
         },
@@ -118,7 +119,7 @@ export function NetworkFeed({
         "postgres_changes",
         {
           event: "UPDATE",
-          schema: "public",
+          schema: "winelio",
           table: "recommendations",
           filter: "status=eq.COMPLETED",
         },
@@ -165,7 +166,7 @@ export function NetworkFeed({
         "postgres_changes",
         {
           event: "INSERT",
-          schema: "public",
+          schema: "winelio",
           table: "profiles",
           filter: `sponsor_id=eq.${userId}`,
         },

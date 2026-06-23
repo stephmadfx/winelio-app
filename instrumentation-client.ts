@@ -20,7 +20,11 @@ function isIgnoredBrowserNoise(event: Sentry.Event, hint: Sentry.EventHint): boo
     value.includes("EmptyRanges") ||
     frames.some((frame) => frame.function === "sortedTrackListForMenu");
 
-  return isNativeShareCancel || isSafariMediaControlsNoise;
+  const isConnectionClosedNoise =
+    value.includes("Connection closed.") ||
+    originalMessage.includes("Connection closed.");
+
+  return isNativeShareCancel || isSafariMediaControlsNoise || isConnectionClosedNoise;
 }
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;

@@ -132,8 +132,9 @@ export function ActivityFeed({ initialEvents, demoMode, className }: Props) {
     const supabase = createClient()
 
     /* Supabase Realtime — écoute les INSERTs/UPDATEs sur 4 tables */
+    const uniqueSuffix = Math.random().toString(36).slice(2, 9)
     const channel = supabase
-      .channel("activity-feed-realtime")
+      .channel(`activity-feed-realtime-${uniqueSuffix}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "winelio", table: "profiles" },

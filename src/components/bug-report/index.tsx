@@ -88,8 +88,9 @@ export const BugReportButton = ({ userId, allBugReports = [], variant = "floatin
     if (!isRealtimeActive) return;
 
     const supabase = createClient();
+    const uniqueSuffix = Math.random().toString(36).slice(2, 9);
     const channel = supabase
-      .channel(`bug-reports-${variant}-${userId}`)
+      .channel(`bug-reports-${variant}-${userId}-${uniqueSuffix}`)
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "winelio", table: "bug_reports", filter: `user_id=eq.${userId}` },
