@@ -1,5 +1,8 @@
+-- Drop legacy public function if exists
+DROP FUNCTION IF EXISTS public.search_professionals_by_distance(double precision, double precision, text, text, text, integer);
+
 -- Create search_professionals_by_distance function for distance-sorted professional search
-CREATE OR REPLACE FUNCTION public.search_professionals_by_distance(
+CREATE OR REPLACE FUNCTION winelio.search_professionals_by_distance(
   p_latitude double precision,
   p_longitude double precision,
   p_category_name text DEFAULT 'all',
@@ -75,7 +78,7 @@ END;
 $$;
 
 -- Grant execute privileges
-GRANT EXECUTE ON FUNCTION public.search_professionals_by_distance TO public;
-GRANT EXECUTE ON FUNCTION public.search_professionals_by_distance TO anon;
-GRANT EXECUTE ON FUNCTION public.search_professionals_by_distance TO authenticated;
-GRANT EXECUTE ON FUNCTION public.search_professionals_by_distance TO service_role;
+GRANT EXECUTE ON FUNCTION winelio.search_professionals_by_distance TO public;
+GRANT EXECUTE ON FUNCTION winelio.search_professionals_by_distance TO anon;
+GRANT EXECUTE ON FUNCTION winelio.search_professionals_by_distance TO authenticated;
+GRANT EXECUTE ON FUNCTION winelio.search_professionals_by_distance TO service_role;

@@ -16,13 +16,11 @@ async function main() {
   await client.connect();
   
   const sql = `
-    -- Grant usage on public schema just in case
-    GRANT USAGE ON SCHEMA public TO anon;
-    GRANT USAGE ON SCHEMA public TO authenticated;
-    GRANT USAGE ON SCHEMA public TO service_role;
+    -- Drop legacy public function if exists
+    DROP FUNCTION IF EXISTS public.search_professionals_by_distance(double precision, double precision, text, text, text, integer);
 
-    -- Create function in public schema
-    CREATE OR REPLACE FUNCTION public.search_professionals_by_distance(
+    -- Create function in winelio schema
+    CREATE OR REPLACE FUNCTION winelio.search_professionals_by_distance(
       p_latitude double precision,
       p_longitude double precision,
       p_category_name text DEFAULT 'all',
@@ -97,16 +95,16 @@ async function main() {
     END;
     $$;
 
-    -- Grant execute privileges
-    GRANT EXECUTE ON FUNCTION public.search_professionals_by_distance TO public;
-    GRANT EXECUTE ON FUNCTION public.search_professionals_by_distance TO anon;
-    GRANT EXECUTE ON FUNCTION public.search_professionals_by_distance TO authenticated;
-    GRANT EXECUTE ON FUNCTION public.search_professionals_by_distance TO service_role;
+    -- Grant execute privileges on winelio schema function
+    GRANT EXECUTE ON FUNCTION winelio.search_professionals_by_distance TO public;
+    GRANT EXECUTE ON FUNCTION winelio.search_professionals_by_distance TO anon;
+    GRANT EXECUTE ON FUNCTION winelio.search_professionals_by_distance TO authenticated;
+    GRANT EXECUTE ON FUNCTION winelio.search_professionals_by_distance TO service_role;
   `;
   
   try {
     await client.query(sql);
-    console.log("✅ Function deployed and schema usage granted successfully with explicit casts!");
+    console.log("✅ Function deployed to winelio schema and privileges granted successfully!");
   } catch (err) {
     console.error("❌ Error deploying function:", err.message);
   } finally {
