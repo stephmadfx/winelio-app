@@ -72,6 +72,9 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
 
     let networkGain = 0;
     let actL1 = 0, actL2 = 0, actL3 = 0, actL4 = 0, actL5 = 0;
+    let totalL1 = 0, totalL2 = 0, totalL3 = 0, totalL4 = 0, totalL5 = 0;
+    let totalDownlines = 0;
+    let totalActiveDownlines = 0;
 
     if (networkEnabled) {
       const baseCommNetwork = avgDealAmount * (networkCommRate / 100);
@@ -89,6 +92,13 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
       // Niveau 5 active members
       actL5 = actL4 * level5 * paretoFactor * F_FACTOR;
 
+      // Total theoretical members per level (without Pareto/F_FACTOR)
+      totalL1 = level1;
+      totalL2 = totalL1 * level2;
+      totalL3 = totalL2 * level3;
+      totalL4 = totalL3 * level4;
+      totalL5 = totalL4 * level5;
+
       // Round active members to 1 decimal place as in math explanation
       const rL1 = Math.round(actL1 * 10) / 10;
       const rL2 = Math.round(actL2 * 10) / 10;
@@ -104,6 +114,8 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
       const gainL5 = rL5 * baseCommNetwork * (planL5Pct / 100);
 
       networkGain = gainL1 + gainL2 + gainL3 + gainL4 + gainL5;
+      totalDownlines = totalL1 + totalL2 + totalL3 + totalL4 + totalL5;
+      totalActiveDownlines = rL1 + rL2 + rL3 + rL4 + rL5;
     }
 
     const totalMonthly = personalGain + networkGain;
@@ -112,6 +124,8 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
       personalGain,
       networkGain,
       totalMonthly,
+      totalDownlines,
+      totalActiveDownlines,
     };
   }, [
     dealAmount,
@@ -480,6 +494,22 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
               <span>50</span>
               <span>75</span>
               <span>100</span>
+            </div>
+
+            {/* Total Downlines Summary */}
+            <div className="border-t border-winelio-gray/10 dark:border-white/10 pt-3 mt-2 space-y-2">
+              <div className="flex items-center justify-between text-xs text-winelio-gray dark:text-white/70">
+                <span>Total filleuls (théorique)</span>
+                <span className="font-black text-winelio-dark dark:text-white">
+                  {results.totalDownlines.toLocaleString("fr-FR")}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-winelio-gray dark:text-white/70">
+                <span>Filleuls actifs (estimés)</span>
+                <span className="font-black text-winelio-orange">
+                  {results.totalActiveDownlines.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}
+                </span>
+              </div>
             </div>
           </div>
         </div>
