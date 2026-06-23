@@ -8,6 +8,7 @@ import { getAuditContext, getDocumentHash, logOnboardingEvent } from "@/lib/audi
 import { isAtLeastAge } from "@/lib/age";
 import { verifySiren } from "@/lib/siren";
 import { notifyNewReferral } from "@/lib/notify-new-referral";
+import { notifyAdminNewSignup } from "@/lib/notify-admin-new-signup";
 import { checkNafCode } from "@/lib/naf-rules";
 
 const POSTAL_CODE_RE = /^\d{5}$/;
@@ -142,11 +143,14 @@ export async function updateProfile(data: {
 
   const firstCompletion = !!(!wasComplete && willBeComplete && isNewAccount);
 
-  // Envoyer l'email au parrain UNIQUEMENT à la première complétion,
+  // Envoyer l'email au parrain et à l'admin UNIQUEMENT à la première complétion,
   // pas au moment de l'inscription (un user peut abandonner entre les deux).
   if (firstCompletion) {
     notifyNewReferral(user.id).catch((err) =>
       console.error("notify-new-referral error:", err)
+    );
+    notifyAdminNewSignup(user.id).catch((err) =>
+      console.error("notify-admin-new-signup error:", err)
     );
   }
 

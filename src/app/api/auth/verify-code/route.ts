@@ -6,7 +6,6 @@ import { Pool } from "pg";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config";
 import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
-import { notifyAdminNewSignup } from "@/lib/notify-admin-new-signup";
 
 // Connexion pg directe par requête (pas de pool singleton — évite l'état d'erreur au démarrage)
 function getDbUrl(): string | null {
@@ -263,13 +262,7 @@ export async function POST(req: Request) {
       console.error("assign-sponsor error:", e);
     }
 
-    // 8. Notification admin (uniquement à la première inscription, après assignation
-    // du parrain). En queue priorité 10 (bulk), n'impacte pas les autres envois.
-    if (isNewSignup && userId) {
-      notifyAdminNewSignup(userId).catch((e) =>
-        console.error("notify-admin-new-signup error:", e),
-      );
-    }
+
 
     return response;
   } catch (err) {

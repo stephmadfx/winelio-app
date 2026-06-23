@@ -161,6 +161,7 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/claim") &&
     !request.nextUrl.pathname.startsWith("/conditions-generales-utilisation") &&
     !request.nextUrl.pathname.startsWith("/documents-legaux") &&
+    !request.nextUrl.pathname.startsWith("/plan-remuneration") &&
     request.nextUrl.pathname !== "/"
   ) {
     const url = request.nextUrl.clone();
