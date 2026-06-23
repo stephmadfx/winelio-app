@@ -1,0 +1,140 @@
+# SOURCE PRINCIPALE - SCRIPT ET STRUCTURE DE LA PRÉSENTATION WINIO
+Ce document sert de source pour NotebookLM afin de préparer la présentation, le script de parole et répondre aux questions de l'audience.
+
+---
+
+## CONTEXTE DU PROJET
+- **Nom du projet** : Winio (également connu sous le nom technique de Winelio)
+- **Nature du projet** : Une application mobile et web de recommandation professionnelle avec un système de parrainage et de commissionnement multi-niveaux (MLM).
+- **Rôle de l'application** : Permettre à des particuliers de recommander des professionnels qualifiés (artisans, électriciens, plombiers, etc.) et de toucher des commissions sur le montant des devis validés.
+- **Modèle de distribution** : MLM à 5 niveaux.
+
+---
+
+## STRUCTURE DE LA PRÉSENTATION & SCRIPTS DE NARRATION (SLIDE PAR SLIDE)
+
+### Slide 1 – Bienvenue & Pourquoi êtes-vous là aujourd'hui ?
+- **Titre** : Une opportunité pour développer un revenu complémentaire
+- **Contenu** :
+  - Accueil et remerciements pour la présence.
+  - Présentation d'une opportunité simple, accessible et compatible avec une activité actuelle.
+  - L'objectif n'est pas de remplacer l'emploi principal, mais de générer un complément de revenu grâce au réseau et aux recommandations.
+- **Question d'accroche** :
+  - *« Si vous pouviez gagner 200 €, 300 €, 500 € ou plus chaque mois sans changer votre activité principale, qu'est-ce que cela changerait dans votre quotidien ? »*
+- **Script de parole (Narration orale)** :
+  - *« Bonjour à tous et merci d'être présents aujourd'hui. Nous sommes ravis de vous accueillir pour vous présenter une opportunité très simple, accessible à tous et qui s'intègre parfaitement dans votre vie quotidienne. Notre but aujourd'hui n'est pas de vous proposer de quitter votre emploi ou de bouleverser vos habitudes, mais de vous faire découvrir comment vous pouvez générer un complément de revenu régulier grâce à une activité de recommandation et de réseau. Pour commencer, j'aimerais vous poser une question toute simple : si à partir du mois prochain, vous pouviez ajouter 200, 300 ou 500 euros à votre budget, sans changer d'activité principale, qu'est-ce que cela changerait concrètement dans votre vie de tous les jours ? Prenez un instant pour y penser. »*
+
+---
+
+### Slide 2 – Le contexte économique actuel
+- **Titre** : Pourquoi de plus en plus de personnes cherchent un complément de revenu ?
+- **Contenu** :
+  - Hausse constante du coût de la vie (inflation).
+  - Pouvoir d'achat sous pression.
+  - Besoin de sécuriser ses finances (épargne de précaution).
+  - Recherche de liberté financière et de confort.
+- **Message clé** : Aujourd'hui, de nombreuses personnes développent une double activité pour améliorer leur confort de vie, financer des projets, préparer des vacances ou simplement avoir plus de sérénité financière.
+- **Script de parole (Narration orale)** :
+  - *« Nous le constatons tous aujourd'hui : le contexte économique est difficile. Entre la hausse constante du coût de la vie et le pouvoir d'achat qui reste sous pression, boucler les fins de mois ou simplement s'offrir des extras devient un défi. C'est pour cela que de plus en plus de personnes cherchent à sécuriser leurs finances en diversifiant leurs sources de revenus. Avoir une double activité n'est plus une exception, c'est devenu une stratégie intelligente pour s'offrir plus de confort, financer des projets personnels comme des vacances, ou tout simplement retrouver de la sérénité financière face aux imprévus. »*
+
+---
+
+### Slide 3 – Chacun a ses propres objectifs
+- **Titre** : Quels sont vos objectifs ?
+- **Contenu** :
+  - 200 € par mois : pour les loisirs, restos et sorties.
+  - 500 € par mois : pour alléger les charges fixes (énergie, abonnements, crédits).
+  - 1 000 € ou plus : pour accélérer de grands projets (travaux, voyages, investissements).
+  - Développer une activité sur le long terme : bâtir un réseau récurrent.
+- **Message clé** : Il n'existe pas un seul objectif. Chacun avance à son rythme selon ses ambitions et sa disponibilité.
+- **Script de parole (Narration orale)** :
+  - *« Ce qui est formidable avec cette opportunité, c'est qu'elle s'adapte à ce que vous recherchez précisément. Pour certains, l'objectif sera d'atteindre 200 € de plus par mois pour financer les sorties et les loisirs. Pour d'autres, ce sera 500 € pour couvrir les factures de gaz, d'électricité ou un remboursement de crédit. Et pour les plus ambitieux, il est tout à fait possible de viser 1 000 € ou plus pour accélérer des projets de vie ou bâtir une activité indépendante à long terme. Il n'y a pas de petit ou de grand objectif : chacun avance à son rythme, selon ses envies et le temps qu'il souhaite y consacrer. »*
+
+---
+
+### Slide 4 – La solution : Winio
+- **Titre** : Découvrez Winio
+- **Contenu** :
+  - Présentation rapide de l'application mobile et web.
+  - Concept simple et accessible à tout le monde.
+  - Développement basé sur les recommandations d'affaires et la force du réseau.
+  - *[À insérer : 🎥 Vidéo de présentation Winio]*
+- **Script de parole (Narration orale)** :
+  - *« Pour répondre à ce besoin, nous avons créé Winio. Winio est une application mobile et web extrêmement simple et intuitive qui permet de monétiser le bouche-à-oreille. Nous passons tous nos journées à recommander des choses : un bon restaurant, un artisan, un médecin... mais nous ne sommes jamais rémunérés pour cela. Winio change la donne en vous permettant de recommander des professionnels qualifiés de votre région et de toucher des commissions réelles dès qu'une affaire est conclue. Regardons ensemble cette courte vidéo de présentation pour voir l'application en action. »*
+
+---
+
+### Slide 5 – Comment ça fonctionne ?
+- **Titre** : Un modèle simple et duplicable
+- **Contenu** :
+  - 1. Utiliser l'application pour ses propres besoins ou pour comprendre son fonctionnement.
+  - 2. Partager son expérience et parler de Winio autour de soi.
+  - 3. Développer un réseau de recommandations en parrainant des utilisateurs et des professionnels.
+  - 4. Accompagner les personnes qui souhaitent faire la même chose.
+- **Message clé** : Pas besoin d'être expert, influenceur ou commercial. Le système repose sur la simplicité et la duplication.
+- **Script de parole (Narration orale)** :
+  - *« Le fonctionnement repose sur un principe très simple et accessible à tous : la duplication. Vous n'avez pas besoin d'être un commercial professionnel ou d'avoir des milliers d'abonnés sur les réseaux sociaux. La première étape consiste à utiliser vous-même l'application pour vous familiariser avec elle. Ensuite, vous partagez simplement votre expérience. En invitant vos proches et vos contacts professionnels à rejoindre Winio avec votre code de parrainage, vous commencez à bâtir votre propre réseau de recommandations. Enfin, il vous suffit d'accompagner ceux qui le souhaitent à faire exactement la même chose. C'est simple, c'est naturel et c'est accessible à tous. »*
+
+---
+
+### Slide 6 – Jusqu'où pouvez-vous aller ?
+- **Titre** : Votre potentiel de développement
+- **Contenu** :
+  - Présentation du simulateur de gains intégré.
+  - Visualisation des différents scénarios (parrainage direct et indirect).
+  - Comprendre l'impact de la régularité et du développement de son réseau.
+- **Question** :
+  - *« Et si votre réseau travaillait avec vous pour atteindre vos objectifs ? »*
+- **Script de parole (Narration orale)** :
+  - *« Mais concrètement, combien pouvez-vous gagner ? C'est là que le simulateur de gains de Winio prend tout son sens. Il vous permet de simuler vos gains futurs. Par exemple, si vous recommandez 5 clients par mois et parrainez 3 personnes qui font de même, votre revenu grandit. Grâce au système MLM, vous touchez des commissions non seulement sur vos propres recommandations, mais aussi sur celles effectuées par les personnes de votre réseau jusqu'au niveau 5. C'est un effet de levier puissant : votre réseau travaille avec vous, démultipliant vos résultats et vos gains mensuels. »*
+
+---
+
+### Slide 7 – Une activité compatible avec votre quotidien
+- **Titre** : Une opportunité flexible
+- **Contenu** :
+  - Compatible à 100 % avec une activité salariée.
+  - Compatible à 100 % avec une activité indépendante.
+  - Gestion libre de son temps (pas d'horaires imposés).
+  - Développement progressif sans risque financier.
+- **Message clé** : Vous gardez votre activité principale et avancez à votre rythme.
+- **Script de parole (Narration orale)** :
+  - *« L'un des plus grands atouts de Winio est sa flexibilité totale. Que vous soyez salarié, fonctionnaire, indépendant, ou même à la recherche d'un emploi, cette activité s'intègre parfaitement dans votre emploi du temps actuel. Vous n'avez pas de patron, pas d'horaires imposés, et aucun compte à rendre. Vous recommandez quand vous le souhaitez, d'où vous voulez, simplement depuis votre téléphone. Vous conservez votre activité principale à plein temps et vous développez ce complément de revenu de manière progressive, à votre propre rythme. »*
+
+---
+
+### Slide 8 – La vraie question
+- **Titre** : Qu'est-ce qui vous empêcherait de démarrer ?
+- **Contenu** :
+  - Manque de temps ? (Quelques minutes par jour suffisent).
+  - Manque d'expérience ? (L'application et votre parrain vous forment).
+  - Manque de confiance ? (Un réseau solidaire pour vous soutenir).
+  - Peur de ne pas savoir faire ? (Le bouche-à-oreille est inné).
+- **Message clé** : Chaque réussite commence par une décision. L'important n'est pas de tout savoir aujourd'hui, mais d'être prêt à apprendre et à avancer.
+- **Script de parole (Narration orale)** :
+  - *« À ce stade, vous vous posez peut-être des questions : 'Est-ce que je vais y arriver ? Est-ce que j'ai le temps ?'. C'est tout à fait normal. Mais posez-vous la vraie question : qu'est-ce qui vous empêcherait réellement de vous lancer ? Le manque de temps ? Quelques minutes par jour suffisent. Le manque d'expérience ? Notre communauté vous accompagne et l'application fait le plus gros du travail. Chaque grande réussite commence toujours par une simple décision. L'important n'est pas de tout savoir faire dès le premier jour, mais simplement d'être curieux, d'avoir envie d'apprendre et d'avancer pas à pas avec nous. »*
+
+---
+
+### Slide 9 – Conclusion & Passage à l'action
+- **Titre** : Votre prochaine étape
+- **Contenu** :
+  - Définissez votre objectif financier de départ.
+  - Découvrez le potentiel de l'application Winio.
+  - Faites-vous parrainer et accompagner dès le départ.
+  - Commencez à construire votre réseau de recommandations dès aujourd'hui.
+- **Phrase de clôture** :
+  - *« Votre situation actuelle est le résultat des décisions prises hier. Votre avenir dépend des décisions que vous prenez aujourd'hui. »*
+- **Script de parole (Narration orale)** :
+  - *« Pour conclure, votre avenir commence dès aujourd'hui. La première étape est très simple : définissez votre objectif de gain pour le mois prochain. Ensuite, téléchargez l'application Winio en utilisant le code de parrainage de la personne qui vous a invité aujourd'hui, et laissez-vous guider. Nous sommes là pour vous accompagner à chaque étape. Rappelez-vous toujours de cette phrase : notre situation actuelle est le résultat des décisions que nous avons prises hier, mais notre avenir financier dépend entièrement des décisions que nous prenons aujourd'hui. Rejoignez l'aventure Winio et commencez à bâtir votre complément de revenu dès maintenant. Merci pour votre attention ! »*
+
+---
+
+## LOGIQUE DE COMMISSIONNEMENT MLM DE WINIO (Pour enrichir le contenu de NotebookLM)
+- **Taux de redistribution global** :
+  - **L'apporteur d'affaires (le parrain direct de l'affaire)** : Reçoit **60 %** de la commission totale.
+  - **Le réseau de parrainage (MLM)** : Reçoit **15 %** de la commission totale, répartis équitablement sur 5 niveaux d'affiliation directs et indirects (soit **3 % par niveau**, du Niveau 1 au Niveau 5).
+  - **Fonctionnement de la plateforme** : Conserve **23 %** pour les frais de service, serveurs et maintenance.
+  - **Bonus Parrain Professionnel** : Le parrain qui a fait entrer le professionnel sur l'application reçoit **1 %** de la commission.
+  - **Cashback Professionnel** : Le professionnel reçoit **1 %** de cashback sous forme de Wins (monnaie virtuelle de l'application).
+- **Règle absolue d'inscription** : L'inscription sur Winio se fait **obligatoirement** via un code de parrainage (sponsor_code) valide. Aucun utilisateur ne peut s'inscrire sans parrain.

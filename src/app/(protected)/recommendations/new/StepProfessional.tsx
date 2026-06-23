@@ -54,45 +54,66 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
 
   useEffect(() => {
     let query = supabase
-      .from("profiles")
-      .select("id, first_name, last_name, city, latitude, longitude, companies(name, alias, source, categories(name))")
-      .eq("is_professional", true)
-      .order("last_name");
-    if (userId) query = query.neq("id", userId);
+      .schema("winelio")
+      .from("v_search_professionals")
+      .select("profile_id, first_name, last_name, city, latitude, longitude, company_name, company_alias, company_source, category_name")
+      .limit(250);
+
+    if (userId) {
+      query = query.neq("profile_id", userId);
+    }
+
+    if (selectedCategory !== "all") {
+      query = query.eq("category_name", selectedCategory);
+    }
+
+    if (selectedCommune) {
+      query = query.ilike("city", `%${selectedCommune}%`);
+    }
+
+    if (proSearch.length >= 2) {
+      const q = proSearch.trim();
+      if (q.startsWith("#")) {
+        query = query.ilike("company_alias", `${q}%`);
+      } else {
+        query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,company_name.ilike.%${q}%`);
+      }
+    }
+
     query.then(({ data, error }) => {
-      if (error) { console.error("[StepProfessional] query error:", error); return; }
+      if (error) {
+        console.error("[StepProfessional] query error:", error);
+        return;
+      }
+
       let results: Professional[] = (data ?? []).map((p) => {
-        const company = Array.isArray(p.companies) ? p.companies[0] : p.companies;
-        const cat = company?.categories;
-        const catName = Array.isArray(cat) ? cat[0]?.name ?? null : (cat as { name: string } | null)?.name ?? null;
-        const source = (company as { source?: string | null } | null)?.source ?? null;
         return {
-          id: p.id, first_name: p.first_name, last_name: p.last_name,
-          company_name: company?.name ?? null,
-          company_alias: (company as { alias?: string | null } | null)?.alias ?? null,
-          category_name: catName, city: p.city, latitude: p.latitude, longitude: p.longitude,
-          distance: userLocation && p.latitude && p.longitude ? haversineKm(userLocation.lat, userLocation.lng, p.latitude, p.longitude) : null,
+          id: p.profile_id,
+          first_name: p.first_name,
+          last_name: p.last_name,
+          company_name: p.company_name ?? null,
+          company_alias: p.company_alias ?? null,
+          category_name: p.category_name ?? null,
+          city: p.city ?? null,
+          latitude: p.latitude ?? null,
+          longitude: p.longitude ?? null,
+          distance: userLocation && p.latitude && p.longitude 
+            ? haversineKm(userLocation.lat, userLocation.lng, p.latitude, p.longitude) 
+            : null,
           avg_rating: null,
           review_count: 0,
-          is_claimed: source === "owner",
-          last_active_at: fakeLastActive(p.id),
+          is_claimed: p.company_source === "owner",
+          last_active_at: fakeLastActive(p.profile_id),
         };
       });
-      if (proSearch.length >= 2) {
-        const q = proSearch.toLowerCase();
-        results = results.filter((p) => proSearch.startsWith("#")
-          ? (p.company_alias ?? "").toLowerCase().startsWith(q)
-          : (p.company_name ?? "").toLowerCase().includes(q) || (p.first_name ?? "").toLowerCase().includes(q) || (p.last_name ?? "").toLowerCase().includes(q)
-        );
-      }
-      if (selectedCategory !== "all") results = results.filter((p) => p.category_name === selectedCategory);
+
       if (userLocation && sortBy === "distance") {
         results = results.filter((p) => p.distance === null || p.distance <= radius);
         results.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
       } else {
         results.sort((a, b) => new Date(b.last_active_at).getTime() - new Date(a.last_active_at).getTime());
       }
-      if (selectedCommune) results = results.filter((p) => (p.city ?? "").toLowerCase().includes(selectedCommune.toLowerCase()));
+
       setProfessionals(results);
     });
   }, [proSearch, userId, selectedCategory, userLocation, radius, sortBy, selectedCommune]);
