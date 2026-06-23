@@ -114,7 +114,7 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
       const gainL5 = rL5 * baseCommNetwork * (planL5Pct / 100);
 
       networkGain = gainL1 + gainL2 + gainL3 + gainL4 + gainL5;
-      totalDownlines = totalL1 + totalL2 + totalL3 + totalL4 + totalL5;
+      totalDownlines = level1 + level2 + level3 + level4 + level5;
       totalActiveDownlines = rL1 + rL2 + rL3 + rL4 + rL5;
     }
 
