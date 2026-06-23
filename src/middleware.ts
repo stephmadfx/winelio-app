@@ -53,6 +53,8 @@ export async function middleware(request: NextRequest) {
     const isExempt =
       path === "/staging-login" ||
       path === "/api/staging-auth" ||
+      path.startsWith("/auth") ||
+      path.startsWith("/api/auth") ||
       isCronApi ||
       path.startsWith("/commission/success") ||
       path.startsWith("/_next/") ||
@@ -131,6 +133,7 @@ export async function middleware(request: NextRequest) {
   if (
     request.nextUrl.pathname.startsWith("/api/") &&
     !request.nextUrl.pathname.startsWith("/api/auth/") &&
+    !request.nextUrl.pathname.startsWith("/api/staging-auth") &&
     !request.nextUrl.pathname.startsWith("/api/bugs/imap-poll") &&
     !request.nextUrl.pathname.startsWith("/api/bugs/imap-debug") &&
     !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
@@ -151,6 +154,8 @@ export async function middleware(request: NextRequest) {
     !user &&
     !request.nextUrl.pathname.startsWith("/auth") &&
     !request.nextUrl.pathname.startsWith("/api/auth") &&
+    !request.nextUrl.pathname.startsWith("/staging-login") &&
+    !request.nextUrl.pathname.startsWith("/api/staging-auth") &&
     !request.nextUrl.pathname.startsWith("/api/bugs/imap-poll") &&
     !request.nextUrl.pathname.startsWith("/api/bugs/imap-debug") &&
     !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
