@@ -37,6 +37,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
   const [postalLoading, setPostalLoading] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [postalData, setPostalData] = useState<{ nom: string; centre?: { coordinates: [number, number] } }[]>([]);
 
   useEffect(() => {
     supabase.from("categories").select("id, name").order("name").then(({ data }) => setCategories(data ?? []));
@@ -53,84 +54,100 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
   }, [userId]);
 
   useEffect(() => {
-    let query = supabase
-      .schema("winelio")
-      .from("v_search_professionals")
-      .select("profile_id, first_name, last_name, city, latitude, longitude, company_name, company_alias, company_source, category_name")
-      .limit(250);
+    const rpcParams = {
+      p_latitude: userLocation?.lat ?? null,
+      p_longitude: userLocation?.lng ?? null,
+      p_category_name: selectedCategory,
+      p_commune: selectedCommune || null,
+      p_search: proSearch.length >= 2 ? proSearch.trim() : null,
+      p_limit: 250
+    };
 
-    if (userId) {
-      query = query.neq("profile_id", userId);
-    }
+    supabase
+      .rpc("search_professionals_by_distance", rpcParams)
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[StepProfessional] query error:", error);
+          return;
+        }
 
-    if (selectedCategory !== "all") {
-      query = query.eq("category_name", selectedCategory);
-    }
+        let results: Professional[] = (data ?? []).map((p: any) => {
+          return {
+            id: p.profile_id,
+            first_name: p.first_name,
+            last_name: p.last_name,
+            company_name: p.company_name ?? null,
+            company_alias: p.company_alias ?? null,
+            category_name: p.category_name ?? null,
+            city: p.city ?? null,
+            latitude: p.latitude ?? null,
+            longitude: p.longitude ?? null,
+            distance: p.distance_km ?? null,
+            avg_rating: null,
+            review_count: 0,
+            is_claimed: p.company_source === "owner",
+            last_active_at: fakeLastActive(p.profile_id),
+          };
+        });
 
-    if (selectedCommune) {
-      query = query.ilike("city", `%${selectedCommune}%`);
-    }
+        if (userId) {
+          results = results.filter((p) => p.id !== userId);
+        }
 
-    if (proSearch.length >= 2) {
-      const q = proSearch.trim();
-      if (q.startsWith("#")) {
-        query = query.ilike("company_alias", `${q}%`);
-      } else {
-        query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,company_name.ilike.%${q}%`);
-      }
-    }
+        if (userLocation && sortBy === "distance" && radius < 99999) {
+          results = results.filter((p) => p.distance === null || p.distance <= radius);
+        }
 
-    query.then(({ data, error }) => {
-      if (error) {
-        console.error("[StepProfessional] query error:", error);
-        return;
-      }
-
-      let results: Professional[] = (data ?? []).map((p) => {
-        return {
-          id: p.profile_id,
-          first_name: p.first_name,
-          last_name: p.last_name,
-          company_name: p.company_name ?? null,
-          company_alias: p.company_alias ?? null,
-          category_name: p.category_name ?? null,
-          city: p.city ?? null,
-          latitude: p.latitude ?? null,
-          longitude: p.longitude ?? null,
-          distance: userLocation && p.latitude && p.longitude 
-            ? haversineKm(userLocation.lat, userLocation.lng, p.latitude, p.longitude) 
-            : null,
-          avg_rating: null,
-          review_count: 0,
-          is_claimed: p.company_source === "owner",
-          last_active_at: fakeLastActive(p.profile_id),
-        };
+        setProfessionals(results);
       });
-
-      if (userLocation && sortBy === "distance") {
-        results = results.filter((p) => p.distance === null || p.distance <= radius);
-        results.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
-      } else {
-        results.sort((a, b) => new Date(b.last_active_at).getTime() - new Date(a.last_active_at).getTime());
-      }
-
-      setProfessionals(results);
-    });
   }, [proSearch, userId, selectedCategory, userLocation, radius, sortBy, selectedCommune]);
 
   useEffect(() => {
-    if (postalCode.length !== 5) { setPostalCommunes([]); setSelectedCommune(null); return; }
+    if (postalCode.length !== 5) {
+      setPostalCommunes([]);
+      setSelectedCommune(null);
+      setPostalData([]);
+      if (geoStatus !== "granted") {
+        setUserLocation(null);
+      }
+      return;
+    }
     setPostalLoading(true);
-    fetch(`https://geo.api.gouv.fr/communes?codePostal=${postalCode}&fields=nom`)
+    fetch(`https://geo.api.gouv.fr/communes?codePostal=${postalCode}&fields=nom,centre`)
       .then((r) => r.json())
-      .then((data: { nom: string }[]) => {
+      .then((data: { nom: string; centre?: { coordinates: [number, number] } }[]) => {
+        setPostalData(data);
         const noms = data.map((c) => c.nom);
         setPostalCommunes(noms);
         setSelectedCommune(noms.length === 1 ? noms[0] : null);
+
+        if (geoStatus !== "granted" && data.length > 0 && data[0].centre?.coordinates) {
+          const [lng, lat] = data[0].centre.coordinates;
+          setUserLocation({ lat, lng });
+          setSortBy("distance");
+          setRadius(99999);
+        }
       })
-      .catch(() => setPostalCommunes([]))
+      .catch(() => {
+        setPostalCommunes([]);
+        setPostalData([]);
+      })
       .finally(() => setPostalLoading(false));
-  }, [postalCode]);
+  }, [postalCode, geoStatus]);
+
+  useEffect(() => {
+    if (geoStatus === "granted") return;
+    if (selectedCommune) {
+      const match = postalData.find((c) => c.nom === selectedCommune);
+      if (match?.centre?.coordinates) {
+        const [lng, lat] = match.centre.coordinates;
+        setUserLocation({ lat, lng });
+      }
+    } else if (postalData.length > 0 && postalData[0].centre?.coordinates) {
+      const [lng, lat] = postalData[0].centre.coordinates;
+      setUserLocation({ lat, lng });
+    }
+  }, [selectedCommune, postalData, geoStatus]);
 
   const requestGeo = () => {
     if (!navigator.geolocation) { setGeoStatus("unavailable"); return; }
