@@ -497,17 +497,11 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
             </div>
 
             {/* Total Downlines Summary */}
-            <div className="border-t border-winelio-gray/10 dark:border-white/10 pt-3 mt-2 space-y-2">
+            <div className="border-t border-winelio-gray/10 dark:border-white/10 pt-3 mt-2">
               <div className="flex items-center justify-between text-xs text-winelio-gray dark:text-white/70">
-                <span>Total filleuls (théorique)</span>
-                <span className="font-black text-winelio-dark dark:text-white">
+                <span>Total filleuls</span>
+                <span className="font-black text-winelio-orange text-sm">
                   {results.totalDownlines.toLocaleString("fr-FR")}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-xs text-winelio-gray dark:text-white/70">
-                <span>Filleuls actifs (estimés)</span>
-                <span className="font-black text-winelio-orange">
-                  {results.totalActiveDownlines.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}
                 </span>
               </div>
             </div>
