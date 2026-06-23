@@ -141,8 +141,17 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto my-8 font-sans">
+    <div className="w-full max-w-5xl mx-auto my-2 font-sans flex flex-col justify-between flex-1">
       <style dangerouslySetInnerHTML={{ __html: `
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+          appearance: textfield;
+        }
         .winelio-range-input {
           -webkit-appearance: none;
           appearance: none;
@@ -181,297 +190,305 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
           transform: scale(1.15);
         }
       `}} />
-
       {/* Main Title */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-winelio-dark dark:text-white tracking-tight">
+      <div className="text-center mb-6 shrink-0">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-winelio-dark dark:text-white tracking-tight">
           Simulateur de gains
         </h1>
-        <div className="h-1 w-12 mx-auto mt-3 rounded-full bg-gradient-to-r from-winelio-orange to-winelio-amber" />
+        <div className="h-1 w-12 mx-auto mt-2 rounded-full bg-gradient-to-r from-winelio-orange to-winelio-amber" />
       </div>
-
-      <div className="flex flex-col gap-6">
-        {/* ================= SECTION PERSONNEL ================= */}
-        <div className="bg-white dark:bg-card border border-winelio-gray/10 dark:border-white/10 rounded-3xl p-6 shadow-[0_20px_50px_-24px_rgba(45,52,54,0.08)]">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-2xl bg-orange-50 dark:bg-winelio-orange/10 flex items-center justify-center text-winelio-orange">
-              <User className="w-5 h-5" />
-            </div>
-            <h2 className="text-lg font-bold text-winelio-dark dark:text-white">
-              Personnel
-            </h2>
-          </div>
-
-          <div className="space-y-6">
+ 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch flex-1">
+        {/* ================= COLUMN 1: PERSONNEL & TOTAL ================= */}
+        <div className="flex flex-col gap-6 h-full justify-between">
+          {/* Personnel Card */}
+          <div className="bg-white dark:bg-card border border-winelio-gray/10 dark:border-white/10 rounded-3xl p-5 shadow-[0_20px_50px_-24px_rgba(45,52,54,0.08)] flex-1 flex flex-col justify-between">
             <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
-                <span className="text-sm font-semibold text-winelio-gray dark:text-white/70">
-                  Montant du deal
-                </span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={dealAmount}
-                    min={0}
-                    max={1000000}
-                    onChange={(e) => setDealAmount(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-24 text-right px-3 py-1.5 font-bold border border-winelio-gray/15 dark:border-white/10 rounded-xl bg-white dark:bg-black/20 text-winelio-dark dark:text-white outline-none focus:border-winelio-orange transition"
-                  />
-                  <span className="text-sm font-bold text-winelio-dark dark:text-white">€</span>
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-2xl bg-orange-50 dark:bg-winelio-orange/10 flex items-center justify-center text-winelio-orange">
+                  <User className="w-5 h-5" />
                 </div>
+                <h2 className="text-base font-bold text-winelio-dark dark:text-white">
+                  Personnel
+                </h2>
               </div>
 
-              <input
-                type="range"
-                min={0}
-                max={30000}
-                step={500}
-                value={Math.min(dealAmount, 30000)}
-                onChange={(e) => setDealAmount(parseInt(e.target.value))}
-                className="winelio-range-input cursor-pointer"
-                style={{
-                  background: getSliderBackground(Math.min(dealAmount, 30000), 30000)
-                }}
-              />
+              <div className="space-y-5">
+                <div>
+                  <div className="flex items-center justify-between gap-4 mb-2">
+                    <span className="text-xs font-semibold text-winelio-gray dark:text-white/70">
+                      Montant du deal
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={dealAmount}
+                        min={0}
+                        max={1000000}
+                        onChange={(e) => setDealAmount(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-24 shrink-0 text-right px-2 py-1 text-xs font-bold border border-winelio-gray/15 dark:border-white/10 rounded-lg bg-white dark:bg-black/20 text-winelio-dark dark:text-white outline-none focus:border-winelio-orange transition"
+                      />
+                      <span className="text-xs font-bold text-winelio-dark dark:text-white">€</span>
+                    </div>
+                  </div>
 
-              {/* Slider Ticks */}
-              <div className="flex justify-between mt-2 px-1 text-[10px] sm:text-xs font-bold text-winelio-gray/60 dark:text-white/40">
-                <span>0 €</span>
-                <span>7 500 €</span>
-                <span>15 000 €</span>
-                <span>22 500 €</span>
-                <span>30 000 €</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={30000}
+                    step={500}
+                    value={Math.min(dealAmount, 30000)}
+                    onChange={(e) => setDealAmount(parseInt(e.target.value))}
+                    className="winelio-range-input cursor-pointer"
+                    style={{
+                      background: getSliderBackground(Math.min(dealAmount, 30000), 30000)
+                    }}
+                  />
+
+                  {/* Slider Ticks */}
+                  <div className="flex justify-between mt-2 px-1 text-[10px] font-bold text-winelio-gray/60 dark:text-white/40">
+                    <span>0 €</span>
+                    <span>15k €</span>
+                    <span>30k €</span>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Personal Gain Output Card */}
-            <div className="flex items-center justify-between p-4 rounded-2xl bg-orange-50/50 dark:bg-winelio-orange/5 border border-winelio-orange/10">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-orange-50/50 dark:bg-winelio-orange/5 border border-winelio-orange/10 mt-6">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center text-white">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center text-white">
                   <TrendingUp className="w-4 h-4" />
                 </div>
-                <span className="text-sm font-semibold text-winelio-dark dark:text-white/80">
+                <span className="text-xs font-semibold text-winelio-dark dark:text-white/80">
                   Gain perso
                 </span>
               </div>
-              <span className="text-xl sm:text-2xl font-black text-winelio-orange">
+              <span className="text-lg font-black text-winelio-orange">
                 <AnimatedCounter to={results.personalGain} suffix=" €" decimals={2} />
               </span>
             </div>
           </div>
-        </div>
 
-        {/* ================= SECTION RÉSEAU ================= */}
-        <div className="bg-white dark:bg-card border border-winelio-gray/10 dark:border-white/10 rounded-3xl p-6 shadow-[0_20px_50px_-24px_rgba(45,52,54,0.08)]">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-orange-50 dark:bg-winelio-orange/10 flex items-center justify-center text-winelio-orange">
-                <Network className="w-5 h-5" />
+          {/* ================= BOTTOM PANEL: MONTANT MENSUEL ================= */}
+          <div className="bg-[#1E2528] dark:bg-black/40 border border-white/5 rounded-3xl p-5 shadow-xl text-white">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-winelio-amber">
+                  <Trophy className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold tracking-wide">
+                  Montant mensuel
+                </span>
               </div>
-              <h2 className="text-lg font-bold text-winelio-dark dark:text-white">
-                Réseau
-              </h2>
-            </div>
-
-            {/* Network Toggle Switch */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs sm:text-sm font-semibold text-winelio-gray dark:text-white/70">
-                Réseau activé
+              <span className="text-2xl sm:text-3xl font-black text-white">
+                <AnimatedCounter to={results.totalMonthly} suffix=" €" decimals={2} />
               </span>
-              <button
-                type="button"
-                onClick={() => setNetworkEnabled(!networkEnabled)}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  networkEnabled ? "bg-winelio-orange" : "bg-gray-200 dark:bg-gray-700"
-                }`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    networkEnabled ? "translate-x-5" : "translate-x-0"
-                  }`}
-                />
-              </button>
             </div>
           </div>
+        </div>
 
-          <div className={`space-y-6 transition-all duration-300 ${networkEnabled ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
-            {/* Average Deal Amount */}
-            <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
-                <span className="text-sm font-semibold text-winelio-gray dark:text-white/70">
-                  Montant moyen du deal
-                </span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={avgDealAmount}
-                    min={0}
-                    max={1000000}
-                    onChange={(e) => setAvgDealAmount(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-24 text-right px-3 py-1.5 font-bold border border-winelio-gray/15 dark:border-white/10 rounded-xl bg-white dark:bg-black/20 text-winelio-dark dark:text-white outline-none focus:border-winelio-orange transition"
-                  />
-                  <span className="text-sm font-bold text-winelio-dark dark:text-white">€</span>
+        {/* ================= COLUMN 2: RÉSEAU PARAMS ================= */}
+        <div className="bg-white dark:bg-card border border-winelio-gray/10 dark:border-white/10 rounded-3xl p-5 shadow-[0_20px_50px_-24px_rgba(45,52,54,0.08)] flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-orange-50 dark:bg-winelio-orange/10 flex items-center justify-center text-winelio-orange">
+                  <Network className="w-5 h-5" />
                 </div>
+                <h2 className="text-base font-bold text-winelio-dark dark:text-white">
+                  Réseau
+                </h2>
               </div>
 
-              <input
-                type="range"
-                min={0}
-                max={30000}
-                step={500}
-                value={Math.min(avgDealAmount, 30000)}
-                onChange={(e) => setAvgDealAmount(parseInt(e.target.value))}
-                className="winelio-range-input cursor-pointer"
-                style={{
-                  background: getSliderBackground(Math.min(avgDealAmount, 30000), 30000)
-                }}
-              />
-
-              <div className="flex justify-between mt-2 px-1 text-[10px] sm:text-xs font-bold text-winelio-gray/60 dark:text-white/40">
-                <span>0 €</span>
-                <span>7 500 €</span>
-                <span>15 000 €</span>
-                <span>22 500 €</span>
-                <span>30 000 €</span>
+              {/* Network Toggle Switch */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-winelio-gray dark:text-white/70">
+                  Réseau activé
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setNetworkEnabled(!networkEnabled)}
+                  className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    networkEnabled ? "bg-winelio-orange" : "bg-gray-200 dark:bg-gray-700"
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      networkEnabled ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
               </div>
             </div>
 
-            {/* Nombre de Filleuls Section */}
-            <div className="border-t border-winelio-gray/5 dark:border-white/5 pt-6 space-y-5">
-              <h3 className="text-sm font-bold text-winelio-dark dark:text-white uppercase tracking-wider">
-                Nombre de filleuls
-              </h3>
-
-              {/* Levels 1 to 5 sliders */}
-              {[
-                { label: "Niveau 1", val: level1, setVal: setLevel1 },
-                { label: "Niveau 2", val: level2, setVal: setLevel2 },
-                { label: "Niveau 3", val: level3, setVal: setLevel3 },
-                { label: "Niveau 4", val: level4, setVal: setLevel4 },
-                { label: "Niveau 5", val: level5, setVal: setLevel5 },
-              ].map((lvl) => (
-                <div key={lvl.label} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <span className="text-xs sm:text-sm font-semibold text-winelio-gray dark:text-white/70 w-20">
-                    {lvl.label}
+            <div className={`space-y-5 transition-all duration-300 ${networkEnabled ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
+              {/* Average Deal Amount */}
+              <div>
+                <div className="flex items-center justify-between gap-4 mb-2">
+                  <span className="text-xs font-semibold text-winelio-gray dark:text-white/70">
+                    Montant moyen du deal
                   </span>
-                  
-                  <div className="flex-1 flex items-center gap-4">
+                  <div className="flex items-center gap-2">
                     <input
-                      type="range"
+                      type="number"
+                      value={avgDealAmount}
                       min={0}
-                      max={100}
-                      value={lvl.val}
-                      onChange={(e) => lvl.setVal(parseInt(e.target.value))}
-                      className="winelio-range-input cursor-pointer flex-1"
-                      style={{
-                        background: getSliderBackground(lvl.val, 100)
-                      }}
+                      max={1000000}
+                      onChange={(e) => setAvgDealAmount(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-24 shrink-0 text-right px-2 py-1 text-xs font-bold border border-winelio-gray/15 dark:border-white/10 rounded-lg bg-white dark:bg-black/20 text-winelio-dark dark:text-white outline-none focus:border-winelio-orange transition"
                     />
-                    
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        type="number"
-                        min={0}
-                        max={1000}
-                        value={lvl.val}
-                        onChange={(e) => lvl.setVal(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="w-14 text-right px-2 py-1 text-sm font-bold border border-winelio-gray/15 dark:border-white/10 rounded-lg bg-white dark:bg-black/20 text-winelio-dark dark:text-white outline-none focus:border-winelio-orange transition"
-                      />
-                      <span className="text-[10px] font-semibold text-winelio-gray/70 dark:text-white/50 w-16">
-                        filleul(s)
-                      </span>
-                    </div>
+                    <span className="text-xs font-bold text-winelio-dark dark:text-white">€</span>
                   </div>
                 </div>
-              ))}
 
-              {/* Levels Ticks Label */}
-              <div className="flex justify-between pr-24 pl-20 text-[10px] font-bold text-winelio-gray/40 dark:text-white/30 select-none">
-                <span>0</span>
-                <span>25</span>
-                <span>50</span>
-                <span>75</span>
-                <span>100</span>
-              </div>
-            </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={30000}
+                  step={500}
+                  value={Math.min(avgDealAmount, 30000)}
+                  onChange={(e) => setAvgDealAmount(parseInt(e.target.value))}
+                  className="winelio-range-input cursor-pointer"
+                  style={{
+                    background: getSliderBackground(Math.min(avgDealAmount, 30000), 30000)
+                  }}
+                />
 
-            {/* Pareto active percentage */}
-            <div className="border-t border-winelio-gray/5 dark:border-white/5 pt-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
-                <span className="text-sm font-bold text-winelio-dark dark:text-white">
-                  Filleuls actifs — Loi de Pareto
-                </span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={pareto}
-                    min={0}
-                    max={100}
-                    onChange={(e) => setPareto(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
-                    className="w-16 text-right px-3 py-1.5 font-bold border border-winelio-gray/15 dark:border-white/10 rounded-xl bg-white dark:bg-black/20 text-winelio-dark dark:text-white outline-none focus:border-winelio-orange transition"
-                  />
-                  <span className="text-sm font-bold text-winelio-dark dark:text-white">%</span>
+                <div className="flex justify-between mt-2 px-1 text-[10px] font-bold text-winelio-gray/60 dark:text-white/40">
+                  <span>0 €</span>
+                  <span>15k €</span>
+                  <span>30k €</span>
                 </div>
               </div>
 
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={pareto}
-                onChange={(e) => setPareto(parseInt(e.target.value))}
-                className="winelio-range-input cursor-pointer"
-                style={{
-                  background: getSliderBackground(pareto, 100)
-                }}
-              />
-
-              <div className="flex justify-between mt-2 px-1 text-[10px] sm:text-xs font-bold text-winelio-gray/60 dark:text-white/40">
-                <span>0 %</span>
-                <span>50 %</span>
-                <span>100 %</span>
-              </div>
-            </div>
-
-            {/* Network Gain Output Card */}
-            <div className="flex items-center justify-between p-4 rounded-2xl bg-orange-50/50 dark:bg-winelio-orange/5 border border-winelio-orange/10">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center text-white">
-                  <TrendingUp className="w-4 h-4" />
+              {/* Pareto active percentage */}
+              <div className="border-t border-winelio-gray/5 dark:border-white/5 pt-5">
+                <div className="flex items-center justify-between gap-4 mb-2">
+                  <span className="text-xs font-bold text-winelio-dark dark:text-white">
+                    Actifs — Loi de Pareto
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={pareto}
+                      min={0}
+                      max={100}
+                      onChange={(e) => setPareto(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                      className="w-14 text-right px-2 py-1 text-xs font-bold border border-winelio-gray/15 dark:border-white/10 rounded-lg bg-white dark:bg-black/20 text-winelio-dark dark:text-white outline-none focus:border-winelio-orange transition"
+                    />
+                    <span className="text-xs font-bold text-winelio-dark dark:text-white">%</span>
+                  </div>
                 </div>
-                <span className="text-sm font-semibold text-winelio-dark dark:text-white/80">
-                  Gain réseau
-                </span>
+
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={pareto}
+                  onChange={(e) => setPareto(parseInt(e.target.value))}
+                  className="winelio-range-input cursor-pointer"
+                  style={{
+                    background: getSliderBackground(pareto, 100)
+                  }}
+                />
+
+                <div className="flex justify-between mt-2 px-1 text-[10px] font-bold text-winelio-gray/60 dark:text-white/40">
+                  <span>0 %</span>
+                  <span>50 %</span>
+                  <span>100 %</span>
+                </div>
               </div>
-              <span className="text-xl sm:text-2xl font-black text-winelio-orange">
-                <AnimatedCounter to={results.networkGain} suffix=" €" decimals={2} />
-              </span>
             </div>
           </div>
-        </div>
 
-        {/* ================= BOTTOM PANEL: MONTANT MENSUEL ================= */}
-        <div className="bg-[#1E2528] dark:bg-black/40 border border-white/5 rounded-3xl p-6 shadow-xl text-white">
-          <div className="flex items-center justify-between flex-wrap gap-4">
+          {/* Network Gain Output Card */}
+          <div className="flex items-center justify-between p-4 rounded-xl bg-orange-50/50 dark:bg-winelio-orange/5 border border-winelio-orange/10 mt-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-winelio-amber">
-                <Trophy className="w-5 h-5" />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-winelio-orange to-winelio-amber flex items-center justify-center text-white">
+                <TrendingUp className="w-4 h-4" />
               </div>
-              <span className="text-base font-bold tracking-wide">
-                Montant mensuel
+              <span className="text-xs font-semibold text-winelio-dark dark:text-white/80">
+                Gain réseau
               </span>
             </div>
-            <span className="text-3xl sm:text-4xl font-black text-white">
-              <AnimatedCounter to={results.totalMonthly} suffix=" €" decimals={2} />
+            <span className="text-lg font-black text-winelio-orange">
+              <AnimatedCounter to={results.networkGain} suffix=" €" decimals={2} />
             </span>
           </div>
         </div>
 
-        {/* Bottom Disclaimer */}
-        <p className="text-center text-[10px] sm:text-xs text-winelio-gray/70 dark:text-white/40 leading-relaxed max-w-lg mx-auto">
-          Les résultats sont estimatifs et peuvent varier en fonction des paramètres et des performances réelles.
-        </p>
+        {/* ================= COLUMN 3: RÉSEAU LEVELS ================= */}
+        <div className="bg-white dark:bg-card border border-winelio-gray/10 dark:border-white/10 rounded-3xl p-5 shadow-[0_20px_50px_-24px_rgba(45,52,54,0.08)] flex flex-col justify-between">
+          <div className={`space-y-4 transition-all duration-300 h-full flex flex-col justify-between ${networkEnabled ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
+            <div>
+              <h3 className="text-xs font-bold text-winelio-dark dark:text-white uppercase tracking-wider mb-4 border-b border-winelio-gray/5 pb-2">
+                Filleuls par niveau
+              </h3>
+
+              {/* Levels 1 to 5 sliders */}
+              <div className="space-y-3.5">
+                {[
+                  { label: "Niveau 1", val: level1, setVal: setLevel1 },
+                  { label: "Niveau 2", val: level2, setVal: setLevel2 },
+                  { label: "Niveau 3", val: level3, setVal: setLevel3 },
+                  { label: "Niveau 4", val: level4, setVal: setLevel4 },
+                  { label: "Niveau 5", val: level5, setVal: setLevel5 },
+                ].map((lvl) => (
+                  <div key={lvl.label} className="flex items-center justify-between gap-4">
+                    <span className="text-[11px] font-semibold text-winelio-gray dark:text-white/70 w-14 shrink-0">
+                      {lvl.label}
+                    </span>
+                    
+                    <div className="flex-1 flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={lvl.val}
+                        onChange={(e) => lvl.setVal(parseInt(e.target.value))}
+                        className="winelio-range-input cursor-pointer flex-1"
+                        style={{
+                          background: getSliderBackground(lvl.val, 100)
+                        }}
+                      />
+                      
+                      <div className="flex items-center gap-1 shrink-0">
+                        <input
+                          type="number"
+                          min={0}
+                          max={1000}
+                          value={lvl.val}
+                          onChange={(e) => lvl.setVal(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="w-10 text-right px-1 py-0.5 text-xs font-bold border border-winelio-gray/15 dark:border-white/10 rounded bg-white dark:bg-black/20 text-winelio-dark dark:text-white outline-none focus:border-winelio-orange transition"
+                        />
+                        <span className="text-[9px] font-semibold text-winelio-gray/70 dark:text-white/50 w-8">
+                          fil.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Levels Ticks Label */}
+            <div className="flex justify-between pr-10 pl-16 text-[9px] font-bold text-winelio-gray/40 dark:text-white/30 select-none border-t border-winelio-gray/5 pt-2">
+              <span>0</span>
+              <span>25</span>
+              <span>50</span>
+              <span>75</span>
+              <span>100</span>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Bottom Disclaimer */}
+      <p className="text-center text-[9px] text-winelio-gray/60 dark:text-white/40 leading-relaxed max-w-lg mx-auto mt-4 shrink-0">
+        Les résultats sont estimatifs et peuvent varier en fonction des paramètres et des performances réelles.
+      </p>
     </div>
   );
 }

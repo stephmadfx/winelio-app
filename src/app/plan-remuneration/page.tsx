@@ -15,22 +15,22 @@ export default async function PlanRemunerationPage() {
     .single();
 
   return (
-    <div className="relative min-h-screen bg-winelio-light overflow-hidden flex flex-col justify-center px-4 py-12">
+    <div className="relative min-h-screen lg:h-screen lg:overflow-hidden bg-winelio-light flex flex-col justify-between px-4 py-4 lg:py-6">
       <AppBackground />
 
-      <div className="w-full max-w-4xl mx-auto z-10">
+      <div className="w-full max-w-6xl mx-auto z-10 flex-1 flex flex-col justify-center gap-2">
         {/* Centered Logo */}
-        <div className="flex justify-center mb-6">
-          <WinelioLogo variant="color" height={44} />
+        <div className="flex justify-center mb-2 shrink-0">
+          <WinelioLogo variant="color" height={38} />
         </div>
 
         {/* Affiliate Simulator Card */}
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden flex-1 flex flex-col justify-center">
           <AffiliateSimulator plan={plan} />
         </div>
 
         {/* Footer info */}
-        <p className="text-center text-xs text-winelio-gray mt-6">
+        <p className="text-center text-[10px] sm:text-xs text-winelio-gray mt-2 shrink-0">
           © 2026 Winelio · Recommandez. Connectez. Gagnez.
         </p>
       </div>
