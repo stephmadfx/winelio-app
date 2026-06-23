@@ -18,9 +18,14 @@ import { createClient } from "@supabase/supabase-js";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY || "AIzaSyCO97R0uHUFnU8X7zYv3Q-FAdxEL54xSTw";
+const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://dxnebmxtkvauergvrmod.supabase.co";
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!GOOGLE_API_KEY) {
+  console.error("❌ GOOGLE_PLACES_API_KEY manquant dans l'environnement");
+  process.exit(1);
+}
 
 if (!SUPABASE_SERVICE_KEY) {
   console.error("❌ SUPABASE_SERVICE_ROLE_KEY manquant");

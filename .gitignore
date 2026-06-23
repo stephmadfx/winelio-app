@@ -14,3 +14,7 @@ tests/e2e/.env.test
 test-results/
 playwright-report/
 .playwright-cache/
+
+# Local logs & OS garbage
+.DS_Store
+*.log
