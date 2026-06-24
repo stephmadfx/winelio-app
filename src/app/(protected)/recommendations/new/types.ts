@@ -21,6 +21,7 @@ export interface Professional {
   review_count: number;
   is_claimed: boolean;
   last_active_at: string;
+  company_source?: string | null;
 }
 
 export interface Category {

@@ -490,8 +490,27 @@ async function main() {
             continue;
           }
 
-          // Attendre le chargement de la fiche de détails
-          await sleep(2500);
+          // Attendre le chargement de la fiche de détails (vérification dynamique du titre)
+          let titleLoaded = false;
+          for (let attempt = 0; attempt < 12; attempt++) {
+            const currentTitle = await page.evaluate(() => {
+              const h1 = document.querySelector("h1");
+              return h1 ? h1.innerText.trim() : "";
+            });
+            if (
+              currentTitle &&
+              (currentTitle.toLowerCase().includes(place.name.toLowerCase()) ||
+                place.name.toLowerCase().includes(currentTitle.toLowerCase()))
+            ) {
+              titleLoaded = true;
+              break;
+            }
+            await sleep(500);
+          }
+
+          if (!titleLoaded) {
+            logBuffer += `⚠️ [Panneau désynchronisé] `;
+          }
 
           // Extraire les détails de la fiche ouverte
           const details = await page.evaluate(() => {

@@ -87,6 +87,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
             review_count: 0,
             is_claimed: p.company_source === "owner",
             last_active_at: fakeLastActive(p.profile_id),
+            company_source: p.company_source ?? null,
           };
         });
 
