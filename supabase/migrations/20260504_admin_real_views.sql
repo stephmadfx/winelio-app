@@ -16,7 +16,7 @@ CREATE OR REPLACE FUNCTION winelio.is_e2e_email(addr text)
 RETURNS boolean
 LANGUAGE sql IMMUTABLE PARALLEL SAFE
 AS $$
-  SELECT addr ILIKE '%@winelio-e2e.local'
+  SELECT addr ILIKE '%@winelio-e2e.local' OR addr ILIKE '%@winelio-scraped.local'
 $$;
 
 -- ── 1. profiles_real : profils non-E2E ───────────────────────
