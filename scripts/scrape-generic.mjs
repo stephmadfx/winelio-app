@@ -494,8 +494,8 @@ async function main() {
           let titleLoaded = false;
           for (let attempt = 0; attempt < 12; attempt++) {
             const currentTitle = await page.evaluate(() => {
-              const h1 = document.querySelector("h1");
-              return h1 ? h1.innerText.trim() : "";
+              const titleEl = document.querySelector(".DUwDvf") || document.querySelector("h1.DUwDvf");
+              return titleEl ? titleEl.innerText.trim() : "";
             });
             if (
               currentTitle &&
