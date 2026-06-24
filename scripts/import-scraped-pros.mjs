@@ -39,6 +39,13 @@ const categorySlug = getArg("category-slug");
 const limit = parseInt(getArg("limit") || "0", 10);
 const concurrency = parseInt(getArg("concurrency") || "3", 10);
 const dryRun = args.includes("--dry-run");
+const onlyEmail = args.includes("--only-email");
+
+function isValidEmail(email) {
+  if (!email) return false;
+  const clean = email.toLowerCase().trim();
+  return clean.includes("@") && !clean.includes("introuvable") && !clean.includes("placeholder");
+}
 
 if (!filePath) {
   console.error("❌ Argument requis : --file <chemin_vers_csv>");
@@ -216,6 +223,11 @@ async function main() {
     const name = row.name;
     const email = row.email?.toLowerCase().trim();
     const phone = row.phone?.replace(/\s+/g, "").trim(); // Supprimer les espaces pour la comparaison
+
+    if (onlyEmail && !isValidEmail(email)) {
+      skippedCount++;
+      return;
+    }
 
     // Dédoublonnage E-mail
     if (email) {
