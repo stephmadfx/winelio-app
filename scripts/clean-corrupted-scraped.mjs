@@ -97,7 +97,7 @@ async function main() {
 
     // 4. Identify potential mismatches to pre-fetch city coordinates
     const potentialMismatches = [];
-    const uniqueCitiesToFetch = new Map(); // "city_dept" -> { city, dept }
+    const uniqueCitiesToFetch = new Map(); // normCompCity -> rawCityName
 
     for (const comp of companies) {
       const cpData = cpCache.get(comp.postal_code);
@@ -105,12 +105,7 @@ async function main() {
 
       const normCompCity = normalize(comp.city);
       if (!cpData.communes.has(normCompCity)) {
-        let dept = comp.postal_code.substring(0, 2);
-        if (comp.postal_code.startsWith("97") || comp.postal_code.startsWith("98")) {
-          dept = comp.postal_code.substring(0, 3);
-        }
-        const key = `${normCompCity}_${dept}`;
-        uniqueCitiesToFetch.set(key, { city: comp.city, dept });
+        uniqueCitiesToFetch.set(normCompCity, comp.city);
         potentialMismatches.push(comp);
       }
     }
@@ -119,31 +114,32 @@ async function main() {
     console.log(`🌐 Fetching coordinates for ${uniqueCitiesToFetch.size} unique mismatched cities...`);
 
     // 5. Pre-fetch mismatched cities in parallel
-    const cityCache = new Map(); // "city_dept" -> { lat, lng }
+    const cityCache = new Map(); // normCompCity -> Array of { nom, lat, lng }
     const cityQueue = Array.from(uniqueCitiesToFetch.entries());
     const activeCityWorkers = [];
     let citiesProcessed = 0;
 
     async function cityWorker() {
       while (cityQueue.length > 0) {
-        const [key, { city, dept }] = cityQueue.shift();
+        const [normCompCity, rawCityName] = cityQueue.shift();
         try {
-          const apiRes = await fetch(`https://geo.api.gouv.fr/communes?nom=${encodeURIComponent(city)}&codeDepartement=${dept}&limit=1&fields=centre`);
+          const apiRes = await fetch(`https://geo.api.gouv.fr/communes?nom=${encodeURIComponent(rawCityName)}&fields=nom,centre,codeDepartement`);
           if (apiRes.ok) {
             const data = await apiRes.json();
-            if (data && data.length > 0 && data[0].centre && data[0].centre.coordinates) {
-              const [lng, lat] = data[0].centre.coordinates;
-              cityCache.set(key, { lat, lng });
-            } else {
-              // Try without department code as fallback
-              const fallbackRes = await fetch(`https://geo.api.gouv.fr/communes?nom=${encodeURIComponent(city)}&limit=1&fields=centre`);
-              if (fallbackRes.ok) {
-                const fallbackData = await fallbackRes.json();
-                if (fallbackData && fallbackData.length > 0 && fallbackData[0].centre && fallbackData[0].centre.coordinates) {
-                  const [lng, lat] = fallbackData[0].centre.coordinates;
-                  cityCache.set(key, { lat, lng });
+            if (data && data.length > 0) {
+              const candidates = [];
+              for (const item of data) {
+                if (item.centre && item.centre.coordinates) {
+                  const [lng, lat] = item.centre.coordinates;
+                  candidates.push({
+                    nom: item.nom,
+                    lat,
+                    lng,
+                    codeDepartement: item.codeDepartement
+                  });
                 }
               }
+              cityCache.set(normCompCity, candidates);
             }
           }
         } catch (err) {
@@ -185,24 +181,109 @@ async function main() {
         continue;
       }
 
-      // Mismatch! Check pre-fetched distance
-      let dept = comp.postal_code.substring(0, 2);
-      if (comp.postal_code.startsWith("97") || comp.postal_code.startsWith("98")) {
-        dept = comp.postal_code.substring(0, 3);
-      }
-      const key = `${normCompCity}_${dept}`;
-      const cityCoords = cityCache.get(key);
-
-      if (!cityCoords || cpData.lat === null || cpData.lng === null) {
+      // Mismatch! Check pre-fetched candidates
+      const candidates = cityCache.get(normCompCity);
+      if (!candidates || candidates.length === 0 || cpData.lat === null || cpData.lng === null) {
         localMismatchCount++;
         continue;
       }
 
-      const distance = calculateDistance(cpData.lat, cpData.lng, cityCoords.lat, cityCoords.lng);
+      // Determine the company's department code
+      let dept = comp.postal_code.substring(0, 2);
+      if (comp.postal_code.startsWith("97") || comp.postal_code.startsWith("98")) {
+        dept = comp.postal_code.substring(0, 3);
+      }
+
+      // 1. Try to find matches within the SAME department
+      const deptMatches = candidates.filter(c => c.codeDepartement === dept);
+      let matchedCommune = null;
+
+      if (deptMatches.length > 0) {
+        // Try exact name match in same department
+        const exactDeptMatches = deptMatches.filter(c => normalize(c.nom) === normCompCity);
+        if (exactDeptMatches.length > 0) {
+          matchedCommune = exactDeptMatches[0]; // arbitrary first, usually only one
+        } else {
+          // Try partial name match (e.g. Evry-Courcouronnes for Evry)
+          const partialDeptMatches = deptMatches.filter(c => 
+            normalize(c.nom).includes(normCompCity) || normCompCity.includes(normalize(c.nom))
+          );
+          if (partialDeptMatches.length > 0) {
+            // Pick closest if multiple
+            let minD = Infinity;
+            for (const c of partialDeptMatches) {
+              const d = calculateDistance(cpData.lat, cpData.lng, c.lat, c.lng);
+              if (d < minD) {
+                minD = d;
+                matchedCommune = c;
+              }
+            }
+          } else {
+            // Fallback to closest commune in same department
+            let minD = Infinity;
+            for (const c of deptMatches) {
+              const d = calculateDistance(cpData.lat, cpData.lng, c.lat, c.lng);
+              if (d < minD) {
+                minD = d;
+                matchedCommune = c;
+              }
+            }
+          }
+        }
+      }
+
+      // 2. If no candidate in same department, fallback to all candidates regardless of department
+      if (!matchedCommune) {
+        // Try exact name match
+        const exactMatches = candidates.filter(c => normalize(c.nom) === normCompCity);
+        if (exactMatches.length > 0) {
+          let minD = Infinity;
+          for (const c of exactMatches) {
+            const d = calculateDistance(cpData.lat, cpData.lng, c.lat, c.lng);
+            if (d < minD) {
+              minD = d;
+              matchedCommune = c;
+            }
+          }
+        } else {
+          // Try partial match
+          const partialMatches = candidates.filter(c => 
+            normalize(c.nom).includes(normCompCity) || normCompCity.includes(normalize(c.nom))
+          );
+          if (partialMatches.length > 0) {
+            let minD = Infinity;
+            for (const c of partialMatches) {
+              const d = calculateDistance(cpData.lat, cpData.lng, c.lat, c.lng);
+              if (d < minD) {
+                minD = d;
+                matchedCommune = c;
+              }
+            }
+          } else {
+            // Fallback to closest overall candidate
+            let minD = Infinity;
+            for (const c of candidates) {
+              const d = calculateDistance(cpData.lat, cpData.lng, c.lat, c.lng);
+              if (d < minD) {
+                minD = d;
+                matchedCommune = c;
+              }
+            }
+          }
+        }
+      }
+
+      if (!matchedCommune) {
+        localMismatchCount++;
+        continue;
+      }
+
+      const distance = calculateDistance(cpData.lat, cpData.lng, matchedCommune.lat, matchedCommune.lng);
+
       if (distance > 30) {
         corruptedIds.push(comp.id);
         ownerIdsToDelete.add(comp.owner_id);
-        console.log(`❌ Corrupted: "${comp.name}" | Scraped City: ${comp.city} | Actual CP/Address: ${comp.postal_code} (${comp.address}) | Distance: ${Math.round(distance)} km`);
+        console.log(`❌ Corrupted: "${comp.name}" | Scraped City: ${comp.city} | Actual CP/Address: ${comp.postal_code} (${comp.address}) | Distance: ${Math.round(distance)} km (closest match: ${matchedCommune.nom} [${matchedCommune.codeDepartement}])`);
       } else {
         localMismatchCount++;
       }
