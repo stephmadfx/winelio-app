@@ -16,7 +16,7 @@ export async function notifyScrapedReminder(recommendationId: string) {
       `id, project_description, urgency_level,
        professional:profiles!recommendations_professional_id_fkey(companies(name, email, source, deleted_at)),
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name),
-       contact:contacts(first_name, last_name)`
+       contact:contacts(first_name, last_name, city)`
     )
     .eq("id", recommendationId)
     .single();
@@ -29,7 +29,7 @@ export async function notifyScrapedReminder(recommendationId: string) {
   const pro = normalize<{ companies: unknown }>(rec.professional);
   const company = pickActiveCompany<{ name: string | null; email: string | null; source: string | null; deleted_at: string | null }>(pro?.companies);
   const referrer = normalize<{ first_name: string | null; last_name: string | null }>(rec.referrer);
-  const contact = normalize<{ first_name: string | null; last_name: string | null }>(rec.contact);
+  const contact = normalize<{ first_name: string | null; last_name: string | null; city: string | null }>(rec.contact);
 
   // Uniquement pour les pros scrappés
   if (company?.source !== "scraped") return;
@@ -39,9 +39,30 @@ export async function notifyScrapedReminder(recommendationId: string) {
   if (!recipientEmail) return;
 
   const ctaUrl = trackClick(recommendationId);
-  const companyName = company?.name || "votre entreprise";
+  const companyName = (() => {
+    const name = company?.name;
+    if (!name) return "votre entreprise";
+    const trimmed = name.trim();
+    if (trimmed.length > 10) {
+      return trimmed.slice(0, 10) + "...";
+    }
+    return trimmed;
+  })();
   const referrerName = formatDisplayName(referrer?.first_name, referrer?.last_name, "Un membre Winelio");
-  const contactName = formatDisplayName(contact?.first_name, contact?.last_name, "un client");
+  const contactName = (() => {
+    const f = contact?.first_name?.trim() || "";
+    const l = contact?.last_name?.trim() || "";
+    const c = contact?.city?.trim() || "";
+    let name = f;
+    if (f && l) {
+      name += ` ${l.charAt(0).toUpperCase()}.`;
+    } else if (l) {
+      name = `${l.charAt(0).toUpperCase()}.`;
+    }
+    if (!name) name = "un client";
+    if (c) name += ` (${c})`;
+    return name;
+  })();
 
   const html = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><title>Rappel — Un client vous recommande</title></head>

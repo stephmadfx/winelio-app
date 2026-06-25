@@ -27,7 +27,7 @@ export default async function ClaimPage({
       `id, project_description, urgency_level, created_at, professional_id,
        professional:profiles!recommendations_professional_id_fkey(id, email, companies(id, name, city, email, owner_id, source)),
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name, sponsor_code),
-       contact:contacts(first_name, last_name)`
+       contact:contacts(first_name, last_name, city)`
     )
     .eq("id", recommendationId)
     .single();
@@ -71,7 +71,7 @@ export default async function ClaimPage({
     last_name: string | null;
     sponsor_code: string | null;
   }>(rec.referrer);
-  const contact = normalize<{ first_name: string | null; last_name: string | null }>(rec.contact);
+  const contact = normalize<{ first_name: string | null; last_name: string | null; city: string | null }>(rec.contact);
 
   const user = await getUser();
 
@@ -81,7 +81,20 @@ export default async function ClaimPage({
   }
 
   const referrerName = formatDisplayName(referrer?.first_name, referrer?.last_name, "Un membre Winelio");
-  const contactName = formatDisplayName(contact?.first_name, contact?.last_name, "Un contact");
+  const contactName = (() => {
+    const f = contact?.first_name?.trim() || "";
+    const l = contact?.last_name?.trim() || "";
+    const c = contact?.city?.trim() || "";
+    let name = f;
+    if (f && l) {
+      name += ` ${l.charAt(0).toUpperCase()}.`;
+    } else if (l) {
+      name = `${l.charAt(0).toUpperCase()}.`;
+    }
+    if (!name) name = "Un contact";
+    if (c) name += ` (${c})`;
+    return name;
+  })();
   const urgencyLabel = URGENCY_LABELS[rec.urgency_level ?? ""] ?? "Normal";
 
   const alreadyClaimedByOther =

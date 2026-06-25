@@ -123,7 +123,7 @@ export async function notifyNewRecommendation(recommendationId: string) {
       `id, referrer_id, project_description, urgency_level,
        professional:profiles!recommendations_professional_id_fkey(id, first_name, email, companies(name, email, source, deleted_at)),
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name),
-       contact:contacts(first_name, last_name)`
+       contact:contacts(first_name, last_name, city)`
     )
     .eq("id", recommendationId)
     .single();
@@ -138,7 +138,7 @@ export async function notifyNewRecommendation(recommendationId: string) {
     companies: unknown;
   }>(rec.professional);
   const referrer = normalize<{ first_name: string | null; last_name: string | null }>(rec.referrer);
-  const contact = normalize<{ first_name: string | null; last_name: string | null }>(rec.contact);
+  const contact = normalize<{ first_name: string | null; last_name: string | null; city: string | null }>(rec.contact);
 
   if (!pro) return;
 
@@ -154,17 +154,41 @@ export async function notifyNewRecommendation(recommendationId: string) {
   if (recipients.length === 0) return;
 
   const referrerName = formatDisplayName(referrer?.first_name, referrer?.last_name, "Un membre Winelio");
-  const contactName = formatDisplayName(contact?.first_name, contact?.last_name, "Un contact");
+  const contactName = (() => {
+    const f = contact?.first_name?.trim() || "";
+    const l = contact?.last_name?.trim() || "";
+    const c = contact?.city?.trim() || "";
+    let name = f;
+    if (f && l) {
+      name += ` ${l.charAt(0).toUpperCase()}.`;
+    } else if (l) {
+      name = `${l.charAt(0).toUpperCase()}.`;
+    }
+    if (!name) name = "Un contact";
+    if (c) name += ` (${c})`;
+    return name;
+  })();
   const urgency = urgencyLabel(rec.urgency_level);
   const isScraped = company?.source === "scraped";
 
+  const shortenCompanyName = (name: string | null | undefined): string => {
+    if (!name) return "votre entreprise";
+    const trimmed = name.trim();
+    if (trimmed.length > 10) {
+      return trimmed.slice(0, 10) + "...";
+    }
+    return trimmed;
+  };
+
+  const shortCompanyName = shortenCompanyName(company?.name);
+
   const subject = isScraped
-    ? `${referrerName} a recommandé ${company?.name || "votre entreprise"} à un client`
+    ? `${referrerName} a recommandé ${shortCompanyName} à un client`
     : `Nouvelle recommandation de ${referrerName}`;
 
   for (const to of recipients) {
     const html = isScraped
-      ? buildScrapedEmail(company?.name || "votre entreprise", referrerName, contactName, rec.project_description || "", urgency, recommendationId)
+      ? buildScrapedEmail(shortCompanyName, referrerName, contactName, rec.project_description || "", urgency, recommendationId)
       : buildOwnerEmail(pro.first_name || "", referrerName, contactName, rec.project_description || "", urgency, recommendationId);
     await queueEmail({ to, subject, html });
   }
