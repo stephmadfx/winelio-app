@@ -4,8 +4,8 @@ import { LOGO_IMG_HTML } from "@/lib/email-logo";
 const SITE = "https://winelio.app";
 
 // Données fictives pour les previews
-const PRO     = "Martin Électricité";
-const CONTACT = "Sophie Bernard";
+const PRO     = "Martin Éle...";
+const CONTACT = "Sophie B. (Paris)";
 const REFERRER = "Thomas Dupont";
 
 const wrap = (body: string) => `<!DOCTYPE html>

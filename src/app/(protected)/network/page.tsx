@@ -229,7 +229,7 @@ export default async function NetworkPage() {
                       <div className="min-w-0">
                         <p className={`font-semibold text-sm truncate ${isPro ? "font-mono text-winelio-orange" : "text-winelio-dark"}`}>
                           {displayName}
-                          {isPro && (
+                          {ref.is_professional && (
                             <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-white bg-gradient-to-r from-winelio-orange to-winelio-amber align-middle">
                               Pro
                             </span>

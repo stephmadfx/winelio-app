@@ -39,7 +39,7 @@ export async function GET(req: Request) {
     .from("recommendations")
     .select(
       `id, status, amount, created_at, email_opened_at, email_clicked_at, abandoned_by_pro_at,
-       contact:contacts(first_name, last_name),
+       contact:contacts(first_name, last_name, city),
        professional:profiles!recommendations_professional_id_fkey(
          first_name, last_name,
          companies!owner_id(alias, city, category:categories(name))
@@ -62,5 +62,32 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ recommendations: data ?? [], leadAccessBlock });
+  const mappedData = (data ?? []).map((rec: any) => {
+    if (tab === "received" && rec.status === "PENDING" && rec.contact) {
+      const contact = Array.isArray(rec.contact) ? rec.contact[0] : rec.contact;
+      const f = contact?.first_name?.trim() || "";
+      const l = contact?.last_name?.trim() || "";
+      const c = contact?.city?.trim() || "";
+      let maskedName = f;
+      if (f && l) {
+        maskedName += ` ${l.charAt(0).toUpperCase()}.`;
+      } else if (l) {
+        maskedName = `${l.charAt(0).toUpperCase()}.`;
+      }
+      if (!maskedName) maskedName = "Contact";
+      if (c) maskedName += ` (${c})`;
+
+      return {
+        ...rec,
+        contact: {
+          first_name: maskedName,
+          last_name: null,
+          city: contact?.city ?? null,
+        },
+      };
+    }
+    return rec;
+  });
+
+  return NextResponse.json({ recommendations: mappedData, leadAccessBlock });
 }

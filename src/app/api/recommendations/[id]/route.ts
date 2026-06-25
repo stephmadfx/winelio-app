@@ -78,15 +78,31 @@ export async function GET(
       .eq("id", user.id)
       .single();
 
-    if (!proProfile?.stripe_payment_method_id) {
+    if (!proProfile?.stripe_payment_method_id || rec.status === "PENDING") {
       contactMasked = true;
       const contactArr = Array.isArray(rec.contact) ? rec.contact : rec.contact ? [rec.contact] : [];
-      const contact = contactArr[0] as { first_name?: string | null; last_name?: string | null } | undefined;
+      const contact = contactArr[0] as { first_name?: string | null; last_name?: string | null; city?: string | null } | undefined;
+
+      const f = contact?.first_name?.trim() || "";
+      const l = contact?.last_name?.trim() || "";
+      const c = contact?.city?.trim() || "";
+      let maskedName = f;
+      if (f && l) {
+        maskedName += ` ${l.charAt(0).toUpperCase()}.`;
+      } else if (l) {
+        maskedName = `${l.charAt(0).toUpperCase()}.`;
+      }
+      if (!maskedName) maskedName = "Contact";
+      if (c) maskedName += ` (${c})`;
+
       rec.contact = {
-        first_name: contact?.first_name ?? null,
-        last_name: contact?.last_name ?? null,
+        first_name: maskedName,
+        last_name: null,
         email: null,
         phone: null,
+        address: null,
+        postal_code: null,
+        city: contact?.city ?? null,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any;
     }
