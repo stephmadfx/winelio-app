@@ -35,7 +35,15 @@ function getColors(level: number) {
   return LEVEL_COLORS[level] ?? { border: "border-l-gray-300", badge: "bg-gray-400", bg: "bg-gray-50", text: "text-gray-500" };
 }
 
-export function NetworkTree({ userId, maxLevel = 5 }: { userId: string; maxLevel?: number }) {
+export function NetworkTree({
+  userId,
+  maxLevel = 5,
+  showRealNames = false,
+}: {
+  userId: string;
+  maxLevel?: number;
+  showRealNames?: boolean;
+}) {
   const [roots, setRoots] = useState<TreeNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -213,6 +221,7 @@ export function NetworkTree({ userId, maxLevel = 5 }: { userId: string; maxLevel
             onToggle={toggleNode}
             isLast={i === roots.length - 1}
             maxLevel={maxLevel}
+            showRealNames={showRealNames}
           />
         ))}
       </div>
@@ -227,6 +236,7 @@ function TreeNodeRow({
   onToggle,
   isLast,
   maxLevel = 5,
+  showRealNames = false,
 }: {
   node: TreeNode;
   level: number;
@@ -234,13 +244,17 @@ function TreeNodeRow({
   onToggle: (path: number[]) => void;
   isLast: boolean;
   maxLevel?: number;
+  showRealNames?: boolean;
 }) {
   const isPro = node.is_professional && node.company_alias;
+  const realName = formatDisplayName(node.first_name, node.last_name, "Sans nom");
 
-  const displayName = isPro
+  const displayName = showRealNames
+    ? realName + (isPro ? ` (${node.company_alias})` : "")
+    : isPro
     ? node.company_alias!
     : level === 1
-    ? formatDisplayName(node.first_name, node.last_name, "Sans nom")
+    ? realName
     : ([node.first_name, node.last_name]
         .filter(Boolean)
         .map((n) => `${n![0].toUpperCase()}.`)
@@ -299,7 +313,7 @@ function TreeNodeRow({
           {/* Name + level badge */}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className={`font-semibold text-sm truncate ${isPro ? "font-mono text-winelio-orange" : "text-winelio-dark"}`}>
+              <span className={`font-semibold text-sm truncate ${isPro && !showRealNames ? "font-mono text-winelio-orange" : "text-winelio-dark"}`}>
                 {displayName}
               </span>
               <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold text-white ${colors.badge} shrink-0`}>
@@ -350,6 +364,7 @@ function TreeNodeRow({
               onToggle={onToggle}
               isLast={i === node.children.length - 1}
               maxLevel={maxLevel}
+              showRealNames={showRealNames}
             />
           ))}
         </div>

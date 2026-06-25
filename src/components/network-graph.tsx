@@ -40,7 +40,21 @@ const LEVEL_COLORS = [
   "#FF6B35", "#F7931E", "#FBBF24", "#34D399", "#60A5FA", "#A78BFA",
 ];
 
-export function NetworkGraph({ userId, userName, userAvatar, rootLabel, maxLevel = 5 }: { userId: string; userName: string; userAvatar?: string | null; rootLabel?: string; maxLevel?: number }) {
+export function NetworkGraph({
+  userId,
+  userName,
+  userAvatar,
+  rootLabel,
+  maxLevel = 5,
+  showRealNames = false,
+}: {
+  userId: string;
+  userName: string;
+  userAvatar?: string | null;
+  rootLabel?: string;
+  maxLevel?: number;
+  showRealNames?: boolean;
+}) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({ dragging: false, startX: 0, startY: 0, tx: 0, ty: 0, scale: 1 });
@@ -485,9 +499,11 @@ function NodeView({ node, onClick, onClose, events, eventsLoading, selectedId, r
             name={
               isRoot
                 ? (rootLabel ?? "Vous")
-                : node.is_professional && node.company_alias
-                  ? node.company_alias
-                  : formatDisplayName(node.first_name, node.last_name, "Sans nom")
+                : showRealNames
+                  ? formatDisplayName(node.first_name, node.last_name, "Sans nom")
+                  : node.is_professional && node.company_alias
+                    ? node.company_alias
+                    : formatDisplayName(node.first_name, node.last_name, "Sans nom")
             }
             avatar={node.avatar}
             className="h-full w-full"
@@ -527,11 +543,15 @@ function NodeView({ node, onClick, onClose, events, eventsLoading, selectedId, r
         }}>
           {isRoot
             ? (rootLabel ?? "Vous")
-            : node.is_professional && node.company_alias
-              ? node.company_alias
-              : node.level === 1
-                ? (node.first_name ?? "")
-                : [node.first_name, node.last_name].filter(Boolean).map((n) => `${n![0].toUpperCase()}.`).join("")}
+            : showRealNames
+              ? node.first_name
+                ? node.first_name + (node.last_name ? ` ${node.last_name.charAt(0)}.` : "")
+                : (node.last_name ?? "Sans nom")
+              : node.is_professional && node.company_alias
+                ? node.company_alias
+                : node.level === 1
+                  ? (node.first_name ?? "")
+                  : [node.first_name, node.last_name].filter(Boolean).map((n) => `${n![0].toUpperCase()}.`).join("")}
         </span>
 
         {/* Expand/collapse badge */}
@@ -550,9 +570,11 @@ function NodeView({ node, onClick, onClose, events, eventsLoading, selectedId, r
             <div className="flex items-start justify-between gap-1 px-3 pt-2.5 pb-1.5">
               <div className="min-w-0">
                 <p className="text-[11px] font-bold text-winelio-dark truncate leading-tight">
-                  {node.is_professional && node.company_alias
-                    ? node.company_alias
-                    : formatDisplayName(node.first_name, node.last_name, "Sans nom")}
+                  {showRealNames
+                    ? formatDisplayName(node.first_name, node.last_name, "Sans nom") + (node.is_professional && node.company_alias ? ` (${node.company_alias})` : "")
+                    : node.is_professional && node.company_alias
+                      ? node.company_alias
+                      : formatDisplayName(node.first_name, node.last_name, "Sans nom")}
                 </p>
                 <p className="text-[9px] text-winelio-gray truncate">
                   {node.is_professional && node.company_category && <span>{node.company_category} · </span>}
