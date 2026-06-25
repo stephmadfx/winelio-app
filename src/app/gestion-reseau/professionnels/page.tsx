@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ProfessionnelsTable } from "@/components/admin/ProfessionnelsTable";
 import { verifyCompany } from "@/app/gestion-reseau/actions";
