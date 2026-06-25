@@ -53,8 +53,9 @@ export async function notifyScrapedReminder(recommendationId: string) {
     const f = contact?.first_name?.trim() || "";
     const l = contact?.last_name?.trim() || "";
     const c = contact?.city?.trim() || "";
-    let name = f;
-    if (f && l) {
+    const fDisplay = f.length > 10 ? f.slice(0, 10) + "..." : f;
+    let name = fDisplay;
+    if (fDisplay && l) {
       name += ` ${l.charAt(0).toUpperCase()}.`;
     } else if (l) {
       name = `${l.charAt(0).toUpperCase()}.`;
