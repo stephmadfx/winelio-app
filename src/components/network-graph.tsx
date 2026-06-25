@@ -428,6 +428,7 @@ export function NetworkGraph({
               eventsLoading={eventsLoading}
               selectedId={selectedNode?.id ?? null}
               rootLabel={rootLabel}
+              showRealNames={showRealNames}
             />
           </div>
         ) : null}
@@ -438,7 +439,16 @@ export function NetworkGraph({
 }
 
 // ── Node visual component (horizontal tree) ──────────
-function NodeView({ node, onClick, onClose, events, eventsLoading, selectedId, rootLabel }: {
+function NodeView({
+  node,
+  onClick,
+  onClose,
+  events,
+  eventsLoading,
+  selectedId,
+  rootLabel,
+  showRealNames = false,
+}: {
   node: GraphNode;
   onClick: (node: GraphNode) => void;
   onClose: () => void;
@@ -446,6 +456,7 @@ function NodeView({ node, onClick, onClose, events, eventsLoading, selectedId, r
   eventsLoading?: boolean;
   selectedId: string | null;
   rootLabel?: string;
+  showRealNames?: boolean;
 }) {
   const color = LEVEL_COLORS[node.level] ?? "#9ca3af";
   const isRoot = node.level === 0;
@@ -648,6 +659,7 @@ function NodeView({ node, onClick, onClose, events, eventsLoading, selectedId, r
                   eventsLoading={eventsLoading}
                   selectedId={selectedId}
                   rootLabel={rootLabel}
+                  showRealNames={showRealNames}
                 />
               </div>
             ))}
