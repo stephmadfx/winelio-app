@@ -19,7 +19,8 @@ const categories = [
   { slug: "juridique", query: "avocat notaire" },
   { slug: "menuiserie", query: "menuisier menuiserie" },
   { slug: "nettoyage", query: "entreprise nettoyage nettoyage bureaux" },
-  { slug: "peinture", query: "artisan peintre peintre batiment" }
+  { slug: "peinture", query: "artisan peintre peintre batiment" },
+  { slug: "courtier-credit", query: "courtier credit courtier pret courtier taux" }
 ];
 
 function runCommand(cmd) {
