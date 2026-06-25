@@ -86,8 +86,9 @@ export async function GET(
       const f = contact?.first_name?.trim() || "";
       const l = contact?.last_name?.trim() || "";
       const c = contact?.city?.trim() || "";
-      let maskedName = f;
-      if (f && l) {
+      const fDisplay = f.length > 10 ? f.slice(0, 10) + "..." : f;
+      let maskedName = fDisplay;
+      if (fDisplay && l) {
         maskedName += ` ${l.charAt(0).toUpperCase()}.`;
       } else if (l) {
         maskedName = `${l.charAt(0).toUpperCase()}.`;
