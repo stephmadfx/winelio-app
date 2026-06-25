@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { BugTrackerBoard, type BugBoardReport } from "@/components/admin/BugTrackerBoard";
 import { toPublicStorageUrl } from "@/lib/storage-public-url";

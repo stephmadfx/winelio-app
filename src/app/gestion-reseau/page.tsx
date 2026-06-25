@@ -1,4 +1,5 @@
 // src/app/gestion-reseau/page.tsx
+export const dynamic = "force-dynamic";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {

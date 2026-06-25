@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { type FlowAnnotation } from "@/components/admin/FlowAnnotationDialog";
 import { RecoFlowchartClient } from "@/components/admin/RecoFlowchartClient";
