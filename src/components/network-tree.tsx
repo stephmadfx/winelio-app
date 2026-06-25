@@ -250,7 +250,7 @@ function TreeNodeRow({
   const realName = formatDisplayName(node.first_name, node.last_name, "Sans nom");
 
   const displayName = showRealNames
-    ? realName + (isPro ? ` (${node.company_alias})` : "")
+    ? realName
     : isPro
     ? node.company_alias!
     : level === 1

@@ -582,7 +582,7 @@ function NodeView({
               <div className="min-w-0">
                 <p className="text-[11px] font-bold text-winelio-dark truncate leading-tight">
                   {showRealNames
-                    ? formatDisplayName(node.first_name, node.last_name, "Sans nom") + (node.is_professional && node.company_alias ? ` (${node.company_alias})` : "")
+                    ? formatDisplayName(node.first_name, node.last_name, "Sans nom")
                     : node.is_professional && node.company_alias
                       ? node.company_alias
                       : formatDisplayName(node.first_name, node.last_name, "Sans nom")}
