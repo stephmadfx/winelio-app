@@ -393,15 +393,13 @@ function RootView({ root }: { root: RootData }) {
                     .join("")
                     .toUpperCase() || "?";
                 const isPro = ref.is_professional && ref.company_alias;
-                const refName = isPro
-                  ? ref.company_alias!
-                  : (
-                      (ref.first_name ?? "") +
-                      " " +
-                      (ref.last_name ?? "")
-                    ).trim() || "Sans nom";
+                const refName = (
+                  (ref.first_name ?? "") +
+                  " " +
+                  (ref.last_name ?? "")
+                ).trim() || "Sans nom";
                 const refSub = isPro
-                  ? [ref.company_category, ref.city].filter(Boolean).join(" · ")
+                  ? [ref.company_alias, ref.company_category, ref.city].filter(Boolean).join(" · ")
                   : null;
                 return (
                   <div
@@ -414,11 +412,7 @@ function RootView({ root }: { root: RootData }) {
                       </div>
                       <div className="min-w-0">
                         <p
-                          className={`font-semibold text-sm truncate ${
-                            isPro
-                              ? "font-mono text-winelio-orange"
-                              : "text-winelio-dark"
-                          }`}
+                          className="font-semibold text-sm truncate text-winelio-dark"
                         >
                           {refName}
                           {ref.is_demo && (
@@ -475,6 +469,7 @@ function RootView({ root }: { root: RootData }) {
             userName={displayName}
             rootLabel={root.first_name ?? displayName}
             maxLevel={999}
+            showRealNames={true}
           />
         </CardContent>
       </Card>
@@ -484,7 +479,7 @@ function RootView({ root }: { root: RootData }) {
         <CardContent className="p-4 sm:p-6">
           <h3 className="text-base font-semibold text-winelio-dark mb-1">Liste détaillée</h3>
           <p className="text-xs text-muted-foreground mb-4">Réseau complet — tous niveaux</p>
-          <NetworkTree userId={root.id} maxLevel={999} />
+          <NetworkTree userId={root.id} maxLevel={999} showRealNames={true} />
         </CardContent>
       </Card>
     </div>
