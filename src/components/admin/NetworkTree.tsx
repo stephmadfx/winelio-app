@@ -18,6 +18,7 @@ import {
   BackgroundVariant,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { formatDisplayName } from "@/lib/utils";
 
 interface ProfileNode {
   id: string;
@@ -172,9 +173,7 @@ function ProfilePanel({
   childCount: number;
   onClose: () => void;
 }) {
-  const name =
-    `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() ||
-    profile.id.slice(0, 8);
+  const name = formatDisplayName(profile.first_name, profile.last_name, profile.id.slice(0, 8));
   const initials = name
     .split(" ")
     .map((w) => w[0] ?? "")
@@ -197,7 +196,7 @@ function ProfilePanel({
     ? "Professionnel"
     : "Particulier";
   const sponsorName = sponsor
-    ? `${sponsor.first_name ?? ""} ${sponsor.last_name ?? ""}`.trim()
+    ? formatDisplayName(sponsor.first_name, sponsor.last_name, "")
     : null;
 
   return (
@@ -551,9 +550,7 @@ function layoutTree(
     const profile = nodeMap.get(id);
     if (!profile) continue;
     const children = childrenMap.get(id) ?? [];
-    const name =
-      `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() ||
-      id.slice(0, 8);
+    const name = formatDisplayName(profile.first_name, profile.last_name, id.slice(0, 8));
     const initials = name
       .split(" ")
       .map((w) => w[0] ?? "")
@@ -653,7 +650,7 @@ export function NetworkTree({
     const matched = new Set<string>();
 
     for (const n of nodes) {
-      const name = normalize(`${n.first_name ?? ""} ${n.last_name ?? ""}`);
+      const name = normalize(formatDisplayName(n.first_name, n.last_name, ""));
       const email = normalize(n.email ?? "");
       if (name.includes(q) || email.includes(q)) {
         matched.add(n.id);

@@ -5,7 +5,7 @@ import { NetworkGraph } from "@/components/network-graph";
 import { NetworkTree } from "@/components/network-tree";
 import { Card, CardContent } from "@/components/ui/card";
 import { CopyButton } from "@/components/referral-buttons";
-import { formatDisplayName } from "@/lib/utils";
+import { formatDisplayName, capitalizeName } from "@/lib/utils";
 
 interface DirectReferral {
   id: string;
@@ -393,11 +393,7 @@ function RootView({ root }: { root: RootData }) {
                     .join("")
                     .toUpperCase() || "?";
                 const isPro = ref.is_professional && ref.company_alias;
-                const refName = (
-                  (ref.first_name ?? "") +
-                  " " +
-                  (ref.last_name ?? "")
-                ).trim() || "Sans nom";
+                const refName = formatDisplayName(ref.first_name, ref.last_name, "Sans nom");
                 const refSub = isPro
                   ? [ref.company_alias, ref.company_category, ref.city].filter(Boolean).join(" · ")
                   : null;
@@ -467,7 +463,7 @@ function RootView({ root }: { root: RootData }) {
           <NetworkGraph
             userId={root.id}
             userName={displayName}
-            rootLabel={root.first_name ?? displayName}
+            rootLabel={root.first_name ? capitalizeName(root.first_name) : displayName}
             maxLevel={999}
             showRealNames={true}
           />
