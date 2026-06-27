@@ -570,7 +570,7 @@ function NodeView({
           <span className="mt-0.5 inline-flex items-center justify-center rounded-full text-white cursor-pointer select-none" style={{
             backgroundColor: color, fontSize: 8, fontWeight: 700, padding: "1px 5px", minWidth: 18,
           }}>
-            {node.expanded ? "−" : "+"}{node.childCount}
+            {node.expanded ? "" : "+"}{node.childCount}
           </span>
         )}
 
