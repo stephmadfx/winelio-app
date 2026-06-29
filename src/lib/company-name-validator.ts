@@ -52,3 +52,42 @@ export function validateCompanyName(value: string | null | undefined, fieldLabel
 
   return { ok: true };
 }
+
+const EMAIL_PATTERN = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
+
+export function validateCompanyDescription(value: string | null | undefined): NameValidationResult {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) return { ok: true };
+
+  if (trimmed.length > 500) {
+    return {
+      ok: false,
+      error: "La présentation est limitée à 500 caractères.",
+    };
+  }
+
+  if (EMAIL_PATTERN.test(trimmed)) {
+    return {
+      ok: false,
+      error: "La présentation ne doit pas contenir d'adresse email.",
+    };
+  }
+
+  for (const pattern of URL_PATTERNS) {
+    if (pattern.test(trimmed)) {
+      return {
+        ok: false,
+        error: "La présentation ne doit pas contenir d'adresse web (URL / site internet).",
+      };
+    }
+  }
+
+  if (looksLikePhoneNumber(trimmed)) {
+    return {
+      ok: false,
+      error: "La présentation ne doit pas contenir de numéro de téléphone.",
+    };
+  }
+
+  return { ok: true };
+}

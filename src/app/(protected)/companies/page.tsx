@@ -16,7 +16,7 @@ export default async function CompaniesPage() {
 
   const { data: companies } = await supabase
     .from("companies")
-    .select("id, name, city, is_verified, source, category:categories(name)")
+    .select("id, name, city, is_verified, source, description, category:categories(name)")
     .eq("owner_id", user.id)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -110,7 +110,12 @@ export default async function CompaniesPage() {
                     </p>
                   )}
                   {company.city && (
-                    <p className="text-sm text-muted-foreground">{company.city}</p>
+                    <p className="text-sm text-muted-foreground mb-2">{company.city}</p>
+                  )}
+                  {company.description && (
+                    <p className="text-xs text-winelio-gray italic line-clamp-3 mt-2 border-t border-gray-100/50 pt-2">
+                      &ldquo;{company.description}&rdquo;
+                    </p>
                   )}
                   <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
                     <Link

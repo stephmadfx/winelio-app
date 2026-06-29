@@ -22,6 +22,7 @@ export interface Professional {
   is_claimed: boolean;
   last_active_at: string;
   company_source?: string | null;
+  company_description?: string | null;
 }
 
 export interface Category {

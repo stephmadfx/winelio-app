@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateCompany, requestCompanyModification } from "@/lib/company-actions";
+import { validateCompanyDescription } from "@/lib/company-name-validator";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,7 @@ interface Company {
   naf_code: string | null;
   insurance_number: string | null;
   category_id: string | null;
+  description?: string | null;
 }
 
 export function EditCompanyForm({
@@ -55,10 +57,11 @@ export function EditCompanyForm({
     city: company.city ?? "",
     postal_code: company.postal_code ?? "",
     category_id: company.category_id ?? "",
+    description: company.description ?? "",
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -83,11 +86,19 @@ export function EditCompanyForm({
       return;
     }
 
+    if (form.description.trim()) {
+      const descCheck = validateCompanyDescription(form.description);
+      if (!descCheck.ok) {
+        setError(descCheck.error ?? "La présentation est invalide.");
+        return;
+      }
+    }
+
     setSaving(true);
     setError(null);
     const result = await updateCompany(company.id, form);
     if (result.error) {
-      setError("Erreur lors de la sauvegarde. Veuillez réessayer.");
+      setError(result.error || "Erreur lors de la sauvegarde. Veuillez réessayer.");
       setSaving(false);
       return;
     }
@@ -176,6 +187,27 @@ export function EditCompanyForm({
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-winelio-gray mb-1">
+              Présentation de l&apos;entreprise / personnelle
+            </label>
+            <textarea
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              placeholder="Décrivez votre activité, vos spécialités et vos valeurs en quelques lignes..."
+              rows={4}
+              maxLength={500}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white resize-none"
+            />
+            <div className="mt-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs text-winelio-gray">
+              <span>⚠️ Les numéros de téléphone, adresses email et adresses web (liens/URL) ne sont pas autorisés.</span>
+              <span className={`shrink-0 font-medium ${form.description.length >= 500 ? "text-red-500" : ""}`}>
+                {form.description.length} / 500 caractères
+              </span>
+            </div>
           </div>
         </div>
 
