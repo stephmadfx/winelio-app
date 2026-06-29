@@ -114,6 +114,7 @@ export async function signAgentCGU(params: {
       .from("companies")
       .select("category:categories(name)")
       .eq("owner_id", user.id)
+      .is("deleted_at", null)
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();

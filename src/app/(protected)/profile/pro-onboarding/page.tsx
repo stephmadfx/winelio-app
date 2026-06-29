@@ -35,6 +35,7 @@ export default async function ProOnboardingPage() {
       .from("companies")
       .select("siret, category_id")
       .eq("owner_id", user.id)
+      .is("deleted_at", null)
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle(),
