@@ -39,7 +39,7 @@ export async function POST(req: Request) {
   const { data: company } = await supabaseAdmin
     .schema("winelio")
     .from("companies")
-    .select("id, owner_id, source")
+    .select("id, owner_id, source, category_id")
     .eq("owner_id", pro?.id ?? "")
     .maybeSingle();
 
@@ -82,12 +82,42 @@ export async function POST(req: Request) {
     .update({ professional_id: user.id })
     .eq("id", recommendationId);
 
-  // 3. Marquer le profile comme is_professional si pas déjà
+  // 3. Marquer le profile comme is_professional et pro_engagement_accepted
+  const { data: previousProfile } = await supabaseAdmin
+    .schema("winelio")
+    .from("profiles")
+    .select("is_professional")
+    .eq("id", user.id)
+    .single();
+
+  const wasAlreadyPro = !!previousProfile?.is_professional;
+
   await supabaseAdmin
     .schema("winelio")
     .from("profiles")
-    .update({ is_professional: true })
+    .update({
+      is_professional: true,
+      pro_engagement_accepted: true,
+    })
     .eq("id", user.id);
+
+  // 4. Notifier le parrain direct si première activation
+  if (!wasAlreadyPro) {
+    const { data: cat } = await supabaseAdmin
+      .schema("winelio")
+      .from("categories")
+      .select("name")
+      .eq("id", company.category_id ?? "")
+      .maybeSingle();
+
+    const { notifyNewProInNetwork } = await import("@/lib/notify-new-pro-in-network");
+    notifyNewProInNetwork(user.id, {
+      categoryName: cat?.name ?? null,
+      workMode: null,
+    }).catch((err) =>
+      console.error("[claim-finalize] Erreur notify-new-pro-in-network:", err)
+    );
+  }
 
   return NextResponse.json({ success: true });
 }

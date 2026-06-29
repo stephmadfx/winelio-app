@@ -76,6 +76,44 @@ export async function createCompany(payload: {
 
   if (error) return { error: error.message };
 
+  // Mettre à jour le profil de l'utilisateur en pro
+  const { data: previous } = await supabase
+    .from("profiles")
+    .select("is_professional")
+    .eq("id", user.id)
+    .single();
+
+  const wasAlreadyPro = !!previous?.is_professional;
+
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({
+      is_professional: true,
+      pro_engagement_accepted: true,
+    })
+    .eq("id", user.id);
+
+  if (profileError) {
+    console.error("Erreur lors de la mise à jour du profil dans createCompany:", profileError);
+  }
+
+  // Notifier le parrain direct si première activation pro
+  if (!wasAlreadyPro) {
+    const { data: category } = await supabase
+      .from("categories")
+      .select("name")
+      .eq("id", payload.category_id)
+      .maybeSingle();
+
+    const { notifyNewProInNetwork } = await import("@/lib/notify-new-pro-in-network");
+    notifyNewProInNetwork(user.id, {
+      categoryName: category?.name ?? null,
+      workMode: null,
+    }).catch((err) =>
+      console.error("[createCompany] Erreur notify-new-pro-in-network:", err)
+    );
+  }
+
   if (payload.city || payload.postal_code) {
     const coords = await geocodeAddress(
       payload.address ?? "",

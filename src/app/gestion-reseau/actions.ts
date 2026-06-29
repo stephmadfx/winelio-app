@@ -434,12 +434,65 @@ export async function adjustCommission(
 export async function verifyCompany(companyId: string, verified: boolean) {
   await assertSuperAdmin();
 
+  // 1. Récupérer l'owner et la catégorie de l'entreprise avant mise à jour
+  const { data: company, error: getCompanyError } = await supabaseAdmin
+    .from("companies")
+    .select("owner_id, category_id, is_verified, category:categories!category_id(name)")
+    .eq("id", companyId)
+    .single();
+
+  if (getCompanyError || !company) {
+    throw new Error(`Entreprise introuvable: ${getCompanyError?.message || ""}`);
+  }
+
   const { error } = await supabaseAdmin
     .from("companies")
     .update({ is_verified: verified })
     .eq("id", companyId);
 
   if (error) throw new Error(`Erreur mise à jour entreprise: ${error.message}`);
+
+  // 2. Si l'entreprise est vérifiée, synchroniser le profil de l'utilisateur
+  if (verified && company.owner_id) {
+    const { data: profile, error: getProfileError } = await supabaseAdmin
+      .from("profiles")
+      .select("is_professional, work_mode")
+      .eq("id", company.owner_id)
+      .single();
+
+    if (!getProfileError && profile) {
+      const wasAlreadyPro = profile.is_professional;
+
+      // Mettre à jour le profil de l'utilisateur
+      const { error: profileError } = await supabaseAdmin
+        .from("profiles")
+        .update({
+          is_professional: true,
+          pro_engagement_accepted: true,
+        })
+        .eq("id", company.owner_id);
+
+      if (profileError) {
+        console.error("Erreur lors de la mise à jour du profil dans verifyCompany:", profileError);
+      }
+
+      // Si l'utilisateur n'était pas déjà pro, notifier le parrain de niveau 1
+      if (!wasAlreadyPro) {
+        const rawCat = company.category;
+        const categoryName = Array.isArray(rawCat)
+          ? (rawCat[0] as { name: string } | undefined)?.name ?? null
+          : (rawCat as { name: string } | null)?.name ?? null;
+
+        const { notifyNewProInNetwork } = await import("@/lib/notify-new-pro-in-network");
+        notifyNewProInNetwork(company.owner_id, {
+          categoryName,
+          workMode: profile.work_mode ?? null,
+        }).catch((err) =>
+          console.error("[verifyCompany] Erreur notify-new-pro-in-network:", err)
+        );
+      }
+    }
+  }
 
   revalidatePath("/gestion-reseau/professionnels");
 }
