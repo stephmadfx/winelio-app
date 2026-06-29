@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { assignSponsor, updateProfile, updateCompanyEmail } from "@/app/(protected)/profile/actions";
 import { triggerDemoSeed } from "@/components/DemoSeedBanner";
 import { ProfileAvatar } from "@/components/profile-avatar";
@@ -36,7 +37,17 @@ function isComplete(data: Record<string, unknown>) {
     data.terms_accepted === true;
 }
 
-export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Profile; userEmail: string; companyEmail?: string | null }) {
+export function ProfileForm({
+  profile,
+  userEmail,
+  companyEmail,
+  companyId,
+}: {
+  profile: Profile;
+  userEmail: string;
+  companyEmail?: string | null;
+  companyId?: string | null;
+}) {
   const router = useRouter();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
@@ -419,19 +430,38 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
       </div>
 
 
-      {/* Email professionnel — visible uniquement pour les pros */}
+      {/* Profil professionnel — visible uniquement pour les pros */}
       {profile.is_professional && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-winelio-dark">Email professionnel</h3>
+              <h3 className="text-lg font-semibold text-winelio-dark">Profil professionnel</h3>
               <p className="mt-1 text-sm text-winelio-gray">
                 Retrouvez ici vos réglages pro et la vidéo de rappel du parcours.
               </p>
             </div>
             <ProOnboardingVideoReplayButton label="Revoir la vidéo pro" className="w-full sm:w-auto" />
           </div>
-          <p className="text-sm text-winelio-gray mb-4">
+
+          {/* Lien d'accès direct à la fiche pro */}
+          <div className="mb-6 pb-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h4 className="text-sm font-semibold text-winelio-dark">Ma fiche professionnelle</h4>
+              <p className="text-xs text-winelio-gray mt-1">
+                Visualisez et modifiez les informations de votre entreprise (Siret, adresse, etc.).
+              </p>
+            </div>
+            <Link
+              href={companyId ? `/companies/${companyId}/edit` : "/companies"}
+              className="inline-flex items-center justify-center px-5 py-2.5 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity whitespace-nowrap"
+            >
+              Gérer ma fiche pro →
+            </Link>
+          </div>
+
+          {/* Email professionnel */}
+          <h4 className="text-sm font-semibold text-winelio-dark mb-1">Email professionnel</h4>
+          <p className="text-xs text-winelio-gray mb-4">
             Optionnel. C&apos;est l&apos;adresse où vous serez notifié lors d&apos;une nouvelle recommandation,
             en plus de votre email de connexion Winelio.
           </p>
@@ -452,7 +482,7 @@ export function ProfileForm({ profile, userEmail, companyEmail }: { profile: Pro
                 setProEmailSaving(result.error ? "error" : "saved");
                 setTimeout(() => setProEmailSaving("idle"), 3000);
               }}
-              className="px-5 py-2.5 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 whitespace-nowrap"
+              className="px-5 py-2.5 bg-winelio-dark text-white font-medium rounded-xl hover:bg-winelio-dark/90 transition-colors disabled:opacity-50 whitespace-nowrap"
             >
               {proEmailSaving === "saving" ? "…" : "Enregistrer"}
             </button>

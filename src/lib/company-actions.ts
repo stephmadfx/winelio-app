@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { geocodeAddress } from "@/lib/geocode";
 import { verifySiren } from "@/lib/siren";
 import { checkNafCode } from "@/lib/naf-rules";
-import { validateCompanyName } from "@/lib/company-name-validator";
+import { validateCompanyName, validateCompanyDescription } from "@/lib/company-name-validator";
 import { formatDisplayName } from "@/lib/utils";
 
 const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -33,6 +33,7 @@ export async function createCompany(payload: {
   insurance_number?: string;
   is_verified: boolean;
   category_id: string;
+  description?: string;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -43,6 +44,12 @@ export async function createCompany(payload: {
   if (!nameCheck.ok) return { error: nameCheck.error };
   const legalNameCheck = validateCompanyName(payload.legal_name, "nom légal");
   if (!legalNameCheck.ok) return { error: legalNameCheck.error };
+
+  // Validation de la présentation
+  if (payload.description) {
+    const descCheck = validateCompanyDescription(payload.description);
+    if (!descCheck.ok) return { error: descCheck.error };
+  }
 
   // Re-vérification SIREN + NAF côté serveur pour empêcher tout bypass du contrôle client.
   let nafCode: string | null = null;
@@ -151,6 +158,7 @@ export async function updateCompany(
     city?: string;
     postal_code?: string;
     category_id?: string;
+    description?: string;
   }
 ) {
   const supabase = await createClient();
@@ -167,6 +175,12 @@ export async function updateCompany(
     if (!legalNameCheck.ok) return { error: legalNameCheck.error };
   }
 
+  // Validation de la présentation
+  if ("description" in payload && payload.description) {
+    const descCheck = validateCompanyDescription(payload.description);
+    if (!descCheck.ok) return { error: descCheck.error };
+  }
+
   const patch: Record<string, string | null> = {};
   if ("name" in payload) patch.name = (payload.name ?? "").trim().slice(0, 200) || null;
   if ("legal_name" in payload) patch.legal_name = (payload.legal_name ?? "").trim().slice(0, 200) || null;
@@ -177,6 +191,7 @@ export async function updateCompany(
   if ("city" in payload) patch.city = (payload.city ?? "").trim().slice(0, 100) || null;
   if ("postal_code" in payload) patch.postal_code = (payload.postal_code ?? "").trim().slice(0, 10) || null;
   if ("category_id" in payload) patch.category_id = payload.category_id || null;
+  if ("description" in payload) patch.description = payload.description || null;
 
   const { error } = await supabase
     .from("companies")

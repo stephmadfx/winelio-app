@@ -79,6 +79,11 @@ export const ProfessionalList = ({ professionals, selectedProId, onSelect, geoGr
                   <span className="text-[10px] text-winelio-gray/50">· {formatRelativeTime(p.last_active_at)}</span>
                 )}
               </div>
+              {p.company_description && (
+                <p className="mt-2 text-xs text-winelio-gray italic line-clamp-2 border-t border-gray-100/50 pt-1.5">
+                  &ldquo;{p.company_description}&rdquo;
+                </p>
+              )}
             </div>
             <div className="flex flex-col items-end gap-2">
               {p.distance !== null && (

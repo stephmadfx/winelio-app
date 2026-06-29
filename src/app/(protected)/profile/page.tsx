@@ -19,16 +19,18 @@ export default async function ProfilePage({
 
   if (!profile) redirect("/auth/login");
 
-  // Email professionnel de la fiche entreprise (si pro)
+  // Fiche entreprise (si pro)
+  let companyId: string | null = null;
   let companyEmail: string | null = null;
   if (profile.is_professional) {
     const { data: company } = await supabase
       .from("companies")
-      .select("email")
+      .select("id, email")
       .eq("owner_id", user.id)
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
+    companyId = company?.id ?? null;
     companyEmail = company?.email ?? null;
   }
 
@@ -49,7 +51,7 @@ export default async function ProfilePage({
           </div>
         </div>
       )}
-      <ProfileForm profile={profile} userEmail={user.email ?? ""} companyEmail={companyEmail} />
+      <ProfileForm profile={profile} userEmail={user.email ?? ""} companyEmail={companyEmail} companyId={companyId} />
     </div>
   );
 }
