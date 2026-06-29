@@ -225,6 +225,7 @@ export async function updateCompanyEmail(email: string | null): Promise<{ error?
     .from("companies")
     .select("id")
     .eq("owner_id", user.id)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -323,6 +324,7 @@ export async function completeProOnboarding(data: {
     .from("companies")
     .select("id")
     .eq("owner_id", user.id)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();

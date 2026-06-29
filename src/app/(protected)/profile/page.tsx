@@ -27,6 +27,7 @@ export default async function ProfilePage({
       .from("companies")
       .select("id, email")
       .eq("owner_id", user.id)
+      .is("deleted_at", null)
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
