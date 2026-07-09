@@ -77,15 +77,22 @@ function LoginForm() {
 
   const isRegister = searchParams.get("mode") === "register";
   const refCode = searchParams.get("ref");
+  const [checkingPromo, setCheckingPromo] = useState(true);
 
   // Gate vidéo promo : interdire l'accès direct à l'inscription tant que la vidéo
   // n'a pas été regardée à 50%. On renvoie sur la landing en préservant ?ref.
   useEffect(() => {
-    if (!isRegister) return;
+    if (!isRegister) {
+      setCheckingPromo(false);
+      return;
+    }
     if (typeof window === "undefined") return;
-    if (window.localStorage.getItem(PROMO_WATCHED_KEY) === "1") return;
-    const target = refCode ? `/?ref=${encodeURIComponent(refCode)}` : "/";
-    router.replace(target);
+    if (window.localStorage.getItem(PROMO_WATCHED_KEY) === "1") {
+      setCheckingPromo(false);
+    } else {
+      const target = refCode ? `/?ref=${encodeURIComponent(refCode)}` : "/";
+      router.replace(target);
+    }
   }, [isRegister, refCode, router]);
 
   // Stocker le code de parrainage et récupérer le nom du parrain depuis la DB
@@ -283,6 +290,14 @@ function LoginForm() {
       : step === "email"
       ? "Entrez votre adresse email, nous vous envoyons un code de connexion à 6 chiffres."
       : "Saisissez le code reçu par email pour ouvrir votre dashboard.";
+
+  if (isRegister && checkingPromo) {
+    return (
+      <div className="relative z-10 flex min-h-dvh flex-col justify-center items-center px-4 py-8">
+        <div className="w-12 h-12 border-4 border-winelio-orange border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div
