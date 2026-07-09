@@ -5,7 +5,7 @@ import { sendEmail } from "@/lib/email-sender";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, firstName, lastName, phone, sponsorCode, sponsorId } = body;
+    const { email, password, firstName, lastName, phone, sponsorCode, sponsorId, siret, nafCode } = body;
 
     if (!email || !password || !firstName || !lastName || !phone) {
       return NextResponse.json(
@@ -31,6 +31,8 @@ export async function POST(request: Request) {
           phone: phone.trim(),
           sponsor_id: sponsorId || null,
           sponsor_code: sponsorCode || null,
+          siret: siret ? siret.trim() : null,
+          naf_code: nafCode ? nafCode.trim() : null,
         },
       },
     });

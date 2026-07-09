@@ -52,6 +52,8 @@ function LoginForm() {
   const [phone, setPhone] = useState("");
   const [sponsorId, setSponsorId] = useState<string | null>(null);
   const [signUpSuccess, setSignUpSuccess] = useState(false);
+  const [siret, setSiret] = useState("");
+  const [nafCode, setNafCode] = useState("");
 
   // Remonte le contenu au-dessus du clavier mobile (visualViewport API)
   // Stratégie : détecte la réduction de la zone visible et applique un paddingBottom
@@ -76,6 +78,8 @@ function LoginForm() {
 
 
   const isRegister = searchParams.get("mode") === "register";
+  const returnTo = searchParams.get("returnTo") || "";
+  const isProRegistration = isRegister && returnTo.startsWith("/claim/");
   const [refCode, setRefCode] = useState<string | null>(null);
   const [checkingPromo, setCheckingPromo] = useState(true);
 
@@ -263,6 +267,8 @@ function LoginForm() {
           phone: phone.trim(),
           sponsorId,
           sponsorCode: refCode || null,
+          siret: isProRegistration ? siret.trim() : null,
+          nafCode: isProRegistration ? nafCode.trim() : null,
         }),
       });
 
@@ -597,6 +603,39 @@ function LoginForm() {
                   className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
                 />
               </div>
+
+              {isProRegistration && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="siret" className="text-sm font-medium text-winelio-dark">
+                      Numéro SIRET <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="siret"
+                      type="text"
+                      value={siret}
+                      onChange={(e) => setSiret(e.target.value)}
+                      placeholder="12345678901234"
+                      required={isProRegistration}
+                      className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="nafCode" className="text-sm font-medium text-winelio-dark">
+                      Code APE / NAF <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="nafCode"
+                      type="text"
+                      value={nafCode}
+                      onChange={(e) => setNafCode(e.target.value)}
+                      placeholder="8559A"
+                      required={isProRegistration}
+                      className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium text-winelio-dark">
