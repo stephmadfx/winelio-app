@@ -37,25 +37,28 @@ function ConfirmHandler() {
 
     const supabase = createClient();
     
-    // Vérifier d'abord si une session est déjà active
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        try {
-          localStorage.setItem("winelio_known_user", "1");
-        } catch {}
-        router.push("/dashboard");
-        return;
-      }
+    // Toujours appeler verifyOtp pour confirmer l'email,
+    // même si une session est déjà active (test en étant connecté avec un autre compte).
+    supabase.auth
+      .verifyOtp({
+        token_hash: tokenHash,
+        type: type as any,
+      })
+      .then(({ error: verifyError }) => {
+        if (verifyError) {
+          console.error("Verification error:", verifyError.message);
 
-      // Tenter de valider le jeton
-      supabase.auth
-        .verifyOtp({
-          token_hash: tokenHash,
-          type: type as any,
-        })
-        .then(({ error: verifyError }) => {
-          if (verifyError) {
-            console.error("Verification error:", verifyError.message);
+          // Si le jeton est déjà utilisé/expiré, vérifier si une session est quand même active
+          // (cas où l'utilisateur a déjà cliqué le lien une fois et revient dessus)
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+              try {
+                localStorage.setItem("winelio_known_user", "1");
+              } catch {}
+              router.push("/dashboard");
+              return;
+            }
+
             let msg = verifyError.message;
             if (
               msg.toLowerCase().includes("invalid or has expired") ||
@@ -65,14 +68,14 @@ function ConfirmHandler() {
             }
             setError(msg);
             setVerifying(false);
-          } else {
-            try {
-              localStorage.setItem("winelio_known_user", "1");
-            } catch {}
-            router.push("/dashboard");
-          }
-        });
-    });
+          });
+        } else {
+          try {
+            localStorage.setItem("winelio_known_user", "1");
+          } catch {}
+          router.push("/dashboard");
+        }
+      });
   }, [router, searchParams]);
 
   if (verifying) {
