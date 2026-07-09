@@ -47,6 +47,12 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [sponsorId, setSponsorId] = useState<string | null>(null);
+  const [signUpSuccess, setSignUpSuccess] = useState(false);
+
   // Remonte le contenu au-dessus du clavier mobile (visualViewport API)
   // Stratégie : détecte la réduction de la zone visible et applique un paddingBottom
   // pour pousser le contenu au-dessus du clavier.
@@ -91,11 +97,12 @@ function LoginForm() {
       const supabase = createClient();
       supabase
         .from("profiles")
-        .select("first_name, last_name")
+        .select("id, first_name, last_name")
         .eq("sponsor_code", refCode)
         .single()
         .then(({ data }) => {
           if (!data) return;
+          setSponsorId(data.id);
           const name = formatDisplayName(data.first_name, data.last_name, "");
           setSponsorName(name || null);
         });
@@ -217,10 +224,47 @@ function LoginForm() {
     setLoading(false);
   };
 
+  // Inscription par mot de passe avec métadonnées de profil
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const { createClient } = await import("@/lib/supabase/client");
+    const supabase = createClient();
+
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: {
+          app: "winelio",
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          phone: phone.trim(),
+          sponsor_id: sponsorId,
+          sponsor_code: refCode || null,
+        },
+      },
+    });
+
+    if (signUpError) {
+      setError(signUpError.message);
+      setLoading(false);
+      return;
+    }
+
+    setSignUpSuccess(true);
+    setLoading(false);
+  };
+
   // Titre dynamique
   const title =
     isRegister
-      ? "Créer votre accès"
+      ? signUpSuccess
+        ? "Inscription enregistrée"
+        : "Créer votre accès"
       : authMethod === "password"
       ? "Se connecter"
       : step === "email"
@@ -229,9 +273,9 @@ function LoginForm() {
 
   const subtitle =
     isRegister
-      ? step === "email"
-        ? "Entrez votre adresse email pour recevoir votre code d'accès."
-        : "Saisissez le code reçu par email pour finaliser votre inscription."
+      ? signUpSuccess
+        ? "Votre compte a été créé. Un e-mail de validation vous a été envoyé."
+        : "Saisissez vos informations pour finaliser votre inscription."
       : authMethod === "password"
       ? "Connectez-vous avec votre email et votre mot de passe."
       : step === "email"
@@ -451,8 +495,146 @@ function LoginForm() {
             </>
           )}
 
+          {/* ── Formulaire d'inscription (Option A) ── */}
+          {isRegister && signUpSuccess && (
+            <div className="mt-6 space-y-6 text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-winelio-dark">Vérifiez vos e-mails</h3>
+                <p className="text-sm leading-6 text-winelio-gray">
+                  Nous avons envoyé un lien de confirmation à <span className="font-semibold text-winelio-orange">{email}</span>.
+                  Veuillez cliquer sur ce lien pour activer votre compte.
+                </p>
+              </div>
+              <button
+                onClick={() => router.push("/auth/login")}
+                className="inline-flex w-full items-center justify-center rounded-2xl border border-gray-200 bg-white px-5 py-3.5 text-sm font-semibold text-winelio-dark transition hover:border-winelio-orange/30 hover:text-winelio-orange"
+              >
+                Retourner à la connexion
+              </button>
+            </div>
+          )}
+
+          {isRegister && !signUpSuccess && (
+            <form onSubmit={handleRegister} className="mt-6 space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="firstName" className="text-sm font-medium text-winelio-dark">
+                    Prénom
+                  </label>
+                  <input
+                    id="firstName"
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="Jean"
+                    required
+                    className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="lastName" className="text-sm font-medium text-winelio-dark">
+                    Nom
+                  </label>
+                  <input
+                    id="lastName"
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Dupont"
+                    required
+                    className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="phone" className="text-sm font-medium text-winelio-dark">
+                  Téléphone
+                </label>
+                <input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="0612345678"
+                  required
+                  className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium text-winelio-dark">
+                  Adresse email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="vous@exemple.com"
+                  required
+                  autoComplete="username"
+                  className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium text-winelio-dark">
+                  Mot de passe
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  autoComplete="new-password"
+                  className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                />
+              </div>
+
+              {error && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-500">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? (
+                  <>
+                    <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Inscription…
+                  </>
+                ) : (
+                  "S'inscrire"
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => router.push("/auth/login")}
+                className="mt-2 text-sm font-medium text-winelio-gray transition hover:text-winelio-orange"
+              >
+                Déjà un compte ? Se connecter
+              </button>
+            </form>
+          )}
+
           {/* ── Formulaire CODE OTP — Step email ── */}
-          {(isRegister || authMethod === "code") && step === "email" && (
+          {!isRegister && authMethod === "code" && step === "email" && (
             <>
               <form onSubmit={handleSendCode} className="mt-6 space-y-5">
                 <div className="space-y-2">
@@ -499,17 +681,17 @@ function LoginForm() {
 
               <button
                 onClick={() =>
-                  router.push(isRegister ? "/auth/login" : "/auth/login?mode=register")
+                  router.push("/auth/login?mode=register")
                 }
                 className="mt-5 text-sm font-medium text-winelio-gray transition hover:text-winelio-orange"
               >
-                {isRegister ? "Déjà un compte ? Se connecter" : "Pas de compte ? Créer un compte"}
+                Pas de compte ? Créer un compte
               </button>
             </>
           )}
 
           {/* ── Formulaire CODE OTP — Step code ── */}
-          {(isRegister || authMethod === "code") && step === "code" && (
+          {!isRegister && authMethod === "code" && step === "code" && (
             <>
               <div className="mt-6 rounded-2xl border border-gray-100 bg-winelio-light/80 p-4">
                 <p className="text-sm font-medium text-winelio-dark">Vérifiez votre email</p>
