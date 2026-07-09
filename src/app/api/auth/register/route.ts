@@ -39,19 +39,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: linkError.message }, { status: 400 });
     }
 
-    const rawActionLink = linkData?.properties?.action_link;
-    if (!rawActionLink) {
+    const tokenHash = linkData?.properties?.hashed_token;
+    if (!tokenHash) {
       return NextResponse.json(
-        { error: "Impossible de générer le lien de confirmation." },
+        { error: "Impossible de générer le jeton de confirmation." },
         { status: 500 }
       );
     }
 
-    // Remplacer l'URL Kong interne par l'URL publique Supabase si nécessaire
-    const publicActionLink = rawActionLink.replace(
-      "http://supabase-kong:8000",
-      "https://supabase.aide-multimedia.fr"
-    );
+    const customConfirmLink = `${origin}/auth/confirm?token_hash=${tokenHash}&type=signup`;
 
     // 2. Construire l'e-mail avec la charte graphique Winelio
     const emailHtml = `<!DOCTYPE html>
@@ -103,7 +99,7 @@ export async function POST(request: Request) {
                     <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
                       <tr>
                         <td align="center" style="background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:12px;">
-                          <a href="${publicActionLink}" style="display:inline-block;padding:14px 28px;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:12px;background:linear-gradient(135deg,#FF6B35,#F7931E);">
+                          <a href="${customConfirmLink}" style="display:inline-block;padding:14px 28px;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:12px;background:linear-gradient(135deg,#FF6B35,#F7931E);">
                             Valider mon compte →
                           </a>
                         </td>
@@ -115,7 +111,7 @@ export async function POST(request: Request) {
                 <tr>
                   <td style="color:#636E72;font-size:12px;line-height:1.6;text-align:left;border-top:1px solid #F0F2F4;padding-top:16px;">
                     Si le bouton ne fonctionne pas, copiez et collez le lien suivant dans votre navigateur :<br>
-                    <a href="${publicActionLink}" style="color:#FF6B35;word-break:break-all;">${publicActionLink}</a>
+                    <a href="${customConfirmLink}" style="color:#FF6B35;word-break:break-all;">${customConfirmLink}</a>
                   </td>
                 </tr>
               </table>
