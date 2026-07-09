@@ -92,6 +92,7 @@ export default async function ProtectedLayout({
     profile?.postal_code?.trim() &&
     profile?.city?.trim() &&
     profile?.address?.trim() &&
+    profile?.birth_date?.trim() &&
     profile?.terms_accepted
   );
 
