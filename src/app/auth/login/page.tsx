@@ -555,7 +555,7 @@ function LoginForm() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="firstName" className="text-sm font-medium text-winelio-dark">
-                    Prénom
+                    Prénom <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="firstName"
@@ -569,7 +569,7 @@ function LoginForm() {
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="lastName" className="text-sm font-medium text-winelio-dark">
-                    Nom
+                    Nom <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="lastName"
@@ -585,7 +585,7 @@ function LoginForm() {
 
               <div className="space-y-2">
                 <label htmlFor="phone" className="text-sm font-medium text-winelio-dark">
-                  Téléphone
+                  Téléphone <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="phone"
@@ -600,7 +600,7 @@ function LoginForm() {
 
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium text-winelio-dark">
-                  Adresse email
+                  Adresse email <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="email"
@@ -616,7 +616,7 @@ function LoginForm() {
 
               <div className="space-y-2">
                 <label htmlFor="password" className="text-sm font-medium text-winelio-dark">
-                  Mot de passe
+                  Mot de passe <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="password"
