@@ -5,7 +5,7 @@ import { notifyReferrerStep } from "@/lib/notify-referrer-step";
 import { notifyContactAccepted } from "@/lib/notify-contact-accepted";
 import { createStripeCheckoutSession } from "@/lib/stripe-checkout";
 
-// Étape 7 = "Affaire terminée" → email Stripe Checkout pour la commission pro.
+// Étape 8 = "Affaire terminée" → email Stripe Checkout pour la commission pro.
 // Les commissions MLM sont créées uniquement par le webhook Stripe après paiement.
 const STATUS_BY_STEP: Record<number, string> = {
   1: RECOMMENDATION_STATUS.PENDING,
@@ -13,8 +13,9 @@ const STATUS_BY_STEP: Record<number, string> = {
   3: RECOMMENDATION_STATUS.CONTACT_MADE,
   4: RECOMMENDATION_STATUS.MEETING_SCHEDULED,
   5: RECOMMENDATION_STATUS.QUOTE_SUBMITTED,
-  6: RECOMMENDATION_STATUS.PAYMENT_RECEIVED,
-  7: RECOMMENDATION_STATUS.COMPLETED,
+  6: RECOMMENDATION_STATUS.QUOTE_VALIDATED,
+  7: RECOMMENDATION_STATUS.PAYMENT_RECEIVED,
+  8: RECOMMENDATION_STATUS.COMPLETED,
 };
 
 export async function POST(request: Request) {
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
     }
 
     if (stepRow.completed_at) {
-      if (stepIndex === 7) {
+      if (stepIndex === 8) {
         await createStripeCheckoutSession(rec.id);
       }
       await notifyReferrerStep(rec.id, stepIndex);
@@ -139,7 +140,7 @@ export async function POST(request: Request) {
       .update({ status: newStatus })
       .eq("id", rec.id);
 
-    if (stepIndex === 7) {
+    if (stepIndex === 8) {
       await createStripeCheckoutSession(rec.id);
     }
 
