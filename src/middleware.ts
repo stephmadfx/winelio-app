@@ -35,7 +35,8 @@ if (typeof globalThis !== "undefined") {
 
 export async function middleware(request: NextRequest) {
   // Injecter le chemin d'accès courant pour les Server Components
-  request.headers.set("x-pathname", request.nextUrl.pathname);
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
 
   // Protection mot de passe staging (actif si STAGING_PASSWORD est défini)
   const stagingPassword = process.env.STAGING_PASSWORD;
@@ -98,7 +99,11 @@ export async function middleware(request: NextRequest) {
     // de test E2E (@winelio-e2e.local).
   }
 
-  let supabaseResponse = NextResponse.next({ request });
+  let supabaseResponse = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 
   const supabase = createServerClient(
     SUPABASE_URL,
@@ -117,7 +122,11 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = NextResponse.next({
+            request: {
+              headers: requestHeaders,
+            },
+          });
           cookiesToSet.forEach(({ name, value, options }) =>
             // maxAge EN DERNIER : override le TTL court (3600s) que Supabase fixe sur l'access token
             // eslint-disable-next-line @typescript-eslint/no-explicit-any

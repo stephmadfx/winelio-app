@@ -97,7 +97,7 @@ export default async function ProtectedLayout({
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") || "";
 
-  if (!isProfileComplete && !pathname.startsWith("/profile")) {
+  if (pathname && !isProfileComplete && !pathname.startsWith("/profile")) {
     redirect("/profile");
   }
   const ageVerified = profile?.birth_date ? isAtLeastAge(profile.birth_date) : null;
