@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 import { MobileHeader } from "@/components/mobile-header";
@@ -92,6 +93,13 @@ export default async function ProtectedLayout({
     profile?.address?.trim() &&
     profile?.terms_accepted
   );
+
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || "";
+
+  if (!isProfileComplete && !pathname.startsWith("/profile")) {
+    redirect("/profile");
+  }
   const ageVerified = profile?.birth_date ? isAtLeastAge(profile.birth_date) : null;
   const accountCreatedAt = user.created_at ? new Date(user.created_at) : null;
   const isNewAccountForProPrompt = !accountCreatedAt || accountCreatedAt >= PRO_PROMPT_DELAY_ROLLOUT_AT;

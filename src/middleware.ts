@@ -34,6 +34,9 @@ if (typeof globalThis !== "undefined") {
 }
 
 export async function middleware(request: NextRequest) {
+  // Injecter le chemin d'accès courant pour les Server Components
+  request.headers.set("x-pathname", request.nextUrl.pathname);
+
   // Protection mot de passe staging (actif si STAGING_PASSWORD est défini)
   const stagingPassword = process.env.STAGING_PASSWORD;
   if (stagingPassword) {
