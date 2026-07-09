@@ -36,7 +36,14 @@ export async function POST(request: Request) {
     });
 
     if (linkError) {
-      return NextResponse.json({ error: linkError.message }, { status: 400 });
+      let errorMessage = linkError.message;
+      if (
+        errorMessage.toLowerCase().includes("already been registered") ||
+        errorMessage.toLowerCase().includes("already exists")
+      ) {
+        errorMessage = "Un utilisateur avec cette adresse e-mail est déjà inscrit.";
+      }
+      return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
 
     const tokenHash = linkData?.properties?.hashed_token;
