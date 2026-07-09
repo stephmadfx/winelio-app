@@ -76,8 +76,23 @@ function LoginForm() {
 
 
   const isRegister = searchParams.get("mode") === "register";
-  const refCode = searchParams.get("ref");
+  const [refCode, setRefCode] = useState<string | null>(null);
   const [checkingPromo, setCheckingPromo] = useState(true);
+
+  // Charger le code de parrainage (URL -> LocalStorage -> Fallback)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const urlRef = searchParams.get("ref");
+    if (urlRef) {
+      setRefCode(urlRef);
+      localStorage.setItem("winelio_ref", urlRef);
+    } else {
+      const storedRef = localStorage.getItem("winelio_ref");
+      if (storedRef) {
+        setRefCode(storedRef);
+      }
+    }
+  }, [searchParams]);
 
   // Gate vidéo promo : interdire l'accès direct à l'inscription tant que la vidéo
   // n'a pas été regardée à 50%. On renvoie sur la landing en préservant ?ref.
@@ -95,10 +110,9 @@ function LoginForm() {
     }
   }, [isRegister, refCode, router]);
 
-  // Stocker le code de parrainage et récupérer le nom du parrain depuis la DB
+  // Récupérer le nom du parrain depuis la DB
   useEffect(() => {
     if (!refCode) return;
-    localStorage.setItem("winelio_ref", refCode);
 
     import("@/lib/supabase/client").then(({ createClient }) => {
       const supabase = createClient();
