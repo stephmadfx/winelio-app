@@ -143,6 +143,15 @@ export async function updateProfile(data: {
 
   const firstCompletion = !!(!wasComplete && willBeComplete && isNewAccount);
 
+  console.log("[updateProfile] Onboarding Check:", {
+    userId: user.id,
+    userCreatedAt: user.created_at,
+    wasComplete,
+    willBeComplete,
+    isNewAccount,
+    firstCompletion,
+  });
+
   // Envoyer l'email au parrain et à l'admin UNIQUEMENT à la première complétion,
   // pas au moment de l'inscription (un user peut abandonner entre les deux).
   if (firstCompletion) {
