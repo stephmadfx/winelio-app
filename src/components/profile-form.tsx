@@ -283,6 +283,23 @@ export function ProfileForm({
         </div>
       )}
 
+      {/* Bannière d'inscription incomplète */}
+      {!isComplete(form) && (
+        <div className="p-4 rounded-xl border border-winelio-orange/20 bg-winelio-orange/5 flex gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-winelio-orange/10 text-winelio-orange text-lg">
+            ⚠️
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-winelio-dark">
+              Finalisation de votre inscription requise
+            </h4>
+            <p className="text-xs text-winelio-gray mt-1 leading-relaxed">
+              Pour pouvoir utiliser l&apos;application, veuillez compléter votre profil en saisissant votre <strong>date de naissance</strong>, votre <strong>code postal</strong>, votre <strong>ville</strong> et votre <strong>adresse</strong>.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Photo de profil */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
