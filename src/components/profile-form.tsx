@@ -32,9 +32,30 @@ interface Profile {
 
 const REQUIRED_STRING_FIELDS = ["first_name", "last_name", "phone", "postal_code", "city", "address", "birth_date"] as const;
 
+const FIELD_LABELS: Record<typeof REQUIRED_STRING_FIELDS[number], string> = {
+  first_name: "Prénom",
+  last_name: "Nom",
+  phone: "Téléphone",
+  postal_code: "Code postal",
+  city: "Ville",
+  address: "Adresse",
+  birth_date: "Date de naissance",
+};
+
 function isComplete(data: Record<string, unknown>) {
   return REQUIRED_STRING_FIELDS.every((f) => typeof data[f] === "string" && (data[f] as string).trim() !== "") &&
     data.terms_accepted === true;
+}
+
+function getMissingFields(data: Record<string, unknown>): string[] {
+  const missing: string[] = [];
+  for (const f of REQUIRED_STRING_FIELDS) {
+    if (!(typeof data[f] === "string" && (data[f] as string).trim() !== "")) {
+      missing.push(FIELD_LABELS[f]);
+    }
+  }
+  if (!data.terms_accepted) missing.push("Acceptation des CGU");
+  return missing;
 }
 
 export function ProfileForm({
@@ -284,21 +305,32 @@ export function ProfileForm({
       )}
 
       {/* Bannière d'inscription incomplète */}
-      {!isComplete(form) && (
-        <div className="p-4 rounded-xl border border-winelio-orange/20 bg-winelio-orange/5 flex gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-winelio-orange/10 text-winelio-orange text-lg">
-            ⚠️
+      {!isComplete(form) && (() => {
+        const missing = getMissingFields(form);
+        return (
+          <div className="p-4 rounded-xl border-2 border-winelio-orange/40 bg-gradient-to-r from-winelio-orange/5 to-winelio-amber/5 flex gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-winelio-orange/15 text-winelio-orange text-lg animate-pulse">
+              ⚠️
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-winelio-dark">
+                Finalisation de votre inscription requise
+              </h4>
+              <p className="text-xs text-winelio-gray mt-1 leading-relaxed">
+                Les champs ci-dessous sont obligatoires pour accéder à l&apos;application. Ils sont mis en surbrillance dans le formulaire.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {missing.map((label) => (
+                  <span key={label} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-winelio-orange/10 border border-winelio-orange/30 text-winelio-orange text-xs font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-winelio-orange inline-block" />
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
-          <div>
-            <h4 className="text-sm font-semibold text-winelio-dark">
-              Finalisation de votre inscription requise
-            </h4>
-            <p className="text-xs text-winelio-gray mt-1 leading-relaxed">
-              Pour pouvoir utiliser l&apos;application, veuillez compléter votre profil en saisissant votre <strong>date de naissance</strong>, votre <strong>code postal</strong>, votre <strong>ville</strong> et votre <strong>adresse</strong>.
-            </p>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Photo de profil */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6">
@@ -542,87 +574,113 @@ export function ProfileForm({
               )}
             </div>
           </div>
-          <Field label="Prénom" name="first_name" value={form.first_name} onChange={handleChange} onBlur={handleBlur} required />
-          <Field label="Nom" name="last_name" value={form.last_name} onChange={handleChange} onBlur={handleBlur} required />
-          <Field label="Téléphone" name="phone" value={form.phone} onChange={handleChange} onBlur={handleBlur} required />
+          <Field label="Prénom" name="first_name" value={form.first_name} onChange={handleChange} onBlur={handleBlur} required missing={!form.first_name.trim()} />
+          <Field label="Nom" name="last_name" value={form.last_name} onChange={handleChange} onBlur={handleBlur} required missing={!form.last_name.trim()} />
+          <Field label="Téléphone" name="phone" value={form.phone} onChange={handleChange} onBlur={handleBlur} required missing={!form.phone.trim()} />
           {/* Date de naissance — vérification d'âge 18+ */}
-          <div>
-            <label className="block text-sm font-medium text-winelio-gray mb-1">
-              Date de naissance <span className="text-winelio-orange">*</span>
-            </label>
-            <div className="flex gap-2">
-              <select
-                value={birthParts.day}
-                onChange={(e) => handleBirthPart("day", e.target.value)}
-                className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white"
-              >
-                <option value="">Jour</option>
-                {Array.from({ length: 31 }, (_, i) => {
-                  const v = String(i + 1).padStart(2, "0");
-                  return <option key={v} value={v}>{i + 1}</option>;
-                })}
-              </select>
-              <select
-                value={birthParts.m}
-                onChange={(e) => handleBirthPart("m", e.target.value)}
-                className="flex-[1.4] px-3 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white"
-              >
-                <option value="">Mois</option>
-                {["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"].map((name, i) => {
-                  const v = String(i + 1).padStart(2, "0");
-                  return <option key={v} value={v}>{name}</option>;
-                })}
-              </select>
-              <select
-                value={birthParts.y}
-                onChange={(e) => handleBirthPart("y", e.target.value)}
-                className="flex-[1.2] px-3 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white"
-              >
-                <option value="">Année</option>
-                {Array.from({ length: new Date().getFullYear() - 18 - 1919 }, (_, i) => {
-                  const y = new Date().getFullYear() - 18 - i;
-                  return <option key={y} value={String(y)}>{y}</option>;
-                })}
-              </select>
-            </div>
-            <p className="mt-1 text-xs text-winelio-gray">
-              La date de naissance sert à vérifier que l'accès est réservé aux personnes majeures.
-            </p>
-            {birthDateError && (
-              <p className="mt-1 text-xs text-red-500">{birthDateError}</p>
-            )}
-          </div>
-          <Field label="Code postal" name="postal_code" value={form.postal_code} onChange={handlePostalCodeChange} onBlur={handleBlur} required />
-          {/* Ville avec autocomplétion */}
-          <div className="relative">
-            <label className="block text-sm font-medium text-winelio-gray mb-1">
-              Ville <span className="text-winelio-orange">*</span>
-            </label>
-            <input
-              type="text"
-              name="city"
-              value={form.city}
-              onChange={handleChange}
-              onFocus={() => { if (citySuggestions.length > 0) setShowSuggestions(true); }}
-              onBlur={() => { setTimeout(() => setShowSuggestions(false), 150); handleBlur(); }}
-              autoComplete="off"
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
-            />
-            {showSuggestions && citySuggestions.length > 0 && (
-              <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-                {citySuggestions.map((city) => (
-                  <li
-                    key={city}
-                    onMouseDown={() => selectCity(city)}
-                    className="px-4 py-2.5 text-sm text-winelio-dark hover:bg-winelio-orange/5 hover:text-winelio-orange cursor-pointer transition-colors"
+          {(() => {
+            const bdMissing = !form.birth_date.trim();
+            return (
+              <div className={bdMissing ? "rounded-xl p-3 -m-3 border-2 border-winelio-orange/50 bg-winelio-orange/5" : ""}>
+                <label className="block text-sm font-medium mb-1">
+                  <span className={bdMissing ? "text-winelio-orange font-semibold" : "text-winelio-gray"}>
+                    Date de naissance
+                  </span>
+                  {" "}<span className="text-winelio-orange">*</span>
+                  {bdMissing && <span className="ml-2 text-xs font-semibold text-winelio-orange bg-winelio-orange/10 px-2 py-0.5 rounded-full">Requis</span>}
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    value={birthParts.day}
+                    onChange={(e) => handleBirthPart("day", e.target.value)}
+                    className={`flex-1 px-3 py-2.5 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white border ${
+                      bdMissing ? "border-winelio-orange/50" : "border-gray-200"
+                    }`}
                   >
-                    {city}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <Field label="Adresse" name="address" value={form.address} onChange={handleChange} onBlur={handleBlur} required />
+                    <option value="">Jour</option>
+                    {Array.from({ length: 31 }, (_, i) => {
+                      const v = String(i + 1).padStart(2, "0");
+                      return <option key={v} value={v}>{i + 1}</option>;
+                    })}
+                  </select>
+                  <select
+                    value={birthParts.m}
+                    onChange={(e) => handleBirthPart("m", e.target.value)}
+                    className={`flex-[1.4] px-3 py-2.5 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white border ${
+                      bdMissing ? "border-winelio-orange/50" : "border-gray-200"
+                    }`}
+                  >
+                    <option value="">Mois</option>
+                    {["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"].map((name, i) => {
+                      const v = String(i + 1).padStart(2, "0");
+                      return <option key={v} value={v}>{name}</option>;
+                    })}
+                  </select>
+                  <select
+                    value={birthParts.y}
+                    onChange={(e) => handleBirthPart("y", e.target.value)}
+                    className={`flex-[1.2] px-3 py-2.5 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white border ${
+                      bdMissing ? "border-winelio-orange/50" : "border-gray-200"
+                    }`}
+                  >
+                    <option value="">Année</option>
+                    {Array.from({ length: new Date().getFullYear() - 18 - 1919 }, (_, i) => {
+                      const y = new Date().getFullYear() - 18 - i;
+                      return <option key={y} value={String(y)}>{y}</option>;
+                    })}
+                  </select>
+                </div>
+                <p className="mt-1 text-xs text-winelio-gray">
+                  La date de naissance sert à vérifier que l'accès est réservé aux personnes majeures.
+                </p>
+                {birthDateError && (
+                  <p className="mt-1 text-xs text-red-500">{birthDateError}</p>
+                )}
+              </div>
+            );
+          })()}
+          <Field label="Code postal" name="postal_code" value={form.postal_code} onChange={handlePostalCodeChange} onBlur={handleBlur} required missing={!form.postal_code.trim()} />
+          {/* Ville avec autocomplétion */}
+          {(() => {
+            const cityMissing = !form.city.trim();
+            return (
+              <div className={`relative${cityMissing ? " rounded-xl p-3 -m-3 border-2 border-winelio-orange/50 bg-winelio-orange/5" : ""}`}>
+                <label className="block text-sm font-medium mb-1">
+                  <span className={cityMissing ? "text-winelio-orange font-semibold" : "text-winelio-gray"}>
+                    Ville
+                  </span>
+                  {" "}<span className="text-winelio-orange">*</span>
+                  {cityMissing && <span className="ml-2 text-xs font-semibold text-winelio-orange bg-winelio-orange/10 px-2 py-0.5 rounded-full">Requis</span>}
+                </label>
+                <input
+                  type="text"
+                  name="city"
+                  value={form.city}
+                  onChange={handleChange}
+                  onFocus={() => { if (citySuggestions.length > 0) setShowSuggestions(true); }}
+                  onBlur={() => { setTimeout(() => setShowSuggestions(false), 150); handleBlur(); }}
+                  autoComplete="off"
+                  className={`w-full px-4 py-2.5 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange border ${
+                    cityMissing ? "border-winelio-orange/50" : "border-gray-200"
+                  }`}
+                />
+                {showSuggestions && citySuggestions.length > 0 && (
+                  <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                    {citySuggestions.map((city) => (
+                      <li
+                        key={city}
+                        onMouseDown={() => selectCity(city)}
+                        className="px-4 py-2.5 text-sm text-winelio-dark hover:bg-winelio-orange/5 hover:text-winelio-orange cursor-pointer transition-colors"
+                      >
+                        {city}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })()}
+          <Field label="Adresse" name="address" value={form.address} onChange={handleChange} onBlur={handleBlur} required missing={!form.address.trim()} />
         </div>
 
         {/* CGU — placée juste avant le bouton Sauvegarder pour un flow de lecture naturel */}
@@ -695,12 +753,20 @@ function Field({
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: () => void;
   required?: boolean;
+  missing?: boolean;
 }) {
   return (
-    <div>
-      <label className="block text-sm font-medium text-winelio-gray mb-1">
-        {label}
+    <div className={missing ? "rounded-xl p-3 -m-3 border-2 border-winelio-orange/50 bg-winelio-orange/5" : ""}>
+      <label className="block text-sm font-medium mb-1">
+        <span className={missing ? "text-winelio-orange font-semibold" : "text-winelio-gray"}>
+          {label}
+        </span>
         {required && <span className="text-winelio-orange ml-1">*</span>}
+        {missing && (
+          <span className="ml-2 text-xs font-semibold text-winelio-orange bg-winelio-orange/10 px-2 py-0.5 rounded-full">
+            Requis
+          </span>
+        )}
       </label>
       <input
         type="text"
@@ -708,7 +774,9 @@ function Field({
         value={value}
         onChange={onChange}
         onBlur={onBlur}
-        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
+        className={`w-full px-4 py-2.5 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange border ${
+          missing ? "border-winelio-orange/50" : "border-gray-200"
+        }`}
       />
     </div>
   );
