@@ -230,33 +230,35 @@ function LoginForm() {
     setLoading(true);
     setError("");
 
-    const { createClient } = await import("@/lib/supabase/client");
-    const supabase = createClient();
-
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: {
-          app: "winelio",
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
           phone: phone.trim(),
-          sponsor_id: sponsorId,
-          sponsor_code: refCode || null,
-        },
-      },
-    });
+          sponsorId,
+          sponsorCode: refCode || null,
+        }),
+      });
 
-    if (signUpError) {
-      setError(signUpError.message);
+      const result = await res.json();
+      if (!res.ok) {
+        setError(result.error || "Une erreur est survenue lors de l'inscription.");
+        setLoading(false);
+        return;
+      }
+
+      setSignUpSuccess(true);
+    } catch (err) {
+      console.error(err);
+      setError("Impossible de contacter le serveur d'inscription. Veuillez réessayer.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setSignUpSuccess(true);
-    setLoading(false);
   };
 
   // Titre dynamique
