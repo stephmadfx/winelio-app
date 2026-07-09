@@ -36,23 +36,43 @@ function ConfirmHandler() {
     }
 
     const supabase = createClient();
-    supabase.auth
-      .verifyOtp({
-        token_hash: tokenHash,
-        type: type as any,
-      })
-      .then(({ error: verifyError }) => {
-        if (verifyError) {
-          console.error("Verification error:", verifyError.message);
-          setError(verifyError.message);
-          setVerifying(false);
-        } else {
-          try {
-            localStorage.setItem("winelio_known_user", "1");
-          } catch {}
-          router.push("/dashboard");
-        }
-      });
+    
+    // Vérifier d'abord si une session est déjà active
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        try {
+          localStorage.setItem("winelio_known_user", "1");
+        } catch {}
+        router.push("/dashboard");
+        return;
+      }
+
+      // Tenter de valider le jeton
+      supabase.auth
+        .verifyOtp({
+          token_hash: tokenHash,
+          type: type as any,
+        })
+        .then(({ error: verifyError }) => {
+          if (verifyError) {
+            console.error("Verification error:", verifyError.message);
+            let msg = verifyError.message;
+            if (
+              msg.toLowerCase().includes("invalid or has expired") ||
+              msg.toLowerCase().includes("expired")
+            ) {
+              msg = "Ce lien de validation a déjà été utilisé ou a expiré. Si vous vous êtes déjà inscrit, votre compte est actif et vous pouvez vous connecter directement.";
+            }
+            setError(msg);
+            setVerifying(false);
+          } else {
+            try {
+              localStorage.setItem("winelio_known_user", "1");
+            } catch {}
+            router.push("/dashboard");
+          }
+        });
+    });
   }, [router, searchParams]);
 
   if (verifying) {
@@ -76,7 +96,7 @@ function ConfirmHandler() {
         </div>
 
         <h2 className="text-xl font-bold text-white mb-3">
-          Erreur de validation
+          Validation du compte
         </h2>
 
         <p className="text-gray-400 mb-6 text-sm leading-relaxed">
