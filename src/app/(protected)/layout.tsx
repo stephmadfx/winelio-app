@@ -12,6 +12,7 @@ import { BugReportButton } from "@/components/bug-report-button";
 import { DemoSeedBanner } from "@/components/DemoSeedBanner";
 import { isAtLeastAge } from "@/lib/age";
 import { ProfessionalPromptModal } from "@/components/professional-prompt-modal";
+import { ProfileGraceTimer } from "@/components/ProfileGraceTimer";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 const PRO_PROMPT_DELAY_ROLLOUT_AT = new Date("2026-06-03T20:40:00.000Z");
@@ -97,7 +98,11 @@ export default async function ProtectedLayout({
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") || "";
 
-  if (pathname && !isProfileComplete && !pathname.startsWith("/profile")) {
+  const emailConfirmedAt = user.email_confirmed_at ? new Date(user.email_confirmed_at) : null;
+  const now = new Date();
+  const isGracePeriod = emailConfirmedAt && (now.getTime() - emailConfirmedAt.getTime() < 60_000);
+
+  if (pathname && !isProfileComplete && !isGracePeriod && !pathname.startsWith("/profile")) {
     redirect("/profile");
   }
   const ageVerified = profile?.birth_date ? isAtLeastAge(profile.birth_date) : null;
@@ -153,6 +158,10 @@ export default async function ProtectedLayout({
   return (
     <div className="relative min-h-dvh bg-winelio-light dark:bg-slate-900 transition-colors duration-200">
       <AppBackground />
+      <ProfileGraceTimer
+        emailConfirmedAtStr={user.email_confirmed_at || null}
+        isProfileComplete={isProfileComplete}
+      />
       {DEMO_MODE && <DemoSeedBanner />}
 
       {showProfessionalPrompt && <ProfessionalPromptModal delayMs={professionalPromptDelayMs} />}
