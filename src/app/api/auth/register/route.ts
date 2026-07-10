@@ -56,7 +56,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const customConfirmLink = `${origin}/auth/confirm?token_hash=${tokenHash}&type=signup`;
+    // URL-encode le token pour neutraliser les caractères spéciaux (+, =, /)
+    // qui peuvent être corrompus par les scanners de sécurité des opérateurs
+    const customConfirmLink = `${origin}/auth/confirm?token_hash=${encodeURIComponent(tokenHash)}&type=signup`;
     // En HTML, le & dans les href doit être &amp; pour éviter que les clients mail
     // (Outlook, Apple Mail, antivirus) tronquent l'URL au niveau du &
     const htmlSafeLink = customConfirmLink.replace(/&/g, "&amp;");
@@ -105,14 +107,18 @@ export async function POST(request: Request) {
                   </td>
                 </tr>
                 <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
-                <!-- Button -->
+                <!-- Button : td sans background pour éviter les problèmes de clic sur mobile -->
                 <tr>
                   <td align="center">
                     <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
                       <tr>
-                        <td align="center" style="background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:12px;">
-                          <a href="${htmlSafeLink}" style="display:inline-block;padding:14px 28px;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:12px;background:linear-gradient(135deg,#FF6B35,#F7931E);">
-                            Valider mon compte →
+                        <td align="center" style="border-radius:12px;mso-padding-alt:0px;">
+                          <a href="${htmlSafeLink}"
+                             target="_blank"
+                             rel="noopener noreferrer"
+                             style="display:block;padding:14px 32px;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:12px;background:#FF6B35;background:linear-gradient(135deg,#FF6B35,#F7931E);mso-padding-alt:0;line-height:1.4;"
+                          >
+                            Valider mon compte &rarr;
                           </a>
                         </td>
                       </tr>
