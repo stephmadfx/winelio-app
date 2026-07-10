@@ -5,9 +5,9 @@ import { sendEmail } from "@/lib/email-sender";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, firstName, lastName, phone, sponsorCode, sponsorId, siret, nafCode } = body;
+    const { email, password, firstName, lastName, phone, address, city, postalCode, birthDate, termsAccepted, sponsorCode, sponsorId, siret, nafCode } = body;
 
-    if (!email || !password || !firstName || !lastName || !phone) {
+    if (!email || !password || !firstName || !lastName || !phone || !address || !city || !postalCode || !birthDate) {
       return NextResponse.json(
         { error: "Tous les champs requis doivent être remplis." },
         { status: 400 }
@@ -29,6 +29,11 @@ export async function POST(request: Request) {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           phone: phone.trim(),
+          address: address ? address.trim() : null,
+          city: city ? city.trim() : null,
+          postal_code: postalCode ? postalCode.trim() : null,
+          birth_date: birthDate || null,
+          terms_accepted: termsAccepted === true,
           sponsor_id: sponsorId || null,
           sponsor_code: sponsorCode || null,
           siret: siret ? siret.trim() : null,
