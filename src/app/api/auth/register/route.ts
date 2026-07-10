@@ -5,7 +5,7 @@ import { sendEmail } from "@/lib/email-sender";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, firstName, lastName, phone, address, city, postalCode, birthDate, termsAccepted, sponsorCode, sponsorId, siret, nafCode } = body;
+    const { email, password, firstName, lastName, phone, address, city, postalCode, birthDate, termsAccepted, sponsorCode, sponsorId, siret, nafCode, companyName, isPro = false } = body;
 
     if (!email || !password || !firstName || !lastName || !phone || !address || !city || !postalCode || !birthDate) {
       return NextResponse.json(
@@ -51,6 +51,35 @@ export async function POST(request: Request) {
         errorMessage = "Un utilisateur avec cette adresse e-mail est déjà inscrit.";
       }
       return NextResponse.json({ error: errorMessage }, { status: 400 });
+    }
+
+    // 1.2 Initialiser le profil et l'entreprise pour le professionnel si applicable
+    const userId = linkData?.user?.id;
+    if (userId && isPro) {
+      // Mettre à jour is_professional dans profiles
+      await supabaseAdmin
+        .schema("winelio")
+        .from("profiles")
+        .update({ is_professional: true })
+        .eq("id", userId);
+
+      // Créer la fiche entreprise dans companies
+      await supabaseAdmin
+        .schema("winelio")
+        .from("companies")
+        .insert({
+          owner_id: userId,
+          name: (companyName || `${firstName} ${lastName}`).trim(),
+          siret: siret ? siret.trim() : null,
+          siren: siret ? siret.trim().slice(0, 9) : null,
+          email: email.trim(),
+          phone: phone.trim(),
+          address: address.trim(),
+          city: city.trim(),
+          postal_code: postalCode.trim(),
+          country: "FR",
+          source: "owner"
+        });
     }
 
     const tokenHash = linkData?.properties?.hashed_token;

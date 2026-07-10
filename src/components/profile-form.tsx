@@ -493,19 +493,32 @@ export function ProfileForm({
           </div>
 
           {/* Lien d'accès direct à la fiche pro */}
-          <div className="mb-6 pb-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h4 className="text-sm font-semibold text-winelio-dark">Ma fiche professionnelle</h4>
-              <p className="text-xs text-winelio-gray mt-1">
-                Visualisez et modifiez les informations de votre entreprise (Siret, adresse, etc.).
-              </p>
+          <div className="mb-6 pb-6 border-b border-gray-100 flex flex-col gap-4">
+            {!companyId && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 items-start">
+                <span className="text-xl">⚠️</span>
+                <div>
+                  <h5 className="text-xs font-bold text-amber-800 uppercase tracking-wide">Fiche entreprise manquante</h5>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    Vous devez obligatoirement créer et configurer votre fiche entreprise pour pouvoir recevoir des leads et accéder à l'application.
+                  </p>
+                </div>
+              </div>
+            )}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h4 className="text-sm font-semibold text-winelio-dark">Ma fiche professionnelle</h4>
+                <p className="text-xs text-winelio-gray mt-1">
+                  Visualisez et modifiez les informations de votre entreprise (Siret, adresse, etc.).
+                </p>
+              </div>
+              <Link
+                href={companyId ? `/companies/${companyId}/edit` : "/companies"}
+                className={`inline-flex items-center justify-center px-5 py-2.5 ${!companyId ? 'bg-winelio-orange shadow-[0_4px_12px_rgba(255,107,53,0.2)]' : 'bg-gradient-to-r from-winelio-orange to-winelio-amber'} text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity whitespace-nowrap`}
+              >
+                {!companyId ? "Créer ma fiche pro →" : "Gérer ma fiche pro →"}
+              </Link>
             </div>
-            <Link
-              href={companyId ? `/companies/${companyId}/edit` : "/companies"}
-              className="inline-flex items-center justify-center px-5 py-2.5 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity whitespace-nowrap"
-            >
-              Gérer ma fiche pro →
-            </Link>
           </div>
 
           {/* Email professionnel */}

@@ -128,12 +128,37 @@ export default async function NetworkPage() {
           </div>
 
           {/* Vignette vidéo + actions de partage */}
-          <div className="flex gap-4 items-stretch">
-            <PromoVideoPreview />
-            <div className="flex-1 grid grid-cols-1 gap-2.5 [&>button]:w-full [&>button]:justify-center [&>button]:py-3">
-              <CopyButton code={sponsorCode} />
-              <EmailInviteButton code={sponsorCode} />
-              <ShareButton code={sponsorCode} />
+          <div className="flex flex-col md:flex-row gap-6 items-stretch">
+            <div className="flex-1 min-w-[200px]">
+              <PromoVideoPreview />
+            </div>
+            
+            <div className="flex-[2] grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Canal Particuliers */}
+              <div className="bg-winelio-light/50 border border-gray-100 rounded-xl p-4 flex flex-col justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-bold text-winelio-orange uppercase tracking-wider mb-1">Inviter un Particulier</h4>
+                  <p className="text-xs text-winelio-gray">Parrainez un membre classique pour qu'il recommande des pros.</p>
+                </div>
+                <div className="grid grid-cols-1 gap-2 [&>button]:w-full [&>button]:justify-center [&>button]:py-2.5">
+                  <CopyButton code={sponsorCode} />
+                  <EmailInviteButton code={sponsorCode} />
+                  <ShareButton code={sponsorCode} />
+                </div>
+              </div>
+
+              {/* Canal Pros */}
+              <div className="bg-winelio-light/50 border border-gray-100 rounded-xl p-4 flex flex-col justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-bold text-winelio-dark uppercase tracking-wider mb-1">Inviter un Professionnel</h4>
+                  <p className="text-xs text-winelio-gray">Parrainez un pro pour qu'il reçoive des leads qualifiés.</p>
+                </div>
+                <div className="grid grid-cols-1 gap-2 [&>button]:w-full [&>button]:justify-center [&>button]:py-2.5">
+                  <CopyButton code={sponsorCode} isPro={true} />
+                  <EmailInviteButton code={sponsorCode} isPro={true} />
+                  <ShareButton code={sponsorCode} isPro={true} />
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>

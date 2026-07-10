@@ -58,20 +58,20 @@ export default async function ProtectedLayout({
 
   const { data: profileData } = await supabase
     .from("profiles")
-    .select(PROFILE_SELECT)
+    .select(`${PROFILE_SELECT}, companies:companies!owner_id(id, name, siret)`)
     .eq("id", user.id)
     .maybeSingle();
-  let profile = profileData as ProfileCompletionRecord | null;
+  let profile = profileData as (ProfileCompletionRecord & { companies: { id: string; name: string | null; siret: string | null }[] | null }) | null;
 
   if (!hasHeaderIdentity(profile)) {
     const { data: adminProfileData } = await supabaseAdmin
       .from("profiles")
-      .select(PROFILE_SELECT)
+      .select(`${PROFILE_SELECT}, companies:companies!owner_id(id, name, siret)`)
       .eq("id", user.id)
       .maybeSingle();
 
     if (adminProfileData) {
-      profile = adminProfileData as ProfileCompletionRecord;
+      profile = adminProfileData as (ProfileCompletionRecord & { companies: { id: string; name: string | null; siret: string | null }[] | null });
     }
   }
 
@@ -103,7 +103,13 @@ export default async function ProtectedLayout({
   const now = new Date();
   const isGracePeriod = emailConfirmedAt && (now.getTime() - emailConfirmedAt.getTime() < 60_000);
 
-  if (pathname && !isProfileComplete && !isGracePeriod && !pathname.startsWith("/profile")) {
+  const companies = Array.isArray(profile?.companies)
+    ? profile?.companies
+    : profile?.companies ? [profile?.companies] : [];
+  const hasActiveCompany = companies.some((c: any) => c?.siret?.trim() && c?.name?.trim());
+  const isProProfileComplete = !profile?.is_professional || hasActiveCompany;
+
+  if (pathname && (!isProfileComplete || !isProProfileComplete) && !isGracePeriod && !pathname.startsWith("/profile") && !pathname.startsWith("/companies")) {
     redirect("/profile");
   }
   const ageVerified = profile?.birth_date ? isAtLeastAge(profile.birth_date) : null;
