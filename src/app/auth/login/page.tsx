@@ -115,7 +115,7 @@ function LoginForm() {
   }, [searchParams]);
 
   // Gate vidéo promo : interdire l'accès direct à l'inscription tant que la vidéo
-  // n'a pas été regardée à 50%. On renvoie sur la landing en préservant ?ref.
+  // n'a pas été regardée à 50%. On renvoie sur la landing en préservant ?ref et ?type.
   useEffect(() => {
     if (!isRegister) {
       setCheckingPromo(false);
@@ -125,10 +125,18 @@ function LoginForm() {
     if (window.localStorage.getItem(PROMO_WATCHED_KEY) === "1") {
       setCheckingPromo(false);
     } else {
-      const target = refCode ? `/?ref=${encodeURIComponent(refCode)}` : "/";
+      const typeParam = searchParams.get("type");
+      let target = "/";
+      const params = new URLSearchParams();
+      if (refCode) params.set("ref", refCode);
+      if (typeParam) params.set("type", typeParam);
+      
+      const queryStr = params.toString();
+      if (queryStr) target += `?${queryStr}`;
+      
       router.replace(target);
     }
-  }, [isRegister, refCode, router]);
+  }, [isRegister, refCode, searchParams, router]);
 
   // Récupérer le nom du parrain depuis la DB
   useEffect(() => {

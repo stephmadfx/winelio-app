@@ -42,9 +42,10 @@ export function LandingHero() {
   }, []);
   const handleUnlock = useCallback(() => setUnlocked(true), []);
 
+  const typeParam = searchParams.get("type");
   const registerHref = refCode
-    ? `/auth/login?mode=register&ref=${encodeURIComponent(refCode)}`
-    : "/auth/login?mode=register";
+    ? `/auth/login?mode=register&ref=${encodeURIComponent(refCode)}${typeParam ? `&type=${encodeURIComponent(typeParam)}` : ""}`
+    : `/auth/login?mode=register${typeParam ? `&type=${encodeURIComponent(typeParam)}` : ""}`;
 
   const primaryClass =
     "inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105";
