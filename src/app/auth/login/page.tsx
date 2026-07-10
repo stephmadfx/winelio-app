@@ -56,6 +56,20 @@ function LoginForm() {
   const [nafCode, setNafCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
+  // Champs étape 2
+  const [registerStep, setRegisterStep] = useState<1 | 2>(1);
+  const [address, setAddress] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [city, setCity] = useState("");
+  const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const [birthDay, setBirthDay] = useState("");
+  const [birthMonth, setBirthMonth] = useState("");
+  const [birthYear, setBirthYear] = useState("");
+  const [birthDateError, setBirthDateError] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const postalTimeoutRef = typeof window !== "undefined" ? { current: null as ReturnType<typeof setTimeout> | null } : { current: null };
+
   // Remonte le contenu au-dessus du clavier mobile (visualViewport API)
   // Stratégie : détecte la réduction de la zone visible et applique un paddingBottom
   // pour pousser le contenu au-dessus du clavier.
@@ -157,6 +171,54 @@ function LoginForm() {
     setErrorReason(null);
   };
 
+  // Autocomplétion ville depuis code postal (api.gouv.fr)
+  const handlePostalCodeChange = (val: string) => {
+    setPostalCode(val);
+    setCity("");
+    setCitySuggestions([]);
+    if (postalTimeoutRef.current) clearTimeout(postalTimeoutRef.current);
+    if (val.length === 5) {
+      postalTimeoutRef.current = setTimeout(async () => {
+        try {
+          const res = await fetch(`https://geo.api.gouv.fr/communes?codePostal=${val}&fields=nom&limit=8`);
+          const data: { nom: string }[] = await res.json();
+          const cities = data.map((d) => d.nom);
+          setCitySuggestions(cities);
+          if (cities.length === 1) setCity(cities[0]);
+          else if (cities.length > 1) setShowCitySuggestions(true);
+        } catch { /* ignore */ }
+      }, 300);
+    }
+  };
+
+  // Validation étape 1 avant de passer à l'étape 2
+  const handleNextStep = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!firstName.trim() || !lastName.trim() || !phone.trim() || !email.trim() || !password) {
+      setError("Veuillez remplir tous les champs obligatoires.");
+      return;
+    }
+    if (isProRegistration && (!siret.trim() || !nafCode.trim())) {
+      setError("Veuillez saisir votre SIRET et code APE.");
+      return;
+    }
+    setRegisterStep(2);
+  };
+
+  // Validation date de naissance (18+)
+  const validateBirthDate = (): string | null => {
+    if (!birthDay || !birthMonth || !birthYear) return "Date de naissance requise.";
+    const dob = new Date(parseInt(birthYear), parseInt(birthMonth) - 1, parseInt(birthDay));
+    const today = new Date();
+    const age = today.getFullYear() - dob.getFullYear() - (
+      today < new Date(today.getFullYear(), dob.getMonth(), dob.getDate()) ? 1 : 0
+    );
+    if (age < 18) return "Vous devez avoir au moins 18 ans pour vous inscrire.";
+    return null;
+  };
+
+
   // Step 1 : envoyer le code OTP
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,9 +315,17 @@ function LoginForm() {
   // Inscription par mot de passe avec métadonnées de profil
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setBirthDateError("");
+    const bdErr = validateBirthDate();
+    if (bdErr) { setBirthDateError(bdErr); return; }
+    if (!termsAccepted) { setError("Vous devez accepter les CGU."); return; }
+    if (!address.trim() || !postalCode.trim() || !city.trim()) {
+      setError("Veuillez compléter votre adresse, code postal et ville.");
+      return;
+    }
     setLoading(true);
     setError("");
-
+    const birthDate = `${birthYear}-${birthMonth.padStart(2,"0")}-${birthDay.padStart(2,"0")}`;
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
@@ -266,20 +336,23 @@ function LoginForm() {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           phone: phone.trim(),
+          address: address.trim(),
+          city: city.trim(),
+          postalCode: postalCode.trim(),
+          birthDate,
+          termsAccepted,
           sponsorId,
           sponsorCode: refCode || null,
           siret: isProRegistration ? siret.trim() : null,
           nafCode: isProRegistration ? nafCode.trim() : null,
         }),
       });
-
       const result = await res.json();
       if (!res.ok) {
         setError(result.error || "Une erreur est survenue lors de l'inscription.");
         setLoading(false);
         return;
       }
-
       setSignUpSuccess(true);
     } catch (err) {
       console.error(err);
@@ -294,7 +367,7 @@ function LoginForm() {
     isRegister
       ? signUpSuccess
         ? "Inscription enregistrée"
-        : "Créer votre accès"
+        : registerStep === 1 ? "Créer votre accès" : "Votre profil"
       : authMethod === "password"
       ? "Se connecter"
       : step === "email"
@@ -305,7 +378,9 @@ function LoginForm() {
     isRegister
       ? signUpSuccess
         ? "Votre compte a été créé. Un e-mail de validation vous a été envoyé."
-        : "Saisissez vos informations pour finaliser votre inscription."
+        : registerStep === 1
+          ? "Saisissez vos informations pour finaliser votre inscription."
+          : "Quelques informations supplémentaires pour compléter votre profil."
       : authMethod === "password"
       ? "Connectez-vous avec votre email et votre mot de passe."
       : step === "email"
@@ -365,7 +440,7 @@ function LoginForm() {
           <div className="mt-5 flex items-start justify-between gap-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-winelio-gray">
-                {isRegister
+              {isRegister
                   ? refCode
                     ? "Invitation reçue"
                     : "Inscription"
@@ -576,8 +651,15 @@ function LoginForm() {
             </div>
           )}
 
-          {isRegister && !signUpSuccess && (
-            <form onSubmit={handleRegister} className="mt-6 space-y-5">
+          {isRegister && !signUpSuccess && registerStep === 1 && (
+            <form onSubmit={handleNextStep} className="mt-6 space-y-5">
+              {/* Indicateur d'étape */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-1 rounded-full bg-winelio-orange" />
+                <div className="flex-1 h-1 rounded-full bg-gray-200" />
+                <span className="text-xs text-winelio-gray ml-1">Étape 1/2</span>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="firstName" className="text-sm font-medium text-winelio-dark">
@@ -674,17 +756,18 @@ function LoginForm() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-winelio-dark">
+                <label htmlFor="reg-password" className="text-sm font-medium text-winelio-dark">
                   Mot de passe <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
-                    id="password"
+                    id="reg-password"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder="8 caractères minimum"
                     required
+                    minLength={8}
                     autoComplete="new-password"
                     className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 pl-4 pr-12 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
                   />
@@ -692,7 +775,7 @@ function LoginForm() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-winelio-gray hover:text-winelio-dark transition-colors"
-                    aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                    aria-label={showPassword ? "Masquer" : "Afficher"}
                   >
                     {showPassword ? (
                       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -716,20 +799,9 @@ function LoginForm() {
 
               <button
                 type="submit"
-                disabled={loading}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105"
               >
-                {loading ? (
-                  <>
-                    <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Inscription…
-                  </>
-                ) : (
-                  "S'inscrire"
-                )}
+                Continuer →
               </button>
 
               <button
@@ -739,6 +811,189 @@ function LoginForm() {
               >
                 Déjà un compte ? Se connecter
               </button>
+            </form>
+          )}
+
+          {/* ── FORMULAIRE INSCRIPTION ÉTAPE 2 ── */}
+          {isRegister && !signUpSuccess && registerStep === 2 && (
+            <form onSubmit={handleRegister} className="mt-6 space-y-5">
+              {/* Indicateur d'étape */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-1 rounded-full bg-winelio-orange" />
+                <div className="flex-1 h-1 rounded-full bg-winelio-orange" />
+                <span className="text-xs text-winelio-gray ml-1">Étape 2/2</span>
+              </div>
+
+              {/* Date de naissance */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-winelio-dark">
+                  Date de naissance <span className="text-red-500">*</span>
+                  <span className="ml-2 text-xs text-winelio-gray font-normal">(18 ans minimum)</span>
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    value={birthDay}
+                    onChange={(e) => setBirthDay(e.target.value)}
+                    required
+                    className="flex-1 rounded-2xl border border-gray-200 bg-winelio-light/70 px-3 py-3 text-winelio-dark focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                  >
+                    <option value="">Jour</option>
+                    {Array.from({ length: 31 }, (_, i) => {
+                      const v = String(i + 1).padStart(2, "0");
+                      return <option key={v} value={v}>{i + 1}</option>;
+                    })}
+                  </select>
+                  <select
+                    value={birthMonth}
+                    onChange={(e) => setBirthMonth(e.target.value)}
+                    required
+                    className="flex-[1.5] rounded-2xl border border-gray-200 bg-winelio-light/70 px-3 py-3 text-winelio-dark focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                  >
+                    <option value="">Mois</option>
+                    {["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"].map((m, i) => (
+                      <option key={i} value={String(i+1).padStart(2,"0")}>{m}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={birthYear}
+                    onChange={(e) => setBirthYear(e.target.value)}
+                    required
+                    className="flex-[1.2] rounded-2xl border border-gray-200 bg-winelio-light/70 px-3 py-3 text-winelio-dark focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                  >
+                    <option value="">Année</option>
+                    {Array.from({ length: new Date().getFullYear() - 18 - 1919 }, (_, i) => {
+                      const y = new Date().getFullYear() - 18 - i;
+                      return <option key={y} value={String(y)}>{y}</option>;
+                    })}
+                  </select>
+                </div>
+                {birthDateError && (
+                  <p className="text-xs text-red-500">{birthDateError}</p>
+                )}
+              </div>
+
+              {/* Adresse */}
+              <div className="space-y-2">
+                <label htmlFor="address" className="text-sm font-medium text-winelio-dark">
+                  Adresse <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="address"
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="12 rue de la Paix"
+                  required
+                  autoComplete="street-address"
+                  className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                />
+              </div>
+
+              {/* Code postal + Ville */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="postalCode" className="text-sm font-medium text-winelio-dark">
+                    Code postal <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="postalCode"
+                    type="text"
+                    value={postalCode}
+                    onChange={(e) => handlePostalCodeChange(e.target.value)}
+                    placeholder="75001"
+                    required
+                    maxLength={5}
+                    autoComplete="postal-code"
+                    className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                  />
+                </div>
+                <div className="space-y-2 relative">
+                  <label htmlFor="city" className="text-sm font-medium text-winelio-dark">
+                    Ville <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="city"
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    onFocus={() => { if (citySuggestions.length > 0) setShowCitySuggestions(true); }}
+                    onBlur={() => setTimeout(() => setShowCitySuggestions(false), 150)}
+                    placeholder="Paris"
+                    required
+                    autoComplete="off"
+                    className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                  />
+                  {showCitySuggestions && citySuggestions.length > 0 && (
+                    <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                      {citySuggestions.map((c) => (
+                        <li
+                          key={c}
+                          onMouseDown={() => { setCity(c); setShowCitySuggestions(false); }}
+                          className="px-4 py-2.5 text-sm text-winelio-dark hover:bg-winelio-orange/5 hover:text-winelio-orange cursor-pointer"
+                        >
+                          {c}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+
+              {/* CGU */}
+              <label className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-winelio-light/50 p-4 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  required
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-winelio-orange focus:ring-winelio-orange"
+                />
+                <span className="text-sm leading-6 text-winelio-gray">
+                  J&apos;ai lu et j&apos;accepte les{" "}
+                  <a
+                    href="/conditions-generales-utilisation"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-semibold text-winelio-orange underline underline-offset-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Conditions Générales d&apos;Utilisation Winelio
+                  </a>
+                </span>
+              </label>
+
+              {error && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-500">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setRegisterStep(1); setError(""); }}
+                  className="flex-1 rounded-2xl border border-gray-200 bg-white px-5 py-3.5 text-sm font-semibold text-winelio-dark transition hover:border-winelio-orange/30 hover:text-winelio-orange"
+                >
+                  ← Retour
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading || !termsAccepted}
+                  className="flex-[2] inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Inscription…
+                    </>
+                  ) : (
+                    "Créer mon compte"
+                  )}
+                </button>
+              </div>
             </form>
           )}
 
