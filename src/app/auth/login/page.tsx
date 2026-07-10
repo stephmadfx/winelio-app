@@ -54,10 +54,11 @@ function LoginForm() {
   const [signUpSuccess, setSignUpSuccess] = useState(false);
   const [siret, setSiret] = useState("");
   const [nafCode, setNafCode] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // Champs étape 2
-  const [registerStep, setRegisterStep] = useState<1 | 2>(1);
+  // Champs étape 2 (et 3 pour les Pros)
+  const [registerStep, setRegisterStep] = useState<1 | 2 | 3>(1);
   const [address, setAddress] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [city, setCity] = useState("");
@@ -94,7 +95,7 @@ function LoginForm() {
 
   const isRegister = searchParams.get("mode") === "register";
   const returnTo = searchParams.get("returnTo") || "";
-  const isProRegistration = isRegister && returnTo.startsWith("/claim/");
+  const isProRegistration = isRegister && (returnTo.startsWith("/claim/") || searchParams.get("type") === "pro");
   const [refCode, setRefCode] = useState<string | null>(null);
   const [checkingPromo, setCheckingPromo] = useState(true);
 
@@ -199,11 +200,21 @@ function LoginForm() {
       setError("Veuillez remplir tous les champs obligatoires.");
       return;
     }
-    if (isProRegistration && (!siret.trim() || !nafCode.trim())) {
-      setError("Veuillez saisir votre SIRET et code APE.");
+    setRegisterStep(2);
+  };
+
+  // Validation étape 2 pour les pros pour passer à l'étape 3
+  const handleNextToStep3 = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    const bdErr = validateBirthDate();
+    if (bdErr) { setBirthDateError(bdErr); return; }
+    if (!termsAccepted) { setError("Vous devez accepter les CGU."); return; }
+    if (!address.trim() || !postalCode.trim() || !city.trim()) {
+      setError("Veuillez compléter votre adresse, code postal et ville.");
       return;
     }
-    setRegisterStep(2);
+    setRegisterStep(3);
   };
 
   // Validation date de naissance (18+)
@@ -343,6 +354,8 @@ function LoginForm() {
           termsAccepted,
           sponsorId,
           sponsorCode: refCode || null,
+          isPro: isProRegistration,
+          companyName: isProRegistration ? companyName.trim() : null,
           siret: isProRegistration ? siret.trim() : null,
           nafCode: isProRegistration ? nafCode.trim() : null,
         }),
@@ -367,7 +380,11 @@ function LoginForm() {
     isRegister
       ? signUpSuccess
         ? "Inscription enregistrée"
-        : registerStep === 1 ? "Créer votre accès" : "Votre profil"
+        : registerStep === 1 
+          ? "Créer votre accès" 
+          : registerStep === 2 
+            ? "Votre profil" 
+            : "Votre entreprise"
       : authMethod === "password"
       ? "Se connecter"
       : step === "email"
@@ -380,7 +397,9 @@ function LoginForm() {
         ? "Votre compte a été créé. Un e-mail de validation vous a été envoyé."
         : registerStep === 1
           ? "Saisissez vos informations pour finaliser votre inscription."
-          : "Quelques informations supplémentaires pour compléter votre profil."
+          : registerStep === 2
+            ? "Quelques informations supplémentaires pour compléter votre profil."
+            : "Renseignez les détails de votre activité professionnelle."
       : authMethod === "password"
       ? "Connectez-vous avec votre email et votre mot de passe."
       : step === "email"
@@ -441,9 +460,7 @@ function LoginForm() {
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-winelio-gray">
               {isRegister
-                  ? refCode
-                    ? "Invitation reçue"
-                    : "Inscription"
+                  ? `Étape ${registerStep} sur ${isProRegistration ? 3 : 2}`
                   : authMethod === "password"
                   ? "Connexion"
                   : step === "email"
@@ -816,12 +833,15 @@ function LoginForm() {
 
           {/* ── FORMULAIRE INSCRIPTION ÉTAPE 2 ── */}
           {isRegister && !signUpSuccess && registerStep === 2 && (
-            <form onSubmit={handleRegister} className="mt-6 space-y-5">
+            <form onSubmit={isProRegistration ? handleNextToStep3 : handleRegister} className="mt-6 space-y-5">
               {/* Indicateur d'étape */}
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-1 rounded-full bg-winelio-orange" />
                 <div className="flex-1 h-1 rounded-full bg-winelio-orange" />
-                <span className="text-xs text-winelio-gray ml-1">Étape 2/2</span>
+                {isProRegistration && <div className="flex-1 h-1 rounded-full bg-gray-200" />}
+                <span className="text-xs text-winelio-gray ml-1">
+                  Étape 2/{isProRegistration ? "3" : "2"}
+                </span>
               </div>
 
               {/* Date de naissance */}
@@ -978,7 +998,107 @@ function LoginForm() {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || !termsAccepted}
+                  disabled={!termsAccepted || (loading && !isProRegistration)}
+                  className="flex-[2] inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isProRegistration ? (
+                    "Continuer →"
+                  ) : loading ? (
+                    <>
+                      <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Inscription…
+                    </>
+                  ) : (
+                    "Créer mon compte"
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* ── FORMULAIRE INSCRIPTION ÉTAPE 3 (PRO) ── */}
+          {isRegister && !signUpSuccess && registerStep === 3 && (
+            <form onSubmit={handleRegister} className="mt-6 space-y-5">
+              {/* Indicateur d'étape */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-1 rounded-full bg-winelio-orange" />
+                <div className="flex-1 h-1 rounded-full bg-winelio-orange" />
+                <div className="flex-1 h-1 rounded-full bg-winelio-orange" />
+                <span className="text-xs text-winelio-gray ml-1">Étape 3/3</span>
+              </div>
+
+              {/* Raison sociale */}
+              <div className="space-y-2">
+                <label htmlFor="companyName" className="text-sm font-medium text-winelio-dark">
+                  Raison sociale / Nom de l'entreprise <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="companyName"
+                  type="text"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="Ex: Électricité Martin & Fils"
+                  required
+                  className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                />
+              </div>
+
+              {/* Numéro SIRET */}
+              <div className="space-y-2">
+                <label htmlFor="siret" className="text-sm font-medium text-winelio-dark">
+                  Numéro SIRET <span className="text-red-500">*</span>
+                  <span className="ml-2 text-xs text-winelio-gray font-normal">(14 chiffres)</span>
+                </label>
+                <input
+                  id="siret"
+                  type="text"
+                  value={siret}
+                  onChange={(e) => setSiret(e.target.value.replace(/\s/g, ""))}
+                  placeholder="12345678901234"
+                  maxLength={14}
+                  required
+                  className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                />
+              </div>
+
+              {/* Code APE / NAF */}
+              <div className="space-y-2">
+                <label htmlFor="nafCode" className="text-sm font-medium text-winelio-dark">
+                  Code APE / NAF <span className="text-red-500">*</span>
+                  <span className="ml-2 text-xs text-winelio-gray font-normal">(Ex: 4321A)</span>
+                </label>
+                <input
+                  id="nafCode"
+                  type="text"
+                  value={nafCode}
+                  onChange={(e) => setNafCode(e.target.value.toUpperCase().replace(/\s/g, ""))}
+                  placeholder="4321A"
+                  maxLength={5}
+                  required
+                  className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                />
+              </div>
+
+              {error && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-500">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setRegisterStep(2); setError(""); }}
+                  className="flex-1 rounded-2xl border border-gray-200 bg-white px-5 py-3.5 text-sm font-semibold text-winelio-dark transition hover:border-winelio-orange/30 hover:text-winelio-orange"
+                >
+                  ← Retour
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading || !companyName.trim() || siret.length !== 14 || !nafCode.trim()}
                   className="flex-[2] inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? (
@@ -990,7 +1110,7 @@ function LoginForm() {
                       Inscription…
                     </>
                   ) : (
-                    "Créer mon compte"
+                    "Créer mon compte pro"
                   )}
                 </button>
               </div>
