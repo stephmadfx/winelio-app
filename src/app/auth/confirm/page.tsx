@@ -73,6 +73,10 @@ function ConfirmHandler() {
           try {
             localStorage.setItem("winelio_known_user", "1");
           } catch {}
+          // Appeler l'API de notification du parrainage et de l'admin
+          fetch("/api/network/new-referral", { method: "POST" }).catch((err) => {
+            console.error("Failed to trigger new-referral notification:", err);
+          });
           router.push("/dashboard");
         }
       });
