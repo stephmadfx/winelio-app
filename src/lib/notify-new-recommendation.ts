@@ -74,41 +74,112 @@ function buildOwnerEmail(proFirstName: string, referrerName: string, contactName
 function buildScrapedEmail(companyName: string, referrerName: string, contactName: string, projectDescription: string, urgency: string, recommendationId: string): string {
   const ctaUrl = trackClick(recommendationId);
   const pixelUrl = trackOpen(recommendationId);
+  const optOutUrl = `mailto:contact@winelio.app?subject=Opposition%20ou%20modification%20de%20fiche%20professionnelle&body=Bonjour%20l%27%C3%A9quipe%20Winelio%2C%0A%0AJe%20souhaite%20modifier%20ou%20supprimer%20ma%20fiche%20professionnelle%20associ%C3%A9e%20%C3%A0%20l%27entreprise%20${encodeURIComponent(companyName)}%20(Recommandation%20ID%20%3A%20${encodeURIComponent(recommendationId)}).%0A%0ACordialement.`;
+
   return `<!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><title>Un client veut travailler avec vous</title></head>
+<html lang="fr"><head><meta charset="UTF-8"><title>Votre activité a été recommandée sur Winelio</title></head>
 <body style="margin:0;padding:0;background:#F0F2F4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F0F2F4;"><tr><td align="center" style="padding:40px 20px;">
     <table width="520" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%;">
+      <!-- Barre accent -->
       <tr><td style="background:linear-gradient(90deg,#FF6B35,#F7931E);height:4px;font-size:0;line-height:0;border-radius:4px 4px 0 0;">&nbsp;</td></tr>
+      <!-- Carte Blanche -->
       <tr><td style="background:#FFFFFF;padding:40px 48px 36px;border-radius:0 0 16px 16px;">
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <!-- Logo -->
           <tr><td align="center" style="padding-bottom:24px;border-bottom:1px solid #F0F2F4;">${LOGO_IMG_HTML}</td></tr>
           <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
-          <tr><td align="center"><table cellpadding="0" cellspacing="0" border="0"><tr><td width="52" height="52" style="background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:13px;text-align:center;vertical-align:middle;font-size:28px;line-height:52px;">🤝</td></tr></table></td></tr>
+          
+          <!-- Emoji / Titre -->
+          <tr><td align="center"><table cellpadding="0" cellspacing="0" border="0"><tr><td width="52" height="52" style="background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:13px;text-align:center;vertical-align:middle;font-size:28px;line-height:52px;">🎉</td></tr></table></td></tr>
           <tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr>
-          <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;line-height:1.3;">Un client potentiel<br/>vous recommande&nbsp;!</h1></td></tr>
-          <tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr>
-          <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;">Bonjour,</p></td></tr>
-          <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
-          <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;"><strong style="color:#2D3436;">${he(referrerName)}</strong> a recommandé votre entreprise <strong style="color:#2D3436;">${he(companyName)}</strong> à un contact via <strong style="color:#FF6B35;">Winelio</strong>, la plateforme française de recommandations entre particuliers et professionnels.</p></td></tr>
-          <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
-          <tr><td style="background:#FFF5F0;border-left:3px solid #FF6B35;padding:16px 20px;border-radius:4px;">
-            <p style="margin:0 0 8px;color:#2D3436;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Le projet</p>
-            <p style="margin:0 0 12px;color:#636E72;font-size:14px;line-height:1.5;">${he(projectDescription)}</p>
-            <p style="margin:0 0 8px;color:#2D3436;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Contact intéressé</p>
-            <p style="margin:0 0 12px;color:#636E72;font-size:14px;">${he(contactName)}</p>
-            <p style="margin:0 0 8px;color:#2D3436;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Urgence</p>
-            <p style="margin:0;color:#636E72;font-size:14px;">${he(urgency)}</p>
-          </td></tr>
-          <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
-          <tr><td align="center"><p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Pour <strong>récupérer ce lead</strong> et contacter le client, il vous suffit de revendiquer votre fiche sur Winelio — c'est <strong>gratuit</strong>, sans engagement.</p></td></tr>
+          <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;line-height:1.3;">Bonne nouvelle&nbsp;!</h1></td></tr>
           <tr><td style="height:20px;font-size:0;line-height:0;">&nbsp;</td></tr>
-          <tr><td align="center"><table cellpadding="0" cellspacing="0" border="0"><tr><td><a href="${ctaUrl}" style="display:inline-block;background:linear-gradient(135deg,#FF6B35,#F7931E);color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;font-size:15px;">Récupérer ma fiche gratuitement →</a></td></tr></table></td></tr>
-          <tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr>
-          <tr><td align="center"><p style="margin:0;color:#B2BAC0;font-size:12px;line-height:1.5;">En quelques minutes, accédez au contact et développez votre activité.</p></td></tr>
+          
+          <!-- Message principal -->
+          <tr><td style="color:#636E72;font-size:15px;line-height:1.6;text-align:left;">
+            Bonjour,<br/><br/>
+            Votre activité a récemment été recommandée sur Winelio par l'un de nos utilisateurs.<br/><br/>
+            <strong>Une opportunité de mise en relation vous attend.</strong><br/><br/>
+            Pour consulter cette recommandation et accéder aux informations associées, nous vous invitons à activer gratuitement votre espace professionnel.
+          </td></tr>
+          
+          <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
+          
+          <!-- Bouton CTA principal -->
+          <tr><td align="center">
+            <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+              <tr>
+                <td align="center" style="border-radius:12px;mso-padding-alt:0px;">
+                  <a href="${ctaUrl}"
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     style="display:block;padding:14px 32px;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:12px;background:#FF6B35;background:linear-gradient(135deg,#FF6B35,#F7931E);mso-padding-alt:0;line-height:1.4;"
+                  >
+                    ACTIVER MON ESPACE PROFESSIONNEL &rarr;
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td></tr>
+          
+          <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
+          
+          <!-- Avantages de l'activation -->
+          <tr><td style="color:#636E72;font-size:14px;line-height:1.6;text-align:left;">
+            L'activation de votre compte vous permettra notamment de :<br/>
+            • Consulter les recommandations reçues ;<br/>
+            • Accepter ou refuser les mises en relation ;<br/>
+            • Développer votre activité grâce au réseau Winelio ;<br/>
+            • Accéder aux fonctionnalités réservées aux professionnels.
+          </td></tr>
+          
+          <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
+
+          <!-- Encadré Projet (donne de la crédibilité en montrant qu'il y a un vrai projet derrière) -->
+          <tr><td style="background:#FFF5F0;border-left:3px solid #FF6B35;padding:16px 20px;border-radius:4px;">
+            <p style="margin:0 0 6px;color:#2D3436;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Aperçu du besoin client</p>
+            <p style="margin:0 0 10px;color:#636E72;font-size:14px;line-height:1.5;">${he(projectDescription)}</p>
+            <p style="margin:0 0 4px;color:#2D3436;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Ville / Zone géographique</p>
+            <p style="margin:0;color:#636E72;font-size:14px;">${he(contactName)}</p>
+          </td></tr>
+
+          <tr><td style="height:28px;font-size:0;line-height:0;">&nbsp;</td></tr>
+          
+          <!-- Pourquoi cet email / Mentions légales obligatoires -->
+          <tr><td style="border-top:1px solid #F0F2F4;padding-top:20px;color:#8B949E;font-size:12px;line-height:1.6;text-align:left;">
+            <strong style="color:#2D3436;font-size:13px;display:block;margin-bottom:6px;">Pourquoi recevez-vous cet email ?</strong>
+            Votre activité professionnelle a été référencée dans Winelio à partir d'informations professionnelles publiquement accessibles afin de permettre sa recommandation par les utilisateurs de la plateforme.<br/><br/>
+            Vous n'êtes actuellement pas inscrit sur Winelio et aucune obligation ne vous engage. L'activation de votre compte reste entièrement facultative.<br/><br/>
+            Conformément à la réglementation applicable, vous pouvez à tout moment demander la modification ou la suppression de votre fiche professionnelle.<br/><br/>
+            <table cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td>
+                  <a href="${optOutUrl}"
+                     style="display:inline-block;color:#FF6B35;font-weight:bold;text-decoration:underline;"
+                  >
+                    👉 MODIFIER OU SUPPRIMER MA FICHE
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td></tr>
+
+          <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
+          
+          <!-- Footer de signature -->
+          <tr><td style="color:#636E72;font-size:14px;line-height:1.5;text-align:left;">
+            Pour toute question : <a href="mailto:contact@winelio.app" style="color:#FF6B35;text-decoration:none;">contact@winelio.app</a><br/><br/>
+            L'équipe Winelio
+          </td></tr>
         </table>
       </td></tr>
-      <tr><td align="center" style="padding:24px 0;"><p style="margin:0;color:#B2BAC0;font-size:12px;">© 2026 Winelio · La plateforme française de recommandations</p><p style="margin:4px 0 0;color:#FF6B35;font-size:12px;font-weight:600;">Recommandez. Gagnez.</p></td></tr>
+      
+      <!-- Footer de l'email -->
+      <tr><td align="center" style="padding:24px 0;">
+        <p style="margin:0;color:#B2BAC0;font-size:12px;">© 2026 Winelio · La plateforme française de recommandations</p>
+        <p style="margin:4px 0 0;color:#FF6B35;font-size:12px;font-weight:600;">Recommandez. Gagnez.</p>
+      </td></tr>
     </table>
   </td></tr></table>
   <img src="${pixelUrl}" width="1" height="1" alt="" style="display:block;border:0;width:1px;height:1px;" />
@@ -184,12 +255,12 @@ export async function notifyNewRecommendation(recommendationId: string) {
   const shortCompanyName = shortenCompanyName(company?.name);
 
   const subject = isScraped
-    ? `${referrerName} a recommandé ${shortCompanyName} à un client`
+    ? `Votre activité a été recommandée sur Winelio !`
     : `Nouvelle recommandation de ${referrerName}`;
 
   for (const to of recipients) {
     const html = isScraped
-      ? buildScrapedEmail(shortCompanyName, referrerName, contactName, rec.project_description || "", urgency, recommendationId)
+      ? buildScrapedEmail(company?.name || "votre entreprise", referrerName, contactName, rec.project_description || "", urgency, recommendationId)
       : buildOwnerEmail(pro.first_name || "", referrerName, contactName, rec.project_description || "", urgency, recommendationId);
     await queueEmail({ to, subject, html });
   }

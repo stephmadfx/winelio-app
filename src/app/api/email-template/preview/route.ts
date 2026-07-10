@@ -59,19 +59,36 @@ const TEMPLATES: Record<string, () => string> = {
   `),
 
   "new-reco-scraped": () => wrap(`
-    ${icon("🤝")}
-    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;line-height:1.3;">Un client potentiel<br/>vous recommande&nbsp;!</h1></td></tr>
-    <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
-    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;"><strong style="color:#2D3436;">${REFERRER}</strong> a recommandé votre entreprise <strong style="color:#2D3436;">${PRO}</strong> à un contact via <strong style="color:#FF6B35;">Winelio</strong>.</p></td></tr>
-    ${infoBlock(`<p style="margin:0 0 8px;color:#2D3436;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Le projet</p>
-    <p style="margin:0 0 12px;color:#636E72;font-size:14px;line-height:1.5;">Rénovation électrique complète d'un appartement 80m².</p>
-    <p style="margin:0 0 8px;color:#2D3436;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Contact intéressé</p>
-    <p style="margin:0 0 12px;color:#636E72;font-size:14px;">${CONTACT}</p>
-    <p style="margin:0 0 8px;color:#2D3436;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Urgence</p>
-    <p style="margin:0;color:#636E72;font-size:14px;">Normal</p>`)}
+    ${icon("🎉")}
+    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;line-height:1.3;">Bonne nouvelle&nbsp;!</h1></td></tr>
     <tr><td style="height:20px;font-size:0;line-height:0;">&nbsp;</td></tr>
-    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Pour <strong>récupérer ce lead</strong>, revendiquez votre fiche sur Winelio — c'est <strong>gratuit</strong>.</p></td></tr>
-    ${cta(SITE, "Récupérer ma fiche gratuitement →")}
+    <tr><td style="color:#636E72;font-size:15px;line-height:1.6;text-align:left;">
+      Bonjour,<br/><br/>
+      Votre activité a récemment été recommandée sur Winelio par l'un de nos utilisateurs.<br/><br/>
+      <strong>Une opportunité de mise en relation vous attend.</strong><br/><br/>
+      Pour consulter cette recommandation et accéder aux informations associées, nous vous invitons à activer gratuitement votre espace professionnel.
+    </td></tr>
+    ${cta(SITE, "ACTIVER MON ESPACE PROFESSIONNEL →")}
+    <tr><td style="color:#636E72;font-size:14px;line-height:1.6;text-align:left;">
+      L'activation de votre compte vous permettra notamment de :<br/>
+      • Consulter les recommandations reçues ;<br/>
+      • Accepter ou refuser les mises en relation ;<br/>
+      • Développer votre activité grâce au réseau Winelio ;<br/>
+      • Accéder aux fonctionnalités réservées aux professionnels.
+    </td></tr>
+    ${infoBlock(`
+      <p style="margin:0 0 6px;color:#2D3436;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Aperçu du besoin client</p>
+      <p style="margin:0 0 10px;color:#636E72;font-size:14px;line-height:1.5;">Rénovation électrique complète d'un appartement 80m².</p>
+      <p style="margin:0 0 4px;color:#2D3436;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Ville / Zone géographique</p>
+      <p style="margin:0;color:#636E72;font-size:14px;">Sophie L. (Paris)</p>
+    `)}
+    <tr><td style="border-top:1px solid #F0F2F4;padding-top:20px;color:#8B949E;font-size:12px;line-height:1.6;text-align:left;">
+      <strong style="color:#2D3436;font-size:13px;display:block;margin-bottom:6px;">Pourquoi recevez-vous cet email ?</strong>
+      Votre activité professionnelle a été référencée dans Winelio à partir d'informations professionnelles publiquement accessibles afin de permettre sa recommandation par les utilisateurs de la plateforme.<br/><br/>
+      Vous n'êtes actuellement pas inscrit sur Winelio et aucune obligation ne vous engage. L'activation de votre compte reste entièrement facultative.<br/><br/>
+      Conformément à la réglementation applicable, vous pouvez à tout moment demander la modification ou la suppression de votre fiche professionnelle.<br/><br/>
+      <a href="mailto:contact@winelio.app?subject=Opposition" style="color:#FF6B35;font-weight:bold;text-decoration:underline;">👉 MODIFIER OU SUPPRIMER MA FICHE</a>
+    </td></tr>
   `),
 
   "relance-scraped": () => wrap(`
