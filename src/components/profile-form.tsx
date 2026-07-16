@@ -522,10 +522,9 @@ export function ProfileForm({
           </div>
 
           {/* Email professionnel */}
-          <h4 className="text-sm font-semibold text-winelio-dark mb-1">Email professionnel</h4>
+          <h4 className="text-sm font-semibold text-winelio-dark mb-1">E-mail professionnel</h4>
           <p className="text-xs text-winelio-gray mb-4">
-            Optionnel. C&apos;est l&apos;adresse où vous serez notifié lors d&apos;une nouvelle recommandation,
-            en plus de votre email de connexion Winelio.
+            Adresse de contact de votre entreprise pour les nouvelles recommandations. Elle peut être identique à votre e-mail personnel.
           </p>
           <div className="flex gap-3 items-start">
             <input
@@ -567,7 +566,7 @@ export function ProfileForm({
           {/* Email en lecture seule */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-winelio-gray mb-1">
-              Adresse email
+              E-mail personnel de connexion
             </label>
             <div className="relative">
               <input

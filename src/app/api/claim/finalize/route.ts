@@ -208,7 +208,7 @@ export async function POST(req: Request) {
     const scheduledAt = new Date();
     scheduledAt.setHours(scheduledAt.getHours() + 24);
 
-    await supabaseAdmin
+    const { error: queueError } = await supabaseAdmin
       .schema("winelio")
       .from("email_queue")
       .insert({
@@ -218,10 +218,10 @@ export async function POST(req: Request) {
         html: finalizeEmailHtml,
         scheduled_at: scheduledAt.toISOString(),
         dedupe_key: `pro-finalize-${user.id}`,
-      })
-      .catch((err) => {
-        console.error("[claim-finalize] Erreur queue pro-finalize email:", err);
       });
+    if (queueError) {
+      console.error("[claim-finalize] Erreur queue pro-finalize email:", queueError);
+    }
   }
 
   return NextResponse.json({ success: true });

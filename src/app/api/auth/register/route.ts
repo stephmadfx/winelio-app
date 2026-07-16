@@ -2,14 +2,31 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email-sender";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, firstName, lastName, phone, address, city, postalCode, birthDate, termsAccepted, sponsorCode, sponsorId, siret, nafCode, companyName, isPro = false } = body;
+    const { email, password, firstName, lastName, phone, address, city, postalCode, birthDate, termsAccepted, sponsorCode, sponsorId, siret, nafCode, companyName, professionalEmail, isPro = false } = body;
+    const personalEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+    const companyEmail = typeof professionalEmail === "string" ? professionalEmail.trim().toLowerCase() : "";
+    const isProRegistration = isPro === true;
 
-    if (!email || !password || !firstName || !lastName || !phone || !address || !city || !postalCode || !birthDate) {
+    if (!personalEmail || !password || !firstName || !lastName || !phone || !address || !city || !postalCode || !birthDate) {
       return NextResponse.json(
         { error: "Tous les champs requis doivent être remplis." },
+        { status: 400 }
+      );
+    }
+    if (!EMAIL_RE.test(personalEmail)) {
+      return NextResponse.json({ error: "Adresse e-mail personnelle invalide." }, { status: 400 });
+    }
+    if (
+      isProRegistration &&
+      (!companyName?.trim() || !siret?.trim() || !nafCode?.trim() || !EMAIL_RE.test(companyEmail))
+    ) {
+      return NextResponse.json(
+        { error: "Les informations de l’entreprise et son e-mail professionnel sont obligatoires." },
         { status: 400 }
       );
     }
@@ -20,7 +37,7 @@ export async function POST(request: Request) {
     // 1. Appeler generateLink pour créer le compte et obtenir le lien de confirmation
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "signup",
-      email,
+      email: personalEmail,
       password,
       options: {
         redirectTo,
@@ -55,7 +72,7 @@ export async function POST(request: Request) {
 
     // 1.2 Initialiser le profil et l'entreprise pour le professionnel si applicable
     const userId = linkData?.user?.id;
-    if (userId && isPro) {
+    if (userId && isProRegistration) {
       // Mettre à jour is_professional dans profiles
       await supabaseAdmin
         .schema("winelio")
@@ -72,12 +89,13 @@ export async function POST(request: Request) {
           name: (companyName || `${firstName} ${lastName}`).trim(),
           siret: siret ? siret.trim() : null,
           siren: siret ? siret.trim().slice(0, 9) : null,
-          email: email.trim(),
+          email: companyEmail,
           phone: phone.trim(),
           address: address.trim(),
           city: city.trim(),
           postal_code: postalCode.trim(),
           country: "FR",
+          naf_code: nafCode.trim().toUpperCase(),
           source: "owner"
         });
     }
@@ -185,7 +203,7 @@ export async function POST(request: Request) {
 
     // 3. Envoyer l'e-mail avec sendEmail
     const emailResult = await sendEmail({
-      to: email,
+      to: personalEmail,
       subject: "Confirmez votre inscription sur Winelio",
       html: emailHtml,
     });

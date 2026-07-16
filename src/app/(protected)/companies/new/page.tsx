@@ -22,7 +22,7 @@ export default async function NewCompanyPage() {
       <h2 className="text-2xl font-bold text-winelio-dark mb-6">
         Nouvelle entreprise
       </h2>
-      <NewCompanyForm categories={categories ?? []} userId={user.id} />
+      <NewCompanyForm categories={categories ?? []} personalEmail={user.email ?? ""} />
     </div>
   );
 }

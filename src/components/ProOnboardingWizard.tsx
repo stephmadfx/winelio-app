@@ -22,6 +22,8 @@ interface Props {
   categories: Category[];
   defaultSiret: string;
   defaultCategoryId: string;
+  defaultProEmail: string;
+  personalEmail: string;
   cguAgentsImmoDocumentId: string | null;
   cguAgentsImmoSections: { article_number: string; title: string; content: string }[];
 }
@@ -36,6 +38,8 @@ export function ProOnboardingWizard({
   categories,
   defaultSiret,
   defaultCategoryId,
+  defaultProEmail,
+  personalEmail,
   cguAgentsImmoDocumentId,
   cguAgentsImmoSections,
 }: Props) {
@@ -46,7 +50,10 @@ export function ProOnboardingWizard({
   const [siret, setSiret] = useState(defaultSiret);
   const [sirenData, setSirenData] = useState<SirenVerification | null>(null);
   const [nafCheck, setNafCheck] = useState<NafCheckResult | null>(null);
-  const [proEmail, setProEmail] = useState("");
+  const [proEmail, setProEmail] = useState(defaultProEmail);
+  const [usePersonalEmail, setUsePersonalEmail] = useState(
+    Boolean(personalEmail) && defaultProEmail.trim().toLowerCase() === personalEmail.trim().toLowerCase()
+  );
   const [insuranceNumber, setInsuranceNumber] = useState("");
   const [engagementChecked, setEngagementChecked] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -56,13 +63,18 @@ export function ProOnboardingWizard({
   const isHoguet = categories.find((c) => c.id === categoryId)?.is_hoguet ?? false;
 
   const handleSubmit = async () => {
-    setSaving(true);
     setError(null);
+    const resolvedProEmail = usePersonalEmail ? personalEmail.trim() : proEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resolvedProEmail)) {
+      setError("Un e-mail professionnel valide est obligatoire.");
+      return;
+    }
+    setSaving(true);
     const result = await completeProOnboarding({
       work_mode: workMode!,
       category_id: categoryId,
       siret: siret.trim() || null,
-      email: proEmail.trim() || null,
+      email: resolvedProEmail,
       insurance_number: insuranceNumber.trim() || null,
     });
     if (result.error) {
@@ -134,6 +146,9 @@ export function ProOnboardingWizard({
           setNafCheck={setNafCheck}
           proEmail={proEmail}
           setProEmail={setProEmail}
+          personalEmail={personalEmail}
+          usePersonalEmail={usePersonalEmail}
+          setUsePersonalEmail={setUsePersonalEmail}
           insuranceNumber={insuranceNumber}
           setInsuranceNumber={setInsuranceNumber}
           onBack={() => setStep(1)}
@@ -209,6 +224,7 @@ function Step2({
   categories, categoryId, setCategoryId, siret, setSiret,
   sirenData, setSirenData, nafCheck, setNafCheck,
   proEmail, setProEmail, insuranceNumber, setInsuranceNumber,
+  personalEmail, usePersonalEmail, setUsePersonalEmail,
   onBack, onNext,
 }: {
   categories: Category[];
@@ -222,6 +238,9 @@ function Step2({
   setNafCheck: (v: NafCheckResult | null) => void;
   proEmail: string;
   setProEmail: (v: string) => void;
+  personalEmail: string;
+  usePersonalEmail: boolean;
+  setUsePersonalEmail: (v: boolean) => void;
   insuranceNumber: string;
   setInsuranceNumber: (v: string) => void;
   onBack: () => void;
@@ -264,6 +283,7 @@ function Step2({
     sirenData.actif &&
     !!nafCheck &&
     nafCheck.allowed &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(usePersonalEmail ? personalEmail.trim() : proEmail.trim()) &&
     !!insuranceNumber.trim();
 
   return (
@@ -343,18 +363,32 @@ function Step2({
         </div>
         <div>
           <label className="block text-sm font-medium text-winelio-gray mb-1">
-            Email professionnel <span className="text-winelio-gray/50 text-xs font-normal">(optionnel)</span>
+            E-mail professionnel <span className="text-winelio-orange">*</span>
           </label>
           <input
             type="email"
-            value={proEmail}
+            value={usePersonalEmail ? personalEmail : proEmail}
             onChange={(e) => setProEmail(e.target.value)}
+            disabled={usePersonalEmail}
+            required={!usePersonalEmail}
             placeholder="contact@monentreprise.fr"
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-winelio-gray"
           />
           <p className="mt-1.5 text-xs text-winelio-gray">
-            C&apos;est l&apos;adresse où tu seras contacté lors d&apos;une nouvelle recommandation. Si non renseigné, ton email de connexion Winelio est utilisé.
+            C&apos;est l&apos;adresse propre à cette entreprise où tu recevras les nouvelles recommandations.
           </p>
+          <label className="mt-2 flex cursor-pointer items-start gap-2.5 rounded-xl border border-orange-100 bg-orange-50/70 px-3 py-2.5">
+            <input
+              type="checkbox"
+              checked={usePersonalEmail}
+              onChange={(e) => setUsePersonalEmail(e.target.checked)}
+              disabled={!personalEmail}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-[#FF6B35]"
+            />
+            <span className="text-xs leading-5 text-winelio-dark">
+              Utiliser mon e-mail personnel <strong>{personalEmail || "indisponible"}</strong>.
+            </span>
+          </label>
         </div>
         <div>
           <label className="block text-sm font-medium text-winelio-gray mb-1">
