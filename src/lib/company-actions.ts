@@ -39,6 +39,11 @@ export async function createCompany(payload: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Non authentifié" };
 
+  const companyEmail = payload.email.trim().toLowerCase().slice(0, 254);
+  if (!companyEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(companyEmail)) {
+    return { error: "Un e-mail professionnel valide est obligatoire pour chaque entreprise." };
+  }
+
   // Refus URL/téléphone dans le nom commercial et la raison sociale
   const nameCheck = validateCompanyName(payload.name, "nom");
   if (!nameCheck.ok) return { error: nameCheck.error };
@@ -74,6 +79,7 @@ export async function createCompany(payload: {
 
   const { error } = await supabase.from("companies").insert({
     ...payload,
+    email: companyEmail,
     naf_code: nafCode,
     insurance_number: insuranceNumber,
     owner_id: user.id,
@@ -174,6 +180,12 @@ export async function updateCompany(
     const legalNameCheck = validateCompanyName(payload.legal_name, "nom légal");
     if (!legalNameCheck.ok) return { error: legalNameCheck.error };
   }
+  if ("email" in payload) {
+    const companyEmail = (payload.email ?? "").trim().toLowerCase().slice(0, 254);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(companyEmail)) {
+      return { error: "Un e-mail professionnel valide est obligatoire pour cette entreprise." };
+    }
+  }
 
   // Validation de la présentation
   if ("description" in payload && payload.description) {
@@ -184,7 +196,7 @@ export async function updateCompany(
   const patch: Record<string, string | null> = {};
   if ("name" in payload) patch.name = (payload.name ?? "").trim().slice(0, 200) || null;
   if ("legal_name" in payload) patch.legal_name = (payload.legal_name ?? "").trim().slice(0, 200) || null;
-  if ("email" in payload) patch.email = (payload.email ?? "").trim().slice(0, 254) || null;
+  if ("email" in payload) patch.email = (payload.email ?? "").trim().toLowerCase().slice(0, 254);
   if ("phone" in payload) patch.phone = (payload.phone ?? "").trim().slice(0, 20) || null;
   if ("website" in payload) patch.website = (payload.website ?? "").trim().slice(0, 254) || null;
   if ("address" in payload) patch.address = (payload.address ?? "").trim().slice(0, 200) || null;

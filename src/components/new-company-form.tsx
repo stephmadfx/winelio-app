@@ -15,10 +15,10 @@ interface Category {
 
 export function NewCompanyForm({
   categories,
-  userId,
+  personalEmail,
 }: {
   categories: Category[];
-  userId: string;
+  personalEmail: string;
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -27,6 +27,7 @@ export function NewCompanyForm({
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [sirenData, setSirenData] = useState<SirenVerification | null>(null);
   const [nafCheck, setNafCheck] = useState<NafCheckResult | null>(null);
+  const [usePersonalEmail, setUsePersonalEmail] = useState(false);
   const [form, setForm] = useState({
     name: "",
     legal_name: "",
@@ -41,6 +42,7 @@ export function NewCompanyForm({
     category_id: "",
     description: "",
   });
+  const companyEmail = usePersonalEmail ? personalEmail.trim() : form.email.trim();
 
   const handleVerify = async () => {
     setVerifying(true);
@@ -90,12 +92,12 @@ export function NewCompanyForm({
       setError("Le nom est obligatoire.");
       return;
     }
-    if (!form.email.trim()) {
-      setError("L'email est obligatoire.");
+    if (!companyEmail) {
+      setError("L’e-mail professionnel est obligatoire pour cette entreprise.");
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      setError("Email invalide.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(companyEmail)) {
+      setError("E-mail professionnel invalide.");
       return;
     }
     if (!form.phone.trim()) {
@@ -133,7 +135,7 @@ export function NewCompanyForm({
     const result = await createCompany({
       name: form.name,
       legal_name: form.legal_name || undefined,
-      email: form.email,
+      email: companyEmail,
       phone: form.phone,
       website: form.website || undefined,
       address: form.address || undefined,
@@ -228,7 +230,37 @@ export function NewCompanyForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Nom *" name="name" value={form.name} onChange={handleChange} required />
           <Field label="Raison sociale" name="legal_name" value={form.legal_name} onChange={handleChange} />
-          <Field label="Email *" name="email" value={form.email} onChange={handleChange} type="email" required />
+          <div>
+            <label className="block text-sm font-medium text-winelio-gray mb-1">
+              E-mail professionnel *
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={usePersonalEmail ? personalEmail : form.email}
+              onChange={handleChange}
+              disabled={usePersonalEmail}
+              required={!usePersonalEmail}
+              placeholder="contact@monentreprise.fr"
+              autoComplete="email"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-winelio-gray"
+            />
+            <p className="mt-1.5 text-xs leading-5 text-winelio-gray">
+              Chaque entreprise possède sa propre adresse de contact pour les recommandations.
+            </p>
+            <label className="mt-2 flex cursor-pointer items-start gap-2.5 rounded-xl border border-orange-100 bg-orange-50/70 px-3 py-2.5">
+              <input
+                type="checkbox"
+                checked={usePersonalEmail}
+                onChange={(e) => setUsePersonalEmail(e.target.checked)}
+                disabled={!personalEmail}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-[#FF6B35]"
+              />
+              <span className="text-xs leading-5 text-winelio-dark">
+                Utiliser mon e-mail personnel <strong>{personalEmail || "indisponible"}</strong>.
+              </span>
+            </label>
+          </div>
           <Field label="Téléphone *" name="phone" value={form.phone} onChange={handleChange} required />
           <Field label="Site web" name="website" value={form.website} onChange={handleChange} />
           <Field label="Adresse" name="address" value={form.address} onChange={handleChange} />

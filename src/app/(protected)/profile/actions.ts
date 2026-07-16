@@ -226,8 +226,8 @@ export async function updateCompanyEmail(email: string | null): Promise<{ error?
   const user = await getUser();
   if (!user) return { error: "Non authentifié" };
 
-  const val = (email ?? "").trim().slice(0, 254) || null;
-  if (val && !EMAIL_RE.test(val)) return { error: "Adresse email invalide." };
+  const val = (email ?? "").trim().toLowerCase().slice(0, 254);
+  if (!EMAIL_RE.test(val)) return { error: "Un e-mail professionnel valide est obligatoire." };
 
   const supabase = await createClient();
   const { data: company } = await supabase
@@ -272,6 +272,10 @@ export async function completeProOnboarding(data: {
   const insuranceNumber = (data.insurance_number ?? "").trim().slice(0, 100);
   if (!insuranceNumber) {
     return { error: "Un numéro d'assurance professionnelle est obligatoire pour activer un compte pro." };
+  }
+  const proEmail = (data.email ?? "").trim().toLowerCase().slice(0, 254);
+  if (!EMAIL_RE.test(proEmail)) {
+    return { error: "Un e-mail professionnel valide est obligatoire pour activer un compte pro." };
   }
 
   // Vérification SIREN + NAF côté serveur (empêche tout bypass du contrôle client).
@@ -338,15 +342,13 @@ export async function completeProOnboarding(data: {
     .limit(1)
     .maybeSingle();
 
-  const proEmail = (data.email ?? "").trim().slice(0, 254) || null;
-
   if (existingCompany) {
     const patch: Record<string, string | null> = {};
     if (data.category_id) patch.category_id = data.category_id;
     if (data.siret !== null) patch.siret = data.siret;
     patch.siren = verifiedSiren;
     patch.naf_code = verifiedNafCode;
-    if (proEmail !== null) patch.email = proEmail;
+    patch.email = proEmail;
     patch.insurance_number = insuranceNumber;
     if (Object.keys(patch).length > 0) {
       const { error: companyError } = await supabase

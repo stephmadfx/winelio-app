@@ -162,7 +162,7 @@ export function EditCompanyForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Nom *" name="name" value={form.name} onChange={handleChange} required />
           <Field label="Raison sociale" name="legal_name" value={form.legal_name} onChange={handleChange} />
-          <Field label="Email *" name="email" value={form.email} onChange={handleChange} type="email" required />
+          <Field label="E-mail professionnel *" name="email" value={form.email} onChange={handleChange} type="email" required />
           <Field label="Téléphone *" name="phone" value={form.phone} onChange={handleChange} required />
           <Field label="Site web" name="website" value={form.website} onChange={handleChange} />
           <Field label="Adresse" name="address" value={form.address} onChange={handleChange} />

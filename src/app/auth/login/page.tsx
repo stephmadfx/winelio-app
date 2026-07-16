@@ -8,6 +8,8 @@ import { PROMO_WATCHED_KEY } from "@/components/PromoVideo";
 import { safeJsonFetch } from "@/lib/safe-fetch";
 import { formatDisplayName } from "@/lib/utils";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function LoginPage() {
   return (
     <div className="relative min-h-dvh overflow-hidden bg-winelio-light">
@@ -55,6 +57,8 @@ function LoginForm() {
   const [siret, setSiret] = useState("");
   const [nafCode, setNafCode] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [professionalEmail, setProfessionalEmail] = useState("");
+  const [usePersonalEmailForCompany, setUsePersonalEmailForCompany] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   // Champs étape 2 (et 3 pour les Pros)
@@ -96,6 +100,9 @@ function LoginForm() {
   const isRegister = searchParams.get("mode") === "register";
   const returnTo = searchParams.get("returnTo") || "";
   const isProRegistration = isRegister && (returnTo.startsWith("/claim/") || searchParams.get("type") === "pro");
+  const resolvedProfessionalEmail = usePersonalEmailForCompany
+    ? email.trim()
+    : professionalEmail.trim();
   const [refCode, setRefCode] = useState<string | null>(null);
   const [checkingPromo, setCheckingPromo] = useState(true);
 
@@ -206,6 +213,10 @@ function LoginForm() {
     setError("");
     if (!firstName.trim() || !lastName.trim() || !phone.trim() || !email.trim() || !password) {
       setError("Veuillez remplir tous les champs obligatoires.");
+      return;
+    }
+    if (!EMAIL_RE.test(email.trim())) {
+      setError("Veuillez saisir une adresse e-mail personnelle valide.");
       return;
     }
     setRegisterStep(2);
@@ -342,6 +353,10 @@ function LoginForm() {
       setError("Veuillez compléter votre adresse, code postal et ville.");
       return;
     }
+    if (isProRegistration && !EMAIL_RE.test(resolvedProfessionalEmail)) {
+      setError("Veuillez saisir l’adresse e-mail professionnelle de votre entreprise.");
+      return;
+    }
     setLoading(true);
     setError("");
     const birthDate = `${birthYear}-${birthMonth.padStart(2,"0")}-${birthDay.padStart(2,"0")}`;
@@ -364,6 +379,7 @@ function LoginForm() {
           sponsorCode: refCode || null,
           isPro: isProRegistration,
           companyName: isProRegistration ? companyName.trim() : null,
+          professionalEmail: isProRegistration ? resolvedProfessionalEmail : null,
           siret: isProRegistration ? siret.trim() : null,
           nafCode: isProRegistration ? nafCode.trim() : null,
         }),
@@ -404,7 +420,7 @@ function LoginForm() {
       ? signUpSuccess
         ? "Votre compte a été créé. Un e-mail de validation vous a été envoyé."
         : registerStep === 1
-          ? "Saisissez vos informations pour finaliser votre inscription."
+          ? "Créez d’abord votre accès personnel Winelio."
           : registerStep === 2
             ? "Quelques informations supplémentaires pour compléter votre profil."
             : "Renseignez les détails de votre activité professionnelle."
@@ -682,7 +698,8 @@ function LoginForm() {
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-1 rounded-full bg-winelio-orange" />
                 <div className="flex-1 h-1 rounded-full bg-gray-200" />
-                <span className="text-xs text-winelio-gray ml-1">Étape 1/2</span>
+                {isProRegistration && <div className="flex-1 h-1 rounded-full bg-gray-200" />}
+                <span className="text-xs text-winelio-gray ml-1">Étape 1/{isProRegistration ? "3" : "2"}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -731,53 +748,23 @@ function LoginForm() {
                 />
               </div>
 
-              {isProRegistration && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="siret" className="text-sm font-medium text-winelio-dark">
-                      Numéro SIRET <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      id="siret"
-                      type="text"
-                      value={siret}
-                      onChange={(e) => setSiret(e.target.value)}
-                      placeholder="12345678901234"
-                      required={isProRegistration}
-                      className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="nafCode" className="text-sm font-medium text-winelio-dark">
-                      Code APE / NAF <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      id="nafCode"
-                      type="text"
-                      value={nafCode}
-                      onChange={(e) => setNafCode(e.target.value)}
-                      placeholder="8559A"
-                      required={isProRegistration}
-                      className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
-                    />
-                  </div>
-                </div>
-              )}
-
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium text-winelio-dark">
-                  Adresse email <span className="text-red-500">*</span>
+                  E-mail personnel <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="vous@exemple.com"
+                  placeholder="prenom.nom@exemple.com"
                   required
                   autoComplete="username"
                   className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
                 />
+                <p className="text-xs leading-5 text-winelio-gray">
+                  Cette adresse personnelle devient votre identifiant de connexion Winelio.
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -1054,6 +1041,39 @@ function LoginForm() {
                 />
               </div>
 
+              <div className="rounded-2xl border border-orange-100 bg-orange-50/70 p-4">
+                <div className="space-y-2">
+                  <label htmlFor="professionalEmail" className="text-sm font-semibold text-winelio-dark">
+                    E-mail professionnel <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="professionalEmail"
+                    type="email"
+                    value={usePersonalEmailForCompany ? email : professionalEmail}
+                    onChange={(e) => setProfessionalEmail(e.target.value)}
+                    placeholder="contact@monentreprise.fr"
+                    required={!usePersonalEmailForCompany}
+                    disabled={usePersonalEmailForCompany}
+                    autoComplete="email"
+                    className="w-full rounded-2xl border border-orange-200 bg-white px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15 disabled:cursor-not-allowed disabled:bg-white/60 disabled:text-winelio-gray"
+                  />
+                  <p className="text-xs leading-5 text-winelio-gray">
+                    Les recommandations de cette entreprise seront envoyées à cette adresse.
+                  </p>
+                </div>
+                <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-orange-100 bg-white/80 px-3 py-2.5">
+                  <input
+                    type="checkbox"
+                    checked={usePersonalEmailForCompany}
+                    onChange={(e) => setUsePersonalEmailForCompany(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-[#FF6B35]"
+                  />
+                  <span className="text-xs leading-5 text-winelio-dark">
+                    Utiliser mon e-mail personnel <strong>{email || "renseigné à l’étape 1"}</strong> pour cette entreprise.
+                  </span>
+                </label>
+              </div>
+
               {/* Numéro SIRET */}
               <div className="space-y-2">
                 <label htmlFor="siret" className="text-sm font-medium text-winelio-dark">
@@ -1106,7 +1126,7 @@ function LoginForm() {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || !companyName.trim() || siret.length !== 14 || !nafCode.trim()}
+                  disabled={loading || !companyName.trim() || siret.length !== 14 || !nafCode.trim() || !EMAIL_RE.test(resolvedProfessionalEmail)}
                   className="flex-[2] inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? (

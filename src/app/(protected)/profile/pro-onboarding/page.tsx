@@ -33,7 +33,7 @@ export default async function ProOnboardingPage() {
       .order("name"),
     supabase
       .from("companies")
-      .select("siret, category_id")
+      .select("siret, category_id, email")
       .eq("owner_id", user.id)
       .is("deleted_at", null)
       .order("created_at", { ascending: true })
@@ -75,6 +75,8 @@ export default async function ProOnboardingPage() {
         categories={categories ?? []}
         defaultSiret={company?.siret ?? ""}
         defaultCategoryId={company?.category_id ?? ""}
+        defaultProEmail={company?.email ?? ""}
+        personalEmail={user.email ?? ""}
         cguAgentsImmoDocumentId={cguAiDoc?.id ?? null}
         cguAgentsImmoSections={cguAiSections ?? []}
       />
