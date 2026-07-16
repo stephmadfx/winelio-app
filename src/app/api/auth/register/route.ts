@@ -3,6 +3,27 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email-sender";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ALIAS_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+async function generateCompanyAlias(): Promise<string> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const alias = `#${Array.from(
+      { length: 6 },
+      () => ALIAS_CHARS[Math.floor(Math.random() * ALIAS_CHARS.length)]
+    ).join("")}`;
+    const { data, error } = await supabaseAdmin
+      .schema("winelio")
+      .from("companies")
+      .select("id")
+      .eq("alias", alias)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return alias;
+  }
+
+  throw new Error("Impossible de générer un alias entreprise unique.");
+}
 
 export async function POST(request: Request) {
   try {
@@ -73,31 +94,49 @@ export async function POST(request: Request) {
     // 1.2 Initialiser le profil et l'entreprise pour le professionnel si applicable
     const userId = linkData?.user?.id;
     if (userId && isProRegistration) {
-      // Mettre à jour is_professional dans profiles
-      await supabaseAdmin
-        .schema("winelio")
-        .from("profiles")
-        .update({ is_professional: true })
-        .eq("id", userId);
+      try {
+        const alias = await generateCompanyAlias();
 
-      // Créer la fiche entreprise dans companies
-      await supabaseAdmin
-        .schema("winelio")
-        .from("companies")
-        .insert({
-          owner_id: userId,
-          name: (companyName || `${firstName} ${lastName}`).trim(),
-          siret: siret ? siret.trim() : null,
-          siren: siret ? siret.trim().slice(0, 9) : null,
-          email: companyEmail,
-          phone: phone.trim(),
-          address: address.trim(),
-          city: city.trim(),
-          postal_code: postalCode.trim(),
-          country: "FR",
-          naf_code: nafCode.trim().toUpperCase(),
-          source: "owner"
-        });
+        // Créer la fiche entreprise dans companies avant d'activer le statut pro.
+        const { error: companyError } = await supabaseAdmin
+          .schema("winelio")
+          .from("companies")
+          .insert({
+            owner_id: userId,
+            name: companyName.trim(),
+            alias,
+            siret: siret.trim(),
+            siren: siret.trim().slice(0, 9),
+            email: companyEmail,
+            phone: phone.trim(),
+            address: address.trim(),
+            city: city.trim(),
+            postal_code: postalCode.trim(),
+            country: "FR",
+            naf_code: nafCode.trim().toUpperCase(),
+            source: "owner",
+          });
+
+        if (companyError) throw companyError;
+
+        const { error: profileError } = await supabaseAdmin
+          .schema("winelio")
+          .from("profiles")
+          .update({ is_professional: true })
+          .eq("id", userId);
+
+        if (profileError) throw profileError;
+      } catch (professionalSetupError) {
+        console.error("[auth/register] Initialisation professionnelle impossible:", professionalSetupError);
+        const { error: rollbackError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+        if (rollbackError) {
+          console.error("[auth/register] Nettoyage du compte incomplet:", rollbackError);
+        }
+        return NextResponse.json(
+          { error: "Impossible de créer la fiche entreprise. Veuillez réessayer." },
+          { status: 500 }
+        );
+      }
     }
 
     const tokenHash = linkData?.properties?.hashed_token;
