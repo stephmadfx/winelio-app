@@ -72,10 +72,35 @@ export async function POST(req: Request) {
     if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "Email invalide" }, { status: 400 });
     }
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // La route OTP sert uniquement à se connecter. La création d'un compte
+    // passe obligatoirement par le formulaire d'inscription avec téléphone.
+    const { data: existingProfile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("id, onboarding_status")
+      .ilike("email", normalizedEmail)
+      .maybeSingle();
+    if (profileError) {
+      console.error("send-code profile lookup error:", profileError.code);
+      return NextResponse.json({ error: "Erreur serveur. Réessayez." }, { status: 500 });
+    }
+    if (!existingProfile) {
+      return NextResponse.json(
+        { error: "Aucun compte actif n’est associé à cette adresse e-mail. Créez d’abord votre compte." },
+        { status: 404 }
+      );
+    }
+    if (existingProfile.onboarding_status === "pending_confirmation") {
+      return NextResponse.json(
+        { error: "Ce compte attend encore la confirmation envoyée par e-mail." },
+        { status: 409 }
+      );
+    }
 
     // E2E test recipients : on saute aussi le rate-limit OTP (sinon les tests
     // qui créent plusieurs comptes/run sont bloqués).
-    const isE2EAddress = /@winelio-e2e\.local$/i.test(email);
+    const isE2EAddress = /@winelio-e2e\.local$/i.test(normalizedEmail);
 
     const disabledReason = getEmailDisabledReason();
     if (disabledReason && !isE2EAddress) {
@@ -102,7 +127,7 @@ export async function POST(req: Request) {
     // Store code in Supabase (upsert → replace existing code for same email, reset attempts)
     const { error: dbError } = await supabaseAdmin
       .from("otp_codes")
-      .upsert({ email, code, expires_at: expiresAt, attempts: 0 }, { onConflict: "email" });
+      .upsert({ email: normalizedEmail, code, expires_at: expiresAt, attempts: 0 }, { onConflict: "email" });
 
     if (dbError) {
       console.error("send-code DB error:", dbError?.code, dbError?.message);
@@ -116,7 +141,7 @@ export async function POST(req: Request) {
     // sera lu directement par les tests Playwright).
     if (!isE2EAddress) {
       const result = await sendEmail({
-        to: email,
+        to: normalizedEmail,
         subject: "Votre code de connexion Winelio",
         text: `Votre code de connexion Winelio : ${code}\n\nCe code est valable 24 heures et à usage unique.\nSi vous n'avez pas fait cette demande, ignorez cet email.\n\n---\n© 2026 Winelio · Recommandez. Connectez. Gagnez.`,
         html: buildEmailHtml(code),

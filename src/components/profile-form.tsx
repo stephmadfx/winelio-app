@@ -137,6 +137,7 @@ export function ProfileForm({
     }
     setBirthDateError(null);
     setAutoSaveStatus("saving");
+    setMessage(null);
     const result = await updateProfile(data);
     if (!result.error) {
       setAutoSaveStatus("saved");
@@ -154,6 +155,7 @@ export function ProfileForm({
       }
     } else {
       setAutoSaveStatus("error");
+      setMessage({ type: "error", text: result.error });
       return false;
     }
     setTimeout(() => setAutoSaveStatus("idle"), 3000);
@@ -588,7 +590,7 @@ export function ProfileForm({
           </div>
           <Field label="Prénom" name="first_name" value={form.first_name} onChange={handleChange} onBlur={handleBlur} required missing={!form.first_name.trim()} />
           <Field label="Nom" name="last_name" value={form.last_name} onChange={handleChange} onBlur={handleBlur} required missing={!form.last_name.trim()} />
-          <Field label="Téléphone" name="phone" value={form.phone} onChange={handleChange} onBlur={handleBlur} required missing={!form.phone.trim()} />
+          <Field label="Téléphone" name="phone" value={form.phone} onChange={handleChange} onBlur={handleBlur} required missing={!form.phone.trim()} type="tel" inputMode="tel" hint="Un seul compte par numéro. Pour la Belgique, utilisez +32." />
           {/* Date de naissance — vérification d'âge 18+ */}
           <BirthDateField
             birthParts={birthParts}
@@ -676,6 +678,9 @@ function Field({
   onBlur,
   required,
   missing,
+  type = "text",
+  inputMode,
+  hint,
 }: {
   label: string;
   name: string;
@@ -684,6 +689,9 @@ function Field({
   onBlur?: () => void;
   required?: boolean;
   missing?: boolean;
+  type?: React.HTMLInputTypeAttribute;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  hint?: string;
 }) {
   return (
     <div className={missing ? "rounded-xl p-3 -m-3 border-2 border-winelio-orange/50 bg-winelio-orange/5" : ""}>
@@ -699,7 +707,8 @@ function Field({
         )}
       </label>
       <input
-        type="text"
+        type={type}
+        inputMode={inputMode}
         name={name}
         value={value}
         onChange={onChange}
@@ -708,6 +717,7 @@ function Field({
           missing ? "border-winelio-orange/50" : "border-gray-200"
         }`}
       />
+      {hint && <p className="mt-1.5 text-[11px] leading-4 text-winelio-gray">{hint}</p>}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { AppBackground } from "@/components/AppBackground";
 import { PROMO_WATCHED_KEY } from "@/components/PromoVideo";
 import { safeJsonFetch } from "@/lib/safe-fetch";
 import { formatDisplayName } from "@/lib/utils";
+import { normalizePhoneNumber, PHONE_INVALID_MESSAGE } from "@/lib/phone";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -217,6 +218,10 @@ function LoginForm() {
     }
     if (!EMAIL_RE.test(email.trim())) {
       setError("Veuillez saisir une adresse e-mail personnelle valide.");
+      return;
+    }
+    if (!normalizePhoneNumber(phone)) {
+      setError(PHONE_INVALID_MESSAGE);
       return;
     }
     setRegisterStep(2);
@@ -744,8 +749,13 @@ function LoginForm() {
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="0612345678"
                   required
+                  autoComplete="tel"
+                  inputMode="tel"
                   className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
                 />
+                <p className="text-xs leading-5 text-winelio-gray">
+                  Un seul compte par numéro. Pour la Belgique, utilisez le préfixe +32.
+                </p>
               </div>
 
               <div className="space-y-2">

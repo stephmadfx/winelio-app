@@ -5,6 +5,11 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email-sender";
 import { isAtLeastAge } from "@/lib/age";
 import { PENDING_REFERRAL_STATUS } from "@/lib/pending-referral";
+import {
+  normalizePhoneNumber,
+  PHONE_ALREADY_ACTIVE_MESSAGE,
+  PHONE_INVALID_MESSAGE,
+} from "@/lib/phone";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SIRET_RE = /^\d{14}$/;
@@ -50,7 +55,8 @@ export async function POST(request: Request) {
     const firstName = clean(body.firstName);
     const lastName = clean(body.lastName);
     const email = clean(body.email).toLowerCase();
-    const phone = clean(body.phone);
+    const phoneInput = clean(body.phone);
+    const phone = normalizePhoneNumber(phoneInput);
     const address = clean(body.address);
     const city = clean(body.city);
     const postalCode = clean(body.postalCode);
@@ -61,10 +67,11 @@ export async function POST(request: Request) {
     const siret = clean(body.siret).replace(/\s/g, "");
     const nafCode = clean(body.nafCode).toUpperCase();
 
-    if (!firstName || !lastName || !email || !phone || !address || !city || !postalCode || !birthDate) {
+    if (!firstName || !lastName || !email || !phoneInput || !address || !city || !postalCode || !birthDate) {
       return NextResponse.json({ error: "Tous les champs personnels sont obligatoires." }, { status: 400 });
     }
     if (!EMAIL_RE.test(email)) return NextResponse.json({ error: "Adresse e-mail invalide." }, { status: 400 });
+    if (!phone) return NextResponse.json({ error: PHONE_INVALID_MESSAGE }, { status: 400 });
     if (!isAtLeastAge(birthDate)) return NextResponse.json({ error: "Le filleul doit avoir au moins 18 ans." }, { status: 400 });
     if (isPro && (!companyName || !EMAIL_RE.test(professionalEmail) || !SIRET_RE.test(siret) || !NAF_RE.test(nafCode))) {
       return NextResponse.json({ error: "Les informations professionnelles sont incomplètes ou invalides." }, { status: 400 });
@@ -73,6 +80,16 @@ export async function POST(request: Request) {
     const { data: sponsor, error: sponsorError } = await supabaseAdmin
       .from("profiles").select("id, first_name, last_name, sponsor_code").eq("id", user.id).single();
     if (sponsorError || !sponsor) return NextResponse.json({ error: "Profil parrain introuvable." }, { status: 404 });
+
+    const { data: accountWithPhone, error: phoneLookupError } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("phone_normalized", phone)
+      .maybeSingle();
+    if (phoneLookupError) throw phoneLookupError;
+    if (accountWithPhone) {
+      return NextResponse.json({ error: PHONE_ALREADY_ACTIVE_MESSAGE }, { status: 409 });
+    }
 
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin).replace(/\/$/, "");
     const temporaryPassword = randomBytes(48).toString("base64url");
@@ -92,6 +109,14 @@ export async function POST(request: Request) {
       },
     });
     if (linkError || !linkData.user?.id) {
+      const { data: conflictingPhone } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("phone_normalized", phone)
+        .maybeSingle();
+      if (conflictingPhone) {
+        return NextResponse.json({ error: PHONE_ALREADY_ACTIVE_MESSAGE }, { status: 409 });
+      }
       const duplicate = linkError?.message.toLowerCase().includes("already");
       return NextResponse.json({ error: duplicate ? "Cette adresse e-mail possède déjà un compte ou une invitation." : (linkError?.message ?? "Création impossible.") }, { status: 400 });
     }

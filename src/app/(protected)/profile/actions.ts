@@ -10,9 +10,14 @@ import { verifySiren } from "@/lib/siren";
 import { notifyNewReferral } from "@/lib/notify-new-referral";
 import { notifyAdminNewSignup } from "@/lib/notify-admin-new-signup";
 import { checkNafCode } from "@/lib/naf-rules";
+import {
+  isPhoneUniqueViolation,
+  normalizePhoneNumber,
+  PHONE_ALREADY_ACTIVE_MESSAGE,
+  PHONE_INVALID_MESSAGE,
+} from "@/lib/phone";
 
 const POSTAL_CODE_RE = /^\d{5}$/;
-const PHONE_RE = /^[+\d\s()\-]{6,20}$/;
 
 /**
  * Mise à jour du profil avec validation server-side.
@@ -45,9 +50,19 @@ export async function updateProfile(data: {
     patch.last_name = v || null;
   }
   if ("phone" in data) {
-    const v = (data.phone ?? "").trim().slice(0, 20);
-    if (v && !PHONE_RE.test(v)) return { error: "Numéro de téléphone invalide." };
-    patch.phone = v || null;
+    const normalizedPhone = normalizePhoneNumber(data.phone);
+    if (!normalizedPhone) return { error: PHONE_INVALID_MESSAGE };
+
+    const { data: accountWithPhone, error: phoneLookupError } = await supabaseAdmin
+      .schema("winelio")
+      .from("profiles")
+      .select("id")
+      .eq("phone_normalized", normalizedPhone)
+      .neq("id", user.id)
+      .maybeSingle();
+    if (phoneLookupError) return { error: "Impossible de vérifier ce numéro de téléphone." };
+    if (accountWithPhone) return { error: PHONE_ALREADY_ACTIVE_MESSAGE };
+    patch.phone = normalizedPhone;
   }
   if ("postal_code" in data) {
     const v = (data.postal_code ?? "").trim();
@@ -132,7 +147,10 @@ export async function updateProfile(data: {
     .update(patch)
     .eq("id", user.id);
 
-  if (error) return { error: "Erreur lors de la sauvegarde." };
+  if (error) {
+    if (isPhoneUniqueViolation(error)) return { error: PHONE_ALREADY_ACTIVE_MESSAGE };
+    return { error: "Erreur lors de la sauvegarde." };
+  }
 
   // Le seed démo ne se déclenche que pour les comptes créés après le déploiement
   // de la fonctionnalité (2026-04-12). Les anciens comptes qui complètent leur

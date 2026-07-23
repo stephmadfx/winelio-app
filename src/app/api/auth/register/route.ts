@@ -1,9 +1,24 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email-sender";
+import {
+  normalizePhoneNumber,
+  PHONE_ALREADY_ACTIVE_MESSAGE,
+  PHONE_INVALID_MESSAGE,
+} from "@/lib/phone";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ALIAS_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+function clean(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
+  })[character] ?? character);
+}
 
 async function generateCompanyAlias(): Promise<string> {
   for (let attempt = 0; attempt < 10; attempt++) {
@@ -29,11 +44,24 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { email, password, firstName, lastName, phone, address, city, postalCode, birthDate, termsAccepted, sponsorCode, sponsorId, siret, nafCode, companyName, professionalEmail, isPro = false } = body;
-    const personalEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
-    const companyEmail = typeof professionalEmail === "string" ? professionalEmail.trim().toLowerCase() : "";
+    const personalEmail = clean(email).toLowerCase();
+    const passwordValue = clean(password);
+    const firstNameValue = clean(firstName);
+    const lastNameValue = clean(lastName);
+    const phoneValue = clean(phone);
+    const addressValue = clean(address);
+    const cityValue = clean(city);
+    const postalCodeValue = clean(postalCode);
+    const birthDateValue = clean(birthDate);
+    const companyNameValue = clean(companyName);
+    const companyEmail = clean(professionalEmail).toLowerCase();
+    const siretValue = clean(siret).replace(/\s/g, "");
+    const nafCodeValue = clean(nafCode).toUpperCase();
     const isProRegistration = isPro === true;
+    const normalizedPhone = normalizePhoneNumber(phoneValue);
+    const safeFirstName = escapeHtml(firstNameValue);
 
-    if (!personalEmail || !password || !firstName || !lastName || !phone || !address || !city || !postalCode || !birthDate) {
+    if (!personalEmail || passwordValue.length < 8 || !firstNameValue || !lastNameValue || !phoneValue || !addressValue || !cityValue || !postalCodeValue || !birthDateValue) {
       return NextResponse.json(
         { error: "Tous les champs requis doivent être remplis." },
         { status: 400 }
@@ -42,9 +70,12 @@ export async function POST(request: Request) {
     if (!EMAIL_RE.test(personalEmail)) {
       return NextResponse.json({ error: "Adresse e-mail personnelle invalide." }, { status: 400 });
     }
+    if (!normalizedPhone) {
+      return NextResponse.json({ error: PHONE_INVALID_MESSAGE }, { status: 400 });
+    }
     if (
       isProRegistration &&
-      (!companyName?.trim() || !siret?.trim() || !nafCode?.trim() || !EMAIL_RE.test(companyEmail))
+      (!companyNameValue || !siretValue || !nafCodeValue || !EMAIL_RE.test(companyEmail))
     ) {
       return NextResponse.json(
         { error: "Les informations de l’entreprise et son e-mail professionnel sont obligatoires." },
@@ -52,35 +83,58 @@ export async function POST(request: Request) {
       );
     }
 
-    const origin = request.headers.get("origin") || "";
-    const redirectTo = `${origin}/auth/callback`;
+    const { data: accountWithPhone, error: phoneLookupError } = await supabaseAdmin
+      .schema("winelio")
+      .from("profiles")
+      .select("id")
+      .eq("phone_normalized", normalizedPhone)
+      .maybeSingle();
+    if (phoneLookupError) {
+      console.error("[auth/register] Vérification du téléphone impossible:", phoneLookupError.code);
+      return NextResponse.json({ error: "Impossible de vérifier ce numéro de téléphone." }, { status: 500 });
+    }
+    if (accountWithPhone) {
+      return NextResponse.json({ error: PHONE_ALREADY_ACTIVE_MESSAGE }, { status: 409 });
+    }
+
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin).replace(/\/$/, "");
+    const redirectTo = `${appUrl}/auth/callback`;
 
     // 1. Appeler generateLink pour créer le compte et obtenir le lien de confirmation
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "signup",
       email: personalEmail,
-      password,
+      password: passwordValue,
       options: {
         redirectTo,
         data: {
           app: "winelio",
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          phone: phone.trim(),
-          address: address ? address.trim() : null,
-          city: city ? city.trim() : null,
-          postal_code: postalCode ? postalCode.trim() : null,
-          birth_date: birthDate || null,
+          first_name: firstNameValue,
+          last_name: lastNameValue,
+          phone: normalizedPhone,
+          address: addressValue,
+          city: cityValue,
+          postal_code: postalCodeValue,
+          birth_date: birthDateValue,
           terms_accepted: termsAccepted === true,
           sponsor_id: sponsorId || null,
           sponsor_code: sponsorCode || null,
-          siret: siret ? siret.trim() : null,
-          naf_code: nafCode ? nafCode.trim() : null,
+          siret: siretValue || null,
+          naf_code: nafCodeValue || null,
         },
       },
     });
 
     if (linkError) {
+      const { data: conflictingPhone } = await supabaseAdmin
+        .schema("winelio")
+        .from("profiles")
+        .select("id")
+        .eq("phone_normalized", normalizedPhone)
+        .maybeSingle();
+      if (conflictingPhone) {
+        return NextResponse.json({ error: PHONE_ALREADY_ACTIVE_MESSAGE }, { status: 409 });
+      }
       let errorMessage = linkError.message;
       if (
         errorMessage.toLowerCase().includes("already been registered") ||
@@ -103,17 +157,17 @@ export async function POST(request: Request) {
           .from("companies")
           .insert({
             owner_id: userId,
-            name: companyName.trim(),
+            name: companyNameValue,
             alias,
-            siret: siret.trim(),
-            siren: siret.trim().slice(0, 9),
+            siret: siretValue,
+            siren: siretValue.slice(0, 9),
             email: companyEmail,
-            phone: phone.trim(),
-            address: address.trim(),
-            city: city.trim(),
-            postal_code: postalCode.trim(),
+            phone: normalizedPhone,
+            address: addressValue,
+            city: cityValue,
+            postal_code: postalCodeValue,
             country: "FR",
-            naf_code: nafCode.trim().toUpperCase(),
+            naf_code: nafCodeValue,
             source: "owner",
           });
 
@@ -149,7 +203,7 @@ export async function POST(request: Request) {
 
     // URL-encode le token pour neutraliser les caractères spéciaux (+, =, /)
     // qui peuvent être corrompus par les scanners de sécurité des opérateurs
-    const customConfirmLink = `${origin}/auth/confirm?token_hash=${encodeURIComponent(tokenHash)}&type=signup`;
+    const customConfirmLink = `${appUrl}/auth/confirm?token_hash=${encodeURIComponent(tokenHash)}&type=signup`;
     // En HTML, le & dans les href doit être &amp; pour éviter que les clients mail
     // (Outlook, Apple Mail, antivirus) tronquent l'URL au niveau du &
     const htmlSafeLink = customConfirmLink.replace(/&/g, "&amp;");
@@ -193,7 +247,7 @@ export async function POST(request: Request) {
                 <tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr>
                 <tr>
                   <td style="color:#636E72;font-size:14px;line-height:1.6;text-align:left;">
-                    Bonjour ${firstName},<br><br>
+                    Bonjour ${safeFirstName},<br><br>
                     Merci de vous être inscrit sur Winelio. Pour valider votre compte et accéder à votre tableau de bord, veuillez cliquer sur le bouton ci-dessous :
                   </td>
                 </tr>

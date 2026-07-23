@@ -100,7 +100,10 @@ export function SponsoredReferralForm({ initialType }: { initialType: "individua
           <Field label="Prénom" name="firstName" value={form.firstName} onChange={update} />
           <Field label="Nom" name="lastName" value={form.lastName} onChange={update} />
           <Field label="E-mail personnel" name="email" value={form.email} onChange={update} type="email" inputMode="email" />
-          <Field label="Téléphone" name="phone" value={form.phone} onChange={update} type="tel" inputMode="tel" />
+          <div>
+            <Field label="Téléphone" name="phone" value={form.phone} onChange={update} type="tel" inputMode="tel" placeholder="0612345678 ou +32…" />
+            <p className="mt-1.5 text-[11px] leading-4 text-winelio-gray">Un seul compte est autorisé par numéro de téléphone.</p>
+          </div>
           <Field label="Date de naissance" name="birthDate" value={form.birthDate} onChange={update} type="date" />
           <div className="sm:col-span-2"><Field label="Adresse" name="address" value={form.address} onChange={update} /></div>
           <Field label="Code postal" name="postalCode" value={form.postalCode} onChange={update} inputMode="numeric" />
