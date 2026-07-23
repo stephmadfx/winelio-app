@@ -36,7 +36,7 @@ export default async function AdminUserDetail({
         .eq("sponsor_id", id),
       supabaseAdmin
         .from("companies")
-        .select("name, legal_name, alias, siret, siren, vat_number, email, phone, website, address, city, postal_code, is_verified")
+        .select("name, legal_name, siret, siren, vat_number, email, phone, website, address, city, postal_code, is_verified")
         .eq("owner_id", id)
         .maybeSingle(),
       supabaseAdmin
@@ -113,9 +113,6 @@ export default async function AdminUserDetail({
               <div className="col-span-2">
                 <p className="text-gray-500 text-xs mb-0.5">Raison sociale</p>
                 <p className="text-white">{company.legal_name || company.name || "—"}</p>
-                {company.alias && (
-                  <p className="text-xs font-mono text-winelio-orange mt-0.5">{company.alias}</p>
-                )}
               </div>
               <div>
                 <p className="text-gray-500 text-xs mb-0.5">SIRET</p>

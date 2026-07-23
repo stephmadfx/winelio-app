@@ -36,7 +36,6 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
   const [selectedCommune, setSelectedCommune] = useState<string | null>(null);
   const [postalLoading, setPostalLoading] = useState(false);
   const [isPro, setIsPro] = useState(false);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [postalData, setPostalData] = useState<{ nom: string; centre?: { coordinates: [number, number] } }[]>([]);
 
   useEffect(() => {
@@ -47,9 +46,6 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
     if (!userId) return;
     supabase.from("profiles").select("is_professional").eq("id", userId).maybeSingle().then(({ data }) => {
       setIsPro(!!data?.is_professional);
-    });
-    supabase.auth.getUser().then(({ data }) => {
-      setIsSuperAdmin(data?.user?.app_metadata?.role === "super_admin");
     });
   }, [userId]);
 
@@ -82,7 +78,6 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
             first_name: p.first_name,
             last_name: p.last_name,
             company_name: p.company_name ?? null,
-            company_alias: p.company_alias ?? null,
             category_name: p.category_name ?? null,
             city: p.city ?? null,
             latitude: p.latitude ?? null,
@@ -254,11 +249,9 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
             geoGranted={geoStatus === "granted"}
             radius={radius}
             onExpandRadius={() => setRadius(99999)}
-            isSuperAdmin={isSuperAdmin}
           />
         </>
       )}
     </div>
   );
 };
-

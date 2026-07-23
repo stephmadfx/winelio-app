@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { formatDisplayName } from "@/lib/utils";
+import { formatDisplayName, formatNetworkMemberName } from "@/lib/utils";
 
 const ACTIVE_STATUSES = [
   "PENDING", "ACCEPTED", "CONTACT_MADE", "MEETING_SCHEDULED",
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
       referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name),
       professional:profiles!recommendations_professional_id_fkey(
         first_name, last_name,
-        companies!owner_id(alias, category:categories(name))
+        companies!owner_id(category:categories(name))
       )
     `)
     .or(`referrer_id.eq.${userId},professional_id.eq.${userId}`)
@@ -86,16 +86,16 @@ export async function GET(request: Request) {
           first_name: string | null;
           last_name: string | null;
           companies:
-            | { alias: string | null; category: { name: string } | Array<{ name: string }> | null }
-            | Array<{ alias: string | null; category: { name: string } | Array<{ name: string }> | null }>
+            | { category: { name: string } | Array<{ name: string }> | null }
+            | Array<{ category: { name: string } | Array<{ name: string }> | null }>
             | null;
         }
       | Array<{
           first_name: string | null;
           last_name: string | null;
           companies:
-            | { alias: string | null; category: { name: string } | Array<{ name: string }> | null }
-            | Array<{ alias: string | null; category: { name: string } | Array<{ name: string }> | null }>
+            | { category: { name: string } | Array<{ name: string }> | null }
+            | Array<{ category: { name: string } | Array<{ name: string }> | null }>
             | null;
         }>
       | null;
@@ -117,8 +117,9 @@ export async function GET(request: Request) {
     const contactName = contact
       ? formatDisplayName(contact.first_name, contact.last_name, "")
       : null;
-    const professionalName = rawCompany?.alias
-      ?? (professional ? formatDisplayName(professional.first_name, professional.last_name, "") : null);
+    const professionalName = professional
+      ? formatNetworkMemberName(professional.first_name, professional.last_name, 2, false, "Professionnel")
+      : null;
     const referrerName = referrer
       ? formatDisplayName(referrer.first_name, referrer.last_name, "")
       : null;

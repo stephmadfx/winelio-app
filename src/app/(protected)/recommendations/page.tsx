@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { formatDisplayName } from "@/lib/utils";
+import { formatDisplayName, formatNetworkMemberName } from "@/lib/utils";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -18,7 +18,7 @@ interface Recommendation {
   professional: {
     first_name: string | null;
     last_name: string | null;
-    companies: { alias: string | null; city: string | null; category: { name: string } | null } | null;
+    companies: { name: string | null; city: string | null; category: { name: string } | null } | null;
   } | null;
 }
 
@@ -144,10 +144,10 @@ export default function RecommendationsPage() {
         (recommendations ?? []).map((r: Record<string, unknown>) => {
           const pro = Array.isArray(r.professional) ? r.professional[0] ?? null : r.professional;
           const rawCompany = pro ? (Array.isArray((pro as Record<string, unknown>).companies) ? ((pro as Record<string, unknown>).companies as unknown[])[0] ?? null : (pro as Record<string, unknown>).companies) : null;
-          const rawCompanyTyped = rawCompany as { alias: string | null; city: string | null; category: unknown } | null;
+          const rawCompanyTyped = rawCompany as { name: string | null; city: string | null; category: unknown } | null;
           const rawCat = rawCompanyTyped?.category;
           const companyNormalized = rawCompanyTyped ? {
-            alias: rawCompanyTyped.alias ?? null,
+            name: rawCompanyTyped.name ?? null,
             city: rawCompanyTyped.city ?? null,
             category: Array.isArray(rawCat) ? (rawCat[0] ?? null) : (rawCat ?? null),
           } : null;
@@ -342,10 +342,11 @@ export default function RecommendationsPage() {
             const contactName = rec.contact
               ? formatDisplayName(rec.contact.first_name, rec.contact.last_name, "Contact inconnu")
               : "Contact inconnu";
-            const proAlias = rec.professional?.companies?.alias;
+            const proCompanyName = rec.professional?.companies?.name;
             const proCategory = rec.professional?.companies?.category?.name;
             const proCity = rec.professional?.companies?.city;
-            const proDisplay = proAlias ?? "Professionnel inconnu";
+            const proDisplay = proCompanyName
+              ?? formatNetworkMemberName(rec.professional?.first_name, rec.professional?.last_name, 2, false, "Professionnel inconnu");
             const proSub = [proCategory, proCity].filter(Boolean).join(" · ");
 
             return (

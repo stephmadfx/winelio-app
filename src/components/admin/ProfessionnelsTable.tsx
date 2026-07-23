@@ -11,7 +11,6 @@ type Company = {
   id: string;
   name: string;
   legal_name: string | null;
-  alias: string | null;
   email: string | null;
   phone: string | null;
   website: string | null;
@@ -247,9 +246,6 @@ export function ProfessionnelsTable({
                     <td className="px-4 py-3 max-w-[220px]">
                       <div>
                         <p className="font-semibold text-white text-sm">{c.name}</p>
-                        {c.alias && (
-                          <p className="text-xs font-mono text-winelio-orange mt-0.5">{c.alias}</p>
-                        )}
                       </div>
                       {c.legal_name && c.legal_name !== c.name && (
                         <p className="text-gray-500 text-xs truncate">{c.legal_name}</p>
@@ -360,9 +356,6 @@ export function ProfessionnelsTable({
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-white font-medium truncate">{c.name}</p>
-                    {c.alias && (
-                      <p className="text-xs font-mono text-winelio-orange mt-0.5">{c.alias}</p>
-                    )}
                     {c.legal_name && c.legal_name !== c.name && (
                       <p className="text-gray-500 text-xs">{c.legal_name}</p>
                     )}

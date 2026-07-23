@@ -11,7 +11,6 @@ export interface Professional {
   first_name: string | null;
   last_name: string | null;
   company_name: string | null;
-  company_alias: string | null;
   category_name: string | null;
   city: string | null;
   latitude: number | null;

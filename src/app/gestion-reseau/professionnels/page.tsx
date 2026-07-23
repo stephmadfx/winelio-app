@@ -9,7 +9,7 @@ export default async function AdminProfessionnels() {
     supabaseAdmin
       .from("companies_real")
       .select(
-        `id, name, legal_name, alias, email, phone, website,
+        `id, name, legal_name, email, phone, website,
          address, city, postal_code, country,
          latitude, longitude, siret, is_verified, created_at, owner_id,
          category:categories!category_id(name)`

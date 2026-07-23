@@ -57,7 +57,7 @@ export default async function AdminReseau() {
       const { data: directReferrals } = await supabaseAdmin
         .from("profiles")
         .select(
-          "id, first_name, last_name, city, is_professional, is_demo, created_at, companies!owner_id(alias, category:categories(name))"
+          "id, first_name, last_name, city, is_professional, is_demo, created_at, companies!owner_id(category:categories(name))"
         )
         .eq("sponsor_id", profile.id);
 
@@ -91,9 +91,6 @@ export default async function AdminReseau() {
             is_professional:
               (ref as { is_professional?: boolean }).is_professional ?? false,
             is_demo: (ref as { is_demo?: boolean }).is_demo ?? false,
-            company_alias: rawCompany
-              ? (rawCompany as { alias?: string | null }).alias ?? null
-              : null,
             company_category: catName,
             created_at: ref.created_at,
             sub_referrals: subCount ?? 0,

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ProfileAvatar } from "@/components/profile-avatar";
-import { formatDisplayName } from "@/lib/utils";
+import { formatDisplayName, formatNetworkMemberName } from "@/lib/utils";
 import { PendingReferralBadge } from "@/components/pending-referral-badge";
 import { isPendingReferral } from "@/lib/pending-referral";
 interface GraphNode {
@@ -14,7 +14,6 @@ interface GraphNode {
   is_professional: boolean;
   is_demo: boolean;
   onboarding_status: string;
-  company_alias: string | null;
   company_category: string | null;
   level: number;
   children: GraphNode[];
@@ -241,7 +240,6 @@ export function NetworkGraph({
       is_professional: apiNode.is_professional ?? false,
       is_demo: apiNode.is_demo ?? false,
       onboarding_status: apiNode.onboarding_status ?? "active",
-      company_alias: apiNode.company_alias ?? null,
       company_category: apiNode.company_category ?? null,
       level,
       // Only build children for expanded nodes
@@ -317,7 +315,6 @@ export function NetworkGraph({
         is_professional: false,
         is_demo: false,
         onboarding_status: "active",
-        company_alias: null,
         company_category: null,
         level: 0,
         children,
@@ -558,13 +555,7 @@ function NodeView({
         }}>
           {isRoot
             ? (rootLabel ?? "Vous")
-            : showRealNames
-              ? node.first_name
-                ? node.first_name + (node.last_name ? ` ${node.last_name.charAt(0)}.` : "")
-                : (node.last_name ?? "Sans nom")
-              : node.level === 1
-                ? formatDisplayName(node.first_name, node.last_name, "Sans nom")
-                : [node.first_name, node.last_name].filter(Boolean).map((n) => `${n![0].toUpperCase()}.`).join("")}
+            : formatNetworkMemberName(node.first_name, node.last_name, node.level, showRealNames, "Sans nom")}
         </span>
 
         {isPending && <div className="mt-1"><PendingReferralBadge compact referralId={node.level === 1 ? node.id : undefined} /></div>}
@@ -585,7 +576,7 @@ function NodeView({
             <div className="flex items-start justify-between gap-1 px-3 pt-2.5 pb-1.5">
               <div className="min-w-0">
                 <p className="text-[11px] font-bold text-winelio-dark truncate leading-tight">
-                  {formatDisplayName(node.first_name, node.last_name, "Sans nom")}
+                  {formatNetworkMemberName(node.first_name, node.last_name, node.level, showRealNames, "Sans nom")}
                 </p>
                 <p className="text-[9px] text-winelio-gray truncate">
                   {node.is_professional && node.company_category && <span>{node.company_category} · </span>}

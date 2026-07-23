@@ -42,7 +42,7 @@ export async function GET(req: Request) {
        contact:contacts(first_name, last_name, city),
        professional:profiles!recommendations_professional_id_fkey(
          first_name, last_name,
-         companies!owner_id(alias, city, category:categories(name))
+         companies!owner_id(name, city, category:categories(name))
        )`
     )
     .eq(column, user.id);

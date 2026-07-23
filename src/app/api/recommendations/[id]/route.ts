@@ -36,7 +36,7 @@ export async function GET(
     .select(
       `id, status, amount, project_description, urgency_level, created_at, referrer_id, professional_id, abandoned_by_pro_at,
        contact:contacts(first_name, last_name, email, phone, address, city, postal_code),
-       professional:profiles!recommendations_professional_id_fkey(first_name, last_name, company:companies(name, alias)),
+       professional:profiles!recommendations_professional_id_fkey(first_name, last_name, company:companies(name)),
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name)`
     )
     .eq("id", id)
@@ -110,20 +110,14 @@ export async function GET(
   }
 
   // Règle anti-court-circuit :
-  // Tant que le pro n'a pas explicitement accepté, le referrer ne voit
-  // que l'alias. Le pro lui-même et les super_admin voient toujours tout.
+  // Tant que le pro n'a pas explicitement accepté, le referrer ne voit pas
+  // son identité. L'ancien alias #XXXXXX n'est plus exposé.
   const shouldAnonymizePro = isReferrer && !isPro && !isAdmin && !ACCEPTED_OR_LATER.has(rec.status);
   if (shouldAnonymizePro) {
-    const proArr = Array.isArray(rec.professional) ? rec.professional : rec.professional ? [rec.professional] : [];
-    const pro = proArr[0] as { first_name?: string | null; last_name?: string | null; company?: unknown } | undefined;
-    const companyRaw = pro?.company;
-    const company = Array.isArray(companyRaw) ? companyRaw[0] : companyRaw;
-    const alias = (company as { alias?: string | null } | undefined)?.alias ?? null;
     rec.professional = {
-      // Masquer le nom : afficher l'alias à la place
-      first_name: alias,
+      first_name: "Professionnel Winelio",
       last_name: null,
-      company: { name: alias, alias },
+      company: { name: "Professionnel Winelio" },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
   }

@@ -14,7 +14,6 @@ interface DirectReferral {
   city: string | null;
   is_professional: boolean;
   is_demo: boolean;
-  company_alias: string | null;
   company_category: string | null;
   created_at: string;
   sub_referrals: number;

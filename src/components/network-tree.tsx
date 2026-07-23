@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile-avatar";
-import { formatDisplayName } from "@/lib/utils";
+import { formatDisplayName, formatNetworkMemberName } from "@/lib/utils";
 import { PendingReferralBadge } from "@/components/pending-referral-badge";
 import { isPendingReferral } from "@/lib/pending-referral";
 
@@ -16,7 +16,6 @@ interface TreeNode {
   is_professional: boolean;
   is_demo: boolean;
   onboarding_status: string;
-  company_alias: string | null;
   company_category: string | null;
   referral_count: number;
   total_earned: number;
@@ -58,7 +57,7 @@ export function NetworkTree({
     async (parentId: string): Promise<TreeNode[]> => {
       const { data: children } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name, avatar, city, is_professional, is_demo, onboarding_status, companies!owner_id(alias, category:categories(name))")
+        .select("id, first_name, last_name, avatar, city, is_professional, is_demo, onboarding_status, companies!owner_id(category:categories(name))")
         .eq("sponsor_id", parentId);
 
       if (!children || children.length === 0) return [];
@@ -100,7 +99,6 @@ export function NetworkTree({
           is_professional: (child as { is_professional?: boolean }).is_professional ?? false,
           is_demo: (child as { is_demo?: boolean }).is_demo ?? false,
           onboarding_status: (child as { onboarding_status?: string }).onboarding_status ?? "active",
-          company_alias: rawCompany ? (rawCompany as { alias?: string | null }).alias ?? null : null,
           company_category: catName,
           referral_count: referralCountByUser.get(child.id) ?? 0,
           total_earned: earnedByUser.get(child.id) ?? 0,
@@ -254,14 +252,13 @@ function TreeNodeRow({
   const isPro = node.is_professional;
   const realName = formatDisplayName(node.first_name, node.last_name, "Sans nom");
 
-  const displayName = showRealNames
-    ? realName
-    : level === 1
-    ? realName
-    : ([node.first_name, node.last_name]
-        .filter(Boolean)
-        .map((n) => `${n![0].toUpperCase()}.`)
-        .join(" ") || "?");
+  const displayName = formatNetworkMemberName(
+    node.first_name,
+    node.last_name,
+    level,
+    showRealNames,
+    "Sans nom"
+  );
   const canExpand = level < maxLevel && node.referral_count > 0;
   const colors = getColors(level);
   const isPending = isPendingReferral(node.onboarding_status);
