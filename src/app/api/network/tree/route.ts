@@ -31,7 +31,7 @@ export async function GET(request: Request) {
 
     const { data: kids } = await supabaseAdmin
       .from("profiles")
-      .select("id, sponsor_id, first_name, last_name, avatar, city, is_professional, is_demo, companies!owner_id(alias, category:categories(name))")
+      .select("id, sponsor_id, first_name, last_name, avatar, city, is_professional, is_demo, onboarding_status, companies!owner_id(alias, category:categories(name))")
       .in("sponsor_id", currentParentIds);
 
     if (!kids || kids.length === 0) break;
@@ -53,6 +53,7 @@ export async function GET(request: Request) {
         city: child.city,
         is_professional: (child as any).is_professional ?? false,
         is_demo: (child as any).is_demo ?? false,
+        onboarding_status: (child as any).onboarding_status ?? "active",
         company_alias: rawCompany ? (rawCompany as { alias?: string | null }).alias ?? null : null,
         company_category: catName,
         level,
@@ -82,6 +83,7 @@ export async function GET(request: Request) {
       city: r.city,
       is_professional: r.is_professional,
       is_demo: r.is_demo,
+      onboarding_status: r.onboarding_status,
       company_alias: r.company_alias,
       company_category: r.company_category,
       level: r.level,

@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { formatDisplayName } from "@/lib/utils";
+import { PendingReferralBadge } from "@/components/pending-referral-badge";
+import { isPendingReferral } from "@/lib/pending-referral";
 
 interface TreeNode {
   id: string;
@@ -13,6 +15,7 @@ interface TreeNode {
   city: string | null;
   is_professional: boolean;
   is_demo: boolean;
+  onboarding_status: string;
   company_alias: string | null;
   company_category: string | null;
   referral_count: number;
@@ -54,7 +57,7 @@ export function NetworkTree({
     async (parentId: string): Promise<TreeNode[]> => {
       const { data: children } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name, avatar, city, is_professional, is_demo, companies!owner_id(alias, category:categories(name))")
+        .select("id, first_name, last_name, avatar, city, is_professional, is_demo, onboarding_status, companies!owner_id(alias, category:categories(name))")
         .eq("sponsor_id", parentId);
 
       if (!children || children.length === 0) return [];
@@ -95,6 +98,7 @@ export function NetworkTree({
           city: child.city,
           is_professional: (child as { is_professional?: boolean }).is_professional ?? false,
           is_demo: (child as { is_demo?: boolean }).is_demo ?? false,
+          onboarding_status: (child as { onboarding_status?: string }).onboarding_status ?? "active",
           company_alias: rawCompany ? (rawCompany as { alias?: string | null }).alias ?? null : null,
           company_category: catName,
           referral_count: referralCountByUser.get(child.id) ?? 0,
@@ -261,6 +265,7 @@ function TreeNodeRow({
         .join(" ") || "?");
   const canExpand = level < maxLevel && node.referral_count > 0;
   const colors = getColors(level);
+  const isPending = isPendingReferral(node.onboarding_status);
 
   return (
     <div className="relative" style={{ paddingLeft: level > 1 ? "20px" : "0" }}>
@@ -277,7 +282,7 @@ function TreeNodeRow({
 
       {/* Node */}
       <div
-        className={`relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl border-l-4 ${colors.border} ${colors.bg} hover:brightness-95 transition-all mb-1`}
+        className={`relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl border-l-4 ${isPending ? "border-l-violet-500 bg-violet-50" : `${colors.border} ${colors.bg}`} hover:brightness-95 transition-all mb-1`}
       >
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {/* Expand/collapse */}
@@ -329,6 +334,7 @@ function TreeNodeRow({
                   demo
                 </span>
               )}
+              {isPending && <PendingReferralBadge compact />}
             </div>
             <p className="text-[11px] text-winelio-gray mt-0.5 truncate">
               {[

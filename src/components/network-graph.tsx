@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { formatDisplayName } from "@/lib/utils";
+import { PendingReferralBadge } from "@/components/pending-referral-badge";
+import { isPendingReferral } from "@/lib/pending-referral";
 interface GraphNode {
   id: string;
   first_name: string | null;
@@ -11,6 +13,7 @@ interface GraphNode {
   city: string | null;
   is_professional: boolean;
   is_demo: boolean;
+  onboarding_status: string;
   company_alias: string | null;
   company_category: string | null;
   level: number;
@@ -237,6 +240,7 @@ export function NetworkGraph({
       city: apiNode.city,
       is_professional: apiNode.is_professional ?? false,
       is_demo: apiNode.is_demo ?? false,
+      onboarding_status: apiNode.onboarding_status ?? "active",
       company_alias: apiNode.company_alias ?? null,
       company_category: apiNode.company_category ?? null,
       level,
@@ -312,6 +316,7 @@ export function NetworkGraph({
         city: null,
         is_professional: false,
         is_demo: false,
+        onboarding_status: "active",
         company_alias: null,
         company_category: null,
         level: 0,
@@ -458,12 +463,15 @@ function NodeView({
   rootLabel?: string;
   showRealNames?: boolean;
 }) {
-  const color = LEVEL_COLORS[node.level] ?? "#9ca3af";
+  const color = isPendingReferral(node.onboarding_status) && node.level > 0
+    ? "#8B5CF6"
+    : LEVEL_COLORS[node.level] ?? "#9ca3af";
   const isRoot = node.level === 0;
   const isSelected = node.id === selectedId;
   const size = isRoot ? 52 : node.level <= 2 ? 42 : 34;
   const hasActive = node.activeRecos > 0 && !isRoot;
   const hasCompleted = node.completedRecos > 0 && !isRoot;
+  const isPending = !isRoot && isPendingReferral(node.onboarding_status);
   const showKids = node.expanded && node.children.length > 0;
 
   return (
@@ -564,6 +572,8 @@ function NodeView({
                   ? (node.first_name ?? "")
                   : [node.first_name, node.last_name].filter(Boolean).map((n) => `${n![0].toUpperCase()}.`).join("")}
         </span>
+
+        {isPending && <div className="mt-1"><PendingReferralBadge compact /></div>}
 
         {/* Expand/collapse badge */}
         {node.childCount > 0 && (

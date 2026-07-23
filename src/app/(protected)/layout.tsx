@@ -43,6 +43,7 @@ export default async function ProtectedLayout({
 }) {
   const user = await getUser();
   if (!user) redirect("/auth/login");
+  if (user.user_metadata?.requires_password_setup === true) redirect("/auth/create-password");
 
   const supabase = await createClient();
 

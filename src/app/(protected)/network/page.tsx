@@ -8,6 +8,8 @@ import { CopyButton, ShareButton, EmailInviteButton } from "@/components/referra
 import { Card, CardContent } from "@/components/ui/card";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { PromoVideoPreview } from "@/components/PromoVideoPreview";
+import { PendingReferralBadge } from "@/components/pending-referral-badge";
+import { isPendingReferral } from "@/lib/pending-referral";
 
 export default async function NetworkPage() {
   const supabase = await createClient();
@@ -27,7 +29,7 @@ export default async function NetworkPage() {
 
   const { data: referrals, count: totalReferrals } = await supabase
     .from("profiles")
-    .select("id, first_name, last_name, city, created_at, avatar, is_professional, is_demo, companies!owner_id(alias, city, category:categories(name))", { count: "exact" })
+    .select("id, first_name, last_name, city, created_at, avatar, is_professional, is_demo, onboarding_status, companies!owner_id(alias, city, category:categories(name))", { count: "exact" })
     .eq("sponsor_id", user.id);
 
   // Batch les requêtes pour éviter le N+1 : 2 requêtes au lieu de 2×N
@@ -141,6 +143,9 @@ export default async function NetworkPage() {
                   <p className="text-xs text-winelio-gray">Parrainez un membre classique pour qu'il recommande des pros.</p>
                 </div>
                 <div className="grid grid-cols-1 gap-2 [&>button]:w-full [&>button]:justify-center [&>button]:py-2.5">
+                  <Link href="/network/preinscrire?type=individual" className="inline-flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-winelio-orange to-winelio-amber px-3 py-2.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90">
+                    Saisir ses informations
+                  </Link>
                   <CopyButton code={sponsorCode} />
                   <EmailInviteButton code={sponsorCode} />
                   <ShareButton code={sponsorCode} />
@@ -154,6 +159,9 @@ export default async function NetworkPage() {
                   <p className="text-xs text-winelio-gray">Parrainez un pro pour qu'il reçoive des leads qualifiés.</p>
                 </div>
                 <div className="grid grid-cols-1 gap-2 [&>button]:w-full [&>button]:justify-center [&>button]:py-2.5">
+                  <Link href="/network/preinscrire?type=professional" className="inline-flex w-full items-center justify-center rounded-lg bg-winelio-dark px-3 py-2.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90">
+                    Saisir ses informations
+                  </Link>
                   <CopyButton code={sponsorCode} isPro={true} />
                   <EmailInviteButton code={sponsorCode} isPro={true} />
                   <ShareButton code={sponsorCode} isPro={true} />
@@ -236,6 +244,7 @@ export default async function NetworkPage() {
             <div className="space-y-2">
               {referralsWithStats.map((ref) => {
                 const isPro = ref.is_professional && ref.company?.alias;
+                const isPending = isPendingReferral(ref.onboarding_status);
                 const displayName = isPro
                   ? ref.company!.alias!
                   : formatDisplayName(ref.first_name, ref.last_name, "Sans nom");
@@ -243,7 +252,7 @@ export default async function NetworkPage() {
                   ? [ref.company!.category, ref.company!.city ?? ref.city].filter(Boolean).join(" · ")
                   : null;
                 return (
-                  <div key={ref.id} className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
+                  <div key={ref.id} className={`flex items-center justify-between p-3 sm:p-4 rounded-xl border transition-colors ${isPending ? "border-violet-200 bg-violet-50/80" : "border-transparent bg-muted/50 hover:bg-muted"}`}>
                     <div className="flex items-center gap-3 min-w-0">
                       <ProfileAvatar
                         name={displayName}
@@ -264,6 +273,7 @@ export default async function NetworkPage() {
                               demo
                             </span>
                           )}
+                          {isPending && <span className="ml-1.5"><PendingReferralBadge /></span>}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
                           {displaySub

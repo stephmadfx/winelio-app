@@ -28,6 +28,7 @@ function ConfirmHandler() {
   useEffect(() => {
     const tokenHash = searchParams.get("token_hash");
     const type = searchParams.get("type") || "signup";
+    const needsPasswordSetup = searchParams.get("setup_password") === "1";
 
     if (!tokenHash) {
       setError("Jeton de validation manquant.");
@@ -51,11 +52,14 @@ function ConfirmHandler() {
           // Si le jeton est déjà utilisé/expiré, vérifier si une session est quand même active
           // (cas où l'utilisateur a déjà cliqué le lien une fois et revient dessus)
           supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session) {
+            const sessionMatchesExpectedFlow = session && (
+              !needsPasswordSetup || session.user.user_metadata?.requires_password_setup === true
+            );
+            if (sessionMatchesExpectedFlow) {
               try {
                 localStorage.setItem("winelio_known_user", "1");
               } catch {}
-              router.push("/dashboard");
+              router.push(needsPasswordSetup ? "/auth/create-password" : "/dashboard");
               return;
             }
 
@@ -73,7 +77,10 @@ function ConfirmHandler() {
           try {
             localStorage.setItem("winelio_known_user", "1");
           } catch {}
-          // Appeler l'API de notification du parrainage et de l'admin
+          if (needsPasswordSetup) {
+            router.push("/auth/create-password");
+            return;
+          }
           fetch("/api/network/new-referral", { method: "POST" }).catch((err) => {
             console.error("Failed to trigger new-referral notification:", err);
           });
