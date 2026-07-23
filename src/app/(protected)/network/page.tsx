@@ -2,14 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { formatDisplayName } from "@/lib/utils";
-import { NetworkTree } from "@/components/network-tree";
 import { NetworkGraph } from "@/components/network-graph";
 import { CopyButton, ShareButton, EmailInviteButton } from "@/components/referral-buttons";
 import { Card, CardContent } from "@/components/ui/card";
-import { ProfileAvatar } from "@/components/profile-avatar";
 import { PromoVideoPreview } from "@/components/PromoVideoPreview";
-import { PendingReferralBadge } from "@/components/pending-referral-badge";
-import { isPendingReferral } from "@/lib/pending-referral";
+import { NetworkListTabs } from "@/components/network-list-tabs";
 
 export default async function NetworkPage() {
   const supabase = await createClient();
@@ -217,88 +214,6 @@ export default async function NetworkPage() {
         ))}
       </div>
 
-      {/* Filleuls directs */}
-      <Card className="!rounded-2xl mb-6">
-        <CardContent className="p-5 sm:p-6">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="text-base font-semibold text-winelio-dark">
-              Filleuls directs
-              <span className="ml-2 text-sm font-normal text-muted-foreground">({totalReferrals ?? 0})</span>
-            </h3>
-            <Link href="/network/stats" className="text-sm text-winelio-orange hover:text-winelio-amber transition-colors font-medium">
-              Voir tout
-            </Link>
-          </div>
-
-          {referralsWithStats.length === 0 ? (
-            <div className="text-center py-10">
-              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-gradient-to-r from-winelio-orange/10 to-winelio-amber/10 flex items-center justify-center">
-                <svg className="w-7 h-7 text-winelio-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-              </div>
-              <p className="text-muted-foreground text-sm">Aucun filleul pour le moment.</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">Partagez votre code parrain !</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {referralsWithStats.map((ref) => {
-                const isPro = ref.is_professional;
-                const isPending = isPendingReferral(ref.onboarding_status);
-                const displayName = formatDisplayName(ref.first_name, ref.last_name, "Sans nom");
-                const displaySub = isPro
-                  ? [ref.company!.category, ref.company!.city ?? ref.city].filter(Boolean).join(" · ")
-                  : null;
-                return (
-                  <div key={ref.id} className={`flex items-center justify-between p-3 sm:p-4 rounded-xl border transition-colors ${isPending ? "border-violet-200 bg-violet-50/80" : "border-transparent bg-muted/50 hover:bg-muted"}`}>
-                    <div className="flex items-center gap-3 min-w-0">
-                      <ProfileAvatar
-                        name={displayName}
-                        avatar={ref.avatar}
-                        className="h-9 w-9"
-                        initialsClassName="text-[11px]"
-                      />
-                      <div className="min-w-0">
-                        <p className="font-semibold text-sm truncate text-winelio-dark">
-                          {displayName}
-                          {ref.is_professional && (
-                            <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-white bg-gradient-to-r from-winelio-orange to-winelio-amber align-middle">
-                              Pro
-                            </span>
-                          )}
-                          {ref.is_demo && (
-                            <span className="ml-1.5 inline-flex items-center px-1 py-0.5 rounded text-[9px] font-semibold text-orange-400 bg-orange-50 border border-orange-100">
-                              demo
-                            </span>
-                          )}
-                          {isPending && <span className="ml-1.5"><PendingReferralBadge referralId={ref.id} /></span>}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {displaySub
-                            ? <span className="mr-1">{displaySub} ·</span>
-                            : ref.city && <span className="mr-1">{ref.city} ·</span>}
-                          {new Date(ref.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 sm:gap-6 shrink-0 ml-2">
-                      <div className="text-center">
-                        <p className="font-bold text-winelio-dark text-sm tabular-nums">{ref.sub_referrals}</p>
-                        <p className="text-[10px] text-muted-foreground">filleuls</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-bold text-winelio-orange text-sm tabular-nums">{ref.total_commissions.toFixed(2)} €</p>
-                        <p className="text-[10px] text-muted-foreground">commissions</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Graphe */}
       <Card className="!rounded-2xl mb-6">
         <CardContent className="p-4 sm:p-6">
@@ -315,9 +230,25 @@ export default async function NetworkPage() {
       {/* Arbre */}
       <Card className="!rounded-2xl">
         <CardContent className="p-4 sm:p-6">
-          <h3 className="text-base font-semibold text-winelio-dark mb-1">Liste détaillée</h3>
-          <p className="text-xs text-muted-foreground mb-4">Réseau complet sur 5 niveaux</p>
-          <NetworkTree userId={user.id} />
+          <NetworkListTabs
+            userId={user.id}
+            totalMembers={totalNetworkMembers}
+            directReferrals={referralsWithStats.map((referral) => ({
+              id: referral.id,
+              firstName: referral.first_name,
+              lastName: referral.last_name,
+              avatar: referral.avatar,
+              city: referral.city,
+              createdDateLabel: new Date(referral.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }),
+              isProfessional: referral.is_professional,
+              isDemo: referral.is_demo,
+              onboardingStatus: referral.onboarding_status,
+              companyCategory: referral.company?.category ?? null,
+              companyCity: referral.company?.city ?? null,
+              subReferrals: referral.sub_referrals,
+              totalCommissions: referral.total_commissions,
+            }))}
+          />
         </CardContent>
       </Card>
     </div>

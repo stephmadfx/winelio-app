@@ -40,16 +40,17 @@ function getColors(level: number) {
 
 export function NetworkTree({
   userId,
+  totalMembers,
   maxLevel = 5,
   showRealNames = false,
 }: {
   userId: string;
+  totalMembers: number;
   maxLevel?: number;
   showRealNames?: boolean;
 }) {
   const [roots, setRoots] = useState<TreeNode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
 
   const supabase = createClient();
 
@@ -120,9 +121,6 @@ export function NetworkTree({
       setLoading(true);
       const nodes = await fetchChildren(userId);
       setRoots(nodes);
-      // Count total network
-      const total = nodes.reduce((sum, n) => sum + 1 + n.referral_count, 0);
-      setTotalCount(total);
       setLoading(false);
     }
     init();
@@ -201,7 +199,10 @@ export function NetworkTree({
           <svg className="w-5 h-5 text-winelio-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          <span className="text-sm font-semibold text-winelio-dark">{roots.length} filleuls directs</span>
+          <div>
+            <span className="text-sm font-semibold text-winelio-dark">{totalMembers} filleul{totalMembers === 1 ? "" : "s"} au total</span>
+            <p className="text-[10px] text-winelio-gray">Tous niveaux confondus · dont {roots.length} direct{roots.length === 1 ? "" : "s"}</p>
+          </div>
         </div>
         <div className="h-4 w-px bg-winelio-orange/20" />
         <div className="flex gap-3">
