@@ -392,10 +392,10 @@ function RootView({ root }: { root: RootData }) {
                     .map((n) => n![0])
                     .join("")
                     .toUpperCase() || "?";
-                const isPro = ref.is_professional && ref.company_alias;
+                const isPro = ref.is_professional;
                 const refName = formatDisplayName(ref.first_name, ref.last_name, "Sans nom");
                 const refSub = isPro
-                  ? [ref.company_alias, ref.company_category, ref.city].filter(Boolean).join(" · ")
+                  ? [ref.company_category, ref.city].filter(Boolean).join(" · ")
                   : null;
                 return (
                   <div

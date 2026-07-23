@@ -243,11 +243,9 @@ export default async function NetworkPage() {
           ) : (
             <div className="space-y-2">
               {referralsWithStats.map((ref) => {
-                const isPro = ref.is_professional && ref.company?.alias;
+                const isPro = ref.is_professional;
                 const isPending = isPendingReferral(ref.onboarding_status);
-                const displayName = isPro
-                  ? ref.company!.alias!
-                  : formatDisplayName(ref.first_name, ref.last_name, "Sans nom");
+                const displayName = formatDisplayName(ref.first_name, ref.last_name, "Sans nom");
                 const displaySub = isPro
                   ? [ref.company!.category, ref.company!.city ?? ref.city].filter(Boolean).join(" · ")
                   : null;
@@ -261,7 +259,7 @@ export default async function NetworkPage() {
                         initialsClassName="text-[11px]"
                       />
                       <div className="min-w-0">
-                        <p className={`font-semibold text-sm truncate ${isPro ? "font-mono text-winelio-orange" : "text-winelio-dark"}`}>
+                        <p className="font-semibold text-sm truncate text-winelio-dark">
                           {displayName}
                           {ref.is_professional && (
                             <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-white bg-gradient-to-r from-winelio-orange to-winelio-amber align-middle">

@@ -250,13 +250,11 @@ function TreeNodeRow({
   maxLevel?: number;
   showRealNames?: boolean;
 }) {
-  const isPro = node.is_professional && node.company_alias;
+  const isPro = node.is_professional;
   const realName = formatDisplayName(node.first_name, node.last_name, "Sans nom");
 
   const displayName = showRealNames
     ? realName
-    : isPro
-    ? node.company_alias!
     : level === 1
     ? realName
     : ([node.first_name, node.last_name]
@@ -318,7 +316,7 @@ function TreeNodeRow({
           {/* Name + level badge */}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className={`font-semibold text-sm truncate ${isPro && !showRealNames ? "font-mono text-winelio-orange" : "text-winelio-dark"}`}>
+              <span className="font-semibold text-sm truncate text-winelio-dark">
                 {displayName}
               </span>
               <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold text-white ${colors.badge} shrink-0`}>

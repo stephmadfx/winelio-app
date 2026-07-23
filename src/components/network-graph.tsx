@@ -518,11 +518,7 @@ function NodeView({
             name={
               isRoot
                 ? (rootLabel ?? "Vous")
-                : showRealNames
-                  ? formatDisplayName(node.first_name, node.last_name, "Sans nom")
-                  : node.is_professional && node.company_alias
-                    ? node.company_alias
-                    : formatDisplayName(node.first_name, node.last_name, "Sans nom")
+                : formatDisplayName(node.first_name, node.last_name, "Sans nom")
             }
             avatar={node.avatar}
             className="h-full w-full"
@@ -566,11 +562,9 @@ function NodeView({
               ? node.first_name
                 ? node.first_name + (node.last_name ? ` ${node.last_name.charAt(0)}.` : "")
                 : (node.last_name ?? "Sans nom")
-              : node.is_professional && node.company_alias
-                ? node.company_alias
-                : node.level === 1
-                  ? (node.first_name ?? "")
-                  : [node.first_name, node.last_name].filter(Boolean).map((n) => `${n![0].toUpperCase()}.`).join("")}
+              : node.level === 1
+                ? formatDisplayName(node.first_name, node.last_name, "Sans nom")
+                : [node.first_name, node.last_name].filter(Boolean).map((n) => `${n![0].toUpperCase()}.`).join("")}
         </span>
 
         {isPending && <div className="mt-1"><PendingReferralBadge compact /></div>}
@@ -591,11 +585,7 @@ function NodeView({
             <div className="flex items-start justify-between gap-1 px-3 pt-2.5 pb-1.5">
               <div className="min-w-0">
                 <p className="text-[11px] font-bold text-winelio-dark truncate leading-tight">
-                  {showRealNames
-                    ? formatDisplayName(node.first_name, node.last_name, "Sans nom")
-                    : node.is_professional && node.company_alias
-                      ? node.company_alias
-                      : formatDisplayName(node.first_name, node.last_name, "Sans nom")}
+                  {formatDisplayName(node.first_name, node.last_name, "Sans nom")}
                 </p>
                 <p className="text-[9px] text-winelio-gray truncate">
                   {node.is_professional && node.company_category && <span>{node.company_category} · </span>}
