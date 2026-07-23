@@ -271,7 +271,7 @@ export default async function NetworkPage() {
                               demo
                             </span>
                           )}
-                          {isPending && <span className="ml-1.5"><PendingReferralBadge /></span>}
+                          {isPending && <span className="ml-1.5"><PendingReferralBadge referralId={ref.id} /></span>}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
                           {displaySub

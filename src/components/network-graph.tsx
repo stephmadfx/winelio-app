@@ -567,7 +567,7 @@ function NodeView({
                 : [node.first_name, node.last_name].filter(Boolean).map((n) => `${n![0].toUpperCase()}.`).join("")}
         </span>
 
-        {isPending && <div className="mt-1"><PendingReferralBadge compact /></div>}
+        {isPending && <div className="mt-1"><PendingReferralBadge compact referralId={node.level === 1 ? node.id : undefined} /></div>}
 
         {/* Expand/collapse badge */}
         {node.childCount > 0 && (

@@ -332,7 +332,7 @@ function TreeNodeRow({
                   demo
                 </span>
               )}
-              {isPending && <PendingReferralBadge compact />}
+              {isPending && <PendingReferralBadge compact referralId={level === 1 ? node.id : undefined} />}
             </div>
             <p className="text-[11px] text-winelio-gray mt-0.5 truncate">
               {[
