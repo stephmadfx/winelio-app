@@ -55,7 +55,7 @@ function ConfirmHandler() {
     };
 
     verifyConfirmation()
-      .then(({ error: verifyError }) => {
+      .then(async ({ data: verifyData, error: verifyError }) => {
         if (verifyError) {
           console.error("Verification error:", verifyError.message);
 
@@ -84,6 +84,25 @@ function ConfirmHandler() {
             setVerifying(false);
           });
         } else {
+          if (!verifyData.session || !verifyData.user) {
+            setError("La validation a réussi, mais la session du nouveau compte n’a pas pu être créée. Veuillez rouvrir le lien reçu par e-mail.");
+            setVerifying(false);
+            return;
+          }
+
+          // Forcer l'écriture de la session renvoyée par verifyOtp dans le
+          // stockage/cookie partagé, puis contrôler que l'ancien utilisateur
+          // connecté a bien été remplacé par le filleul qui vient de confirmer.
+          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+            access_token: verifyData.session.access_token,
+            refresh_token: verifyData.session.refresh_token,
+          });
+          if (sessionError || sessionData.user?.id !== verifyData.user.id) {
+            setError("Votre adresse e-mail est confirmée, mais le changement de compte n’a pas abouti. Retournez à la connexion pour continuer.");
+            setVerifying(false);
+            return;
+          }
+
           try {
             localStorage.setItem("winelio_known_user", "1");
           } catch {}
