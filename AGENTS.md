@@ -198,6 +198,7 @@ Fichiers de reference dans `/doc/` :
 ## Règles
 
 ### Général
+- **Comptes de test — nettoyage obligatoire** : tout compte, profil ou donnée temporaire créé pour un test doit être supprimé dès la fin du scénario, que le test réussisse ou échoue. Le nettoyage doit inclure Supabase Auth, les profils, les wallets et toutes les données applicatives liées, puis être vérifié afin de confirmer qu'aucun résidu de test ne subsiste. Cette règle s'applique aux environnements local, développement, préproduction et production.
 - Ne jamais commiter de credentials dans le code (utiliser les env vars Coolify)
 - Les `NEXT_PUBLIC_*` doivent être des "Build Variables" dans Coolify
 - Le config.ts applique `.replace(/\s/g, "")` pour nettoyer les espaces parasites des env vars
