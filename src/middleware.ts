@@ -187,8 +187,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from auth pages
-  if (user && request.nextUrl.pathname.startsWith("/auth")) {
+  // Redirect authenticated users away from auth pages, sauf pendant l'activation
+  // d'un filleul préinscrit. La confirmation doit rester accessible même si un
+  // autre compte est déjà connecté : verifyOtp remplacera alors cette session.
+  // Le filleul confirmé doit ensuite pouvoir atteindre la création du mot de
+  // passe, sans boucle /dashboard <-> /auth/create-password.
+  const isReferralConfirmation = request.nextUrl.pathname === "/auth/confirm";
+  const isPendingPasswordSetup =
+    request.nextUrl.pathname === "/auth/create-password" &&
+    user?.user_metadata?.requires_password_setup === true;
+
+  if (
+    user &&
+    request.nextUrl.pathname.startsWith("/auth") &&
+    !isReferralConfirmation &&
+    !isPendingPasswordSetup
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
