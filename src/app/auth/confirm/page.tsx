@@ -26,6 +26,7 @@ function ConfirmHandler() {
 
   useEffect(() => {
     const tokenHash = searchParams.get("token_hash");
+    const type = searchParams.get("type") || "signup";
     const needsPasswordSetup = searchParams.get("setup_password") === "1";
 
     if (!tokenHash) {
@@ -37,7 +38,7 @@ function ConfirmHandler() {
     fetch("/api/auth/confirm-referral", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tokenHash }),
+      body: JSON.stringify({ tokenHash, type }),
     })
       .then(async (response) => {
         const result = await response.json();

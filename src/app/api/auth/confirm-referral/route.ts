@@ -1,13 +1,20 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+const ALLOWED_OTP_TYPES = new Set(["signup", "magiclink"] as const);
+type AllowedOtpType = "signup" | "magiclink";
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const tokenHash = typeof body.tokenHash === "string" ? body.tokenHash.trim() : "";
+    const requestedType = typeof body.type === "string" ? body.type.trim() : "signup";
 
     if (!tokenHash) {
       return NextResponse.json({ error: "Jeton de validation manquant." }, { status: 400 });
+    }
+    if (!ALLOWED_OTP_TYPES.has(requestedType as AllowedOtpType)) {
+      return NextResponse.json({ error: "Type de validation invalide." }, { status: 400 });
     }
 
     const supabase = await createClient();
@@ -20,7 +27,7 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
-      type: "signup",
+      type: requestedType as AllowedOtpType,
     });
 
     if (error || !data.session || !data.user) {
