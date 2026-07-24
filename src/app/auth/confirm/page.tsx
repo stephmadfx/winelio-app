@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ReferralLinkRenewalForm } from "@/components/referral-link-renewal-form";
 
 export default function ConfirmPage() {
   return (
@@ -88,9 +89,11 @@ function ConfirmHandler() {
           {error || "Ce lien de validation est invalide ou a expiré."}
         </p>
 
+        <ReferralLinkRenewalForm dark />
+
         <a
           href="/auth/login"
-          className="inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+          className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
         >
           Retourner à la connexion
         </a>

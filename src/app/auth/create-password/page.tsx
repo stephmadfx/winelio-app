@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { ReferralLinkRenewalForm } from "@/components/referral-link-renewal-form";
 
 export default function CreatePasswordPage() {
   const router = useRouter();
@@ -69,6 +70,9 @@ export default function CreatePasswordPage() {
           {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
           <button disabled={loading} className="w-full rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3.5 text-sm font-bold text-white disabled:opacity-60">{loading ? "Activation…" : "Activer mon compte"}</button>
         </form>
+        <div className="mt-6 border-t border-gray-100 pt-5">
+          <ReferralLinkRenewalForm />
+        </div>
       </div>
     </main>
   );
