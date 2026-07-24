@@ -2,7 +2,6 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 
 export default function ConfirmPage() {
   return (
@@ -27,7 +26,6 @@ function ConfirmHandler() {
 
   useEffect(() => {
     const tokenHash = searchParams.get("token_hash");
-    const type = searchParams.get("type") || "signup";
     const needsPasswordSetup = searchParams.get("setup_password") === "1";
 
     if (!tokenHash) {
@@ -36,85 +34,28 @@ function ConfirmHandler() {
       return;
     }
 
-    const supabase = createClient();
-    
-    // Une invitation de filleul doit remplacer uniquement la session locale
-    // éventuellement ouverte dans ce navigateur. Sans cette déconnexion,
-    // verifyOtp confirme l'e-mail mais Supabase peut conserver l'ancien compte :
-    // le jeton est alors consommé et l'utilisateur repart sur son ancien dashboard.
-    const verifyConfirmation = async () => {
-      if (needsPasswordSetup) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) await supabase.auth.signOut({ scope: "local" });
-      }
+    fetch("/api/auth/confirm-referral", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tokenHash }),
+    })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Validation impossible.");
 
-      return supabase.auth.verifyOtp({
-        token_hash: tokenHash,
-        type: type as any,
-      });
-    };
+        try {
+          localStorage.setItem("winelio_known_user", "1");
+        } catch {}
 
-    verifyConfirmation()
-      .then(async ({ data: verifyData, error: verifyError }) => {
-        if (verifyError) {
-          console.error("Verification error:", verifyError.message);
-
-          // Si le jeton est déjà utilisé/expiré, vérifier si une session est quand même active
-          // (cas où l'utilisateur a déjà cliqué le lien une fois et revient dessus)
-          supabase.auth.getSession().then(({ data: { session } }) => {
-            const sessionMatchesExpectedFlow = session && (
-              !needsPasswordSetup || session.user.user_metadata?.requires_password_setup === true
-            );
-            if (sessionMatchesExpectedFlow) {
-              try {
-                localStorage.setItem("winelio_known_user", "1");
-              } catch {}
-              router.push(needsPasswordSetup ? "/auth/create-password" : "/dashboard");
-              return;
-            }
-
-            let msg = verifyError.message;
-            if (
-              msg.toLowerCase().includes("invalid or has expired") ||
-              msg.toLowerCase().includes("expired")
-            ) {
-              msg = "Ce lien de validation a déjà été utilisé ou a expiré. Si vous vous êtes déjà inscrit, votre compte est actif et vous pouvez vous connecter directement.";
-            }
-            setError(msg);
-            setVerifying(false);
-          });
-        } else {
-          if (!verifyData.session || !verifyData.user) {
-            setError("La validation a réussi, mais la session du nouveau compte n’a pas pu être créée. Veuillez rouvrir le lien reçu par e-mail.");
-            setVerifying(false);
-            return;
-          }
-
-          // Forcer l'écriture de la session renvoyée par verifyOtp dans le
-          // stockage/cookie partagé, puis contrôler que l'ancien utilisateur
-          // connecté a bien été remplacé par le filleul qui vient de confirmer.
-          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-            access_token: verifyData.session.access_token,
-            refresh_token: verifyData.session.refresh_token,
-          });
-          if (sessionError || sessionData.user?.id !== verifyData.user.id) {
-            setError("Votre adresse e-mail est confirmée, mais le changement de compte n’a pas abouti. Retournez à la connexion pour continuer.");
-            setVerifying(false);
-            return;
-          }
-
-          try {
-            localStorage.setItem("winelio_known_user", "1");
-          } catch {}
-          if (needsPasswordSetup) {
-            router.push("/auth/create-password");
-            return;
-          }
-          fetch("/api/network/new-referral", { method: "POST" }).catch((err) => {
-            console.error("Failed to trigger new-referral notification:", err);
-          });
-          router.push("/dashboard");
-        }
+        const redirectTo = needsPasswordSetup || result.requiresPasswordSetup
+          ? "/auth/create-password"
+          : "/dashboard";
+        router.replace(redirectTo);
+        router.refresh();
+      })
+      .catch((verificationError) => {
+        setError(verificationError instanceof Error ? verificationError.message : "Validation impossible.");
+        setVerifying(false);
       });
   }, [router, searchParams]);
 
