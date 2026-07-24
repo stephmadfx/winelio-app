@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 export default function CreatePasswordPage() {
   const router = useRouter();
@@ -20,6 +21,10 @@ export default function CreatePasswordPage() {
     setLoading(true);
     setError("");
     try {
+      const supabase = createClient();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user?.email) throw new Error("Votre session d’activation a expiré. Ouvrez à nouveau le lien reçu par e-mail.");
+
       const response = await fetch("/api/auth/set-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -27,6 +32,17 @@ export default function CreatePasswordPage() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Activation impossible.");
+
+      // La mise à jour du mot de passe et des métadonnées peut invalider le
+      // jeton d'activation courant. Recréer immédiatement une session avec le
+      // mot de passe choisi évite un retour intempestif vers /auth/login et
+      // recharge requires_password_setup=false dans le nouveau JWT.
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password,
+      });
+      if (signInError) throw new Error("Votre compte est activé. Connectez-vous avec le mot de passe que vous venez de créer.");
+
       await fetch("/api/network/new-referral", { method: "POST" }).catch(() => undefined);
       try { localStorage.setItem("winelio_known_user", "1"); } catch {}
       router.replace("/dashboard");
