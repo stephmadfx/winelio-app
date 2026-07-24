@@ -38,13 +38,23 @@ function ConfirmHandler() {
 
     const supabase = createClient();
     
-    // Toujours appeler verifyOtp pour confirmer l'email,
-    // même si une session est déjà active (test en étant connecté avec un autre compte).
-    supabase.auth
-      .verifyOtp({
+    // Une invitation de filleul doit remplacer uniquement la session locale
+    // éventuellement ouverte dans ce navigateur. Sans cette déconnexion,
+    // verifyOtp confirme l'e-mail mais Supabase peut conserver l'ancien compte :
+    // le jeton est alors consommé et l'utilisateur repart sur son ancien dashboard.
+    const verifyConfirmation = async () => {
+      if (needsPasswordSetup) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) await supabase.auth.signOut({ scope: "local" });
+      }
+
+      return supabase.auth.verifyOtp({
         token_hash: tokenHash,
         type: type as any,
-      })
+      });
+    };
+
+    verifyConfirmation()
       .then(({ error: verifyError }) => {
         if (verifyError) {
           console.error("Verification error:", verifyError.message);
