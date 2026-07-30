@@ -26,7 +26,7 @@ export default async function NetworkPage() {
 
   const { data: referrals, count: totalReferrals } = await supabase
     .from("profiles")
-    .select("id, first_name, last_name, city, created_at, avatar, is_professional, is_demo, onboarding_status, companies!owner_id(city, category:categories(name))", { count: "exact" })
+    .select("id, first_name, last_name, email, phone, city, created_at, avatar, is_professional, is_demo, onboarding_status, companies!owner_id(city, category:categories(name))", { count: "exact" })
     .eq("sponsor_id", user.id);
 
   // Batch les requêtes pour éviter le N+1 : 2 requêtes au lieu de 2×N
@@ -236,6 +236,8 @@ export default async function NetworkPage() {
               id: referral.id,
               firstName: referral.first_name,
               lastName: referral.last_name,
+              email: referral.email,
+              phone: referral.phone,
               avatar: referral.avatar,
               city: referral.city,
               createdDateLabel: new Date(referral.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }),

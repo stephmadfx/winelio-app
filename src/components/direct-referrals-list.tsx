@@ -8,6 +8,8 @@ export type DirectReferralListItem = {
   id: string;
   firstName: string | null;
   lastName: string | null;
+  email: string | null;
+  phone: string | null;
   avatar: string | null;
   city: string | null;
   createdDateLabel: string;
@@ -50,7 +52,7 @@ export const DirectReferralsList = ({ referrals }: { referrals: DirectReferralLi
             : referral.city;
 
           return (
-            <div key={referral.id} className={`flex items-center justify-between rounded-xl border p-3 transition-colors sm:p-4 ${isPending ? "border-violet-200 bg-violet-50/80" : "border-transparent bg-muted/50 hover:bg-muted"}`}>
+            <div key={referral.id} className={`flex flex-col gap-3 rounded-xl border p-3 transition-colors sm:flex-row sm:items-center sm:justify-between sm:p-4 ${isPending ? "border-violet-200 bg-violet-50/80" : "border-transparent bg-muted/50 hover:bg-muted"}`}>
               <div className="flex min-w-0 items-center gap-3">
                 <ProfileAvatar name={displayName} avatar={referral.avatar} className="h-9 w-9" initialsClassName="text-[11px]" />
                 <div className="min-w-0">
@@ -64,9 +66,13 @@ export const DirectReferralsList = ({ referrals }: { referrals: DirectReferralLi
                     {location && <span className="mr-1">{location} ·</span>}
                     {referral.createdDateLabel}
                   </p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                    {referral.email && <a href={`mailto:${referral.email}`} className="max-w-56 truncate font-medium text-winelio-orange hover:underline">{referral.email}</a>}
+                    {referral.phone && <a href={`tel:${referral.phone}`} className="inline-flex items-center gap-1 font-medium text-winelio-dark hover:text-winelio-orange"><span aria-hidden="true">☎</span> Appeler · {referral.phone}</a>}
+                  </div>
                 </div>
               </div>
-              <div className="ml-2 flex shrink-0 items-center gap-4 sm:gap-6">
+              <div className="flex shrink-0 items-center gap-4 sm:ml-2 sm:gap-6">
                 <div className="text-center">
                   <p className="text-sm font-bold tabular-nums text-winelio-dark">{referral.subReferrals}</p>
                   <p className="text-[10px] text-muted-foreground">filleuls</p>

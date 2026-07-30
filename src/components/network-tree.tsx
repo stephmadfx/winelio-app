@@ -11,6 +11,8 @@ interface TreeNode {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  email: string | null;
+  phone: string | null;
   avatar: string | null;
   city: string | null;
   is_professional: boolean;
@@ -55,6 +57,7 @@ export function NetworkTree({
 
   const fetchChildren = useCallback(
     async (parentId: string): Promise<TreeNode[]> => {
+      const isDirectLevel = parentId === userId;
       const { data: children } = await supabase
         .from("profiles")
         .select("id, first_name, last_name, avatar, city, is_professional, is_demo, onboarding_status, companies!owner_id(category:categories(name))")
@@ -63,7 +66,7 @@ export function NetworkTree({
       if (!children || children.length === 0) return [];
 
       const childIds = children.map((child) => child.id);
-      const [{ data: subReferrals }, { data: commissions }] = await Promise.all([
+      const [{ data: subReferrals }, { data: commissions }, directContactsResult] = await Promise.all([
         supabase
           .from("profiles")
           .select("sponsor_id")
@@ -72,7 +75,14 @@ export function NetworkTree({
           .from("commission_transactions")
           .select("user_id, amount")
           .in("user_id", childIds),
+        isDirectLevel
+          ? supabase.from("profiles").select("id, email, phone").in("id", childIds)
+          : Promise.resolve({ data: [] as Array<{ id: string; email: string | null; phone: string | null }> }),
       ]);
+
+      const directContacts = new Map(
+        (directContactsResult.data ?? []).map((contact) => [contact.id, contact])
+      );
 
       const referralCountByUser = new Map<string, number>();
       for (const row of subReferrals ?? []) {
@@ -94,6 +104,8 @@ export function NetworkTree({
           id: child.id,
           first_name: child.first_name,
           last_name: child.last_name,
+          email: directContacts.get(child.id)?.email ?? null,
+          phone: directContacts.get(child.id)?.phone ?? null,
           avatar: (child as { avatar?: string | null }).avatar ?? null,
           city: child.city,
           is_professional: (child as { is_professional?: boolean }).is_professional ?? false,
@@ -343,6 +355,12 @@ function TreeNodeRow({
                 .filter(Boolean)
                 .join(" · ")}
             </p>
+            {level === 1 && (node.email || node.phone) && (
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px]">
+                {node.email && <a href={`mailto:${node.email}`} onClick={(event) => event.stopPropagation()} className="max-w-48 truncate font-semibold text-winelio-orange hover:underline">{node.email}</a>}
+                {node.phone && <a href={`tel:${node.phone}`} onClick={(event) => event.stopPropagation()} className="font-semibold text-winelio-dark hover:text-winelio-orange">☎ Appeler · {node.phone}</a>}
+              </div>
+            )}
           </div>
         </div>
 

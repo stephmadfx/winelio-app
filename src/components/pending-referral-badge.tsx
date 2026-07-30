@@ -23,6 +23,8 @@ export function PendingReferralBadge({
   const [contact, setContact] = useState<Contact | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
+  const [success, setSuccess] = useState("");
   const interactive = Boolean(referralId);
 
   useEffect(() => {
@@ -39,6 +41,7 @@ export function PendingReferralBadge({
     setOpen(true);
     setLoading(true);
     setError("");
+    setSuccess("");
     try {
       const response = await fetch(`/api/network/pending-referral-contact?referralId=${encodeURIComponent(referralId)}`, {
         cache: "no-store",
@@ -50,6 +53,27 @@ export function PendingReferralBadge({
       setError(contactError instanceof Error ? contactError.message : "Coordonnées indisponibles.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resendActivationLink = async () => {
+    if (!referralId) return;
+    setSending(true);
+    setError("");
+    setSuccess("");
+    try {
+      const response = await fetch("/api/network/resend-referral-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referralId }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Relance impossible.");
+      setSuccess(result.message || "Le nouveau lien a bien été envoyé.");
+    } catch (sendError) {
+      setError(sendError instanceof Error ? sendError.message : "Relance impossible.");
+    } finally {
+      setSending(false);
     }
   };
 
@@ -105,6 +129,10 @@ export function PendingReferralBadge({
             {contact && !loading && (
               <div className="mt-5 space-y-3">
                 <p className="text-sm font-semibold text-winelio-dark">{[contact.firstName, contact.lastName].filter(Boolean).join(" ")}</p>
+                <button type="button" onClick={() => void resendActivationLink()} disabled={sending || Boolean(success)} data-testid="pending-reminder-resend" className="flex w-full items-center gap-3 rounded-xl bg-winelio-dark px-4 py-3 text-left text-white transition hover:bg-black disabled:opacity-50">
+                  <span className="text-xl">↻</span><span><strong className="block text-sm">{sending ? "Envoi en cours…" : "Renvoyer le lien d’activation"}</strong><small className="block text-[10px] opacity-80">Un nouvel e-mail Winelio sera envoyé</small></span>
+                </button>
+                {success && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-700">{success}</p>}
                 <button type="button" onClick={launchSms} disabled={!contact.phone} data-testid="pending-reminder-sms" className="flex w-full items-center gap-3 rounded-xl bg-emerald-500 px-4 py-3 text-left text-white disabled:opacity-40">
                   <span className="text-xl">💬</span><span><strong className="block text-sm">Relancer par SMS</strong><small className="block text-[10px] opacity-90">{contact.phone || "Numéro indisponible"}</small></span>
                 </button>

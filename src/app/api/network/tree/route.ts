@@ -31,7 +31,7 @@ export async function GET(request: Request) {
 
     const { data: kids } = await supabaseAdmin
       .from("profiles")
-      .select("id, sponsor_id, first_name, last_name, avatar, city, is_professional, is_demo, onboarding_status, companies!owner_id(category:categories(name))")
+      .select("id, sponsor_id, first_name, last_name, email, phone, avatar, city, is_professional, is_demo, onboarding_status, companies!owner_id(category:categories(name))")
       .in("sponsor_id", currentParentIds);
 
     if (!kids || kids.length === 0) break;
@@ -49,6 +49,8 @@ export async function GET(request: Request) {
         parentId: (child as any).sponsor_id,
         first_name: child.first_name,
         last_name: child.last_name,
+        email: level === 1 ? (child as any).email ?? null : null,
+        phone: level === 1 ? (child as any).phone ?? null : null,
         avatar: (child as any).avatar ?? null,
         city: child.city,
         is_professional: (child as any).is_professional ?? false,
@@ -78,6 +80,8 @@ export async function GET(request: Request) {
       id: r.id,
       first_name: r.first_name,
       last_name: r.last_name,
+      email: r.email,
+      phone: r.phone,
       avatar: r.avatar,
       city: r.city,
       is_professional: r.is_professional,

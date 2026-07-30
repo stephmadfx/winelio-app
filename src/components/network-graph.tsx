@@ -9,6 +9,8 @@ interface GraphNode {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  email: string | null;
+  phone: string | null;
   avatar: string | null;
   city: string | null;
   is_professional: boolean;
@@ -235,6 +237,8 @@ export function NetworkGraph({
       id: apiNode.id,
       first_name: apiNode.first_name,
       last_name: apiNode.last_name,
+      email: level === 1 ? apiNode.email ?? null : null,
+      phone: level === 1 ? apiNode.phone ?? null : null,
       avatar: apiNode.avatar ?? null,
       city: apiNode.city,
       is_professional: apiNode.is_professional ?? false,
@@ -315,6 +319,8 @@ export function NetworkGraph({
         is_professional: false,
         is_demo: false,
         onboarding_status: "active",
+        email: null,
+        phone: null,
         company_category: null,
         level: 0,
         children,
@@ -583,6 +589,12 @@ function NodeView({
                   {node.city && <span>{node.city} · </span>}
                   N{node.level} · {node.childCount} filleul{node.childCount > 1 ? "s" : ""}
                 </p>
+                {node.level === 1 && (node.email || node.phone) && (
+                  <div className="mt-1.5 flex flex-col gap-1 text-[9px]">
+                    {node.email && <a href={`mailto:${node.email}`} className="truncate font-semibold text-winelio-orange hover:underline">{node.email}</a>}
+                    {node.phone && <a href={`tel:${node.phone}`} className="font-semibold text-winelio-dark hover:text-winelio-orange">☎ Appeler · {node.phone}</a>}
+                  </div>
+                )}
               </div>
               <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="shrink-0 w-5 h-5 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100">
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
