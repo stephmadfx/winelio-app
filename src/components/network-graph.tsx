@@ -5,6 +5,7 @@ import { ProfileAvatar } from "@/components/profile-avatar";
 import { formatDisplayName, formatNetworkMemberName } from "@/lib/utils";
 import { PendingReferralBadge } from "@/components/pending-referral-badge";
 import { isPendingReferral } from "@/lib/pending-referral";
+import { DirectReferralProfileCard } from "@/components/direct-referral-profile-card";
 interface GraphNode {
   id: string;
   first_name: string | null;
@@ -442,6 +443,12 @@ export function NetworkGraph({
         ) : null}
       </div>
 
+      <DirectReferralProfileCard
+        referralId={selectedNode?.level === 1 ? selectedNode.id : null}
+        open={selectedNode?.level === 1}
+        onOpenChange={(open) => { if (!open) setSelectedNode(null); }}
+      />
+
     </div>
   );
 }
@@ -576,7 +583,7 @@ function NodeView({
         )}
 
         {/* Popover */}
-        {isSelected && !isRoot && (
+        {isSelected && !isRoot && node.level !== 1 && (
           <div onClick={(e) => e.stopPropagation()} className="absolute left-1/2 top-full -translate-x-1/2 mt-2 w-60 rounded-xl bg-white border border-gray-200 shadow-xl cursor-default" style={{ zIndex: 50 }}>
             <div className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 bg-white border-l border-t border-gray-200" style={{ transform: "translateX(-50%) rotate(45deg)" }} />
             <div className="flex items-start justify-between gap-1 px-3 pt-2.5 pb-1.5">

@@ -6,6 +6,7 @@ import { ProfileAvatar } from "@/components/profile-avatar";
 import { formatDisplayName, formatNetworkMemberName } from "@/lib/utils";
 import { PendingReferralBadge } from "@/components/pending-referral-badge";
 import { isPendingReferral } from "@/lib/pending-referral";
+import { DirectReferralProfileCard } from "@/components/direct-referral-profile-card";
 
 interface TreeNode {
   id: string;
@@ -52,6 +53,7 @@ export function NetworkTree({
 }) {
   const [roots, setRoots] = useState<TreeNode[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedReferralId, setSelectedReferralId] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -237,9 +239,11 @@ export function NetworkTree({
             isLast={i === roots.length - 1}
             maxLevel={maxLevel}
             showRealNames={showRealNames}
+            onSelectDirect={setSelectedReferralId}
           />
         ))}
       </div>
+      <DirectReferralProfileCard referralId={selectedReferralId} open={Boolean(selectedReferralId)} onOpenChange={(open) => { if (!open) setSelectedReferralId(null); }} />
     </div>
   );
 }
@@ -252,6 +256,7 @@ function TreeNodeRow({
   isLast,
   maxLevel = 5,
   showRealNames = false,
+  onSelectDirect,
 }: {
   node: TreeNode;
   level: number;
@@ -260,6 +265,7 @@ function TreeNodeRow({
   isLast: boolean;
   maxLevel?: number;
   showRealNames?: boolean;
+  onSelectDirect: (referralId: string) => void;
 }) {
   const isPro = node.is_professional;
   const realName = formatDisplayName(node.first_name, node.last_name, "Sans nom");
@@ -290,13 +296,17 @@ function TreeNodeRow({
 
       {/* Node */}
       <div
+        role={level === 1 ? "button" : undefined}
+        tabIndex={level === 1 ? 0 : undefined}
+        onClick={() => { if (level === 1) onSelectDirect(node.id); }}
+        onKeyDown={(event) => { if (level === 1 && (event.key === "Enter" || event.key === " ")) onSelectDirect(node.id); }}
         className={`relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl border-l-4 ${isPending ? "border-l-violet-500 bg-violet-50" : `${colors.border} ${colors.bg}`} hover:brightness-95 transition-all mb-1`}
       >
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {/* Expand/collapse */}
           {canExpand ? (
             <button
-              onClick={() => onToggle(path)}
+              onClick={(event) => { event.stopPropagation(); onToggle(path); }}
               className={`w-7 h-7 rounded-lg flex items-center justify-center ${colors.badge} text-white shrink-0 transition-transform active:scale-95`}
             >
               <svg
@@ -385,6 +395,7 @@ function TreeNodeRow({
               isLast={i === node.children.length - 1}
               maxLevel={maxLevel}
               showRealNames={showRealNames}
+              onSelectDirect={onSelectDirect}
             />
           ))}
         </div>
