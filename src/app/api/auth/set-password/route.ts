@@ -59,6 +59,11 @@ export async function POST(req: Request) {
         console.error("set-password metadata activation error:", metadataError);
         return NextResponse.json({ error: "Le profil est activé, mais la finalisation de la session a échoué. Veuillez réessayer." }, { status: 500 });
       }
+
+      const { notifyNewReferral } = await import("@/lib/notify-new-referral");
+      notifyNewReferral(user.id).catch((err) =>
+        console.error("notify-new-referral in set-password error:", err)
+      );
     }
 
     return NextResponse.json({ success: true });
