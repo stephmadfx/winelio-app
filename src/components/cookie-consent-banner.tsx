@@ -26,6 +26,11 @@ export function CookieConsentBanner() {
 
   useEffect(() => {
     try {
+      if (navigator.userAgent.includes("WinelioNative/")) {
+        setVisible(false);
+        return;
+      }
+
       setVisible(!localStorage.getItem(CONSENT_KEY));
     } catch {
       setVisible(false);
@@ -66,8 +71,8 @@ export function CookieConsentBanner() {
           <div className="min-w-0">
             <h2 className="text-sm font-bold">Cookies et confidentialité</h2>
             <p className="mt-1 text-xs leading-5 text-winelio-gray dark:text-slate-300 sm:text-sm">
-              Winelio utilise des cookies nécessaires pour sécuriser la connexion et faire fonctionner l&apos;application.
-              Les préférences locales servent aussi à mémoriser votre parcours, comme le parrainage ou la vidéo d&apos;accueil.
+              Winelio utilise uniquement des cookies strictement nécessaires à la connexion et au fonctionnement du service.
+              Aucun cookie publicitaire n&apos;est utilisé et votre activité n&apos;est pas suivie entre des applications ou des sites web.
             </p>
             <Link
               href="/conditions-generales-utilisation"
