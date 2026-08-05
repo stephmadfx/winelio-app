@@ -1,0 +1,59 @@
+# Winelio mobile authenticated navigation
+# E2E_EMAIL et E2E_PASSWORD sont fournis par le runner de test et ne sont pas
+# stockés dans le dépôt.
+
+appId: app.winelio.mobile
+tags:
+  - authenticated
+  - ios
+env:
+  E2E_EMAIL: ${E2E_EMAIL}
+  E2E_PASSWORD: ${E2E_PASSWORD}
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Accepter"
+    timeout: 30000
+- tapOn:
+    text: "Accepter"
+- extendedWaitUntil:
+    visible: "Se connecter"
+    timeout: 30000
+- tapOn: "vous@exemple.com"
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    point: "50%,41%"
+- inputText: ${E2E_PASSWORD}
+- hideKeyboard
+- tapOn:
+    text: "Se connecter"
+    index: 1
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "Recommandez. Gagnez. Grandissez."
+    timeout: 30000
+- assertNotVisible:
+    id: "webapp-error"
+- tapOn: "Recos"
+- extendedWaitUntil:
+    visible: "Recommandations"
+    timeout: 15000
+- tapOn: "Réseau"
+- extendedWaitUntil:
+    visible: "Mon Réseau"
+    timeout: 15000
+- tapOn: "Gains"
+- extendedWaitUntil:
+    visible: "Portefeuille"
+    timeout: 15000
+- tapOn:
+    text: "Fermer"
+    optional: true
+- tapOn: "Profil"
+- extendedWaitUntil:
+    visible: "Mon profil"
+    timeout: 15000
+- tapOn: "Accueil"
+- extendedWaitUntil:
+    visible: "Recommandez. Gagnez. Grandissez."
+    timeout: 15000

@@ -1,0 +1,28 @@
+# Winelio mobile smoke test
+# Valide le chargement de la coque native et l’un des deux états d’authentification.
+
+appId: app.winelio.mobile
+tags:
+  - smoke
+  - ios
+  - android
+---
+- launchApp:
+    clearState: true
+- swipe:
+    direction: DOWN
+    duration: 100
+- extendedWaitUntil:
+    visible:
+      id: "auth-loaded"
+    timeout: 30000
+- assertNotVisible:
+    id: "webapp-error"
+- runFlow:
+    when:
+      visible: "Se connecter"
+    file: flows/guest-login.yaml
+- runFlow:
+    when:
+      visible: "Recommandez. Gagnez. Grandissez."
+    file: flows/authenticated-navigation.yaml

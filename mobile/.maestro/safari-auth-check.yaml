@@ -1,0 +1,26 @@
+appId: com.apple.mobilesafari
+env:
+  E2E_EMAIL: ${E2E_EMAIL}
+  E2E_PASSWORD: ${E2E_PASSWORD}
+---
+- launchApp
+- tapOn:
+    text: "Accepter"
+    optional: true
+- extendedWaitUntil:
+    visible: "Se connecter"
+    timeout: 30000
+- tapOn: "vous@exemple.com"
+- inputText: ${E2E_EMAIL}
+- tapOn: "••••••••"
+- inputText: ${E2E_PASSWORD}
+- hideKeyboard
+- tapOn:
+    text: "Se connecter"
+    index: 1
+- tapOn:
+    text: "Plus tard"
+    optional: true
+- extendedWaitUntil:
+    visible: "Recommandez. Gagnez. Grandissez."
+    timeout: 30000

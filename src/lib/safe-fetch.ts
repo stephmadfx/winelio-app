@@ -18,17 +18,28 @@ export type SafeJsonResult<T = unknown> =
 export async function safeJsonFetch<T = unknown>(
   input: RequestInfo | URL,
   init?: RequestInit,
+  timeoutMs = 15_000,
 ): Promise<SafeJsonResult<T>> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  const abortFromCaller = () => controller.abort();
+  init?.signal?.addEventListener("abort", abortFromCaller, { once: true });
+
   let res: Response;
   try {
-    res = await fetch(input, init);
-  } catch {
+    res = await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
     return {
       ok: false,
       status: 0,
       data: null,
-      error: "Connexion impossible. Vérifie ta connexion et réessaie.",
+      error: error instanceof DOMException && error.name === "AbortError"
+        ? "Le serveur met trop de temps à répondre. Réessaie dans un instant."
+        : "Connexion impossible. Vérifie ta connexion et réessaie.",
     };
+  } finally {
+    window.clearTimeout(timeout);
+    init?.signal?.removeEventListener("abort", abortFromCaller);
   }
 
   let data: unknown = null;

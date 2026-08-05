@@ -231,6 +231,15 @@ Fichiers de reference dans `/doc/` :
 ### Templates email — Charte visuelle obligatoire
 Tout nouvel email doit respecter cette structure :
 
+### Sécurité d'envoi email — Supabase partagé
+
+- **Ne jamais déclencher pour Winelio les emails natifs de Supabase Auth** (`signInWithOtp()`, `resetPasswordForEmail()`, endpoint GoTrue `/auth/v1/otp`, ou équivalent) sans avoir préalablement vérifié la configuration GoTrue réellement active.
+- L'instance Supabase `https://supabase.aide-multimedia.fr` est partagée et a été constatée configurée globalement avec `GOTRUE_SITE_URL=https://lytdeck.app`, `GOTRUE_SMTP_SENDER_NAME=LytDeck` et une allow-list de redirections LytDeck. Un email natif Supabase peut donc afficher LytDeck ou rediriger vers LytDeck, même lorsqu'il est déclenché depuis Winelio.
+- Pour Winelio, générer le jeton côté serveur sans envoyer le template GoTrue, puis envoyer un **email Winelio personnalisé** via le dispatcher `sendEmail()` avec un lien explicite vers `https://winelio.app` et la charte email Winelio.
+- Avant tout envoi réel à un utilisateur, vérifier systématiquement : le destinataire, le nom d'expéditeur, le domaine d'expédition, l'objet, la marque affichée, l'URL finale du bouton et la liste des redirections autorisées.
+- Après l'envoi, vérifier le succès auprès du provider et ne jamais annoncer que l'email est parti sur la seule base de la génération du jeton.
+- Si un lien incorrect est envoyé, générer immédiatement un nouveau jeton pour invalider le précédent avant d'envoyer le lien corrigé.
+
 ```
 fond outer #F0F2F4
   └─ container 520px

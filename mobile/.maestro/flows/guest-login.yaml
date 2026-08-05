@@ -1,0 +1,12 @@
+appId: app.winelio.mobile
+---
+- assertVisible: "Se connecter"
+- assertVisible: "Mot de passe"
+- tapOn:
+    text: "Accepter"
+    optional: true
+- assertVisible: "Code par email"
+- tapOn: "Code par email"
+- assertVisible: "Recevoir un code"
+- tapOn: "Mot de passe"
+- assertVisible: "Se connecter"

@@ -1,0 +1,27 @@
+node_modules/
+.next/
+.env
+.env.local
+.env*.local
+certificates/
+tsconfig.tsbuildinfo
+.superpowers/
+.worktrees/
+backups/
+test-results/
+playwright-report/
+.playwright-cache/
+.DS_Store
+*.log
+
+# Fichiers de production éditoriale sans rapport avec le build mobile.
+outputs/
+doc/notebooklm-winelio/
+
+# Artefacts locaux Expo.
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+mobile/ios/
+mobile/android/

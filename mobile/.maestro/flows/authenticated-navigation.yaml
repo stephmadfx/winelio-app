@@ -1,0 +1,12 @@
+appId: app.winelio.mobile
+---
+- assertVisible: "Accueil"
+- tapOn: "Recommandations"
+- assertVisible: "Recommandations"
+- tapOn: "Réseau"
+- assertVisible: "Mon réseau"
+- tapOn: "Gains"
+- assertVisible: "Mon portefeuille"
+- tapOn: "Profil"
+- assertVisible: "Mon profil"
+- tapOn: "Accueil"
