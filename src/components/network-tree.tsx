@@ -45,11 +45,13 @@ export function NetworkTree({
   totalMembers,
   maxLevel = 5,
   showRealNames = false,
+  realOnly = false,
 }: {
   userId: string;
   totalMembers: number;
   maxLevel?: number;
   showRealNames?: boolean;
+  realOnly?: boolean;
 }) {
   const [roots, setRoots] = useState<TreeNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,23 +62,43 @@ export function NetworkTree({
   const fetchChildren = useCallback(
     async (parentId: string): Promise<TreeNode[]> => {
       const isDirectLevel = parentId === userId;
-      const { data: children } = await supabase
+      let childrenQuery = supabase
         .from("profiles")
         .select("id, first_name, last_name, avatar, city, is_professional, is_demo, onboarding_status, companies!owner_id(category:categories(name))")
         .eq("sponsor_id", parentId);
 
+      if (realOnly) {
+        childrenQuery = childrenQuery
+          .eq("is_demo", false)
+          .not("email", "ilike", "%@winelio-e2e.local")
+          .not("email", "ilike", "%@winelio-scraped.local");
+      }
+
+      const { data: children } = await childrenQuery;
+
       if (!children || children.length === 0) return [];
 
       const childIds = children.map((child) => child.id);
+      let subReferralsQuery = supabase
+        .from("profiles")
+        .select("sponsor_id")
+        .in("sponsor_id", childIds);
+      let commissionsQuery = supabase
+        .from("commission_transactions")
+        .select("user_id, amount, status, is_demo")
+        .in("user_id", childIds);
+
+      if (realOnly) {
+        subReferralsQuery = subReferralsQuery
+          .eq("is_demo", false)
+          .not("email", "ilike", "%@winelio-e2e.local")
+          .not("email", "ilike", "%@winelio-scraped.local");
+        commissionsQuery = commissionsQuery.eq("is_demo", false).eq("status", "EARNED");
+      }
+
       const [{ data: subReferrals }, { data: commissions }, directContactsResult] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("sponsor_id")
-          .in("sponsor_id", childIds),
-        supabase
-          .from("commission_transactions")
-          .select("user_id, amount")
-          .in("user_id", childIds),
+        subReferralsQuery,
+        commissionsQuery,
         isDirectLevel
           ? supabase.from("profiles").select("id, email, phone").in("id", childIds)
           : Promise.resolve({ data: [] as Array<{ id: string; email: string | null; phone: string | null }> }),
@@ -124,7 +146,7 @@ export function NetworkTree({
 
       return nodes;
     },
-    [supabase]
+    [supabase, realOnly, userId]
   );
 
   // Auto-load on mount

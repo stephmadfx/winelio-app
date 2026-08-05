@@ -23,25 +23,50 @@ export default async function AdminRecommandations({
   const pageSize = 25;
 
   let query = supabaseAdmin
-    .from("recommendations")
-    .select(
-      `id, status, amount, created_at,
-       referrer:profiles!referrer_id(first_name, last_name),
-       professional:profiles!professional_id(first_name, last_name),
-       recommendation_steps(id, completed_at)`,
-      { count: "exact" }
-    )
+    .from("recommendations_real")
+    .select("id, status, amount, created_at, referrer_id, professional_id", { count: "exact" })
     .order("created_at", { ascending: false })
     .range((page - 1) * pageSize, page * pageSize - 1);
 
   if (params.status) query = query.eq("status", params.status);
 
-  const { data: recos, count } = await query;
+  const { data: recosRaw, count } = await query;
   const totalPages = Math.ceil((count ?? 0) / pageSize);
+
+  const recommendationIds = (recosRaw ?? []).map((reco) => reco.id);
+  const profileIds = [
+    ...new Set(
+      (recosRaw ?? []).flatMap((reco) => [reco.referrer_id, reco.professional_id]).filter(Boolean)
+    ),
+  ];
+  const [{ data: profiles }, { data: recommendationSteps }] = await Promise.all([
+    profileIds.length
+      ? supabaseAdmin.from("profiles").select("id, first_name, last_name").in("id", profileIds)
+      : Promise.resolve({ data: [] }),
+    recommendationIds.length
+      ? supabaseAdmin
+          .from("recommendation_steps")
+          .select("recommendation_id, completed_at")
+          .in("recommendation_id", recommendationIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+  const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+  const stepsByRecommendation = new Map<string, Array<{ completed_at: string | null }>>();
+  for (const step of recommendationSteps ?? []) {
+    const current = stepsByRecommendation.get(step.recommendation_id) ?? [];
+    current.push({ completed_at: step.completed_at });
+    stepsByRecommendation.set(step.recommendation_id, current);
+  }
+  const recos = (recosRaw ?? []).map((reco) => ({
+    ...reco,
+    referrer: profileById.get(reco.referrer_id) ?? null,
+    professional: profileById.get(reco.professional_id) ?? null,
+    recommendation_steps: stepsByRecommendation.get(reco.id) ?? [],
+  }));
 
   // Compter par statut pour les pills
   const { data: statusCounts } = await supabaseAdmin
-    .from("recommendations")
+    .from("recommendations_real")
     .select("status");
   const countByStatus = (statusCounts ?? []).reduce<Record<string, number>>((acc, r) => {
     acc[r.status] = (acc[r.status] ?? 0) + 1;

@@ -52,6 +52,7 @@ export function NetworkGraph({
   rootLabel,
   maxLevel = 5,
   showRealNames = false,
+  realOnly = false,
 }: {
   userId: string;
   userName: string;
@@ -59,6 +60,7 @@ export function NetworkGraph({
   rootLabel?: string;
   maxLevel?: number;
   showRealNames?: boolean;
+  realOnly?: boolean;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -297,14 +299,16 @@ export function NetworkGraph({
   }, []);
   // ── Single fetch for entire tree ─────────────────
   const fetchTree = useCallback(async (): Promise<GraphNode[]> => {
-    const res = await fetch(`/api/network/tree?userId=${userId}&maxLevel=${maxLevel}`);
+    const params = new URLSearchParams({ userId, maxLevel: String(maxLevel) });
+    if (realOnly) params.set("scope", "real");
+    const res = await fetch(`/api/network/tree?${params.toString()}`);
     if (!res.ok) return [];
     const data = await res.json();
     const children = data.children ?? [];
     // Store raw API data for lazy expansion
     rawTreeRef.current = children;
     return children.map((c: any) => materializeNode(c, 1));
-  }, [userId, maxLevel]);
+  }, [userId, maxLevel, realOnly]);
 
   useEffect(() => {
     (async () => {

@@ -205,5 +205,13 @@ export async function createCommissions(
     });
   }
 
-  await supabaseAdmin.from("commission_transactions").insert(commissions);
+  const { error: insertError } = await supabaseAdmin
+    .from("commission_transactions")
+    .insert(commissions);
+
+  if (insertError) {
+    throw new Error(
+      `Échec de création des commissions pour ${recommendationId}: ${insertError.message}`
+    );
+  }
 }

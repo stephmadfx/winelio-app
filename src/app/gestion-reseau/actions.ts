@@ -415,7 +415,7 @@ export async function adjustCommission(
     throw new Error(`Montant invalide ou hors limite (max ±${MAX_ADJUSTMENT}€)`);
   }
 
-  await supabaseAdmin.from("commission_transactions").insert({
+  const { error } = await supabaseAdmin.from("commission_transactions").insert({
     user_id: userId,
     amount,
     type: COMMISSION_TYPE.MANUAL_ADJUSTMENT,
@@ -424,6 +424,8 @@ export async function adjustCommission(
     recommendation_id: null,
     notes: reason,
   });
+
+  if (error) throw new Error(`Erreur ajustement commission: ${error.message}`);
 
   await recalculateWallet(userId);
   revalidatePath(`/gestion-reseau/utilisateurs/${userId}`);

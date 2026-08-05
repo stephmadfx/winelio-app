@@ -25,6 +25,16 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED:   "Annulée",
 };
 
+const ONGOING_RECOMMENDATION_STATUSES = [
+  "PENDING",
+  "ACCEPTED",
+  "CONTACT_MADE",
+  "MEETING_SCHEDULED",
+  "QUOTE_SUBMITTED",
+  "QUOTE_VALIDATED",
+  "PAYMENT_RECEIVED",
+];
+
 // ─── data fetching ───────────────────────────────────────────────────────────
 
 async function getKPIs() {
@@ -54,7 +64,7 @@ async function getKPIs() {
     supabaseAdmin.from("commissions_real").select("amount").eq("status", "PENDING").neq("type", "platform_winelio"),
     // Recommandations en cours
     supabaseAdmin.from("recommendations_real").select("id", { count: "exact", head: true })
-      .not("status", "in", '("COMPLETED","CANCELLED")'),
+      .in("status", ONGOING_RECOMMENDATION_STATUSES),
     // Retraits en attente
     supabaseAdmin.from("withdrawals_real").select("id", { count: "exact", head: true }).eq("status", "PENDING"),
     // Total Wins distribués

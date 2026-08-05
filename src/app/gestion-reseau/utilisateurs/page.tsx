@@ -31,7 +31,7 @@ export default async function AdminUtilisateurs({
   const sponsorIds = [...new Set((users ?? []).map((u) => u.sponsor_id).filter(Boolean))];
   const { data: sponsorProfiles } = sponsorIds.length
     ? await supabaseAdmin
-        .from("profiles")
+        .from("profiles_real")
         .select("id, first_name, last_name")
         .in("id", sponsorIds)
     : { data: [] };
@@ -44,7 +44,7 @@ export default async function AdminUtilisateurs({
   // Récupère le nb de parrainages directs pour chaque user de la page
   const { data: sponsorCounts } = userIds.length
     ? await supabaseAdmin
-        .from("profiles")
+        .from("profiles_real")
         .select("sponsor_id")
         .in("sponsor_id", userIds)
     : { data: [] };
@@ -59,7 +59,7 @@ export default async function AdminUtilisateurs({
   // Récupérer les companies des users (la vue profiles_real n'expose pas les FKs)
   const { data: userCompanies } = userIds.length
     ? await supabaseAdmin
-        .from("companies")
+        .from("companies_real")
         .select("owner_id, name, siret")
         .in("owner_id", userIds)
     : { data: [] };

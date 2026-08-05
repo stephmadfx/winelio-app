@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ProfessionnelsTable } from "@/components/admin/ProfessionnelsTable";
 import { verifyCompany } from "@/app/gestion-reseau/actions";
-import { fakeLastActive } from "@/lib/fake-last-active";
 
 export default async function AdminProfessionnels() {
   const [{ data: companies }, { data: categories }, { data: recosRaw }] = await Promise.all([
@@ -50,22 +49,24 @@ export default async function AdminProfessionnels() {
   const ownerMap: Record<string, { id: string; first_name: string | null; last_name: string | null; email: string | null }> = {};
   for (const o of owners ?? []) ownerMap[o.id] = o;
 
-  // Enrichir les entreprises : connexion réelle si disponible, sinon date fictive déterministe
+  // Une absence de connexion Auth reste explicite : aucune activité n'est inventée.
   const enriched = (companies ?? []).map((c) => {
     const owner = c.owner_id ? ownerMap[c.owner_id] ?? null : null;
     const realSignIn = owner?.id ? (lastSignInMap[owner.id] ?? null) : null;
     return {
       ...c,
       owner,
-      last_sign_in_at: realSignIn ?? fakeLastActive(c.id),
+      last_sign_in_at: realSignIn,
       finalized_recos_count: recoCountMap[c.id] ?? 0,
     };
   });
 
   // Tri par défaut : connexion la plus récente en premier
-  enriched.sort((a, b) =>
-    new Date(b.last_sign_in_at).getTime() - new Date(a.last_sign_in_at).getTime()
-  );
+  enriched.sort((a, b) => {
+    if (!a.last_sign_in_at) return 1;
+    if (!b.last_sign_in_at) return -1;
+    return new Date(b.last_sign_in_at).getTime() - new Date(a.last_sign_in_at).getTime();
+  });
 
   return (
     <div>
@@ -77,7 +78,7 @@ export default async function AdminProfessionnels() {
           </span>
         </h1>
         <p className="text-gray-500 text-sm mt-1">
-          Annuaire complet des entreprises inscrites sur Winelio
+          Entreprises actives rattachées au réseau réel Winelio
         </p>
       </div>
 

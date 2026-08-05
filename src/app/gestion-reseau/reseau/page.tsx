@@ -39,7 +39,7 @@ export default async function AdminReseau() {
       for (let lvl = 1; lvl <= 5; lvl++) {
         if (currentLevelIds.length === 0) break;
         const { data: lvlMembers } = await supabaseAdmin
-          .from("profiles")
+          .from("profiles_real")
           .select("id")
           .in("sponsor_id", currentLevelIds);
         if (!lvlMembers || lvlMembers.length === 0) break;
@@ -49,39 +49,51 @@ export default async function AdminReseau() {
 
       // Nombre de filleuls directs
       const { count: directCount } = await supabaseAdmin
-        .from("profiles")
+        .from("profiles_real")
         .select("id", { count: "exact", head: true })
         .eq("sponsor_id", profile.id);
 
       // Liste filleuls directs avec stats
       const { data: directReferrals } = await supabaseAdmin
-        .from("profiles")
-        .select(
-          "id, first_name, last_name, city, is_professional, is_demo, created_at, companies!owner_id(category:categories(name))"
-        )
+        .from("profiles_real")
+        .select("id, first_name, last_name, city, is_professional, is_demo, created_at")
         .eq("sponsor_id", profile.id);
+
+      const directIds = (directReferrals ?? []).map((ref) => ref.id);
+      const { data: directCompanies } = directIds.length
+        ? await supabaseAdmin
+            .from("companies_real")
+            .select("owner_id, category_id")
+            .in("owner_id", directIds)
+        : { data: [] };
+      const categoryIds = [
+        ...new Set((directCompanies ?? []).map((company) => company.category_id).filter(Boolean)),
+      ];
+      const { data: categories } = categoryIds.length
+        ? await supabaseAdmin.from("categories").select("id, name").in("id", categoryIds)
+        : { data: [] };
+      const categoryNameById = new Map(
+        (categories ?? []).map((category) => [category.id, category.name])
+      );
+      const companyCategoryByOwner = new Map(
+        (directCompanies ?? []).map((company) => [
+          company.owner_id,
+          company.category_id ? categoryNameById.get(company.category_id) ?? null : null,
+        ])
+      );
 
       const directWithStats = await Promise.all(
         (directReferrals ?? []).map(async (ref) => {
           const { count: subCount } = await supabaseAdmin
-            .from("profiles")
+            .from("profiles_real")
             .select("id", { count: "exact", head: true })
             .eq("sponsor_id", ref.id);
 
           const { data: commData } = await supabaseAdmin
-            .from("commission_transactions")
+            .from("commissions_real")
             .select("amount")
-            .eq("user_id", ref.id);
-
-          const rawCompany = Array.isArray(ref.companies)
-            ? ref.companies[0] ?? null
-            : (ref.companies ?? null);
-          const rawCat = rawCompany
-            ? (rawCompany as Record<string, unknown>).category
-            : null;
-          const catName = Array.isArray(rawCat)
-            ? (rawCat[0] as { name: string } | undefined)?.name ?? null
-            : (rawCat as { name: string } | null)?.name ?? null;
+            .eq("user_id", ref.id)
+            .eq("status", "EARNED");
 
           return {
             id: ref.id,
@@ -91,7 +103,7 @@ export default async function AdminReseau() {
             is_professional:
               (ref as { is_professional?: boolean }).is_professional ?? false,
             is_demo: (ref as { is_demo?: boolean }).is_demo ?? false,
-            company_category: catName,
+            company_category: companyCategoryByOwner.get(ref.id) ?? null,
             created_at: ref.created_at,
             sub_referrals: subCount ?? 0,
             total_commissions: (commData ?? []).reduce(
@@ -104,17 +116,18 @@ export default async function AdminReseau() {
 
       // Commissions gagnées par cette racine (depuis son réseau)
       const { data: commData } = await supabaseAdmin
-        .from("commission_transactions")
-        .select("amount, created_at")
+        .from("commissions_real")
+        .select("amount, earned_at")
         .eq("user_id", profile.id)
-        .not("level", "is", null);
+        .eq("status", "EARNED")
+        .gt("level", 0);
 
       const totalCommissions = (commData ?? []).reduce(
         (s, c) => s + (c.amount ?? 0),
         0
       );
       const commissionsThisMonth = (commData ?? [])
-        .filter((c) => c.created_at >= firstOfMonth)
+        .filter((c) => c.earned_at && c.earned_at >= firstOfMonth)
         .reduce((s, c) => s + (c.amount ?? 0), 0);
 
       return {

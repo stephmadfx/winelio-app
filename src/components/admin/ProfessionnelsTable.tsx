@@ -23,7 +23,7 @@ type Company = {
   siret: string | null;
   is_verified: boolean;
   created_at: string;
-  last_sign_in_at: string;
+  last_sign_in_at: string | null;
   finalized_recos_count: number;
   owner: OwnerRow | OwnerRow[] | null;
   category: CategoryRow | CategoryRow[] | null;

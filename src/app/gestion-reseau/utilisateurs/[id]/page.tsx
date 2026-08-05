@@ -20,22 +20,25 @@ export default async function AdminUserDetail({
         .from("profiles")
         .select("*, sponsor:profiles!sponsor_id(first_name, last_name)")
         .eq("id", id)
+        .eq("is_demo", false)
+        .not("email", "ilike", "%@winelio-e2e.local")
+        .not("email", "ilike", "%@winelio-scraped.local")
         .single(),
       supabaseAdmin
-        .from("user_wallet_summaries")
+        .from("wallet_summaries_real")
         .select("*")
         .eq("user_id", id)
         .single(),
       supabaseAdmin
-        .from("recommendations")
+        .from("recommendations_real")
         .select("id", { count: "exact", head: true })
         .eq("referrer_id", id),
       supabaseAdmin
-        .from("profiles")
+        .from("profiles_real")
         .select("id", { count: "exact", head: true })
         .eq("sponsor_id", id),
       supabaseAdmin
-        .from("companies")
+        .from("companies_real")
         .select("name, legal_name, siret, siren, vat_number, email, phone, website, address, city, postal_code, is_verified")
         .eq("owner_id", id)
         .maybeSingle(),

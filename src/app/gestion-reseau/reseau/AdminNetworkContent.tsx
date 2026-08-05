@@ -465,6 +465,7 @@ function RootView({ root }: { root: RootData }) {
             rootLabel={root.first_name ? capitalizeName(root.first_name) : displayName}
             maxLevel={999}
             showRealNames={true}
+            realOnly={true}
           />
         </CardContent>
       </Card>
@@ -474,7 +475,13 @@ function RootView({ root }: { root: RootData }) {
         <CardContent className="p-4 sm:p-6">
           <h3 className="text-base font-semibold text-winelio-dark mb-1">Liste détaillée</h3>
           <p className="text-xs text-muted-foreground mb-4">Réseau complet — tous niveaux</p>
-          <NetworkTree userId={root.id} totalMembers={root.networkSize} maxLevel={999} showRealNames={true} />
+          <NetworkTree
+            userId={root.id}
+            totalMembers={root.networkSize}
+            maxLevel={999}
+            showRealNames={true}
+            realOnly={true}
+          />
         </CardContent>
       </Card>
     </div>

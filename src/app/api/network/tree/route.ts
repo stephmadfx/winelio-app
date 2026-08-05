@@ -10,6 +10,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get("userId") ?? user.id;
   const maxLevel = parseInt(searchParams.get("maxLevel") ?? "5", 10);
+  const realOnly = searchParams.get("scope") === "real";
+
+  if (realOnly && user.app_metadata?.role !== "super_admin") {
+    return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+  }
 
   // Anti-IDOR check
   if (userId !== user.id && user.app_metadata?.role !== "super_admin") {
@@ -29,10 +34,19 @@ export async function GET(request: Request) {
   for (let level = 1; level <= maxLevel; level++) {
     if (currentParentIds.length === 0) break;
 
-    const { data: kids } = await supabaseAdmin
+    let kidsQuery = supabaseAdmin
       .from("profiles")
       .select("id, sponsor_id, first_name, last_name, email, phone, avatar, city, is_professional, is_demo, onboarding_status, companies!owner_id(category:categories(name))")
       .in("sponsor_id", currentParentIds);
+
+    if (realOnly) {
+      kidsQuery = kidsQuery
+        .eq("is_demo", false)
+        .not("email", "ilike", "%@winelio-e2e.local")
+        .not("email", "ilike", "%@winelio-scraped.local");
+    }
+
+    const { data: kids } = await kidsQuery;
 
     if (!kids || kids.length === 0) break;
 

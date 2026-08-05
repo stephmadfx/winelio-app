@@ -17,6 +17,13 @@ export default async function AdminRecoDetail({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) notFound();
 
+  const { data: realRecommendation } = await supabaseAdmin
+    .from("recommendations_real")
+    .select("id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!realRecommendation) notFound();
+
   const [{ data: reco }, { data: annotationsRaw }] = await Promise.all([
     supabaseAdmin
       .from("recommendations")
