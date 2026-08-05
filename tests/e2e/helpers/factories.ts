@@ -21,7 +21,9 @@ export async function createTestUser(opts: {
   isProfessional?: boolean;
   isFounder?: boolean;
   termsAccepted?: boolean;
+  phone?: string;
 }): Promise<TestUser> {
+  const phone = opts.phone ?? `06${Math.floor(Math.random() * 100_000_000).toString().padStart(8, "0")}`;
   const { data: auth, error: authErr } = await db().auth.admin.createUser({
     email: opts.email,
     email_confirm: true,
@@ -30,6 +32,7 @@ export async function createTestUser(opts: {
       app: "winelio",
       first_name: opts.firstName ?? "E2E",
       last_name:  opts.lastName  ?? "Test",
+      phone,
     },
   });
   if (authErr || !auth.user) throw new Error(`createUser ${opts.email}: ${authErr?.message}`);
@@ -41,6 +44,7 @@ export async function createTestUser(opts: {
     .update({
       first_name:       opts.firstName ?? "E2E",
       last_name:        opts.lastName ?? "Test",
+      phone,
       sponsor_id:       opts.sponsorId ?? null,
       is_professional:  opts.isProfessional ?? false,
       is_founder:       opts.isFounder ?? false,

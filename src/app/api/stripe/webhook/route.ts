@@ -3,7 +3,7 @@ import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createCommissions } from "@/lib/commission";
 import { notifyReferrerCommissionCredited } from "@/lib/notify-commission-credited";
-import { recalculateWallet } from "@/lib/wallet";
+import { unlockRecommendationCommissions } from "@/lib/recommendation-review";
 import type Stripe from "stripe";
 
 export async function POST(req: Request) {
@@ -22,7 +22,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Signature invalide" }, { status: 400 });
   }
 
-  if (event.type !== "checkout.session.completed") {
+  if (![
+    "checkout.session.completed",
+    "checkout.session.async_payment_succeeded",
+  ].includes(event.type)) {
     return NextResponse.json({ received: true });
   }
 
@@ -31,6 +34,10 @@ export async function POST(req: Request) {
 
   if (!recommendationId) {
     return NextResponse.json({ error: "recommendation_id absent" }, { status: 400 });
+  }
+
+  if (session.payment_status !== "paid") {
+    return NextResponse.json({ received: true, skipped: "payment_not_paid" });
   }
 
   // ── Idempotence : vérifier que la session n'est pas déjà payée ───────────────
@@ -45,7 +52,8 @@ export async function POST(req: Request) {
   }
 
   if (paymentSession.status === "paid") {
-    return NextResponse.json({ received: true, skipped: "already_paid" });
+    const payout = await unlockRecommendationCommissions(recommendationId);
+    return NextResponse.json({ received: true, reconciled: "already_paid", payout });
   }
 
   // ── Récupérer la recommandation ──────────────────────────────────────────────
@@ -74,14 +82,27 @@ export async function POST(req: Request) {
   );
 
   // ── Marquer la session comme payée ───────────────────────────────────────────
-  await supabaseAdmin
+  const { data: markedPaid, error: paymentUpdateError } = await supabaseAdmin
     .from("stripe_payment_sessions")
     .update({ status: "paid", paid_at: new Date().toISOString() })
-    .eq("id", paymentSession.id);
+    .eq("id", paymentSession.id)
+    .neq("status", "paid")
+    .select("id")
+    .maybeSingle();
+
+  if (paymentUpdateError) {
+    throw new Error(`Échec marquage paiement Stripe: ${paymentUpdateError.message}`);
+  }
+  if (!markedPaid) {
+    const payout = await unlockRecommendationCommissions(recommendationId);
+    return NextResponse.json({ received: true, reconciled: "concurrent_webhook", payout });
+  }
+
+  const payout = await unlockRecommendationCommissions(reco.id);
 
   await notifyReferrerCommissionCredited(reco.id).catch((err) =>
     console.error("[stripe-webhook] Échec notification cagnotte:", err)
   );
 
-  return NextResponse.json({ received: true });
+  return NextResponse.json({ received: true, payout });
 }

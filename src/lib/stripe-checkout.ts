@@ -8,29 +8,33 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app";
 /**
  * Crée une Stripe Checkout Session pour la commission d'une recommandation.
  * Idempotente : retourne l'URL existante si une session pending existe déjà.
- * Appelée depuis advanceRecommendationStep() quand order_index === 7.
+ * Appelée à l'étape 8, quand l'affaire est terminée.
  */
 export async function createStripeCheckoutSession(
   recommendationId: string
 ): Promise<string> {
   // ── 1. Vérification idempotente ──────────────────────────────────────────────
-  const { data: paid } = await supabaseAdmin
+  const { data: paid, error: paidError } = await supabaseAdmin
     .from("stripe_payment_sessions")
     .select("id")
     .eq("recommendation_id", recommendationId)
     .eq("status", "paid")
     .maybeSingle();
 
+  if (paidError) throw new Error(`Erreur lecture paiement existant: ${paidError.message}`);
+
   if (paid) {
     return `${APP_URL}?commission=already-paid`;
   }
 
-  const { data: existing } = await supabaseAdmin
+  const { data: existing, error: existingError } = await supabaseAdmin
     .from("stripe_payment_sessions")
     .select("stripe_session_id")
     .eq("recommendation_id", recommendationId)
     .eq("status", "pending")
     .maybeSingle();
+
+  if (existingError) throw new Error(`Erreur lecture session existante: ${existingError.message}`);
 
   if (existing) {
     const existingSession = await stripe.checkout.sessions.retrieve(
@@ -40,10 +44,11 @@ export async function createStripeCheckoutSession(
       return existingSession.url;
     }
     // Session expirée → marquer expired et en créer une nouvelle
-    await supabaseAdmin
+    const { error: expireError } = await supabaseAdmin
       .from("stripe_payment_sessions")
       .update({ status: "expired" })
       .eq("stripe_session_id", existing.stripe_session_id);
+    if (expireError) throw new Error(`Erreur expiration session: ${expireError.message}`);
   }
 
   // ── 2. Récupérer la recommandation ───────────────────────────────────────────

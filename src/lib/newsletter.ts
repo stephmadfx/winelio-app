@@ -137,15 +137,13 @@ export const resolveNewsletterRecipients = async (
     if (filters.onlyActive !== false) query = query.eq("is_active", true);
   }
 
-  if (excludedRecipientIds.length > 0) {
-    query = query.not("id", "in", `(${excludedRecipientIds.join(",")})`);
-  }
-
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
+  const excludedIds = new Set(excludedRecipientIds);
   const byEmail = new Map<string, Recipient>();
   for (const profile of (data ?? []) as ProfileNewsletterRow[]) {
+    if (excludedIds.has(profile.id)) continue;
     const email = String(profile.email ?? "").toLowerCase();
     if (!EMAIL_RE.test(email)) continue;
     if (isExcludedRecipientEmail(email)) continue;

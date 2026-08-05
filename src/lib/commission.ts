@@ -68,6 +68,19 @@ export async function createCommissions(
   amount: number,
   planId: string | null
 ): Promise<void> {
+  const { data: recommendation, error: recommendationError } = await supabaseAdmin
+    .from("recommendations")
+    .select("is_demo")
+    .eq("id", recommendationId)
+    .single();
+
+  if (recommendationError || !recommendation) {
+    throw new Error(
+      `Impossible de déterminer le périmètre de la recommandation ${recommendationId}: ${recommendationError?.message ?? "introuvable"}`
+    );
+  }
+  const isDemo = Boolean(recommendation.is_demo);
+
   // Garde idempotente (via supabaseAdmin pour voir toutes les commissions, pas juste celles de l'user)
   const { count } = await supabaseAdmin
     .from("commission_transactions")
@@ -207,7 +220,7 @@ export async function createCommissions(
 
   const { error: insertError } = await supabaseAdmin
     .from("commission_transactions")
-    .insert(commissions);
+    .insert(commissions.map((commission) => ({ ...commission, is_demo: isDemo })));
 
   if (insertError) {
     throw new Error(

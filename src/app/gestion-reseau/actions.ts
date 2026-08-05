@@ -19,6 +19,40 @@ async function assertSuperAdmin() {
   return user;
 }
 
+const assertRealProfile = async (userId: string) => {
+  const { data, error } = await supabaseAdmin
+    .from("profiles_real")
+    .select("id")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) throw new Error(`Erreur lecture utilisateur: ${error.message}`);
+  if (!data) throw new Error("Utilisateur réel introuvable");
+};
+
+const assertRealRecommendation = async (recommendationId: string) => {
+  const { data, error } = await supabaseAdmin
+    .from("recommendations_real")
+    .select("id")
+    .eq("id", recommendationId)
+    .maybeSingle();
+
+  if (error) throw new Error(`Erreur lecture recommandation: ${error.message}`);
+  if (!data) throw new Error("Recommandation réelle introuvable");
+};
+
+const assertRealWithdrawal = async (withdrawalId: string) => {
+  const { data, error } = await supabaseAdmin
+    .from("withdrawals_real")
+    .select("id, user_id, status")
+    .eq("id", withdrawalId)
+    .maybeSingle();
+
+  if (error) throw new Error(`Erreur lecture retrait: ${error.message}`);
+  if (!data) throw new Error("Retrait réel introuvable");
+  return data;
+};
+
 async function assertBugDeletePermission() {
   const user = await assertSuperAdmin();
   const { data: profile, error } = await supabaseAdmin
@@ -64,32 +98,51 @@ export async function advanceRecommendationStep(
 ) {
   await assertSuperAdmin();
 
-  const { error: stepError } = await supabaseAdmin
+  await assertRealRecommendation(recommendationId);
+
+  const { data: stepRow, error: stepReadError } = await supabaseAdmin
+    .from("recommendation_steps")
+    .select("id, completed_at, step:steps(order_index)")
+    .eq("id", stepId)
+    .eq("recommendation_id", recommendationId)
+    .maybeSingle();
+
+  if (stepReadError) throw new Error(`Erreur lecture étape: ${stepReadError.message}`);
+  if (!stepRow) throw new Error("Étape introuvable pour cette recommandation");
+
+  const stepData = Array.isArray(stepRow.step) ? stepRow.step[0] : stepRow.step;
+  const orderIndex = (stepData as { order_index: number } | null | undefined)?.order_index;
+  if (!orderIndex) throw new Error("Ordre de l'étape introuvable");
+
+  if (stepRow.completed_at) return;
+
+  if (orderIndex === 8) {
+    await createStripeCheckoutSession(recommendationId);
+  }
+
+  const { data: updatedStep, error: stepError } = await supabaseAdmin
     .from("recommendation_steps")
     .update({ completed_at: new Date().toISOString() })
-    .eq("id", stepId);
+    .eq("id", stepId)
+    .eq("recommendation_id", recommendationId)
+    .is("completed_at", null)
+    .select("id")
+    .maybeSingle();
 
   if (stepError) throw new Error(`Erreur mise à jour étape: ${stepError.message}`);
+  if (!updatedStep) throw new Error("Cette étape a déjà été mise à jour");
 
-  // Récupérer l'order_index de l'étape validée
-  const { data: stepRow } = await supabaseAdmin
-    .from("recommendation_steps")
-    .select("step:steps(order_index)")
-    .eq("id", stepId)
-    .single();
+  const status = VALID_STATUSES[orderIndex - 1];
+  if (!status) throw new Error("Statut cible introuvable");
 
-  const stepData = Array.isArray(stepRow?.step) ? stepRow.step[0] : stepRow?.step;
-  const orderIndex = (stepData as { order_index: number } | null | undefined)?.order_index;
+  const { error: recommendationError } = await supabaseAdmin
+    .from("recommendations")
+    .update({ status })
+    .eq("id", recommendationId)
+    .eq("is_demo", false);
 
-  if (orderIndex === 7) {
-    // Étape 7 = "Affaire terminée" : le pro reçoit un lien Stripe Checkout
-    // pour régler volontairement sa commission d'intermédiation Winelio.
-    // Aucun débit automatique n'est lancé depuis la carte sauvegardée.
-    try {
-      await createStripeCheckoutSession(recommendationId);
-    } catch (err) {
-      console.error("[Stripe] Erreur création session checkout:", err);
-    }
+  if (recommendationError) {
+    throw new Error(`Erreur mise à jour recommandation: ${recommendationError.message}`);
   }
 
   revalidatePath(`/gestion-reseau/recommandations/${recommendationId}`);
@@ -127,10 +180,18 @@ export async function toggleRecommendationStatus(
     throw new Error(`Statut invalide: ${newStatus}`);
   }
 
-  await supabaseAdmin
+  await assertRealRecommendation(recommendationId);
+
+  const { data: updated, error } = await supabaseAdmin
     .from("recommendations")
     .update({ status: newStatus })
-    .eq("id", recommendationId);
+    .eq("id", recommendationId)
+    .eq("is_demo", false)
+    .select("id")
+    .maybeSingle();
+
+  if (error) throw new Error(`Erreur mise à jour recommandation: ${error.message}`);
+  if (!updated) throw new Error("Recommandation non mise à jour");
 
   revalidatePath(`/gestion-reseau/recommandations/${recommendationId}`);
   revalidatePath("/gestion-reseau/recommandations");
@@ -411,8 +472,14 @@ export async function adjustCommission(
 ) {
   await assertSuperAdmin();
 
-  if (typeof amount !== "number" || isNaN(amount) || Math.abs(amount) > MAX_ADJUSTMENT) {
+  await assertRealProfile(userId);
+
+  if (typeof amount !== "number" || !Number.isFinite(amount) || amount === 0 || Math.abs(amount) > MAX_ADJUSTMENT) {
     throw new Error(`Montant invalide ou hors limite (max ±${MAX_ADJUSTMENT}€)`);
+  }
+  const trimmedReason = reason.trim();
+  if (trimmedReason.length < 3 || trimmedReason.length > 500) {
+    throw new Error("Le motif doit contenir entre 3 et 500 caractères");
   }
 
   const { error } = await supabaseAdmin.from("commission_transactions").insert({
@@ -422,7 +489,8 @@ export async function adjustCommission(
     level: 0,
     status: COMMISSION_STATUS.EARNED,
     recommendation_id: null,
-    notes: reason,
+    notes: trimmedReason,
+    is_demo: false,
   });
 
   if (error) throw new Error(`Erreur ajustement commission: ${error.message}`);
@@ -438,7 +506,7 @@ export async function verifyCompany(companyId: string, verified: boolean) {
 
   // 1. Récupérer l'owner et la catégorie de l'entreprise avant mise à jour
   const { data: company, error: getCompanyError } = await supabaseAdmin
-    .from("companies")
+    .from("companies_real")
     .select("owner_id, category_id, is_verified, category:categories!category_id(name)")
     .eq("id", companyId)
     .single();
@@ -474,9 +542,7 @@ export async function verifyCompany(companyId: string, verified: boolean) {
         })
         .eq("id", company.owner_id);
 
-      if (profileError) {
-        console.error("Erreur lors de la mise à jour du profil dans verifyCompany:", profileError);
-      }
+      if (profileError) throw new Error(`Erreur mise à jour profil: ${profileError.message}`);
 
       // Si l'utilisateur n'était pas déjà pro, notifier le parrain de niveau 1
       if (!wasAlreadyPro) {
@@ -502,18 +568,24 @@ export async function verifyCompany(companyId: string, verified: boolean) {
 // ─── Utilisateurs ─────────────────────────────────────────────────────────────
 
 export async function suspendUser(userId: string) {
-  await assertSuperAdmin();
+  const admin = await assertSuperAdmin();
+  if (admin.id === userId) throw new Error("Impossible de suspendre votre propre compte");
+  await assertRealProfile(userId);
+
+  const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+    ban_duration: "876600h",
+  });
+  if (authError) throw new Error(`Erreur suspension Auth: ${authError.message}`);
 
   const { error } = await supabaseAdmin
     .from("profiles")
     .update({ is_active: false })
     .eq("id", userId);
 
-  if (error) throw new Error(`Erreur suspension utilisateur: ${error.message}`);
-
-  await supabaseAdmin.auth.admin.updateUserById(userId, {
-    ban_duration: "876600h",
-  });
+  if (error) {
+    await supabaseAdmin.auth.admin.updateUserById(userId, { ban_duration: "none" });
+    throw new Error(`Erreur suspension utilisateur: ${error.message}`);
+  }
 
   revalidatePath(`/gestion-reseau/utilisateurs/${userId}`);
   revalidatePath("/gestion-reseau/utilisateurs");
@@ -521,17 +593,22 @@ export async function suspendUser(userId: string) {
 
 export async function reactivateUser(userId: string) {
   await assertSuperAdmin();
+  await assertRealProfile(userId);
+
+  const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+    ban_duration: "none",
+  });
+  if (authError) throw new Error(`Erreur réactivation Auth: ${authError.message}`);
 
   const { error } = await supabaseAdmin
     .from("profiles")
     .update({ is_active: true })
     .eq("id", userId);
 
-  if (error) throw new Error(`Erreur réactivation utilisateur: ${error.message}`);
-
-  await supabaseAdmin.auth.admin.updateUserById(userId, {
-    ban_duration: "none",
-  });
+  if (error) {
+    await supabaseAdmin.auth.admin.updateUserById(userId, { ban_duration: "876600h" });
+    throw new Error(`Erreur réactivation utilisateur: ${error.message}`);
+  }
 
   revalidatePath(`/gestion-reseau/utilisateurs/${userId}`);
   revalidatePath("/gestion-reseau/utilisateurs");
@@ -542,22 +619,19 @@ export async function reactivateUser(userId: string) {
 export async function validateWithdrawal(withdrawalId: string) {
   await assertSuperAdmin();
 
-  const { data: w } = await supabaseAdmin
-    .from("withdrawals")
-    .select("user_id, status")
-    .eq("id", withdrawalId)
-    .single();
-
-  if (!w) throw new Error("Retrait introuvable");
+  const w = await assertRealWithdrawal(withdrawalId);
   if (w.status !== WITHDRAWAL_STATUS.PENDING) throw new Error("Ce retrait n'est pas en attente");
 
-  const { error } = await supabaseAdmin
+  const { data: updated, error } = await supabaseAdmin
     .from("withdrawals")
     .update({ status: WITHDRAWAL_STATUS.PROCESSING })
     .eq("id", withdrawalId)
-    .eq("status", WITHDRAWAL_STATUS.PENDING);
+    .eq("status", WITHDRAWAL_STATUS.PENDING)
+    .select("id")
+    .maybeSingle();
 
   if (error) throw new Error(`Erreur validation retrait: ${error.message}`);
+  if (!updated) throw new Error("Le retrait a déjà changé de statut");
 
   await recalculateWallet(w.user_id);
   revalidatePath("/gestion-reseau/retraits");
@@ -566,22 +640,19 @@ export async function validateWithdrawal(withdrawalId: string) {
 export async function rejectWithdrawal(withdrawalId: string, reason: string) {
   await assertSuperAdmin();
 
-  const { data: w } = await supabaseAdmin
-    .from("withdrawals")
-    .select("user_id, status")
-    .eq("id", withdrawalId)
-    .single();
-
-  if (!w) throw new Error("Retrait introuvable");
+  const w = await assertRealWithdrawal(withdrawalId);
   if (w.status !== WITHDRAWAL_STATUS.PENDING) throw new Error("Ce retrait n'est pas en attente");
 
-  const { error } = await supabaseAdmin
+  const { data: updated, error } = await supabaseAdmin
     .from("withdrawals")
     .update({ status: WITHDRAWAL_STATUS.REJECTED, rejection_reason: reason })
     .eq("id", withdrawalId)
-    .eq("status", WITHDRAWAL_STATUS.PENDING);
+    .eq("status", WITHDRAWAL_STATUS.PENDING)
+    .select("id")
+    .maybeSingle();
 
   if (error) throw new Error(`Erreur rejet retrait: ${error.message}`);
+  if (!updated) throw new Error("Le retrait a déjà changé de statut");
 
   await recalculateWallet(w.user_id);
   revalidatePath("/gestion-reseau/retraits");
@@ -590,22 +661,19 @@ export async function rejectWithdrawal(withdrawalId: string, reason: string) {
 export async function markWithdrawalPaid(withdrawalId: string) {
   await assertSuperAdmin();
 
-  const { data: w } = await supabaseAdmin
-    .from("withdrawals")
-    .select("user_id, status")
-    .eq("id", withdrawalId)
-    .single();
-
-  if (!w) throw new Error("Retrait introuvable");
+  const w = await assertRealWithdrawal(withdrawalId);
   if (w.status !== WITHDRAWAL_STATUS.PROCESSING) throw new Error("Ce retrait n'est pas en cours de traitement");
 
-  const { error } = await supabaseAdmin
+  const { data: updated, error } = await supabaseAdmin
     .from("withdrawals")
-    .update({ status: WITHDRAWAL_STATUS.COMPLETED })
+    .update({ status: WITHDRAWAL_STATUS.COMPLETED, processed_at: new Date().toISOString() })
     .eq("id", withdrawalId)
-    .eq("status", WITHDRAWAL_STATUS.PROCESSING);
+    .eq("status", WITHDRAWAL_STATUS.PROCESSING)
+    .select("id")
+    .maybeSingle();
 
   if (error) throw new Error(`Erreur marquage retrait payé: ${error.message}`);
+  if (!updated) throw new Error("Le retrait a déjà changé de statut");
 
   await recalculateWallet(w.user_id);
   revalidatePath("/gestion-reseau/retraits");

@@ -42,6 +42,17 @@ export async function POST(req: Request) {
   const body = (await req.json()) as Body;
   const currentUserId = user.id;
 
+  const { data: currentProfile, error: profileError } = await supabaseAdmin
+    .schema(SCHEMA)
+    .from("profiles")
+    .select("is_demo")
+    .eq("id", currentUserId)
+    .single();
+
+  if (profileError || !currentProfile) {
+    return NextResponse.json({ error: "Profil utilisateur introuvable" }, { status: 404 });
+  }
+
   let contactId = body.selectedContactId;
 
   if (body.selfForMe && body.selfProfile) {
@@ -100,6 +111,7 @@ export async function POST(req: Request) {
       project_description: body.description,
       urgency_level: body.urgency,
       status: "PENDING",
+      is_demo: Boolean(currentProfile.is_demo),
     })
     .select("id")
     .single();
