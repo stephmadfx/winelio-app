@@ -20,6 +20,12 @@
       "android": {
         "buildType": "app-bundle"
       }
+    },
+    "production-resubmission": {
+      "environment": "production",
+      "android": {
+        "buildType": "app-bundle"
+      }
     }
   },
   "submit": {
