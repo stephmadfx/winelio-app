@@ -6,23 +6,24 @@ appId: app.winelio.mobile
 tags:
   - authenticated
   - ios
-env:
-  E2E_EMAIL: ${E2E_EMAIL}
-  E2E_PASSWORD: ${E2E_PASSWORD}
 ---
 - launchApp
-- extendedWaitUntil:
-    visible: "Accepter"
-    timeout: 30000
-- tapOn:
-    text: "Accepter"
+- runFlow:
+    when:
+      visible: "Accepter"
+    commands:
+      - tapOn:
+          text: "Accepter"
 - extendedWaitUntil:
     visible: "Se connecter"
     timeout: 30000
-- tapOn: "vous@exemple.com"
+- tapOn:
+    id: "email-pw"
+- eraseText
 - inputText: ${E2E_EMAIL}
 - tapOn:
-    point: "50%,41%"
+    id: "password"
+- eraseText
 - inputText: ${E2E_PASSWORD}
 - hideKeyboard
 - tapOn:
