@@ -82,7 +82,9 @@ export async function POST(request: Request) {
         ? await supabaseAdmin.from("profiles").select("first_name, last_name").eq("id", profile.sponsor_id).maybeSingle()
         : { data: null };
       const sponsorName = [sponsor?.first_name, sponsor?.last_name].filter(Boolean).join(" ") || "Votre parrain";
-      const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
+      // La séquence peut être exécutée depuis dev2, mais un destinataire ne doit
+      // jamais recevoir un lien de préproduction.
+      const appUrl = (process.env.PENDING_ACCOUNT_REMINDER_APP_URL || "https://winelio.app").replace(/\/$/, "");
       const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
         type: "magiclink",
         email: profile.email,
