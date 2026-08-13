@@ -22,6 +22,8 @@ interface StepContactProps {
   setContactErrors: (e: Record<string, string>) => void;
   wantsToJoin: boolean;
   setWantsToJoin: (v: boolean) => void;
+  thirdPartyConsent: boolean;
+  setThirdPartyConsent: (v: boolean) => void;
 }
 
 const CheckIcon = () => (
@@ -80,16 +82,49 @@ const JoinNetworkCheckbox = ({
   </label>
 );
 
+const ThirdPartyConsentCheckbox = ({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) => (
+  <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-winelio-orange/20 bg-winelio-orange/5 p-4">
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={(e) => onChange(e.target.checked)}
+      className="sr-only"
+      required
+    />
+    <div
+      aria-hidden="true"
+      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-all ${
+        checked
+          ? "border-winelio-orange bg-gradient-to-br from-winelio-orange to-winelio-amber"
+          : "border-winelio-orange/50 bg-white"
+      }`}
+    >
+      {checked && <CheckIcon />}
+    </div>
+    <span className="text-sm leading-relaxed text-winelio-dark">
+      Je confirme avoir obtenu le consentement explicite de cette personne pour transmettre ses coordonnées à Winelio et au professionnel recommandé afin d&apos;être contactée au sujet de sa demande. <span className="font-semibold text-winelio-orange">Obligatoire</span>
+    </span>
+  </label>
+);
+
 export const StepContact = ({
   contacts, selfProfile, selfForMe, setSelfForMe,
   selectedContactId, setSelectedContactId,
   createContact, setCreateContact,
   contactForm, setContactForm, contactErrors, setContactErrors,
   wantsToJoin, setWantsToJoin,
+  thirdPartyConsent, setThirdPartyConsent,
 }: StepContactProps) => {
   const resetContactForm = () => {
     setCreateContact(false);
     setContactErrors({});
+    setThirdPartyConsent(false);
     setContactForm({ first_name: "", last_name: "", email: "", phone: "", country_code: "+33", address: "", city: "", postal_code: "" });
   };
 
@@ -111,7 +146,7 @@ export const StepContact = ({
             <>
               <p className="text-xs font-semibold uppercase tracking-widest text-winelio-gray/60">Contacts existants</p>
               {contacts.map((c) => (
-                <button key={c.id} onClick={() => { setSelectedContactId(c.id); setSelfForMe(false); setWantsToJoin(false); }}
+                <button key={c.id} onClick={() => { setSelectedContactId(c.id); setSelfForMe(false); setWantsToJoin(false); setThirdPartyConsent(false); }}
                   className={`w-full flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition-all cursor-pointer ${
                     selectedContactId === c.id
                       ? "border-winelio-orange bg-winelio-orange/5 shadow-sm shadow-winelio-orange/10"
@@ -126,13 +161,16 @@ export const StepContact = ({
                 </button>
               ))}
               {selectedContactId && contacts.some((c) => c.id === selectedContactId) && (
-                <JoinNetworkCheckbox checked={wantsToJoin} onChange={setWantsToJoin} />
+                <>
+                  <ThirdPartyConsentCheckbox checked={thirdPartyConsent} onChange={setThirdPartyConsent} />
+                  <JoinNetworkCheckbox checked={wantsToJoin} onChange={setWantsToJoin} />
+                </>
               )}
               <Separator />
             </>
           )}
 
-          <button onClick={() => { setCreateContact(true); setSelectedContactId(null); setSelfForMe(false); setWantsToJoin(false); }}
+          <button onClick={() => { setCreateContact(true); setSelectedContactId(null); setSelfForMe(false); setWantsToJoin(false); setThirdPartyConsent(false); }}
             className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-winelio-orange/40 px-5 py-4 text-sm font-semibold text-winelio-orange hover:border-winelio-orange hover:bg-winelio-orange/5 transition-all cursor-pointer">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -142,7 +180,7 @@ export const StepContact = ({
 
           <Separator />
 
-          <button onClick={() => { setSelfForMe(!selfForMe); setSelectedContactId(null); }}
+          <button onClick={() => { setSelfForMe(!selfForMe); setSelectedContactId(null); setThirdPartyConsent(false); }}
             className={`w-full flex items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all cursor-pointer ${
               selfForMe
                 ? "border-winelio-orange bg-winelio-orange/5 shadow-sm shadow-winelio-orange/10"
@@ -208,6 +246,7 @@ export const StepContact = ({
                 placeholder="75000" className={inputCls(!!contactErrors.postal_code)} />
             </Field>
           </div>
+          <ThirdPartyConsentCheckbox checked={thirdPartyConsent} onChange={setThirdPartyConsent} />
           <JoinNetworkCheckbox checked={wantsToJoin} onChange={setWantsToJoin} />
         </div>
       )}

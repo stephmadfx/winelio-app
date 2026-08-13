@@ -29,6 +29,7 @@ export default function NewRecommendationPage() {
   const [contactForm, setContactForm] = useState<ContactFormData>({ first_name: "", last_name: "", email: "", phone: "", country_code: "+33", address: "", city: "", postal_code: "" });
   const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
   const [wantsToJoin, setWantsToJoin] = useState(false);
+  const [thirdPartyConsent, setThirdPartyConsent] = useState(false);
 
   // Step 2
   const [selectedProId, setSelectedProId] = useState<string | null>(null);
@@ -84,7 +85,7 @@ export default function NewRecommendationPage() {
   };
 
   const canProceed = (): boolean => {
-    if (step === 1) return selfForMe || !!selectedContactId || (createContact && !!(contactForm.first_name.trim() && contactForm.last_name.trim() && contactForm.email.trim() && contactForm.phone.trim() && contactForm.address.trim() && contactForm.city.trim() && contactForm.postal_code.trim()));
+    if (step === 1) return selfForMe || (thirdPartyConsent && (!!selectedContactId || (createContact && !!(contactForm.first_name.trim() && contactForm.last_name.trim() && contactForm.email.trim() && contactForm.phone.trim() && contactForm.address.trim() && contactForm.city.trim() && contactForm.postal_code.trim()))));
     if (step === 2) return !!selectedProId;
     return description.length > 0;
   };
@@ -109,6 +110,7 @@ export default function NewRecommendationPage() {
           urgency,
           selfForMe,
           createContact,
+          thirdPartyConsent,
           selfProfile,
           contactForm: createContact ? contactFormClean : null,
         }),
@@ -168,7 +170,8 @@ export default function NewRecommendationPage() {
           createContact={createContact} setCreateContact={setCreateContact}
           contactForm={contactForm} setContactForm={setContactForm}
           contactErrors={contactErrors} setContactErrors={setContactErrors}
-          wantsToJoin={wantsToJoin} setWantsToJoin={setWantsToJoin} />
+          wantsToJoin={wantsToJoin} setWantsToJoin={setWantsToJoin}
+          thirdPartyConsent={thirdPartyConsent} setThirdPartyConsent={setThirdPartyConsent} />
       )}
       {step === 2 && <StepProfessional userId={userId} selectedProId={selectedProId} onSelect={setSelectedProId} />}
       {step === 3 && <StepProject description={description} urgency={urgency} onDescriptionChange={setDescription} onUrgencyChange={setUrgency} />}

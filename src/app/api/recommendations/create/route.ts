@@ -29,6 +29,7 @@ type Body = {
   urgency: "urgent" | "normal" | "flexible";
   selfForMe: boolean;
   createContact: boolean;
+  thirdPartyConsent: boolean;
   selfProfile: SelfProfile | null;
   contactForm: ContactFormData | null;
 };
@@ -41,6 +42,13 @@ export async function POST(req: Request) {
 
   const body = (await req.json()) as Body;
   const currentUserId = user.id;
+
+  if (!body.selfForMe && body.thirdPartyConsent !== true) {
+    return NextResponse.json(
+      { error: "Le consentement explicite du contact est obligatoire" },
+      { status: 400 },
+    );
+  }
 
   const { data: currentProfile, error: profileError } = await supabaseAdmin
     .schema(SCHEMA)
