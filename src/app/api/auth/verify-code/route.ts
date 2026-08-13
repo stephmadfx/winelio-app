@@ -14,6 +14,7 @@ function getDbUrl(): string | null {
 
 export async function POST(req: Request) {
   try {
+    const isMobileClient = req.headers.get("x-winelio-client") === "mobile";
     const { email, code, sponsorCode } = await req.json();
 
     if (!email || !code) {
@@ -235,7 +236,12 @@ export async function POST(req: Request) {
     const { access_token, refresh_token } = await tokenResp.json();
 
     // 6. Définir la session via cookies HttpOnly
-    const response = NextResponse.json({ success: true });
+    const response = NextResponse.json(
+      isMobileClient
+        ? { success: true, session: { access_token, refresh_token } }
+        : { success: true }
+    );
+    response.headers.set("Cache-Control", "no-store");
     const cookieStore = await cookies();
     const supabaseForSession = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       db: { schema: "winelio" },

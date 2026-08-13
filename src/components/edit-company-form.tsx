@@ -34,6 +34,9 @@ interface Company {
   insurance_number: string | null;
   category_id: string | null;
   description?: string | null;
+  is_verified: boolean;
+  verified_at: string | null;
+  created_at: string;
 }
 
 export function EditCompanyForm({
@@ -58,7 +61,16 @@ export function EditCompanyForm({
     postal_code: company.postal_code ?? "",
     category_id: company.category_id ?? "",
     description: company.description ?? "",
+    siret: company.siret ?? "",
+    insurance_number: company.insurance_number ?? "",
   });
+
+  const correctionDeadline = company.is_verified
+    ? new Date(new Date(company.verified_at ?? company.created_at).getTime() + 48 * 60 * 60 * 1000)
+    : null;
+  const identityLocked = !!correctionDeadline && correctionDeadline.getTime() <= Date.now();
+  const canEditIdentity = (value: string | null) => !identityLocked || !value?.trim();
+  const canEditCategory = !identityLocked || !company.category_id;
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -114,7 +126,17 @@ export function EditCompanyForm({
         </div>
       )}
 
-      {/* Bloc verrouillé : SIRET / SIREN / NAF */}
+      <div className={`rounded-2xl border p-4 text-sm ${identityLocked ? "border-gray-200 bg-gray-50 text-winelio-gray" : "border-orange-200 bg-orange-50 text-orange-900"}`}>
+        {identityLocked ? (
+          <><strong>Profil professionnel vérifié.</strong> Les informations déjà renseignées sont protégées. Vous pouvez compléter les champs manquants ; pour corriger une valeur existante, contactez le support.</>
+        ) : correctionDeadline ? (
+          <><strong>Fenêtre de correction ouverte.</strong> Vous pouvez corriger vos informations jusqu&apos;au {correctionDeadline.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" })}. Ensuite, les données d&apos;identité existantes seront protégées.</>
+        ) : (
+          <><strong>Profil en cours de validation.</strong> Vous pouvez compléter et corriger vos informations.</>
+        )}
+      </div>
+
+      {/* Bloc identité légale */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6">
         <div className="flex items-start justify-between mb-4 gap-3">
           <div>
@@ -122,20 +144,20 @@ export function EditCompanyForm({
               Informations légales
             </h3>
             <p className="text-xs text-winelio-gray mt-0.5">
-              Modifiables uniquement via le support — ces données identifient officiellement votre entreprise.
+              Les valeurs manquantes peuvent être ajoutées. Après validation et 48 h, les valeurs existantes passent par le support.
             </p>
           </div>
           <span className="shrink-0 px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full border border-gray-200">
-            🔒 Verrouillé
+            {identityLocked ? "🔒 Protégé" : "Correction autorisée"}
           </span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <LockedField label="SIRET" value={company.siret} />
+          <Field label="SIRET" name="siret" value={form.siret} onChange={handleChange} disabled={!canEditIdentity(company.siret)} />
           <LockedField label="SIREN" value={company.siren} />
           <LockedField label="Code NAF/APE" value={company.naf_code} />
         </div>
         <div className="mt-4">
-          <LockedField label="N° assurance professionnelle" value={company.insurance_number} />
+          <Field label="N° assurance professionnelle" name="insurance_number" value={form.insurance_number} onChange={handleChange} disabled={!canEditIdentity(company.insurance_number)} />
         </div>
         <div className="mt-4">
           <button
@@ -160,14 +182,14 @@ export function EditCompanyForm({
           Informations de l&apos;entreprise
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Nom *" name="name" value={form.name} onChange={handleChange} required />
-          <Field label="Raison sociale" name="legal_name" value={form.legal_name} onChange={handleChange} />
+          <Field label="Nom *" name="name" value={form.name} onChange={handleChange} required disabled={!canEditIdentity(company.name)} />
+          <Field label="Raison sociale" name="legal_name" value={form.legal_name} onChange={handleChange} disabled={!canEditIdentity(company.legal_name)} />
           <Field label="E-mail professionnel *" name="email" value={form.email} onChange={handleChange} type="email" required />
           <Field label="Téléphone *" name="phone" value={form.phone} onChange={handleChange} required />
           <Field label="Site web" name="website" value={form.website} onChange={handleChange} />
-          <Field label="Adresse" name="address" value={form.address} onChange={handleChange} />
-          <Field label="Ville" name="city" value={form.city} onChange={handleChange} />
-          <Field label="Code postal" name="postal_code" value={form.postal_code} onChange={handleChange} />
+          <Field label="Adresse" name="address" value={form.address} onChange={handleChange} disabled={!canEditIdentity(company.address)} />
+          <Field label="Ville" name="city" value={form.city} onChange={handleChange} disabled={!canEditIdentity(company.city)} />
+          <Field label="Code postal" name="postal_code" value={form.postal_code} onChange={handleChange} disabled={!canEditIdentity(company.postal_code)} />
 
           <div>
             <label className="block text-sm font-medium text-winelio-gray mb-1">
@@ -178,7 +200,8 @@ export function EditCompanyForm({
               value={form.category_id}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white"
+              disabled={!canEditCategory}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white disabled:bg-gray-50 disabled:text-winelio-dark/70 disabled:cursor-not-allowed"
             >
               <option value="">Sélectionner une catégorie</option>
               {categories.map((cat) => (
@@ -293,7 +316,7 @@ function RequestModificationDialog({
             <DialogHeader>
               <DialogTitle>Demander une modification</DialogTitle>
               <DialogDescription>
-                Précisez ce que vous souhaitez modifier (SIRET, SIREN, code NAF) et pourquoi. Le support Winelio recevra votre demande directement.
+                Précisez l&apos;information existante que vous souhaitez corriger et pourquoi. Le support Winelio recevra votre demande directement.
               </DialogDescription>
             </DialogHeader>
             <div className="mt-2 space-y-3">
@@ -370,6 +393,7 @@ function Field({
   onChange,
   type = "text",
   required = false,
+  disabled = false,
 }: {
   label: string;
   name: string;
@@ -377,6 +401,7 @@ function Field({
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   type?: string;
   required?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <div>
@@ -389,8 +414,10 @@ function Field({
         value={value}
         onChange={onChange}
         required={required}
-        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
+        disabled={disabled}
+        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange disabled:bg-gray-50 disabled:text-winelio-dark/70 disabled:cursor-not-allowed"
       />
+      {disabled && <p className="mt-1 text-xs text-winelio-gray">Information vérifiée — modification via le support.</p>}
     </div>
   );
 }

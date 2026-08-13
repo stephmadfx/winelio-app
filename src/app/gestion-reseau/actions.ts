@@ -517,7 +517,10 @@ export async function verifyCompany(companyId: string, verified: boolean) {
 
   const { error } = await supabaseAdmin
     .from("companies")
-    .update({ is_verified: verified })
+    .update({
+      is_verified: verified,
+      verified_at: verified ? new Date().toISOString() : null,
+    })
     .eq("id", companyId);
 
   if (error) throw new Error(`Erreur mise à jour entreprise: ${error.message}`);

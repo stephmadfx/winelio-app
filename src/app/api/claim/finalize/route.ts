@@ -75,6 +75,7 @@ export async function POST(req: Request) {
       owner_id: user.id,
       source: "owner",
       is_verified: true,
+      verified_at: new Date().toISOString(),
       siret: siret || undefined,
       naf_code: nafCode || undefined,
     })

@@ -84,6 +84,7 @@ export async function createCompany(payload: {
     insurance_number: insuranceNumber,
     owner_id: user.id,
     source: "owner",
+    verified_at: payload.is_verified ? new Date().toISOString() : null,
     alias,
   });
 
@@ -165,11 +166,41 @@ export async function updateCompany(
     postal_code?: string;
     category_id?: string;
     description?: string;
+    siret?: string;
+    insurance_number?: string;
   }
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Non authentifié" };
+
+  const { data: currentCompany } = await supabase
+    .from("companies")
+    .select("id, owner_id, name, legal_name, address, city, postal_code, category_id, siret, siren, naf_code, insurance_number, is_verified, verified_at, created_at")
+    .eq("id", companyId)
+    .eq("owner_id", user.id)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!currentCompany) return { error: "Fiche introuvable." };
+
+  const lockAt = currentCompany.is_verified
+    ? new Date(new Date(currentCompany.verified_at ?? currentCompany.created_at).getTime() + 48 * 60 * 60 * 1000)
+    : null;
+  const identityLocked = !!lockAt && lockAt.getTime() <= Date.now();
+  const protectedFields = [
+    "name", "legal_name", "address", "city", "postal_code", "category_id", "siret", "insurance_number",
+  ] as const;
+  for (const field of protectedFields) {
+    if (!(field in payload)) continue;
+    const oldValue = currentCompany[field];
+    const newValue = payload[field];
+    const alreadyFilled = typeof oldValue === "string" ? oldValue.trim() !== "" : oldValue != null;
+    const changed = (oldValue ?? "") !== (newValue ?? "");
+    if (identityLocked && alreadyFilled && changed) {
+      return { error: "Cette information est vérifiée. Demandez sa modification au support." };
+    }
+  }
 
   // Refus URL/téléphone dans le nom commercial et la raison sociale
   if ("name" in payload) {
@@ -193,6 +224,23 @@ export async function updateCompany(
     if (!descCheck.ok) return { error: descCheck.error };
   }
 
+  let verifiedSiren: string | null = null;
+  let verifiedNafCode: string | null = null;
+  const normalizedCurrentSiret = (currentCompany.siret ?? "").replace(/\s/g, "");
+  const normalizedPayloadSiret = (payload.siret ?? "").replace(/\s/g, "");
+  const siretChanged = "siret" in payload && normalizedPayloadSiret !== normalizedCurrentSiret;
+  if (siretChanged) {
+    const normalizedSiret = (payload.siret ?? "").replace(/\s/g, "");
+    if (normalizedSiret) {
+      const sirenData = await verifySiren(normalizedSiret);
+      if (!sirenData) return { error: "SIRET introuvable dans le registre des entreprises." };
+      const nafCheck = checkNafCode(sirenData.naf);
+      if (!nafCheck.allowed) return { error: nafCheck.reason };
+      verifiedSiren = sirenData.siren;
+      verifiedNafCode = nafCheck.code;
+    }
+  }
+
   const patch: Record<string, string | null> = {};
   if ("name" in payload) patch.name = (payload.name ?? "").trim().slice(0, 200) || null;
   if ("legal_name" in payload) patch.legal_name = (payload.legal_name ?? "").trim().slice(0, 200) || null;
@@ -204,6 +252,12 @@ export async function updateCompany(
   if ("postal_code" in payload) patch.postal_code = (payload.postal_code ?? "").trim().slice(0, 10) || null;
   if ("category_id" in payload) patch.category_id = payload.category_id || null;
   if ("description" in payload) patch.description = payload.description || null;
+  if (siretChanged) {
+    patch.siret = (payload.siret ?? "").replace(/\s/g, "").slice(0, 14) || null;
+    patch.siren = verifiedSiren;
+    patch.naf_code = verifiedNafCode;
+  }
+  if ("insurance_number" in payload) patch.insurance_number = (payload.insurance_number ?? "").trim().slice(0, 100) || null;
 
   const { error } = await supabase
     .from("companies")
