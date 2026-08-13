@@ -139,6 +139,19 @@ export async function POST(request: Request) {
     });
     if (!emailResult.ok) throw new Error("L’e-mail de confirmation n’a pas pu être envoyé.");
 
+    const nextReminderAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+    const { error: reminderError } = await supabaseAdmin.schema("winelio")
+      .from("pending_account_reminders")
+      .upsert({
+        user_id: createdUserId,
+        reminder_count: 0,
+        next_reminder_at: nextReminderAt,
+        status: "pending",
+        last_error: null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+    if (reminderError) throw reminderError;
+
     return NextResponse.json({ success: true, referralId: createdUserId });
   } catch (error) {
     console.error("[network/pre-register-referral]", error);

@@ -60,6 +60,14 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Le profil est activé, mais la finalisation de la session a échoué. Veuillez réessayer." }, { status: 500 });
       }
 
+      const { error: reminderError } = await supabaseAdmin.schema("winelio")
+        .from("pending_account_reminders")
+        .update({ status: "cancelled", next_reminder_at: null, updated_at: new Date().toISOString() })
+        .eq("user_id", user.id);
+      if (reminderError) {
+        console.error("set-password reminder cancellation error:", reminderError);
+      }
+
       const { notifyNewReferral } = await import("@/lib/notify-new-referral");
       notifyNewReferral(user.id).catch((err) =>
         console.error("notify-new-referral in set-password error:", err)

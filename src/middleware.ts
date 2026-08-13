@@ -48,6 +48,7 @@ export async function middleware(request: NextRequest) {
       path.startsWith("/api/email/process-queue") ||
       path.startsWith("/api/stripe/webhook") ||
       path.startsWith("/api/stripe/cron-reminders") ||
+      path.startsWith("/api/auth/cron-pending-account-reminders") ||
       path.startsWith("/api/recommendations/process-followups") ||
       path.startsWith("/api/recommendations/cron-scraped-reminder") ||
       path.startsWith("/api/recommendations/followup-action") ||
