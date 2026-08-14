@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { StickyFormActions } from "@/components/StickyFormActions";
-import { Contact, ContactFormData, SelfProfile, Urgency, EMAIL_REGEX, PHONE_REGEX } from "./types";
+import { SelfProfile, Urgency } from "./types";
 import { StepProgress } from "./StepProgress";
 import { StepContact } from "./StepContact";
 import { StepProfessional } from "./StepProfessional";
@@ -15,21 +15,11 @@ export default function NewRecommendationPage() {
   const supabase = createClient();
 
   const [userId, setUserId] = useState<string | null>(null);
-  const [selfForMe, setSelfForMe] = useState(false);
   const [selfProfile, setSelfProfile] = useState<SelfProfile | null>(null);
-  const [contacts, setContacts] = useState<Contact[]>([]);
 
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Step 1
-  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
-  const [createContact, setCreateContact] = useState(false);
-  const [contactForm, setContactForm] = useState<ContactFormData>({ first_name: "", last_name: "", email: "", phone: "", country_code: "+33", address: "", city: "", postal_code: "" });
-  const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
-  const [wantsToJoin, setWantsToJoin] = useState(false);
-  const [thirdPartyConsent, setThirdPartyConsent] = useState(false);
 
   // Step 2
   const [selectedProId, setSelectedProId] = useState<string | null>(null);
@@ -63,35 +53,15 @@ export default function NewRecommendationPage() {
       }
     };
     loadProfile();
-
-    supabase.schema("winelio").from("contacts").select("id, first_name, last_name, email, phone").order("last_name").then(({ data }) => {
-      setContacts(data ?? []);
-    });
   }, []);
 
-  const validateContact = (): boolean => {
-    const errors: Record<string, string> = {};
-    if (!contactForm.first_name.trim()) errors.first_name = "Prénom obligatoire";
-    if (!contactForm.last_name.trim()) errors.last_name = "Nom obligatoire";
-    if (!contactForm.email.trim()) errors.email = "Email obligatoire";
-    else if (!EMAIL_REGEX.test(contactForm.email)) errors.email = "Format d'email invalide";
-    if (!contactForm.phone.trim()) errors.phone = "Téléphone obligatoire";
-    else if (!PHONE_REGEX.test(contactForm.phone)) errors.phone = "Format de téléphone invalide";
-    if (!contactForm.address.trim()) errors.address = "Adresse obligatoire";
-    if (!contactForm.city.trim()) errors.city = "Ville obligatoire";
-    if (!contactForm.postal_code.trim()) errors.postal_code = "Code postal obligatoire";
-    setContactErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
   const canProceed = (): boolean => {
-    if (step === 1) return selfForMe || (thirdPartyConsent && (!!selectedContactId || (createContact && !!(contactForm.first_name.trim() && contactForm.last_name.trim() && contactForm.email.trim() && contactForm.phone.trim() && contactForm.address.trim() && contactForm.city.trim() && contactForm.postal_code.trim()))));
+    if (step === 1) return selfProfile !== null;
     if (step === 2) return !!selectedProId;
     return description.length > 0;
   };
 
   const handleNext = () => {
-    if (step === 1 && createContact && !validateContact()) return;
     setStep(step + 1);
   };
 
@@ -99,20 +69,14 @@ export default function NewRecommendationPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const { country_code, ...contactFormClean } = contactForm;
       const res = await fetch("/api/recommendations/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          selectedContactId,
           selectedProId,
           description,
           urgency,
-          selfForMe,
-          createContact,
-          thirdPartyConsent,
-          selfProfile,
-          contactForm: createContact ? contactFormClean : null,
+          selfForMe: true,
         }),
       });
 
@@ -120,19 +84,6 @@ export default function NewRecommendationPage() {
       if (!res.ok) throw new Error(payload.error || "Erreur lors de la création");
 
       const recommendation = payload.recommendation;
-
-      if (wantsToJoin && !selfForMe) {
-        const contactEmail = createContact
-          ? contactForm.email
-          : contacts.find((c) => c.id === selectedContactId)?.email;
-        if (contactEmail) {
-          fetch("/api/network/send-invite", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ to: contactEmail }),
-          }).catch(() => undefined);
-        }
-      }
 
       router.push(`/recommendations/${recommendation.id}`);
     } catch (err) {
@@ -152,7 +103,7 @@ export default function NewRecommendationPage() {
           Retour
         </button>
         <h1 className="text-2xl font-bold text-winelio-dark tracking-tight">Nouvelle recommandation</h1>
-        <p className="mt-1 text-sm text-winelio-gray">Mettez en relation un contact avec un professionnel de confiance</p>
+        <p className="mt-1 text-sm text-winelio-gray">Trouvez un professionnel de confiance pour votre propre demande</p>
       </div>
 
       <StepProgress currentStep={step} />
@@ -165,13 +116,7 @@ export default function NewRecommendationPage() {
       )}
 
       {step === 1 && (
-        <StepContact contacts={contacts} selfProfile={selfProfile} selfForMe={selfForMe} setSelfForMe={setSelfForMe}
-          selectedContactId={selectedContactId} setSelectedContactId={setSelectedContactId}
-          createContact={createContact} setCreateContact={setCreateContact}
-          contactForm={contactForm} setContactForm={setContactForm}
-          contactErrors={contactErrors} setContactErrors={setContactErrors}
-          wantsToJoin={wantsToJoin} setWantsToJoin={setWantsToJoin}
-          thirdPartyConsent={thirdPartyConsent} setThirdPartyConsent={setThirdPartyConsent} />
+        <StepContact selfProfile={selfProfile} />
       )}
       {step === 2 && <StepProfessional userId={userId} selectedProId={selectedProId} onSelect={setSelectedProId} />}
       {step === 3 && <StepProject description={description} urgency={urgency} onDescriptionChange={setDescription} onUrgencyChange={setUrgency} />}

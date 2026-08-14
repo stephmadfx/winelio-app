@@ -5,33 +5,16 @@ import { notifyNewRecommendation } from "@/lib/notify-new-recommendation";
 
 const SCHEMA = "winelio";
 
-type SelfProfile = {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-};
-
-type ContactFormData = {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  address: string;
-  city: string;
-  postal_code: string;
-};
-
 type Body = {
-  selectedContactId: string | null;
   selectedProId: string;
   description: string;
   urgency: "urgent" | "normal" | "flexible";
   selfForMe: boolean;
-  createContact: boolean;
-  thirdPartyConsent: boolean;
-  selfProfile: SelfProfile | null;
-  contactForm: ContactFormData | null;
+  selectedContactId?: unknown;
+  createContact?: unknown;
+  contactForm?: unknown;
+  thirdPartyConsent?: unknown;
+  selfProfile?: unknown;
 };
 
 export async function POST(req: Request) {
@@ -43,9 +26,17 @@ export async function POST(req: Request) {
   const body = (await req.json()) as Body;
   const currentUserId = user.id;
 
-  if (!body.selfForMe && body.thirdPartyConsent !== true) {
+  const containsThirdPartyPayload =
+    body.selfForMe !== true ||
+    body.selectedContactId != null ||
+    body.createContact === true ||
+    body.contactForm != null ||
+    body.thirdPartyConsent === true ||
+    body.selfProfile != null;
+
+  if (containsThirdPartyPayload) {
     return NextResponse.json(
-      { error: "Le consentement explicite du contact est obligatoire" },
+      { error: "Winelio n'accepte pas les coordonnées d'une personne tierce. La demande doit concerner le compte connecté." },
       { status: 400 },
     );
   }
@@ -53,7 +44,7 @@ export async function POST(req: Request) {
   const { data: currentProfile, error: profileError } = await supabaseAdmin
     .schema(SCHEMA)
     .from("profiles")
-    .select("is_demo")
+    .select("first_name, last_name, phone, is_demo")
     .eq("id", currentUserId)
     .single();
 
@@ -61,48 +52,54 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Profil utilisateur introuvable" }, { status: 404 });
   }
 
-  let contactId = body.selectedContactId;
+  const accountEmail = user.email?.trim();
+  if (!accountEmail) {
+    return NextResponse.json({ error: "Adresse e-mail du compte introuvable" }, { status: 400 });
+  }
 
-  if (body.selfForMe && body.selfProfile) {
-    const { data: existing } = await supabaseAdmin
-      .schema("winelio")
+  const selfContact = {
+    first_name: currentProfile.first_name ?? "",
+    last_name: currentProfile.last_name ?? "",
+    email: accountEmail,
+    phone: currentProfile.phone ?? "",
+    user_id: currentUserId,
+    country: "FR",
+  };
+
+  const { data: existingSelfContact, error: existingContactError } = await supabaseAdmin
+    .schema(SCHEMA)
+    .from("contacts")
+    .select("id")
+    .eq("user_id", currentUserId)
+    .eq("email", accountEmail)
+    .maybeSingle();
+
+  if (existingContactError) {
+    return NextResponse.json({ error: `Erreur lecture du demandeur: ${existingContactError.message}` }, { status: 500 });
+  }
+
+  let contactId = existingSelfContact?.id ?? null;
+  if (contactId) {
+    const { error: updateContactError } = await supabaseAdmin
+      .schema(SCHEMA)
       .from("contacts")
-      .select("id")
-      .eq("user_id", currentUserId)
-      .eq("email", body.selfProfile.email)
-      .maybeSingle();
-    if (existing) {
-      contactId = existing.id;
-    } else {
-      const { data: newContact, error } = await supabaseAdmin
-        .schema("winelio")
-        .from("contacts")
-        .insert({
-          ...body.selfProfile,
-          user_id: currentUserId,
-          address: "",
-          city: "",
-          postal_code: "",
-          country: "FR",
-        })
-        .select("id")
-        .single();
-      if (error) {
-        return NextResponse.json({ error: `Erreur création contact: ${error.message}` }, { status: 500 });
-      }
-      contactId = newContact.id;
+      .update(selfContact)
+      .eq("id", contactId)
+      .eq("user_id", currentUserId);
+    if (updateContactError) {
+      return NextResponse.json({ error: `Erreur mise à jour du demandeur: ${updateContactError.message}` }, { status: 500 });
     }
-  } else if (body.createContact && body.contactForm) {
-    const { data: newContact, error } = await supabaseAdmin
-      .schema("winelio")
+  } else {
+    const { data: newSelfContact, error: createContactError } = await supabaseAdmin
+      .schema(SCHEMA)
       .from("contacts")
-      .insert({ ...body.contactForm, user_id: currentUserId, country: "FR" })
+      .insert({ ...selfContact, address: "", city: "", postal_code: "" })
       .select("id")
       .single();
-    if (error) {
-      return NextResponse.json({ error: `Erreur création contact: ${error.message}` }, { status: 500 });
+    if (createContactError) {
+      return NextResponse.json({ error: `Erreur création du demandeur: ${createContactError.message}` }, { status: 500 });
     }
-    contactId = newContact.id;
+    contactId = newSelfContact.id;
   }
 
   if (!contactId || !body.selectedProId) {

@@ -17,14 +17,10 @@ test("chemin 2 : reco vers pro scraped sans email → pas de relance ni alerte",
   await loginAsFast(page, referrer.email);
   const createRes = await page.request.post("/api/recommendations/create", {
     data: {
-      selectedContactId: contactId,
       selectedProId:     pro.id,
       description:       "Reco scraped sans email",
       urgency:           "normal",
-      selfForMe:         false,
-      createContact:     false,
-      selfProfile:       null,
-      contactForm:       null,
+      selfForMe: true,
     },
   });
   expect(createRes.ok()).toBe(true);
@@ -44,6 +40,27 @@ test("chemin 2 : reco vers pro scraped sans email → pas de relance ni alerte",
   expect(rec?.referrer_no_response_notified_at, "aucune alerte referrer ne doit être déclenchée").toBeNull();
 });
 
+test("confidentialité : l'API refuse toute coordonnée d'une personne tierce", async ({ page }) => {
+  const { referrer, pro, contactId } = await createBasicChain();
+
+  await loginAsFast(page, referrer.email);
+  const response = await page.request.post("/api/recommendations/create", {
+    data: {
+      selectedContactId: contactId,
+      selectedProId: pro.id,
+      description: "Tentative de recommandation tierce",
+      urgency: "normal",
+      selfForMe: false,
+      thirdPartyConsent: true,
+    },
+  });
+
+  expect(response.status()).toBe(400);
+  expect(await response.json()).toMatchObject({
+    error: expect.stringContaining("personne tierce"),
+  });
+});
+
 /* ---------------------------------------------------------------- */
 /* Chemin 3 — Auto-recommandation ("Pour moi-même")                  */
 /* ---------------------------------------------------------------- */
@@ -54,18 +71,10 @@ test("chemin 3 : auto-reco — referrer touche bien la commission de 60 %", asyn
 
   const selfRes = await page.request.post("/api/recommendations/create", {
     data: {
-      selectedContactId: null,
       selectedProId:     pro.id,
       description:       "Auto-reco test",
       urgency:           "normal",
       selfForMe:         true,
-      createContact:     false,
-      selfProfile: {
-        first_name: "Refer", last_name: "E2E",
-        email: referrer.email,
-        phone: "0600000000",
-      },
-      contactForm: null,
     },
   });
   expect(selfRes.ok(), `auto-reco create: ${await selfRes.text()}`).toBe(true);
@@ -92,9 +101,9 @@ test("chemin 4 : étape 2 complétée → ligne dans recommendation_followups", 
   await loginAsFast(page, referrer.email);
   const createRes = await page.request.post("/api/recommendations/create", {
     data: {
-      selectedContactId: contactId, selectedProId: pro.id,
+      selectedProId: pro.id,
       description: "Test follow-up trigger", urgency: "normal",
-      selfForMe: false, createContact: false, selfProfile: null, contactForm: null,
+      selfForMe: true,
     },
   });
   expect(createRes.ok()).toBe(true);
@@ -139,9 +148,9 @@ test("chemin 5 : cron scraped envoie relance + alerte si email valide", async ({
   await loginAsFast(page, referrer.email);
   const createRes = await page.request.post("/api/recommendations/create", {
     data: {
-      selectedContactId: contactId, selectedProId: pro.id,
+      selectedProId: pro.id,
       description: "Test cron scraped", urgency: "normal",
-      selfForMe: false, createContact: false, selfProfile: null, contactForm: null,
+      selfForMe: true,
     },
   });
   expect(createRes.ok()).toBe(true);
@@ -186,9 +195,9 @@ test("chemin 6 : chaîne MLM courte → spillover sur platform_winelio", async (
   await loginAsFast(page, referrer.email);
   const createRes = await page.request.post("/api/recommendations/create", {
     data: {
-      selectedContactId: contactId, selectedProId: pro.id,
+      selectedProId: pro.id,
       description: "Test spillover", urgency: "normal",
-      selfForMe: false, createContact: false, selfProfile: null, contactForm: null,
+      selfForMe: true,
     },
   });
   expect(createRes.ok()).toBe(true);
@@ -248,9 +257,9 @@ test("chemin 8 : devis invalides (0, négatif, > 1M) sont rejetés", async ({ pa
   await loginAsFast(page, referrer.email);
   const createRes = await page.request.post("/api/recommendations/create", {
     data: {
-      selectedContactId: contactId, selectedProId: pro.id,
+      selectedProId: pro.id,
       description: "Edge case test", urgency: "normal",
-      selfForMe: false, createContact: false, selfProfile: null, contactForm: null,
+      selfForMe: true,
     },
   });
   const recoId = (await createRes.json()).recommendation.id as string;

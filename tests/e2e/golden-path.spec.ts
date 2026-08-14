@@ -58,14 +58,10 @@ test("golden path : reco standard 7 étapes + commissions MLM", async ({ page, c
 
   const createRes = await page.request.post("/api/recommendations/create", {
     data: {
-      selectedContactId: contact.id,
       selectedProId:     pro.id,
       description:       "Travaux de plomberie — test E2E",
       urgency:           "normal",
-      selfForMe:         false,
-      createContact:     false,
-      selfProfile:       null,
-      contactForm:       null,
+      selfForMe: true,
     },
   });
   expect(createRes.ok(), `create reco: ${await createRes.text()}`).toBe(true);

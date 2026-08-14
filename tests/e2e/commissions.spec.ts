@@ -58,9 +58,9 @@ async function runFullRecoFlow(page: import("@playwright/test").Page, opts: {
   await loginAsFast(page, opts.referrerEmail);
   const createRes = await page.request.post("/api/recommendations/create", {
     data: {
-      selectedContactId: opts.contactId, selectedProId: opts.proId,
+      selectedProId: opts.proId,
       description: "Commission test", urgency: "normal",
-      selfForMe: false, createContact: false, selfProfile: null, contactForm: null,
+      selfForMe: true,
     },
   });
   expect(createRes.ok()).toBe(true);
@@ -298,9 +298,9 @@ test("commissions — pro sans sponsor : affiliation_bonus absorbé par platform
   await loginAsFast(page, referrer.email);
   const createRes = await page.request.post("/api/recommendations/create", {
     data: {
-      selectedContactId: contactId, selectedProId: orphanPro.id,
+      selectedProId: orphanPro.id,
       description: "Orphan test", urgency: "normal",
-      selfForMe: false, createContact: false, selfProfile: null, contactForm: null,
+      selfForMe: true,
     },
   });
   const recoId = (await createRes.json()).recommendation.id as string;

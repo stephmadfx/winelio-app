@@ -20,9 +20,9 @@ test("claim — finalize transfère company + reco au user authentifié", async 
   await loginAsFast(page, referrer.email);
   const createRes = await page.request.post("/api/recommendations/create", {
     data: {
-      selectedContactId: contactId, selectedProId: pro.id,
+      selectedProId: pro.id,
       description: "Test claim", urgency: "normal",
-      selfForMe: false, createContact: false, selfProfile: null, contactForm: null,
+      selfForMe: true,
     },
   });
   expect(createRes.ok()).toBe(true);
@@ -78,9 +78,9 @@ test("claim — second appel par le même user est idempotent", async ({ page })
   await loginAsFast(page, referrer.email);
   const createRes = await page.request.post("/api/recommendations/create", {
     data: {
-      selectedContactId: contactId, selectedProId: pro.id,
+      selectedProId: pro.id,
       description: "Test idem", urgency: "normal",
-      selfForMe: false, createContact: false, selfProfile: null, contactForm: null,
+      selfForMe: true,
     },
   });
   const recoId = (await createRes.json()).recommendation.id as string;
@@ -113,9 +113,9 @@ test("claim — refuse si la fiche a déjà été claimée par un autre", async 
   await loginAsFast(page, referrer.email);
   const recoId = (await page.request.post("/api/recommendations/create", {
     data: {
-      selectedContactId: contactId, selectedProId: pro.id,
+      selectedProId: pro.id,
       description: "Test conflit", urgency: "normal",
-      selfForMe: false, createContact: false, selfProfile: null, contactForm: null,
+      selfForMe: true,
     },
   }).then((r) => r.json())).recommendation.id;
 
