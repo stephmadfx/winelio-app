@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { WinelioLogo } from "@/components/winelio-logo";
 import { AppBackground } from "@/components/AppBackground";
+import { normalizeEmail } from "@/lib/normalize-email";
 
 export default function ResetPasswordPage() {
   return (
@@ -31,10 +32,10 @@ function ResetPasswordForm() {
 
   useEffect(() => {
     const prefilled = searchParams.get("email");
-    if (prefilled) setEmail(prefilled);
+    if (prefilled) setEmail(normalizeEmail(prefilled));
     else {
       const saved = sessionStorage.getItem("winelio_last_email");
-      if (saved) setEmail(saved);
+      if (saved) setEmail(normalizeEmail(saved));
     }
   }, [searchParams]);
 
@@ -46,7 +47,7 @@ function ResetPasswordForm() {
       const res = await fetch("/api/auth/send-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: normalizeEmail(email) }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -78,7 +79,7 @@ function ResetPasswordForm() {
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code, password }),
+        body: JSON.stringify({ email: normalizeEmail(email), code, password }),
       });
 
       const data = await res.json();
@@ -153,6 +154,9 @@ function ResetPasswordForm() {
                     placeholder="vous@exemple.com"
                     required
                     autoComplete="email"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
                   />
                 </div>

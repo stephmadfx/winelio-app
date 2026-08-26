@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { normalizeEmail } from "@/lib/normalize-email";
 
 function getDbUrl(): string | null {
   return process.env.SUPABASE_DB_URL ?? null;
@@ -9,8 +10,9 @@ function getDbUrl(): string | null {
 export async function POST(req: Request) {
   try {
     const { email, code, password } = await req.json();
+    const normalizedEmail = normalizeEmail(email);
 
-    if (!email || !code) {
+    if (!normalizedEmail || !code) {
       return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
     }
 
@@ -24,14 +26,14 @@ export async function POST(req: Request) {
     const { data: otp } = await supabaseAdmin
       .from("otp_codes")
       .select("code, expires_at, attempts")
-      .eq("email", email)
+      .eq("email", normalizedEmail)
       .single();
 
     if (otp) {
       await supabaseAdmin
         .from("otp_codes")
         .update({ attempts: (otp.attempts ?? 0) + 1 })
-        .eq("email", email);
+        .eq("email", normalizedEmail);
     }
 
     const isExpired = !otp || otp.expires_at < new Date().toISOString();
@@ -40,12 +42,12 @@ export async function POST(req: Request) {
 
     if (isExpired || isBruteForced || isInvalid) {
       if (otp && (isBruteForced || isExpired)) {
-        await supabaseAdmin.from("otp_codes").delete().eq("email", email);
+        await supabaseAdmin.from("otp_codes").delete().eq("email", normalizedEmail);
       }
       return NextResponse.json({ error: "Code invalide ou expiré." }, { status: 400 });
     }
 
-    await supabaseAdmin.from("otp_codes").delete().eq("email", email);
+    await supabaseAdmin.from("otp_codes").delete().eq("email", normalizedEmail);
 
     const dbUrl = getDbUrl();
     if (!dbUrl) {
@@ -59,8 +61,8 @@ export async function POST(req: Request) {
         `UPDATE auth.users
          SET encrypted_password = crypt($1, gen_salt('bf')),
              updated_at = now()
-         WHERE email = $2`,
-        [password, email]
+         WHERE lower(email) = $2`,
+        [password, normalizedEmail]
       );
 
       if (result.rowCount === 0) {

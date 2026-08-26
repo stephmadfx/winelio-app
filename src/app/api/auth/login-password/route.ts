@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { Pool } from "pg";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config";
 import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
+import { normalizeEmail } from "@/lib/normalize-email";
 
 async function checkPasswordNotSet(email: string): Promise<boolean> {
   const dbUrl = process.env.SUPABASE_DB_URL;
@@ -13,7 +14,7 @@ async function checkPasswordNotSet(email: string): Promise<boolean> {
     const res = await pool.query<{ has_password: boolean }>(
       `SELECT (encrypted_password IS NOT NULL AND encrypted_password <> '') AS has_password
        FROM auth.users
-       WHERE email = $1
+       WHERE lower(email) = $1
          AND raw_user_meta_data->>'app' = 'winelio'
        LIMIT 1`,
       [email]
@@ -31,8 +32,9 @@ async function checkPasswordNotSet(email: string): Promise<boolean> {
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
+    const normalizedEmail = normalizeEmail(email);
 
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
     }
 
@@ -64,10 +66,10 @@ export async function POST(req: Request) {
       },
     });
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
 
     if (error || !data.user) {
-      const passwordNotSet = await checkPasswordNotSet(email);
+      const passwordNotSet = await checkPasswordNotSet(normalizedEmail);
       if (passwordNotSet) {
         return NextResponse.json(
           {

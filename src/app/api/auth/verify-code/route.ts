@@ -6,6 +6,7 @@ import { Pool } from "pg";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config";
 import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
+import { normalizeEmail } from "@/lib/normalize-email";
 
 // Connexion pg directe par requête (pas de pool singleton — évite l'état d'erreur au démarrage)
 function getDbUrl(): string | null {
@@ -16,8 +17,9 @@ export async function POST(req: Request) {
   try {
     const isMobileClient = req.headers.get("x-winelio-client") === "mobile";
     const { email, code, sponsorCode } = await req.json();
+    const normalizedEmail = normalizeEmail(email);
 
-    if (!email || !code) {
+    if (!normalizedEmail || !code) {
       return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
     }
 
@@ -25,14 +27,14 @@ export async function POST(req: Request) {
     const { data: otp } = await supabaseAdmin
       .from("otp_codes")
       .select("code, expires_at, attempts")
-      .eq("email", email)
+      .eq("email", normalizedEmail)
       .single();
 
     if (otp) {
       await supabaseAdmin
         .from("otp_codes")
         .update({ attempts: (otp.attempts ?? 0) + 1 })
-        .eq("email", email);
+        .eq("email", normalizedEmail);
     }
 
     const isExpired = !otp || otp.expires_at < new Date().toISOString();
@@ -41,13 +43,13 @@ export async function POST(req: Request) {
 
     if (isExpired || isBruteForced || isInvalid) {
       if (otp && (isBruteForced || isExpired)) {
-        await supabaseAdmin.from("otp_codes").delete().eq("email", email);
+        await supabaseAdmin.from("otp_codes").delete().eq("email", normalizedEmail);
       }
       return NextResponse.json({ error: "Code invalide ou expiré." }, { status: 400 });
     }
 
     // 2. Delete used code immediately
-    await supabaseAdmin.from("otp_codes").delete().eq("email", email);
+    await supabaseAdmin.from("otp_codes").delete().eq("email", normalizedEmail);
 
     // 3. Créer/trouver l'utilisateur + définir un mot de passe temporaire
     //    via connexion PostgreSQL directe (bypass GoTrue admin + PostgREST timeouts)
@@ -128,7 +130,7 @@ export async function POST(req: Request) {
           reauthentication_token = COALESCE(auth.users.reauthentication_token, ''),
           updated_at = now()
         RETURNING id, (xmax = 0) AS inserted
-      `, [email]);
+      `, [normalizedEmail]);
 
       userId = upsertRes.rows[0]?.id ?? null;
       // xmax = 0 → ligne réellement INSERT (pas UPDATE via ON CONFLICT).
@@ -141,7 +143,7 @@ export async function POST(req: Request) {
       if (!userId) {
         // Si ON CONFLICT ne retourne pas l'id (vieux PostgreSQL), on le récupère
         const selectRes = await pgClient.query<{ id: string }>(
-          "SELECT id FROM auth.users WHERE email = $1 LIMIT 1", [email]
+          "SELECT id FROM auth.users WHERE lower(email) = $1 LIMIT 1", [normalizedEmail]
         );
         userId = selectRes.rows[0]?.id ?? null;
       }
@@ -217,14 +219,14 @@ export async function POST(req: Request) {
         "Content-Type": "application/json",
         "apikey": process.env.SUPABASE_SERVICE_ROLE_KEY || "",
       },
-      body: JSON.stringify({ email, password: tempPassword }),
+      body: JSON.stringify({ email: normalizedEmail, password: tempPassword }),
     });
 
     // 5. Restaurer l'état initial du mot de passe (fire-and-forget).
     // Si l'utilisateur avait un mdp permanent avant, on remet son hash.
     // Sinon on remet NULL (état initial pour les comptes 100% OTP).
     new Pool({ connectionString: dbUrl, max: 1 })
-      .query("UPDATE auth.users SET encrypted_password = $1 WHERE email = $2", [previousPasswordHash, email])
+      .query("UPDATE auth.users SET encrypted_password = $1 WHERE lower(email) = $2", [previousPasswordHash, normalizedEmail])
       .catch((e) => console.error("restore password error:", e));
 
     if (!tokenResp.ok) {

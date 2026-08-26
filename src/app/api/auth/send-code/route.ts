@@ -9,6 +9,11 @@ function generateCode(): string {
   return randomInt(100000, 1000000).toString();
 }
 
+// Durée de vie du code. Le texte de l'email est dérivé de cette constante :
+// il annonçait 24 h alors que le code expirait en 15 min, ce qui envoyait les
+// utilisateurs lents droit sur « Code invalide ou expiré ».
+const CODE_TTL_MINUTES = 15;
+
 // ── Rate-limit dédié OTP ─────────────────────────────────────
 // 5 demandes/heure par IP, exempté pour les emails de test E2E.
 // L'email est validé AVANT le rate-limit pour pouvoir bypass les
@@ -49,7 +54,7 @@ function buildEmailHtml(code: string): string {
       </span>
     </p>
     <p style="color:#636E72;font-size:12px;text-align:center;margin:0 0 24px;">
-      Ce code est valable <strong style="color:#2D3436;">24 heures</strong> et a usage unique.
+      Ce code est valable <strong style="color:#2D3436;">${CODE_TTL_MINUTES} minutes</strong> et a usage unique.
     </p>
     <p style="color:#999;font-size:11px;text-align:center;margin:0;border-top:1px solid #F0F2F4;padding-top:16px;">
       Si vous n'avez pas fait cette demande, ignorez cet email.
@@ -122,7 +127,7 @@ export async function POST(req: Request) {
     }
 
     const code = generateCode();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 min
+    const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000).toISOString();
 
     // Store code in Supabase (upsert → replace existing code for same email, reset attempts)
     const { error: dbError } = await supabaseAdmin
@@ -143,7 +148,7 @@ export async function POST(req: Request) {
       const result = await sendEmail({
         to: normalizedEmail,
         subject: "Votre code de connexion Winelio",
-        text: `Votre code de connexion Winelio : ${code}\n\nCe code est valable 24 heures et à usage unique.\nSi vous n'avez pas fait cette demande, ignorez cet email.\n\n---\n© 2026 Winelio · Recommandez. Connectez. Gagnez.`,
+        text: `Votre code de connexion Winelio : ${code}\n\nCe code est valable ${CODE_TTL_MINUTES} minutes et à usage unique.\nSi vous n'avez pas fait cette demande, ignorez cet email.\n\n---\n© 2026 Winelio · Recommandez. Connectez. Gagnez.`,
         html: buildEmailHtml(code),
       });
       if (!result.ok) {

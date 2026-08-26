@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { WinelioLogo } from "@/components/winelio-logo";
 import { AppBackground } from "@/components/AppBackground";
+import { normalizeEmail } from "@/lib/normalize-email";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -17,11 +18,15 @@ export default function ForgotPasswordPage() {
     setError("");
     setLoading(true);
 
+    // Le code est stocké sous forme canonique : on propage la même forme à
+    // l'étape 2, sinon la vérification ne retrouve pas le code.
+    const normalized = normalizeEmail(email);
+
     try {
       const res = await fetch("/api/auth/send-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: normalized }),
       });
 
       const data = await res.json();
@@ -32,8 +37,8 @@ export default function ForgotPasswordPage() {
         return;
       }
 
-      sessionStorage.setItem("winelio_last_email", email);
-      router.push(`/auth/reset-password?email=${encodeURIComponent(email)}`);
+      sessionStorage.setItem("winelio_last_email", normalized);
+      router.push(`/auth/reset-password?email=${encodeURIComponent(normalized)}`);
     } catch {
       setError("Erreur réseau. Réessayez.");
       setLoading(false);
@@ -89,6 +94,9 @@ export default function ForgotPasswordPage() {
                   placeholder="vous@exemple.com"
                   required
                   autoComplete="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
                 />
               </div>
