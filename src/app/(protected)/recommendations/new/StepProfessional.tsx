@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Professional, Category } from "./types";
 import { ProfessionalList } from "./ProfessionalList";
@@ -37,6 +37,15 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
   const [postalLoading, setPostalLoading] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [postalData, setPostalData] = useState<{ nom: string; centre?: { coordinates: [number, number] } }[]>([]);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  // Sans ce délai, chaque frappe déclenchait une requête renvoyant jusqu'à 250 pros.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(proSearch), 350);
+    return () => clearTimeout(timer);
+  }, [proSearch]);
 
   useEffect(() => {
     supabase.from("categories").select("id, name").order("name").then(({ data }) => setCategories(data ?? []));
@@ -49,31 +58,43 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
     });
   }, [userId]);
 
+  const lat = userLocation?.lat ?? null;
+  const lng = userLocation?.lng ?? null;
+
   useEffect(() => {
-    if (!userLocation) {
+    if (lat === null || lng === null) {
       setProfessionals([]);
+      setSearchError(null);
       return;
     }
 
-    const rpcParams = {
-      p_latitude: userLocation.lat,
-      p_longitude: userLocation.lng,
-      p_category_name: selectedCategory,
-      p_commune: selectedCommune || null,
-      p_search: proSearch.length >= 2 ? proSearch.trim() : null,
-      p_limit: 250
-    };
+    // Une réponse lente ne doit pas écraser le résultat d'une recherche plus récente.
+    let cancelled = false;
+    setSearchLoading(true);
+    setSearchError(null);
 
     supabase
-      .rpc("search_professionals_by_distance", rpcParams)
+      .rpc("search_professionals_by_distance", {
+        p_latitude: lat,
+        p_longitude: lng,
+        p_category_name: selectedCategory,
+        p_commune: selectedCommune || null,
+        p_search: debouncedSearch.trim().length >= 2 ? debouncedSearch.trim() : null,
+        p_limit: 250,
+      })
       .then(({ data, error }) => {
+        if (cancelled) return;
+        setSearchLoading(false);
+
         if (error) {
           console.error("[StepProfessional] query error:", error);
+          setSearchError("La recherche de professionnels est momentanément indisponible.");
+          setProfessionals([]);
           return;
         }
 
-        let results: Professional[] = (data ?? []).map((p: any) => {
-          return {
+        setProfessionals(
+          (data ?? []).map((p: any) => ({
             id: p.profile_id,
             first_name: p.first_name,
             last_name: p.last_name,
@@ -89,20 +110,25 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
             last_active_at: fakeLastActive(p.profile_id),
             company_source: p.company_source ?? null,
             company_description: p.company_description ?? null,
-          };
-        });
-
-        if (userId) {
-          results = results.filter((p) => p.id !== userId);
-        }
-
-        if (userLocation && sortBy === "distance" && radius < 99999) {
-          results = results.filter((p) => p.distance === null || p.distance <= radius);
-        }
-
-        setProfessionals(results);
+          }))
+        );
       });
-  }, [proSearch, userId, selectedCategory, userLocation, radius, sortBy, selectedCommune]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedSearch, selectedCategory, lat, lng, selectedCommune]);
+
+  // Le rayon et l'exclusion de sa propre fiche sont purement locaux : les filtrer ici
+  // évite de relancer la requête serveur à chaque ajustement du curseur.
+  const visibleProfessionals = useMemo(() => {
+    let results = professionals;
+    if (userId) results = results.filter((p) => p.id !== userId);
+    if (sortBy === "distance" && radius < 99999) {
+      results = results.filter((p) => p.distance === null || p.distance <= radius);
+    }
+    return results;
+  }, [professionals, userId, sortBy, radius]);
 
   useEffect(() => {
     if (postalCode.length !== 5) {
@@ -228,11 +254,21 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
         </div>
       ) : (
         <>
-          <p className="mb-3 text-xs text-winelio-gray/70">
-            {professionals.length} professionnel{professionals.length !== 1 ? "s" : ""} trouvé{professionals.length !== 1 ? "s" : ""}
-            {selectedCategory !== "all" && ` · ${selectedCategory}`}
-            {selectedCommune && ` · ${selectedCommune}`}
-            {geoStatus === "granted" && radius < 99999 && ` · ${radius} km`}
+          {searchError && (
+            <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700">
+              <svg className="w-4 h-4 shrink-0 mt-px" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9.303 3.376c.866 1.5-.217 3.374-1.948 3.374H4.645c-1.73 0-2.813-1.874-1.948-3.374l7.108-12.748c.866-1.5 3.032-1.5 3.898 0l7.6 12.748zM12 15.75h.007v.008H12v-.008z" /></svg>
+              <span>{searchError} Réessayez dans un instant ou contactez le support si cela persiste.</span>
+            </div>
+          )}
+
+          <p className="mb-3 flex items-center gap-2 text-xs text-winelio-gray/70">
+            {searchLoading && <span className="w-3 h-3 border-2 border-winelio-orange border-t-transparent rounded-full animate-spin" />}
+            <span>
+              {visibleProfessionals.length} professionnel{visibleProfessionals.length !== 1 ? "s" : ""} trouvé{visibleProfessionals.length !== 1 ? "s" : ""}
+              {selectedCategory !== "all" && ` · ${selectedCategory}`}
+              {selectedCommune && ` · ${selectedCommune}`}
+              {geoStatus === "granted" && radius < 99999 && ` · ${radius} km`}
+            </span>
           </p>
 
           {isPro && (
@@ -243,7 +279,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
           )}
 
           <ProfessionalList
-            professionals={professionals}
+            professionals={visibleProfessionals}
             selectedProId={selectedProId}
             onSelect={onSelect}
             geoGranted={geoStatus === "granted"}

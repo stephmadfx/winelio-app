@@ -16,7 +16,7 @@ import { ProfileGraceTimer } from "@/components/ProfileGraceTimer";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 const PRO_PROMPT_DELAY_ROLLOUT_AT = new Date("2026-06-03T20:40:00.000Z");
-const PROFILE_SELECT = "first_name, last_name, phone, postal_code, city, address, birth_date, terms_accepted, avatar, is_professional, pro_engagement_accepted";
+const PROFILE_SELECT = "first_name, last_name, phone, postal_code, city, address, birth_date, terms_accepted, avatar, is_professional, pro_engagement_accepted, pro_prompt_dismissed_at";
 
 type ProfileCompletionRecord = {
   first_name: string | null;
@@ -30,6 +30,7 @@ type ProfileCompletionRecord = {
   avatar: string | null;
   is_professional: boolean | null;
   pro_engagement_accepted: boolean | null;
+  pro_prompt_dismissed_at: string | null;
 };
 
 function hasHeaderIdentity(profile: ProfileCompletionRecord | null) {
@@ -49,19 +50,25 @@ export default async function ProtectedLayout({
 
   const isSuperAdmin = user.app_metadata?.role === "super_admin";
 
-  // Tous les rapports de bug de l'utilisateur (pour l'historique + détection non-lus)
-  const { data: allBugReports } = await supabase
-    .from("bug_reports")
-    .select("id, message, page_url, status, admin_reply, reply_images, created_at")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(50);
+  // Ces deux requêtes sont indépendantes : les enchaîner en série ajoutait un aller-retour
+  // Supabase (~50 ms) à chaque navigation dans l'espace protégé.
+  const [bugReportsResult, profileResult] = await Promise.all([
+    // Tous les rapports de bug de l'utilisateur (pour l'historique + détection non-lus)
+    supabase
+      .from("bug_reports")
+      .select("id, message, page_url, status, admin_reply, reply_images, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(50),
+    supabase
+      .from("profiles")
+      .select(`${PROFILE_SELECT}, companies:companies!owner_id(id, name, siret)`)
+      .eq("id", user.id)
+      .maybeSingle(),
+  ]);
 
-  const { data: profileData } = await supabase
-    .from("profiles")
-    .select(`${PROFILE_SELECT}, companies:companies!owner_id(id, name, siret)`)
-    .eq("id", user.id)
-    .maybeSingle();
+  const { data: allBugReports } = bugReportsResult;
+  const { data: profileData, error: profileError } = profileResult;
   let profile = profileData as (ProfileCompletionRecord & { companies: { id: string; name: string | null; siret: string | null }[] | null }) | null;
 
   if (!hasHeaderIdentity(profile)) {
@@ -76,15 +83,11 @@ export default async function ProtectedLayout({
     }
   }
 
-  const { data: proPromptData, error: proPromptError } = await supabase
-    .from("profiles")
-    .select("pro_prompt_dismissed_at")
-    .eq("id", user.id)
-    .maybeSingle();
-  const proPromptDismissedAt = proPromptError
+  // En cas d'échec de lecture du profil, on considère le prompt comme déjà écarté
+  // plutôt que de l'afficher à tort.
+  const proPromptDismissedAt = profileError
     ? new Date().toISOString()
-    : (proPromptData as { pro_prompt_dismissed_at: string | null } | null)
-      ?.pro_prompt_dismissed_at ?? null;
+    : profile?.pro_prompt_dismissed_at ?? null;
 
   const isProfileComplete = !!(
     profile?.first_name?.trim() &&
