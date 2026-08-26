@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { isPersonalProfileComplete } from "@/lib/profile-completion";
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 import { MobileHeader } from "@/components/mobile-header";
@@ -89,33 +89,12 @@ export default async function ProtectedLayout({
     ? new Date().toISOString()
     : profile?.pro_prompt_dismissed_at ?? null;
 
-  const isProfileComplete = !!(
-    profile?.first_name?.trim() &&
-    profile?.last_name?.trim() &&
-    profile?.phone?.trim() &&
-    profile?.postal_code?.trim() &&
-    profile?.city?.trim() &&
-    profile?.address?.trim() &&
-    profile?.birth_date?.trim() &&
-    profile?.terms_accepted
-  );
+  // La redirection « profil incomplet » est appliquée par le middleware : la
+  // déclencher ici, depuis un layout, laissait le routeur client sur un arbre
+  // vide (page blanche) lors des navigations `?_rsc=`. Ne subsiste que le calcul
+  // servant à l'affichage.
+  const isProfileComplete = isPersonalProfileComplete(profile);
 
-  const headersList = await headers();
-  const pathname = headersList.get("x-pathname") || "";
-
-  const emailConfirmedAt = user.email_confirmed_at ? new Date(user.email_confirmed_at) : null;
-  const now = new Date();
-  const isGracePeriod = emailConfirmedAt && (now.getTime() - emailConfirmedAt.getTime() < 60_000);
-
-  const companies = Array.isArray(profile?.companies)
-    ? profile?.companies
-    : profile?.companies ? [profile?.companies] : [];
-  const hasActiveCompany = companies.some((c: any) => c?.siret?.trim() && c?.name?.trim());
-  const isProProfileComplete = !profile?.is_professional || hasActiveCompany;
-
-  if (pathname && (!isProfileComplete || !isProProfileComplete) && !isGracePeriod && !pathname.startsWith("/profile") && !pathname.startsWith("/companies")) {
-    redirect("/profile");
-  }
   const ageVerified = profile?.birth_date ? isAtLeastAge(profile.birth_date) : null;
   const accountCreatedAt = user.created_at ? new Date(user.created_at) : null;
   const isNewAccountForProPrompt = !accountCreatedAt || accountCreatedAt >= PRO_PROMPT_DELAY_ROLLOUT_AT;

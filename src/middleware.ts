@@ -1,6 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./lib/supabase/config";
+import {
+  PROFILE_COMPLETE_COOKIE,
+  PROFILE_COMPLETION_SELECT,
+  isPersonalProfileComplete,
+  isProfessionalProfileComplete,
+  isSignupGracePeriod,
+  requiresCompleteProfile,
+} from "./lib/profile-completion";
 
 // Rate limiter en mémoire (best-effort, par process).
 // LIMITATION : en environnement multi-worker (ex: PM2 cluster), chaque worker a son propre
@@ -215,6 +223,58 @@ export async function middleware(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);
+    }
+  }
+
+  // Profil incomplet -> /profile.
+  //
+  // Ce contrôle appartient au middleware, pas au layout protégé : un `redirect()`
+  // déclenché depuis un layout pendant une navigation client (requête `?_rsc=`)
+  // laisse le routeur avec un arbre React vide, et l'utilisateur reste sur une
+  // page blanche indéfiniment. Dans le WebView mobile, le garde-fou de 20 s finit
+  // par afficher « Connexion impossible ». Cas nominal pour tout nouvel inscrit,
+  // dont le profil est par définition incomplet au premier passage.
+  if (user && requiresCompleteProfile(request.nextUrl.pathname)) {
+    const alreadyValidated = request.cookies.get(PROFILE_COMPLETE_COOKIE)?.value === "1";
+
+    if (!alreadyValidated && !isSignupGracePeriod(user.email_confirmed_at)) {
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select(`${PROFILE_COMPLETION_SELECT}, companies:companies!owner_id(name, siret)`)
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const companies = Array.isArray(profile?.companies)
+        ? profile.companies
+        : profile?.companies
+          ? [profile.companies]
+          : [];
+
+      // Une lecture en échec ne doit pas rejeter un utilisateur en règle vers son
+      // profil : on laisse passer et le contrôle sera refait à la navigation suivante.
+      const complete =
+        !!error ||
+        (isPersonalProfileComplete(profile) && isProfessionalProfileComplete(profile, companies));
+
+      if (!complete) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/profile";
+        url.search = "";
+        return NextResponse.redirect(url);
+      }
+
+      // Le cookie n'est posé que sur une lecture réussie ET un profil complet :
+      // une valeur périmée ne peut donc jamais bloquer l'accès, seulement
+      // épargner une requête.
+      if (!error) {
+        supabaseResponse.cookies.set(PROFILE_COMPLETE_COOKIE, "1", {
+          httpOnly: true,
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+          maxAge: 60 * 60 * 24,
+        });
+      }
     }
   }
 
