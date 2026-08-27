@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { StickyFormActions } from "@/components/StickyFormActions";
-import { SelfProfile, Urgency } from "./types";
+import { BeneficiaryChoice, SelfProfile, Urgency } from "./types";
 import { StepProgress } from "./StepProgress";
 import { StepContact } from "./StepContact";
 import { StepProfessional } from "./StepProfessional";
@@ -16,6 +16,8 @@ export default function NewRecommendationPage() {
 
   const [userId, setUserId] = useState<string | null>(null);
   const [selfProfile, setSelfProfile] = useState<SelfProfile | null>(null);
+  const [sponsorCode, setSponsorCode] = useState("");
+  const [beneficiaryChoice, setBeneficiaryChoice] = useState<BeneficiaryChoice | null>(null);
 
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -40,9 +42,10 @@ export default function NewRecommendationPage() {
         const { user } = await res.json();
         if (user?.id) {
           setUserId(user.id);
-          const { data: profile } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", user.id).single();
+          const { data: profile } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone, sponsor_code").eq("id", user.id).single();
           if (profile) {
             setSelfProfile({ first_name: profile.first_name ?? "", last_name: profile.last_name ?? "", email: user.email ?? "", phone: profile.phone ?? "" });
+            setSponsorCode(profile.sponsor_code ?? "");
           }
         } else {
           setError("Erreur authentification: Aucun utilisateur trouvé");
@@ -56,12 +59,13 @@ export default function NewRecommendationPage() {
   }, []);
 
   const canProceed = (): boolean => {
-    if (step === 1) return selfProfile !== null;
+    if (step === 1) return beneficiaryChoice === "self" && selfProfile !== null;
     if (step === 2) return !!selectedProId;
     return description.length > 0;
   };
 
   const handleNext = () => {
+    if (!canProceed()) return;
     setStep(step + 1);
   };
 
@@ -103,7 +107,7 @@ export default function NewRecommendationPage() {
           Retour
         </button>
         <h1 className="text-2xl font-bold text-winelio-dark tracking-tight">Nouvelle recommandation</h1>
-        <p className="mt-1 text-sm text-winelio-gray">Trouvez un professionnel de confiance pour votre propre demande</p>
+        <p className="mt-1 text-sm text-winelio-gray">Trouvez un professionnel de confiance — pour vous ou en invitant un proche</p>
       </div>
 
       <StepProgress currentStep={step} />
@@ -116,7 +120,12 @@ export default function NewRecommendationPage() {
       )}
 
       {step === 1 && (
-        <StepContact selfProfile={selfProfile} />
+        <StepContact
+          selfProfile={selfProfile}
+          sponsorCode={sponsorCode}
+          beneficiaryChoice={beneficiaryChoice}
+          onChoose={setBeneficiaryChoice}
+        />
       )}
       {step === 2 && <StepProfessional userId={userId} selectedProId={selectedProId} onSelect={setSelectedProId} />}
       {step === 3 && <StepProject description={description} urgency={urgency} onDescriptionChange={setDescription} onUrgencyChange={setUrgency} />}
@@ -129,7 +138,9 @@ export default function NewRecommendationPage() {
             Retour
           </button>
         ) : <div />}
-        {step < 3 ? (
+        {step === 1 && beneficiaryChoice === "other" ? (
+          <div />
+        ) : step < 3 ? (
           <button onClick={handleNext} disabled={!canProceed()}
             className="inline-flex items-center gap-2 rounded-xl bg-winelio-orange px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-winelio-orange/25 transition-all hover:bg-winelio-amber hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none cursor-pointer">
             Suivant

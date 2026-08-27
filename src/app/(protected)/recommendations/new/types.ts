@@ -41,6 +41,9 @@ export interface SelfProfile {
 
 export type Urgency = "urgent" | "normal" | "flexible";
 
+/** Choix explicite de l’étape Demandeur — aucune valeur par défaut. */
+export type BeneficiaryChoice = "self" | "other";
+
 export const STEPS_META = [
   { number: 1, label: "Demandeur" },
   { number: 2, label: "Professionnel" },
