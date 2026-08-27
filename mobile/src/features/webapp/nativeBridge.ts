@@ -68,6 +68,15 @@ export const nativeBridgeScript = `
       }));
     });
 
+    window.addEventListener("load", function () {
+      try {
+        if (!/^https?:/i.test(window.location.href)) return;
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: "pageReady",
+          payload: { url: window.location.href }
+        }));
+      } catch (_) {}
+    });
     window.dispatchEvent(new CustomEvent("winelio:native-ready"));
     return true;
   })();
@@ -82,9 +91,14 @@ export const pageHealthCheckScript = `
         var visibleText = body ? (body.innerText || "").replace(/\\s+/g, " ").trim() : "";
         var hasInteractiveContent = Boolean(body && body.querySelector("input, button, a, img, svg, canvas, [role='button'], [role='main']"));
         var isReady = Boolean(body && (visibleText.length >= 20 || hasInteractiveContent));
-        if (isReady || finalAttempt) {
+        if (isReady) {
           window.ReactNativeWebView.postMessage(JSON.stringify({
-            type: isReady ? "pageReady" : "pageBlank",
+            type: "pageReady",
+            payload: { url: window.location.href }
+          }));
+        } else if (finalAttempt) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: "pageBlank",
             payload: { url: window.location.href }
           }));
         }

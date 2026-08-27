@@ -1,20 +1,29 @@
 import * as Linking from "expo-linking";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BackHandler, Platform, StyleSheet, View } from "react-native";
+import { AppState, BackHandler, Platform, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import WebView, { type WebViewMessageEvent } from "react-native-webview";
 
 import { colors } from "@/design-system/tokens";
 import { WebAppError, WebAppLoading } from "@/features/webapp/WebAppFeedback";
 import { nativeBridgeScript, pageHealthCheckScript, parseNativeBridgeMessage } from "@/features/webapp/nativeBridge";
+import {
+  LOAD_TIMEOUT_MS,
+  isHttpDocumentUrl,
+  shouldArmLoadTimeout,
+  shouldCoverWithLoadingOverlay,
+  shouldFailOnHealthBlank,
+  shouldFailOnHttpError,
+  shouldFailOnTimeout,
+  shouldUnmountWebViewOnFailure,
+} from "@/features/webapp/webAppLoadPolicy";
 import { isExternalProtocol, shouldLoadInWebView, webAppEntryUrl } from "@/features/webapp/webAppNavigation";
-
-const LOAD_TIMEOUT_MS = 20_000;
 
 export const WinelioWebAppScreen = () => {
   const webView = useRef<WebView>(null);
   const loadTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstPaintDone = useRef(false);
+  const timeoutPausedInBackground = useRef(false);
   const [canGoBack, setCanGoBack] = useState(false);
   const [failed, setFailed] = useState(false);
   const [failureMessage, setFailureMessage] = useState<string>();
@@ -28,31 +37,60 @@ export const WinelioWebAppScreen = () => {
     loadTimeout.current = null;
   }, []);
 
-  const showFailure = useCallback((message: string) => {
+  const markContentVisible = useCallback(() => {
+    firstPaintDone.current = true;
+    timeoutPausedInBackground.current = false;
+    clearLoadTimeout();
+    setFailed(false);
+    setLoaded(true);
+  }, [clearLoadTimeout]);
+
+  const showFailure = useCallback((message: string, kind: "timeout" | "http" | "blank" | "net" | "crash") => {
+    if (!shouldUnmountWebViewOnFailure(firstPaintDone.current, kind)) return;
+    firstPaintDone.current = false;
     clearLoadTimeout();
     setLoaded(false);
     setFailed(true);
     setFailureMessage(message);
   }, [clearLoadTimeout]);
 
-  const beginLoading = useCallback(() => {
+  const armLoadTimeout = useCallback(() => {
     clearLoadTimeout();
-    setFailed(false);
-    setFailureMessage(undefined);
-    // Après le premier écran utile, on laisse la page visible. Recouvrir le
-    // WebView à chaque navigation (redirect middleware, RSC, login) donnait
-    // l'impression que l'app ramait, alors que Chrome — sans overlay — restait fluide.
-    if (!firstPaintDone.current) {
-      setLoaded(false);
-      setProgress(0);
-    }
+    if (!shouldArmLoadTimeout(firstPaintDone.current)) return;
     loadTimeout.current = setTimeout(() => {
-      if (firstPaintDone.current) return;
-      showFailure("Le chargement a pris trop de temps. Vérifiez votre connexion puis réessayez.");
+      if (!shouldFailOnTimeout(firstPaintDone.current)) return;
+      showFailure("Le chargement a pris trop de temps. Vérifiez votre connexion puis réessayez.", "timeout");
     }, LOAD_TIMEOUT_MS);
   }, [clearLoadTimeout, showFailure]);
 
+  const beginLoading = useCallback(() => {
+    setFailed(false);
+    setFailureMessage(undefined);
+    if (shouldCoverWithLoadingOverlay(firstPaintDone.current)) {
+      setLoaded(false);
+      setProgress(0);
+    }
+    armLoadTimeout();
+  }, [armLoadTimeout]);
+
   useEffect(() => clearLoadTimeout, [clearLoadTimeout]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state !== "active") {
+        if (loadTimeout.current) {
+          clearLoadTimeout();
+          timeoutPausedInBackground.current = true;
+        }
+        return;
+      }
+      if (timeoutPausedInBackground.current && !firstPaintDone.current && !failed) {
+        timeoutPausedInBackground.current = false;
+        armLoadTimeout();
+      }
+    });
+    return () => subscription.remove();
+  }, [armLoadTimeout, clearLoadTimeout, failed]);
 
   useEffect(() => {
     if (Platform.OS !== "android") return;
@@ -70,6 +108,7 @@ export const WinelioWebAppScreen = () => {
 
   const retry = () => {
     firstPaintDone.current = false;
+    timeoutPausedInBackground.current = false;
     beginLoading();
     setWebViewKey((current) => current + 1);
   };
@@ -78,17 +117,15 @@ export const WinelioWebAppScreen = () => {
     const message = parseNativeBridgeMessage(event.nativeEvent.data);
     if (!message) return;
     if (message.type === "pageReady") {
-      firstPaintDone.current = true;
-      clearLoadTimeout();
-      setLoaded(true);
+      if (!isHttpDocumentUrl(message.payload?.url)) return;
+      markContentVisible();
       return;
     }
     if (message.type === "pageBlank") {
-      showFailure("Cette page n’a pas pu s’afficher correctement. Réessayez pour la recharger.");
-      return;
+      if (shouldFailOnHealthBlank(firstPaintDone.current)) {
+        showFailure("Cette page n’a pas pu s’afficher correctement. Réessayez pour la recharger.", "blank");
+      }
     }
-    // Les erreurs JavaScript sont remontées par le bridge pour le diagnostic,
-    // mais seule l'absence réelle de contenu déclenche l'écran de secours.
   };
 
   if (Platform.OS === "web") {
@@ -117,19 +154,29 @@ export const WinelioWebAppScreen = () => {
             javaScriptCanOpenWindowsAutomatically
             javaScriptEnabled
             injectedJavaScriptBeforeContentLoaded={nativeBridgeScript}
-            onContentProcessDidTerminate={() => showFailure("La page a été interrompue par le système. Touchez Réessayer pour la relancer.")}
-            onError={() => showFailure("Impossible de charger Winelio. Vérifiez votre connexion puis réessayez.")}
+            onContentProcessDidTerminate={() => showFailure("La page a été interrompue par le système. Touchez Réessayer pour la relancer.", "crash")}
+            onError={() => showFailure("Impossible de charger Winelio. Vérifiez votre connexion puis réessayez.", "net")}
             onHttpError={(event) => {
-              if (event.nativeEvent.statusCode >= 400) {
-                showFailure(`Le serveur Winelio a répondu avec une erreur (${event.nativeEvent.statusCode}). Réessayez dans un instant.`);
+              if (shouldFailOnHttpError(event.nativeEvent.statusCode, firstPaintDone.current)) {
+                showFailure(`Le serveur Winelio a répondu avec une erreur (${event.nativeEvent.statusCode}). Réessayez dans un instant.`, "http");
               }
             }}
-            onLoadEnd={() => webView.current?.injectJavaScript(pageHealthCheckScript)}
-            onLoadProgress={(event) => setProgress(event.nativeEvent.progress)}
+            onLoadEnd={(event) => {
+              if (!isHttpDocumentUrl(event.nativeEvent.url)) return;
+              markContentVisible();
+              webView.current?.injectJavaScript(pageHealthCheckScript);
+            }}
+            onLoadProgress={(event) => {
+              const next = event.nativeEvent.progress;
+              setProgress(next);
+              if (next >= 1 && isHttpDocumentUrl(event.nativeEvent.url)) {
+                markContentVisible();
+              }
+            }}
             onLoadStart={beginLoading}
             onMessage={handleMessage}
             onNavigationStateChange={(state) => setCanGoBack(state.canGoBack)}
-            onRenderProcessGone={() => showFailure("La page ne répondait plus et a été arrêtée. Touchez Réessayer pour la relancer.")}
+            onRenderProcessGone={() => showFailure("La page ne répondait plus et a été arrêtée. Touchez Réessayer pour la relancer.", "crash")}
             onShouldStartLoadWithRequest={(request) => {
               if (shouldLoadInWebView(request.url, request.isTopFrame)) return true;
               if (isExternalProtocol(request.url) || /^https?:/i.test(request.url)) {
