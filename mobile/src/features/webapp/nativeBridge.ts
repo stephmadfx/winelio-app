@@ -19,6 +19,18 @@ export const nativeBridgeScript = `
     if (document.documentElement) {
       document.documentElement.setAttribute("data-winelio-native", "${Platform.OS}");
     }
+    // Filet de sécurité : même CSS que globals.css, pour que l'APK reste fluide
+    // si le site n'est pas encore redéployé. Harmless si les deux sont présents.
+    if ("${Platform.OS}" === "android") {
+      var nativeCss = document.createElement("style");
+      nativeCss.setAttribute("data-winelio-native-perf", "1");
+      nativeCss.appendChild(document.createTextNode(
+        'html[data-winelio-native="android"] .bz-orb{animation:none!important;filter:none!important}' +
+        'html[data-winelio-native="android"] .bz-line{display:none!important}' +
+        'html[data-winelio-native="android"] .animate-shimmer,html[data-winelio-native="android"] .animate-ping,html[data-winelio-native="android"] .animate-fade-up{animation:none!important}'
+      ));
+      (document.head || document.documentElement).appendChild(nativeCss);
+    }
 
     window.addEventListener("error", function (event) {
       window.ReactNativeWebView.postMessage(JSON.stringify({
@@ -83,10 +95,9 @@ export const pageHealthCheckScript = `
         }));
       }
     };
-    window.requestAnimationFrame(function () {
-      window.setTimeout(function () { reportHealth(false); }, 500);
-    });
-    window.setTimeout(function () { reportHealth(true); }, 3000);
+    reportHealth(false);
+    window.requestAnimationFrame(function () { reportHealth(false); });
+    window.setTimeout(function () { reportHealth(true); }, 1500);
     return true;
   })();
   true;

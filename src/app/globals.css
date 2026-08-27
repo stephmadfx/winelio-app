@@ -429,3 +429,27 @@ input, textarea, select {
 .dark .newsletter-studio {
   color: #f8fafc;
 }
+
+/*
+ * Android WebView n'a pas le budget GPU de Chrome, même à version égale.
+ * Mesuré sur Galaxy S10 (app native) : 76 % de frames janky, 177 Mo de mémoire
+ * graphique, goulot « Slow issue draw commands ». Cause : les orbes de fond
+ * (560 px) avec filter:blur() + transform en boucle forcent un recomposite
+ * GPU à chaque frame. Chrome tient le coup ; le WebView, non.
+ * L'attribut est posé par l'app native avant le premier paint.
+ */
+html[data-winelio-native="android"] .bz-orb {
+  animation: none !important;
+  filter: none !important;
+}
+html[data-winelio-native="android"] .bz-line {
+  display: none !important;
+}
+html[data-winelio-native="android"] .animate-shimmer,
+html[data-winelio-native="android"] .animate-ping,
+html[data-winelio-native="android"] .animate-fade-up {
+  animation: none !important;
+}
+html[data-winelio-native="android"] {
+  scroll-behavior: auto !important;
+}

@@ -14,6 +14,7 @@ const LOAD_TIMEOUT_MS = 20_000;
 export const WinelioWebAppScreen = () => {
   const webView = useRef<WebView>(null);
   const loadTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const firstPaintDone = useRef(false);
   const [canGoBack, setCanGoBack] = useState(false);
   const [failed, setFailed] = useState(false);
   const [failureMessage, setFailureMessage] = useState<string>();
@@ -38,9 +39,15 @@ export const WinelioWebAppScreen = () => {
     clearLoadTimeout();
     setFailed(false);
     setFailureMessage(undefined);
-    setLoaded(false);
-    setProgress(0);
+    // Après le premier écran utile, on laisse la page visible. Recouvrir le
+    // WebView à chaque navigation (redirect middleware, RSC, login) donnait
+    // l'impression que l'app ramait, alors que Chrome — sans overlay — restait fluide.
+    if (!firstPaintDone.current) {
+      setLoaded(false);
+      setProgress(0);
+    }
     loadTimeout.current = setTimeout(() => {
+      if (firstPaintDone.current) return;
       showFailure("Le chargement a pris trop de temps. Vérifiez votre connexion puis réessayez.");
     }, LOAD_TIMEOUT_MS);
   }, [clearLoadTimeout, showFailure]);
@@ -62,6 +69,7 @@ export const WinelioWebAppScreen = () => {
   }, []);
 
   const retry = () => {
+    firstPaintDone.current = false;
     beginLoading();
     setWebViewKey((current) => current + 1);
   };
@@ -70,6 +78,7 @@ export const WinelioWebAppScreen = () => {
     const message = parseNativeBridgeMessage(event.nativeEvent.data);
     if (!message) return;
     if (message.type === "pageReady") {
+      firstPaintDone.current = true;
       clearLoadTimeout();
       setLoaded(true);
       return;
@@ -100,9 +109,11 @@ export const WinelioWebAppScreen = () => {
             applicationNameForUserAgent={`WinelioNative/${Platform.OS}`}
             allowsBackForwardNavigationGestures
             allowsInlineMediaPlayback
+            androidLayerType="hardware"
             cacheEnabled
             domStorageEnabled
             geolocationEnabled
+            overScrollMode="never"
             javaScriptCanOpenWindowsAutomatically
             javaScriptEnabled
             injectedJavaScriptBeforeContentLoaded={nativeBridgeScript}
