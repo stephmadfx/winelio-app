@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import {
   Elements,
@@ -13,8 +13,14 @@ let stripePromise: Promise<Stripe | null> | null = null;
 function getStripe() {
   if (!stripePromise) {
     const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-    if (!key) throw new Error("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY manquant");
-    stripePromise = loadStripe(key);
+    if (!key) {
+      stripePromise = Promise.resolve(null);
+    } else {
+      stripePromise = loadStripe(key).catch((err) => {
+        console.error("[stripe] loadStripe failed:", err);
+        return null;
+      });
+    }
   }
   return stripePromise;
 }
@@ -26,11 +32,69 @@ interface Props {
 }
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+const ELEMENT_READY_TIMEOUT_MS = 20_000;
+
+function stripeReturnUrl() {
+  if (typeof window === "undefined") return "";
+  const url = new URL(window.location.href);
+  url.searchParams.set("setup_intent_return", "1");
+  return url.toString();
+}
+
+function persistPaymentMethod(setupIntentId: string) {
+  return fetch("/api/stripe/payment-method", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ setupIntentId }),
+  }).then(async (res) => {
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error ?? `Erreur enregistrement (${res.status})`);
+    }
+    return data as { brand: string | null; last4: string | null };
+  });
+}
+
+function clearSetupReturnParams() {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  ["setup_intent", "setup_intent_client_secret", "redirect_status", "setup_intent_return"].forEach(
+    (key) => url.searchParams.delete(key),
+  );
+  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+}
 
 export function SavePaymentMethodDialog({ open, onClose, onSaved }: Props) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [demoProcessing, setDemoProcessing] = useState(false);
+  const returnHandled = useRef(false);
+
+  // Reprise après 3-D Secure : Stripe redirige vers return_url avec setup_intent=…
+  useEffect(() => {
+    if (DEMO_MODE || returnHandled.current || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const setupIntentId = params.get("setup_intent");
+    const redirectStatus = params.get("redirect_status");
+    if (!setupIntentId) return;
+    returnHandled.current = true;
+
+    if (redirectStatus && redirectStatus !== "succeeded") {
+      setLoadError("La vérification 3-D Secure n'a pas abouti. Réessayez d'enregistrer votre carte.");
+      clearSetupReturnParams();
+      return;
+    }
+
+    persistPaymentMethod(setupIntentId)
+      .then((data) => {
+        clearSetupReturnParams();
+        onSaved({ brand: data.brand ?? null, last4: data.last4 ?? null });
+        onClose();
+      })
+      .catch((err: unknown) => {
+        setLoadError(err instanceof Error ? err.message : "Erreur après 3-D Secure");
+      });
+  }, [onSaved, onClose]);
 
   // Branche mode démo : simule un enregistrement de carte (2s de latence visuelle
   // puis appel API qui pose une fausse carte sur le profil).
@@ -40,10 +104,9 @@ export function SavePaymentMethodDialog({ open, onClose, onSaved }: Props) {
     let cancelled = false;
     const start = Date.now();
     fetch("/api/stripe/demo-bypass", { method: "POST" })
-      .then((r) => r.json())
+      .then((r) => r.json().catch(() => ({})))
       .then((data) => {
         if (cancelled) return;
-        // Garantit un minimum de 2s d'affichage pour ne pas paraître instantané
         const elapsed = Date.now() - start;
         const remaining = Math.max(0, 2000 - elapsed);
         setTimeout(() => {
@@ -60,7 +123,7 @@ export function SavePaymentMethodDialog({ open, onClose, onSaved }: Props) {
       .catch((err) => {
         if (cancelled) return;
         setDemoProcessing(false);
-        setLoadError(err.message);
+        setLoadError(err instanceof Error ? err.message : "Erreur en mode démo");
       });
     return () => { cancelled = true; };
   }, [open, onSaved, onClose]);
@@ -73,21 +136,32 @@ export function SavePaymentMethodDialog({ open, onClose, onSaved }: Props) {
       }
       return;
     }
+    if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+      setLoadError("Configuration Stripe manquante. Réessayez plus tard ou contactez le support.");
+      return;
+    }
+    let cancelled = false;
     fetch("/api/stripe/setup-intent", { method: "POST" })
       .then(async (r) => {
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error ?? "Erreur initialisation Stripe");
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.error ?? `Erreur initialisation Stripe (${r.status})`);
+        if (!data.clientSecret) throw new Error("Stripe n'a pas renvoyé de session de paiement");
         return data;
       })
-      .then((d) => setClientSecret(d.clientSecret))
-      .catch((err) => setLoadError(err.message));
+      .then((d) => {
+        if (!cancelled) setClientSecret(d.clientSecret);
+      })
+      .catch((err) => {
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : "Impossible d'initialiser Stripe");
+      });
+    return () => { cancelled = true; };
   }, [open]);
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+    <div className="fixed inset-0 z-[10050] flex items-end justify-center overflow-y-auto bg-black/50 backdrop-blur-sm p-4 sm:items-center">
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 my-auto max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-3 right-3 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100"
@@ -178,49 +252,99 @@ function SetupIntentForm({
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [elementReady, setElementReady] = useState(false);
+
+  useEffect(() => {
+    if (elementReady) return;
+    const timer = window.setTimeout(() => {
+      setError(
+        "Le formulaire de carte n'a pas pu s'afficher. Vérifiez votre connexion, désactivez un bloqueur de publicités, puis réessayez.",
+      );
+    }, ELEMENT_READY_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [elementReady]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (submitting) return;
+
+    if (!stripe || !elements) {
+      setError("Stripe n'est pas encore prêt. Patientez une seconde puis réessayez.");
+      return;
+    }
+    if (!elementReady) {
+      setError("Le formulaire de carte charge encore. Patientez jusqu'à ce qu'il s'affiche, puis réessayez.");
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
-    const { error: confirmErr, setupIntent } = await stripe.confirmSetup({
-      elements,
-      redirect: "if_required",
-    });
+    try {
+      const { error: submitErr } = await elements.submit();
+      if (submitErr) {
+        setError(submitErr.message ?? "Vérifiez les informations de votre carte.");
+        return;
+      }
 
-    if (confirmErr) {
-      setError(confirmErr.message ?? "Erreur de validation");
+      const { error: confirmErr, setupIntent } = await stripe.confirmSetup({
+        elements,
+        confirmParams: { return_url: stripeReturnUrl() },
+        redirect: "if_required",
+      });
+
+      if (confirmErr) {
+        setError(confirmErr.message ?? "Erreur de validation de la carte");
+        return;
+      }
+
+      if (setupIntent?.status === "requires_action") {
+        setError("Une vérification supplémentaire est requise. Suivez les instructions à l'écran.");
+        return;
+      }
+
+      if (setupIntent?.status !== "succeeded") {
+        setError(`L'enregistrement n'est pas terminé (statut : ${setupIntent?.status ?? "inconnu"}). Réessayez.`);
+        return;
+      }
+
+      if (!setupIntent.id) {
+        setError("Stripe n'a pas renvoyé d'identifiant. Réessayez.");
+        return;
+      }
+
+      const data = await persistPaymentMethod(setupIntent.id);
+      onSaved({ brand: data.brand ?? null, last4: data.last4 ?? null });
+      onClose();
+    } catch (err) {
+      console.error("[stripe] confirmSetup:", err);
+      setError(err instanceof Error ? err.message : "Impossible d'enregistrer la carte. Réessayez.");
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    if (setupIntent?.status !== "succeeded") {
-      setError(`Statut inattendu : ${setupIntent?.status}`);
-      setSubmitting(false);
-      return;
-    }
-
-    const res = await fetch("/api/stripe/payment-method", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ setupIntentId: setupIntent.id }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error ?? "Erreur enregistrement");
-      setSubmitting(false);
-      return;
-    }
-
-    onSaved({ brand: data.brand ?? null, last4: data.last4 ?? null });
-    onClose();
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <PaymentElement />
+      <PaymentElement
+        options={{
+          layout: "tabs",
+          wallets: { applePay: "never", googlePay: "never" },
+        }}
+        onReady={() => {
+          setElementReady(true);
+          setError(null);
+        }}
+        onLoadError={(event) => {
+          setError(
+            event.error?.message
+              ?? "Impossible de charger le formulaire de carte. Réessayez dans un instant.",
+          );
+        }}
+      />
+      {!elementReady && !error && (
+        <p className="text-xs text-winelio-gray text-center">Chargement du formulaire sécurisé…</p>
+      )}
       {error && (
         <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
       )}

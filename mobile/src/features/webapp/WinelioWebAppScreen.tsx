@@ -7,7 +7,7 @@ import WebView, { type WebViewMessageEvent } from "react-native-webview";
 import { colors } from "@/design-system/tokens";
 import { WebAppError, WebAppLoading } from "@/features/webapp/WebAppFeedback";
 import { nativeBridgeScript, pageHealthCheckScript, parseNativeBridgeMessage } from "@/features/webapp/nativeBridge";
-import { isEmbeddedNavigation, isExternalProtocol, webAppEntryUrl } from "@/features/webapp/webAppNavigation";
+import { isExternalProtocol, shouldLoadInWebView, webAppEntryUrl } from "@/features/webapp/webAppNavigation";
 
 const LOAD_TIMEOUT_MS = 20_000;
 
@@ -131,7 +131,7 @@ export const WinelioWebAppScreen = () => {
             onNavigationStateChange={(state) => setCanGoBack(state.canGoBack)}
             onRenderProcessGone={() => showFailure("La page ne répondait plus et a été arrêtée. Touchez Réessayer pour la relancer.")}
             onShouldStartLoadWithRequest={(request) => {
-              if (isEmbeddedNavigation(request.url)) return true;
+              if (shouldLoadInWebView(request.url, request.isTopFrame)) return true;
               if (isExternalProtocol(request.url) || /^https?:/i.test(request.url)) {
                 openOutsideApp(request.url);
               }

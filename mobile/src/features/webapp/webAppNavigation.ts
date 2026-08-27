@@ -10,11 +10,15 @@ export const webAppOrigin = normalizeOrigin(
 
 export const webAppEntryUrl = `${webAppOrigin}/auth/login`;
 
-const embeddedPaymentHosts = new Set([
-  "checkout.stripe.com",
-  "pay.stripe.com",
-  "hooks.stripe.com",
-]);
+const isStripeEmbeddedHost = (hostname: string) => {
+  const host = hostname.toLowerCase();
+  return (
+    host === "stripe.com"
+    || host.endsWith(".stripe.com")
+    || host === "stripe.network"
+    || host.endsWith(".stripe.network")
+  );
+};
 
 export const isEmbeddedNavigation = (url: string) => {
   if (/^(about:blank|blob:|data:)/i.test(url)) return true;
@@ -22,10 +26,20 @@ export const isEmbeddedNavigation = (url: string) => {
   try {
     const target = new URL(url);
     const app = new URL(webAppOrigin);
-    return target.origin === app.origin || embeddedPaymentHosts.has(target.hostname);
+    return target.origin === app.origin || isStripeEmbeddedHost(target.hostname);
   } catch {
     return false;
   }
+};
+
+/**
+ * Décide si l'URL doit rester dans le WebView.
+ * Les iframes (Stripe Elements, 3-D Secure) ne sont jamais interceptées :
+ * les ouvrir dans Chrome cassait l'enregistrement de carte ("rien ne se passe").
+ */
+export const shouldLoadInWebView = (url: string, isTopFrame?: boolean) => {
+  if (isTopFrame === false) return true;
+  return isEmbeddedNavigation(url);
 };
 
 export const isExternalProtocol = (url: string) => /^(mailto:|tel:|sms:|maps:)/i.test(url);
