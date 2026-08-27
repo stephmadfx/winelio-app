@@ -138,6 +138,7 @@ export async function createCompany(payload: {
       await supabase.from("profiles").update({
         latitude: coords.latitude,
         longitude: coords.longitude,
+        geo_precision: coords.precision,
         city: payload.city ?? undefined,
         postal_code: payload.postal_code ?? undefined,
       }).eq("id", user.id);
@@ -277,6 +278,7 @@ export async function updateCompany(
       await supabase.from("profiles").update({
         latitude: coords.latitude,
         longitude: coords.longitude,
+        geo_precision: coords.precision,
         city: patch.city ?? undefined,
         postal_code: patch.postal_code ?? undefined,
       }).eq("id", user.id);

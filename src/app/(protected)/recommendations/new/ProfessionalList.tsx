@@ -1,5 +1,16 @@
-import { Professional } from "./types";
+import { Professional, hasPreciseLocation } from "./types";
 import { formatRelativeTime } from "@/lib/fake-last-active";
+
+/**
+ * Le libellé ne promet que la précision réellement disponible : au numéro de rue
+ * on peut annoncer des mètres, à la voie près l'incertitude atteint la centaine
+ * de mètres et un chiffre exact serait trompeur.
+ */
+const formatDistance = (km: number, precision: Professional["geo_precision"]): string => {
+  if (km >= 1) return `${Math.round(km)} km`;
+  if (precision !== "housenumber") return "< 1 km";
+  return `${Math.max(50, Math.round((km * 1000) / 50) * 50)} m`;
+};
 
 interface ProfessionalListProps {
   professionals: Professional[];
@@ -82,15 +93,14 @@ export const ProfessionalList = ({ professionals, selectedProId, onSelect, geoGr
               )}
             </div>
             <div className="flex flex-col items-end gap-2">
-              {/* Distance affichée uniquement depuis une position réelle de l'appareil.
-                  À défaut, le point de référence est le centre de la commune saisie, or
-                  les fiches sont elles-mêmes géocodées à ce même centre : l'écart tombe
-                  à zéro et « 0 m » passe pour un bug.
-                  Ce géocodage au niveau commune interdit aussi toute précision
-                  métrique, d'où « < 1 km » plutôt qu'un nombre de mètres inventé. */}
-              {geoGranted && p.distance !== null && (
+              {/* Deux conditions, et non une seule : il faut une position réelle de
+                  l'appareil (sinon le point de départ est un centre de commune) ET une
+                  fiche géocodée à son adresse (sinon c'est le point d'arrivée qui est un
+                  centre de commune). Dans les deux cas la distance ne veut rien dire —
+                  c'est ce qui affichait « 0 m » sur toute la liste. */}
+              {geoGranted && p.distance !== null && hasPreciseLocation(p) && (
                 <span className="text-xs font-bold text-winelio-orange bg-winelio-orange/10 px-2.5 py-1 rounded-full">
-                  {p.distance < 1 ? "< 1 km" : `${Math.round(p.distance)} km`}
+                  {formatDistance(p.distance, p.geo_precision)}
                 </span>
               )}
               {isSelected && (

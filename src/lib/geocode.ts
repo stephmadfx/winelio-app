@@ -1,9 +1,17 @@
 const API_ADRESSE_URL = "https://api-adresse.data.gouv.fr/search/";
 
+/**
+ * Précision du point renvoyé. La recherche n'affiche une distance que pour
+ * `housenumber` et `street` : `municipality` désigne le centre de la commune,
+ * partagé par toutes les entreprises de la ville, donc inexploitable.
+ */
+export type GeoPrecision = "housenumber" | "street" | "municipality";
+
 interface GeocodeResult {
   latitude: number;
   longitude: number;
   label: string;
+  precision: GeoPrecision;
 }
 
 export async function geocodeAddress(
@@ -26,10 +34,18 @@ export async function geocodeAddress(
     const feature = data.features[0];
     const [longitude, latitude] = feature.geometry.coordinates;
 
+    // La BAN renvoie aussi `locality` ou `municipality` quand elle n'a pas su
+    // situer la voie : tout ce qui n'est pas une adresse est ramené au niveau
+    // commune, faute de quoi on rouvrirait la porte aux fausses distances.
+    const type = feature.properties?.type;
+    const precision: GeoPrecision =
+      type === "housenumber" || type === "street" ? type : "municipality";
+
     return {
       latitude,
       longitude,
       label: feature.properties.label ?? query,
+      precision,
     };
   } catch {
     return null;

@@ -110,6 +110,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
             last_active_at: fakeLastActive(p.profile_id),
             company_source: p.company_source ?? null,
             company_description: p.company_description ?? null,
+            geo_precision: p.geo_precision ?? null,
           }))
         );
       });
