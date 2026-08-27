@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { formatDisplayName } from "@/lib/utils";
+import { formatDisplayName, formatProspectDisplayName } from "@/lib/utils";
 import { StepTimeline } from "@/components/step-timeline";
 import { RecommendationFollowupCard } from "@/components/recommendation-followup-card";
 import { SavePaymentMethodDialog } from "@/components/save-payment-method-dialog";
@@ -334,7 +334,7 @@ export default function RecommendationDetailPage() {
 
   const cfg = STATUS_CONFIG[recommendation.status] ?? STATUS_CONFIG.EXPIRED;
   const contactName = recommendation.contact
-    ? formatDisplayName(recommendation.contact.first_name, recommendation.contact.last_name, "Recommandé inconnu")
+    ? formatProspectDisplayName(recommendation.contact.first_name, recommendation.contact.last_name, "Recommandé inconnu")
     : "Recommandé inconnu";
   const completedCount = steps.filter((s) => s.completed_at).length;
   const progressPct = steps.length > 0 ? Math.round((completedCount / steps.length) * 100) : 0;

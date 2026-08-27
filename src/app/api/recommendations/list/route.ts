@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getProfessionalLeadAccessBlock } from "@/lib/professional-lead-access";
+import { formatMaskedProspectName } from "@/lib/utils";
 
 /**
  * Liste les recommandations du user connecté, filtrées par rôle.
@@ -65,23 +66,15 @@ export async function GET(req: Request) {
   const mappedData = (data ?? []).map((rec: any) => {
     if (tab === "received" && rec.status === "PENDING" && rec.contact) {
       const contact = Array.isArray(rec.contact) ? rec.contact[0] : rec.contact;
-      const f = contact?.first_name?.trim() || "";
-      const l = contact?.last_name?.trim() || "";
-      const c = contact?.city?.trim() || "";
-      const fDisplay = f.length > 10 ? f.slice(0, 10) + "..." : f;
-      let maskedName = fDisplay;
-      if (fDisplay && l) {
-        maskedName += ` ${l.charAt(0).toUpperCase()}.`;
-      } else if (l) {
-        maskedName = `${l.charAt(0).toUpperCase()}.`;
-      }
-      if (!maskedName) maskedName = "Contact";
-      if (c) maskedName += ` (${c})`;
 
       return {
         ...rec,
         contact: {
-          first_name: maskedName,
+          first_name: formatMaskedProspectName(
+            contact?.first_name,
+            contact?.last_name,
+            contact?.city
+          ),
           last_name: null,
           city: contact?.city ?? null,
         },

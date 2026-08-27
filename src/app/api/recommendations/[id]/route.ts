@@ -6,6 +6,7 @@ import {
   isFutureLeadBlocked,
 } from "@/lib/professional-lead-access";
 import { hasPaidProfessionalCommission } from "@/lib/recommendation-review";
+import { formatMaskedProspectName } from "@/lib/utils";
 
 // Statuts où le pro a accepté (ou plus loin dans le workflow)
 // → le referrer peut voir l'identité complète du pro.
@@ -70,7 +71,11 @@ export async function GET(
         { status: 403 }
       );
     }
+  }
 
+  // Masquage du prospect aussi pour un super_admin qui est le professionnel
+  // de la reco : la fiche admin reste dans /gestion-reseau.
+  if (isPro) {
     const { data: proProfile } = await supabaseAdmin
       .schema("winelio")
       .from("profiles")
@@ -83,21 +88,12 @@ export async function GET(
       const contactArr = Array.isArray(rec.contact) ? rec.contact : rec.contact ? [rec.contact] : [];
       const contact = contactArr[0] as { first_name?: string | null; last_name?: string | null; city?: string | null } | undefined;
 
-      const f = contact?.first_name?.trim() || "";
-      const l = contact?.last_name?.trim() || "";
-      const c = contact?.city?.trim() || "";
-      const fDisplay = f.length > 10 ? f.slice(0, 10) + "..." : f;
-      let maskedName = fDisplay;
-      if (fDisplay && l) {
-        maskedName += ` ${l.charAt(0).toUpperCase()}.`;
-      } else if (l) {
-        maskedName = `${l.charAt(0).toUpperCase()}.`;
-      }
-      if (!maskedName) maskedName = "Contact";
-      if (c) maskedName += ` (${c})`;
-
       rec.contact = {
-        first_name: maskedName,
+        first_name: formatMaskedProspectName(
+          contact?.first_name,
+          contact?.last_name,
+          contact?.city
+        ),
         last_name: null,
         email: null,
         phone: null,

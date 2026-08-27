@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 import { pickActiveCompany } from "@/lib/pick-active-company";
-import { formatDisplayName } from "@/lib/utils";
+import { formatDisplayName, formatMaskedProspectName } from "@/lib/utils";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
 const trackClick = (rid: string) => `${SITE_URL}/api/email-track/click?rid=${encodeURIComponent(rid)}`;
@@ -49,21 +49,12 @@ export async function notifyScrapedReminder(recommendationId: string) {
     return trimmed;
   })();
   const referrerName = formatDisplayName(referrer?.first_name, referrer?.last_name, "Un membre Winelio");
-  const contactName = (() => {
-    const f = contact?.first_name?.trim() || "";
-    const l = contact?.last_name?.trim() || "";
-    const c = contact?.city?.trim() || "";
-    const fDisplay = f.length > 10 ? f.slice(0, 10) + "..." : f;
-    let name = fDisplay;
-    if (fDisplay && l) {
-      name += ` ${l.charAt(0).toUpperCase()}.`;
-    } else if (l) {
-      name = `${l.charAt(0).toUpperCase()}.`;
-    }
-    if (!name) name = "un client";
-    if (c) name += ` (${c})`;
-    return name;
-  })();
+  const contactName = formatMaskedProspectName(
+    contact?.first_name,
+    contact?.last_name,
+    contact?.city,
+    "un client"
+  );
 
   const html = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><title>Rappel — Un client vous recommande</title></head>

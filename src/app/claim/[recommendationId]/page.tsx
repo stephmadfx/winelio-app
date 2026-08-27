@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/supabase/get-user";
-import { formatDisplayName } from "@/lib/utils";
+import { formatDisplayName, formatMaskedProspectName } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { WinelioLogo } from "@/components/winelio-logo";
@@ -81,21 +81,12 @@ export default async function ClaimPage({
   }
 
   const referrerName = formatDisplayName(referrer?.first_name, referrer?.last_name, "Un membre Winelio");
-  const contactName = (() => {
-    const f = contact?.first_name?.trim() || "";
-    const l = contact?.last_name?.trim() || "";
-    const c = contact?.city?.trim() || "";
-    const fDisplay = f.length > 10 ? f.slice(0, 10) + "..." : f;
-    let name = fDisplay;
-    if (fDisplay && l) {
-      name += ` ${l.charAt(0).toUpperCase()}.`;
-    } else if (l) {
-      name = `${l.charAt(0).toUpperCase()}.`;
-    }
-    if (!name) name = "Un contact";
-    if (c) name += ` (${c})`;
-    return name;
-  })();
+  const contactName = formatMaskedProspectName(
+    contact?.first_name,
+    contact?.last_name,
+    contact?.city,
+    "Un contact"
+  );
   const urgencyLabel = URGENCY_LABELS[rec.urgency_level ?? ""] ?? "Normal";
 
   const alreadyClaimedByOther =
