@@ -82,9 +82,15 @@ export const ProfessionalList = ({ professionals, selectedProId, onSelect, geoGr
               )}
             </div>
             <div className="flex flex-col items-end gap-2">
-              {p.distance !== null && (
+              {/* Distance affichée uniquement depuis une position réelle de l'appareil.
+                  À défaut, le point de référence est le centre de la commune saisie, or
+                  les fiches sont elles-mêmes géocodées à ce même centre : l'écart tombe
+                  à zéro et « 0 m » passe pour un bug.
+                  Ce géocodage au niveau commune interdit aussi toute précision
+                  métrique, d'où « < 1 km » plutôt qu'un nombre de mètres inventé. */}
+              {geoGranted && p.distance !== null && (
                 <span className="text-xs font-bold text-winelio-orange bg-winelio-orange/10 px-2.5 py-1 rounded-full">
-                  {p.distance < 1 ? `${Math.round(p.distance * 1000)} m` : `${Math.round(p.distance)} km`}
+                  {p.distance < 1 ? "< 1 km" : `${Math.round(p.distance)} km`}
                 </span>
               )}
               {isSelected && (
