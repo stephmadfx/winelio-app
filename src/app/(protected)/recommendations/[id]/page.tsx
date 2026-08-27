@@ -334,8 +334,8 @@ export default function RecommendationDetailPage() {
 
   const cfg = STATUS_CONFIG[recommendation.status] ?? STATUS_CONFIG.EXPIRED;
   const contactName = recommendation.contact
-    ? formatDisplayName(recommendation.contact.first_name, recommendation.contact.last_name, "Contact inconnu")
-    : "Contact inconnu";
+    ? formatDisplayName(recommendation.contact.first_name, recommendation.contact.last_name, "Recommandé inconnu")
+    : "Recommandé inconnu";
   const completedCount = steps.filter((s) => s.completed_at).length;
   const progressPct = steps.length > 0 ? Math.round((completedCount / steps.length) * 100) : 0;
   const urgency = recommendation.urgency_level ? URGENCY_CONFIG[recommendation.urgency_level] : null;
@@ -373,6 +373,7 @@ export default function RecommendationDetailPage() {
             {/* Row 1 : nom + badge status. Nom en entier (pas tronqué), peut wrapper */}
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
+                <p className={`mb-1 text-[10px] font-semibold uppercase tracking-wider ${cfg.heroText} opacity-80`}>Recommandé</p>
                 <h1 className="text-xl font-black text-white truncate sm:text-2xl">{contactName}</h1>
                 {(recommendation.contact?.email || contactMasked) && (() => {
                   const isPro = userId === recommendation.professional_id;
@@ -526,7 +527,7 @@ export default function RecommendationDetailPage() {
             </InfoBlock>
 
             <InfoBlock
-              label="Recommandé par"
+              label="Recommandeur"
               icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>}
             >
               <p className="font-bold text-winelio-dark text-sm">

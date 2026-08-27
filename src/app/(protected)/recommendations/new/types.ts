@@ -1,3 +1,11 @@
+export interface Contact {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+}
+
 export interface Professional {
   id: string;
   first_name: string | null;
@@ -39,13 +47,31 @@ export interface SelfProfile {
   phone: string;
 }
 
+export interface ContactFormData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  country_code: string;
+  address: string;
+  city: string;
+  postal_code: string;
+}
+
 export type Urgency = "urgent" | "normal" | "flexible";
 
-/** Choix explicite de l’étape Demandeur — aucune valeur par défaut. */
-export type BeneficiaryChoice = "self" | "other";
-
 export const STEPS_META = [
-  { number: 1, label: "Demandeur" },
+  { number: 1, label: "Recommandé" },
   { number: 2, label: "Professionnel" },
   { number: 3, label: "Projet" },
 ] as const;
+
+export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const PHONE_REGEX = /^[0-9\s\-().+]{6,20}$/;
+
+export const inputCls = (hasError?: boolean) =>
+  `w-full rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-colors ${
+    hasError
+      ? "border-red-400 focus:border-red-400 focus:ring-red-100"
+      : "border-winelio-gray/20 focus:border-winelio-orange focus:ring-winelio-orange/15"
+  }`;

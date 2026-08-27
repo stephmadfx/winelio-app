@@ -9,6 +9,7 @@ import {
 import { wn } from "./helpers/supabase";
 import { loginAsFast, logout } from "./helpers/auth";
 import { cron } from "./helpers/cron";
+import { recoCreateBody } from "./helpers/reco";
 import { readQueuedEmails } from "./helpers/email";
 
 const QUOTE_AMOUNT = 1200; // €
@@ -57,12 +58,7 @@ test("golden path : reco standard 7 étapes + commissions MLM", async ({ page, c
   await loginAsFast(page, referrer.email);
 
   const createRes = await page.request.post("/api/recommendations/create", {
-    data: {
-      selectedProId:     pro.id,
-      description:       "Travaux de plomberie — test E2E",
-      urgency:           "normal",
-      selfForMe: true,
-    },
+    data: recoCreateBody(pro.id, contact.id, "Travaux de plomberie — test E2E"),
   });
   expect(createRes.ok(), `create reco: ${await createRes.text()}`).toBe(true);
   const { recommendation } = await createRes.json();

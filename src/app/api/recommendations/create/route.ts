@@ -5,17 +5,31 @@ import { notifyNewRecommendation } from "@/lib/notify-new-recommendation";
 
 const SCHEMA = "winelio";
 
+const SELF_RECO_ERROR =
+  "Une recommandation doit concerner quelqu'un d'autre. Le recommandé ne peut pas être le recommandeur.";
+
+type ContactFormData = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  postal_code: string;
+};
+
 type Body = {
+  selectedContactId: string | null;
   selectedProId: string;
   description: string;
   urgency: "urgent" | "normal" | "flexible";
-  selfForMe: boolean;
-  selectedContactId?: unknown;
-  createContact?: unknown;
-  contactForm?: unknown;
-  thirdPartyConsent?: unknown;
-  selfProfile?: unknown;
+  selfForMe?: boolean;
+  createContact: boolean;
+  thirdPartyConsent: boolean;
+  contactForm: ContactFormData | null;
 };
+
+const normalizeEmail = (value: string | null | undefined) => (value ?? "").trim().toLowerCase();
 
 export async function POST(req: Request) {
   const user = await getUser();
@@ -25,18 +39,26 @@ export async function POST(req: Request) {
 
   const body = (await req.json()) as Body;
   const currentUserId = user.id;
+  const accountEmail = normalizeEmail(user.email);
 
-  const containsThirdPartyPayload =
-    body.selfForMe !== true ||
-    body.selectedContactId != null ||
-    body.createContact === true ||
-    body.contactForm != null ||
-    body.thirdPartyConsent === true ||
-    body.selfProfile != null;
+  if (body.selfForMe === true) {
+    return NextResponse.json({ error: SELF_RECO_ERROR }, { status: 400 });
+  }
 
-  if (containsThirdPartyPayload) {
+  if (body.thirdPartyConsent !== true) {
     return NextResponse.json(
-      { error: "Winelio n'accepte pas les coordonnées d'une personne tierce. La demande doit concerner le compte connecté." },
+      { error: "Le consentement explicite du recommandé est obligatoire" },
+      { status: 400 },
+    );
+  }
+
+  if (!body.selectedProId) {
+    return NextResponse.json({ error: "Professionnel requis" }, { status: 400 });
+  }
+
+  if (body.selectedProId === currentUserId) {
+    return NextResponse.json(
+      { error: "Vous ne pouvez pas vous recommander vous-même en tant que professionnel" },
       { status: 400 },
     );
   }
@@ -44,7 +66,7 @@ export async function POST(req: Request) {
   const { data: currentProfile, error: profileError } = await supabaseAdmin
     .schema(SCHEMA)
     .from("profiles")
-    .select("first_name, last_name, phone, is_demo")
+    .select("is_demo")
     .eq("id", currentUserId)
     .single();
 
@@ -52,62 +74,61 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Profil utilisateur introuvable" }, { status: 404 });
   }
 
-  const accountEmail = user.email?.trim();
-  if (!accountEmail) {
-    return NextResponse.json({ error: "Adresse e-mail du compte introuvable" }, { status: 400 });
-  }
+  let contactId = typeof body.selectedContactId === "string" ? body.selectedContactId : null;
 
-  const selfContact = {
-    first_name: currentProfile.first_name ?? "",
-    last_name: currentProfile.last_name ?? "",
-    email: accountEmail,
-    phone: currentProfile.phone ?? "",
-    user_id: currentUserId,
-    country: "FR",
-  };
-
-  const { data: existingSelfContact, error: existingContactError } = await supabaseAdmin
-    .schema(SCHEMA)
-    .from("contacts")
-    .select("id")
-    .eq("user_id", currentUserId)
-    .eq("email", accountEmail)
-    .maybeSingle();
-
-  if (existingContactError) {
-    return NextResponse.json({ error: `Erreur lecture du demandeur: ${existingContactError.message}` }, { status: 500 });
-  }
-
-  let contactId = existingSelfContact?.id ?? null;
-  if (contactId) {
-    const { error: updateContactError } = await supabaseAdmin
-      .schema(SCHEMA)
-      .from("contacts")
-      .update(selfContact)
-      .eq("id", contactId)
-      .eq("user_id", currentUserId);
-    if (updateContactError) {
-      return NextResponse.json({ error: `Erreur mise à jour du demandeur: ${updateContactError.message}` }, { status: 500 });
+  if (body.createContact && body.contactForm) {
+    const formEmail = normalizeEmail(body.contactForm.email);
+    if (!formEmail || formEmail === accountEmail) {
+      return NextResponse.json({ error: SELF_RECO_ERROR }, { status: 400 });
     }
-  } else {
-    const { data: newSelfContact, error: createContactError } = await supabaseAdmin
+
+    const { data: newContact, error } = await supabaseAdmin
       .schema(SCHEMA)
       .from("contacts")
-      .insert({ ...selfContact, address: "", city: "", postal_code: "" })
+      .insert({
+        first_name: body.contactForm.first_name,
+        last_name: body.contactForm.last_name,
+        email: body.contactForm.email.trim(),
+        phone: body.contactForm.phone,
+        address: body.contactForm.address,
+        city: body.contactForm.city,
+        postal_code: body.contactForm.postal_code,
+        user_id: currentUserId,
+        country: "FR",
+      })
       .select("id")
       .single();
-    if (createContactError) {
-      return NextResponse.json({ error: `Erreur création du demandeur: ${createContactError.message}` }, { status: 500 });
+    if (error) {
+      return NextResponse.json({ error: `Erreur création du recommandé: ${error.message}` }, { status: 500 });
     }
-    contactId = newSelfContact.id;
+    contactId = newContact.id;
   }
 
-  if (!contactId || !body.selectedProId) {
-    return NextResponse.json({ error: "Contact et professionnel requis" }, { status: 400 });
+  if (!contactId) {
+    return NextResponse.json({ error: "Recommandé et professionnel requis" }, { status: 400 });
+  }
+
+  const { data: contactRow, error: contactError } = await supabaseAdmin
+    .schema(SCHEMA)
+    .from("contacts")
+    .select("id, email, user_id")
+    .eq("id", contactId)
+    .maybeSingle();
+
+  if (contactError || !contactRow) {
+    return NextResponse.json({ error: "Recommandé introuvable" }, { status: 400 });
+  }
+
+  if (contactRow.user_id !== currentUserId) {
+    return NextResponse.json({ error: "Recommandé non autorisé" }, { status: 403 });
+  }
+
+  if (normalizeEmail(contactRow.email) === accountEmail) {
+    return NextResponse.json({ error: SELF_RECO_ERROR }, { status: 400 });
   }
 
   const { data: recommendation, error: recError } = await supabaseAdmin
-    .schema("winelio")
+    .schema(SCHEMA)
     .from("recommendations")
     .insert({
       referrer_id: currentUserId,
@@ -125,7 +146,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Erreur création recommandation: ${recError.message}` }, { status: 500 });
   }
 
-  // ── Créer les recommendation_steps ─────────────────────────────────────────
   const { data: stepDefs } = await supabaseAdmin
     .schema(SCHEMA)
     .from("steps")
@@ -137,7 +157,6 @@ export async function POST(req: Request) {
     const stepRows = stepDefs.map((s) => ({
       recommendation_id: recommendation.id,
       step_id: s.id,
-      // Auto-compléter l'étape 1 "Recommandation reçue"
       completed_at: s.order_index === 1 ? now : null,
     }));
 

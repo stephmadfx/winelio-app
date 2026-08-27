@@ -332,11 +332,8 @@ Quand la chaîne de parrainage est plus courte que 5 niveaux (ou que le sponsor 
 - Après la boucle, `undistributed` est ajouté à l'entrée `platform_winelio` existante
 - Optimisation : flag `chainBroken` pour éviter les requêtes DB redondantes une fois la chaîne rompue
 
-### Auto-recommandation ("Pour moi-même")
-Un user peut se recommander un pro pour lui-même :
-- Contact auto-créé depuis son profil
-- Il touche ses 60% (`recommendation`) normalement
-- Sa propre fiche pro (s'il en a une) est exclue du sélecteur de pro
+### Recommandation à 3 acteurs (pas d'auto-reco)
+Une recommandation a toujours 3 personnes distinctes : le **recommandeur** (compte connecté), le **recommandé** (contact `winelio.contacts`, quelqu'un d'autre) et le **pro**. L'API `POST /api/recommendations/create` refuse `selfForMe` et tout contact dont l'email est celui du recommandeur. La fiche pro du recommandeur est exclue du sélecteur.
 
 ### Wallet
 - **EUR** : total_earned, total_withdrawn, pending_commissions, available

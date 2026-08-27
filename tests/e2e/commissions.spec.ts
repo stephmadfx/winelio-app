@@ -8,6 +8,7 @@ import {
   pickCategory,
 } from "./helpers/factories";
 import { e2eEmail } from "./helpers/env";
+import { recoCreateBody } from "./helpers/reco";
 
 const PLAN = {
   rate: 10,           // 10 % du dealAmount = baseCommission
@@ -58,9 +59,7 @@ async function runFullRecoFlow(page: import("@playwright/test").Page, opts: {
   await loginAsFast(page, opts.referrerEmail);
   const createRes = await page.request.post("/api/recommendations/create", {
     data: {
-      selectedProId: opts.proId,
-      description: "Commission test", urgency: "normal",
-      selfForMe: true,
+      ...recoCreateBody(opts.proId, opts.contactId, "Commission test"),
     },
   });
   expect(createRes.ok()).toBe(true);
@@ -298,9 +297,7 @@ test("commissions — pro sans sponsor : affiliation_bonus absorbé par platform
   await loginAsFast(page, referrer.email);
   const createRes = await page.request.post("/api/recommendations/create", {
     data: {
-      selectedProId: orphanPro.id,
-      description: "Orphan test", urgency: "normal",
-      selfForMe: true,
+      ...recoCreateBody(orphanPro.id, contactId, "Orphan test"),
     },
   });
   const recoId = (await createRes.json()).recommendation.id as string;
