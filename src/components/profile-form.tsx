@@ -528,13 +528,16 @@ export function ProfileForm({
           <p className="text-xs text-winelio-gray mb-4">
             Adresse de contact de votre entreprise pour les nouvelles recommandations. Elle peut être identique à votre e-mail personnel.
           </p>
-          <div className="flex gap-3 items-start">
+          {/* Empilé sur mobile : une adresse e-mail complète ne tient pas à côté du
+              bouton sur 360 px. En ligne, `min-w-0` est indispensable — sans lui un
+              input flex garde sa largeur intrinsèque et pousse le bouton hors écran. */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
             <input
               type="email"
               value={proEmailInput}
               onChange={(e) => setProEmailInput(e.target.value)}
               placeholder="contact@monentreprise.fr"
-              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
+              className="w-full min-w-0 px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange sm:flex-1"
             />
             <button
               type="button"
@@ -545,7 +548,7 @@ export function ProfileForm({
                 setProEmailSaving(result.error ? "error" : "saved");
                 setTimeout(() => setProEmailSaving("idle"), 3000);
               }}
-              className="px-5 py-2.5 bg-winelio-dark text-white font-medium rounded-xl hover:bg-winelio-dark/90 transition-colors disabled:opacity-50 whitespace-nowrap"
+              className="w-full px-5 py-2.5 bg-winelio-dark text-white font-medium rounded-xl hover:bg-winelio-dark/90 transition-colors disabled:opacity-50 whitespace-nowrap sm:w-auto"
             >
               {proEmailSaving === "saving" ? "…" : "Enregistrer"}
             </button>
