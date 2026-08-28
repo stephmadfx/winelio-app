@@ -68,10 +68,23 @@ export async function POST(req: Request) {
     try {
       await pgClient.query("BEGIN");
 
+      // Un BEFORE INSERT sur auth.users impose un téléphone Winelio. Ce trigger
+      // s'exécute même si la ligne va matcher ON CONFLICT, donc un upsert
+      // « app: winelio » sans phone casse aussi la reconnexion OTP d'un compte
+      // existant. On ne crée que s'il n'y a vraiment personne.
+      const existingRes = await pgClient.query<{ id: string }>(
+        "SELECT id FROM auth.users WHERE lower(email) = $1 LIMIT 1",
+        [normalizedEmail]
+      );
+      if (existingRes.rows[0]?.id) {
+        userId = existingRes.rows[0].id;
+        isNewSignup = false;
+      }
+
       // Créer l'utilisateur s'il n'existe pas (trigger corrigé vers winelio.profiles).
       // GoTrue self-hosted attend des chaînes vides, pas NULL, sur plusieurs
       // colonnes token héritées du schéma auth.
-      const upsertRes = await pgClient.query<{ id: string; inserted: boolean }>(`
+      const upsertRes = userId ? null : await pgClient.query<{ id: string; inserted: boolean }>(`
         INSERT INTO auth.users (
           instance_id,
           id,
@@ -132,13 +145,11 @@ export async function POST(req: Request) {
         RETURNING id, (xmax = 0) AS inserted
       `, [normalizedEmail]);
 
-      userId = upsertRes.rows[0]?.id ?? null;
-      // xmax = 0 → ligne réellement INSERT (pas UPDATE via ON CONFLICT).
-      // C'est notre seule façon fiable de détecter une vraie première inscription :
-      // le trigger handle_new_user crée le profil auto, donc le INSERT INTO
-      // winelio.profiles ON CONFLICT DO NOTHING qui suit retourne toujours 0
-      // pour un vrai nouveau user (faux négatif sur isNewSignup avant ce fix).
-      isNewSignup = upsertRes.rows[0]?.inserted === true;
+      if (upsertRes) {
+        userId = upsertRes.rows[0]?.id ?? null;
+        // xmax = 0 → ligne réellement INSERT (pas UPDATE via ON CONFLICT).
+        isNewSignup = upsertRes.rows[0]?.inserted === true;
+      }
 
       if (!userId) {
         // Si ON CONFLICT ne retourne pas l'id (vieux PostgreSQL), on le récupère
