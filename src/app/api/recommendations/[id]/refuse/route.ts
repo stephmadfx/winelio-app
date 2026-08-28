@@ -29,7 +29,10 @@ export async function POST(
     .update({ status: "CANCELLED" })
     .eq("id", id);
 
-  if (error) return NextResponse.json({ error: "Erreur lors du refus" }, { status: 500 });
+  if (error) {
+    console.error("[refuse] status update:", error.message);
+    return NextResponse.json({ error: "Erreur lors du refus" }, { status: 500 });
+  }
 
   // Annuler les relances pending pour cette reco
   await supabaseAdmin

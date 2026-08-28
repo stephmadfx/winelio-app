@@ -20,7 +20,7 @@ interface Props {
 const STEP_LABEL: Record<number, string> = {
   2: "prendre contact",
   4: "soumettre le devis",
-  5: "finaliser les travaux",
+  6: "finaliser les travaux",
 };
 
 export function RecommendationFollowupCard({ recommendationId, isProfessional }: Props) {

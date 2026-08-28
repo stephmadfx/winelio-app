@@ -9,19 +9,21 @@ import { formatDisplayName } from "@/lib/utils";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
 
-type AfterStep = 2 | 4 | 5;
+type AfterStep = 2 | 4 | 5 | 6;
 type CycleIndex = 1 | 2 | 3;
 
 const SUBJECT_BY_STEP: Record<AfterStep, string> = {
   2: "Avez-vous pris contact avec votre client ?",
   4: "Avez-vous transmis le devis à votre client ?",
   5: "Vos travaux sont-ils terminés ?",
+  6: "Vos travaux sont-ils terminés ?",
 };
 
 const QUESTION_BY_STEP: Record<AfterStep, (contact: string) => string> = {
   2: (c) => `Avez-vous bien pris contact avec <strong style="color:#2D3436;">${c}</strong> ?`,
   4: (c) => `Avez-vous transmis le devis à <strong style="color:#2D3436;">${c}</strong> ?`,
   5: (c) => `Les travaux pour <strong style="color:#2D3436;">${c}</strong> sont-ils terminés et le paiement reçu ?`,
+  6: (c) => `Les travaux pour <strong style="color:#2D3436;">${c}</strong> sont-ils terminés et le paiement reçu ?`,
 };
 
 const SUBJECT_OVERRIDE_BY_CYCLE: Record<CycleIndex, ((base: string) => string) | null> = {
@@ -83,6 +85,7 @@ export async function notifyProFollowup(ctx: FollowupContext): Promise<string | 
   const companyName = company?.name || "votre entreprise";
 
   const baseSubject = SUBJECT_BY_STEP[afterStep];
+  if (!baseSubject) return null;
   const subject = SUBJECT_OVERRIDE_BY_CYCLE[cycleIndex]?.(baseSubject) ?? baseSubject;
   const h1 = H1_BY_CYCLE[cycleIndex](baseSubject);
   const icon = ICON_BY_CYCLE[cycleIndex];

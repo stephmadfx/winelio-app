@@ -21,6 +21,41 @@ const rateMap = new Map<string, Bucket>();
 const RATE_LIMIT = 60;
 const RATE_WINDOW_MS = 60_000;
 
+function isPublicApiPath(path: string): boolean {
+  return (
+    path.startsWith("/api/auth/") ||
+    path.startsWith("/api/staging-auth") ||
+    path.startsWith("/api/bugs/imap-poll") ||
+    path.startsWith("/api/bugs/imap-debug") ||
+    path.startsWith("/api/email/process-queue") ||
+    path.startsWith("/api/email-track/") ||
+    path.startsWith("/api/stripe/webhook") ||
+    path.startsWith("/api/stripe/cron-reminders") ||
+    path.startsWith("/api/recommendations/process-followups") ||
+    path.startsWith("/api/recommendations/cron-scraped-reminder") ||
+    path.startsWith("/api/recommendations/followup-action") ||
+    path.startsWith("/api/pros/cron-onboarding-reminder") ||
+    path.startsWith("/api/admin/auth-health")
+  );
+}
+
+function isPublicPagePath(path: string): boolean {
+  return (
+    path.startsWith("/auth") ||
+    path.startsWith("/api/auth") ||
+    path.startsWith("/staging-login") ||
+    path.startsWith("/api/staging-auth") ||
+    path.startsWith("/commission/success") ||
+    path.startsWith("/claim") ||
+    path.startsWith("/conditions-generales-utilisation") ||
+    path.startsWith("/documents-legaux") ||
+    path.startsWith("/suppression-compte") ||
+    path.startsWith("/plan-remuneration") ||
+    path.startsWith("/recommendations/followup/") ||
+    path === "/"
+  );
+}
+
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
   const entry = rateMap.get(ip);
@@ -51,16 +86,7 @@ export async function middleware(request: NextRequest) {
   if (stagingPassword) {
     const path = request.nextUrl.pathname;
     const isCronApi =
-      path.startsWith("/api/bugs/imap-poll") ||
-      path.startsWith("/api/bugs/imap-debug") ||
-      path.startsWith("/api/email/process-queue") ||
-      path.startsWith("/api/stripe/webhook") ||
-      path.startsWith("/api/stripe/cron-reminders") ||
-      path.startsWith("/api/auth/cron-pending-account-reminders") ||
-      path.startsWith("/api/recommendations/process-followups") ||
-      path.startsWith("/api/recommendations/cron-scraped-reminder") ||
-      path.startsWith("/api/recommendations/followup-action") ||
-      path.startsWith("/api/admin/auth-health") ||
+      isPublicApiPath(path) ||
       path.startsWith("/recommendations/followup/") ||
       path.startsWith("/api/video/");
     const isExempt =
@@ -150,17 +176,10 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect API routes (except auth callback and cron endpoints)
+  // Protect API routes (except auth callback, tracking, and cron endpoints)
   if (
     request.nextUrl.pathname.startsWith("/api/") &&
-    !request.nextUrl.pathname.startsWith("/api/auth/") &&
-    !request.nextUrl.pathname.startsWith("/api/staging-auth") &&
-    !request.nextUrl.pathname.startsWith("/api/bugs/imap-poll") &&
-    !request.nextUrl.pathname.startsWith("/api/bugs/imap-debug") &&
-    !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
-    !request.nextUrl.pathname.startsWith("/api/email-track/") &&
-    !request.nextUrl.pathname.startsWith("/api/stripe/webhook") &&
-    !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders")
+    !isPublicApiPath(request.nextUrl.pathname)
   ) {
     if (!user) {
       return NextResponse.json(
@@ -173,23 +192,8 @@ export async function middleware(request: NextRequest) {
   // Redirect unauthenticated users to login
   if (
     !user &&
-    !request.nextUrl.pathname.startsWith("/auth") &&
-    !request.nextUrl.pathname.startsWith("/api/auth") &&
-    !request.nextUrl.pathname.startsWith("/staging-login") &&
-    !request.nextUrl.pathname.startsWith("/api/staging-auth") &&
-    !request.nextUrl.pathname.startsWith("/api/bugs/imap-poll") &&
-    !request.nextUrl.pathname.startsWith("/api/bugs/imap-debug") &&
-    !request.nextUrl.pathname.startsWith("/api/email/process-queue") &&
-    !request.nextUrl.pathname.startsWith("/api/email-track/") &&
-    !request.nextUrl.pathname.startsWith("/api/stripe/webhook") &&
-    !request.nextUrl.pathname.startsWith("/api/stripe/cron-reminders") &&
-    !request.nextUrl.pathname.startsWith("/commission/success") &&
-    !request.nextUrl.pathname.startsWith("/claim") &&
-    !request.nextUrl.pathname.startsWith("/conditions-generales-utilisation") &&
-    !request.nextUrl.pathname.startsWith("/documents-legaux") &&
-    !request.nextUrl.pathname.startsWith("/suppression-compte") &&
-    !request.nextUrl.pathname.startsWith("/plan-remuneration") &&
-    request.nextUrl.pathname !== "/"
+    !isPublicApiPath(request.nextUrl.pathname) &&
+    !isPublicPagePath(request.nextUrl.pathname)
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";

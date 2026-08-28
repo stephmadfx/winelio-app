@@ -13,7 +13,9 @@ const EMAIL_LABELS: Record<string, string> = {
   "step-3":  '✉️ Étape 3 — Contact établi → Recommandeur',
   "step-4":  '✉️ Étape 4 — RDV fixé → Recommandeur',
   "step-5":  '✉️ Étape 5 — Devis soumis → Recommandeur',
-  "step-6":  '✉️ Étape 6 — Travaux terminés → Recommandeur',
+  "step-6":  '✉️ Étape 6 — Devis validé → Recommandeur',
+  "step-7":  '✉️ Étape 7 — Travaux terminés → Recommandeur',
+  "step-8":  '✉️ Étape 8 — Affaire terminée → Recommandeur',
 };
 
 export function EmailPreviewDialog({

@@ -1,22 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { RECOMMENDATION_STATUS } from "@/lib/constants";
+import { RECOMMENDATION_STATUS_BY_STEP } from "@/lib/constants";
 import { notifyReferrerStep } from "@/lib/notify-referrer-step";
 import { notifyContactAccepted } from "@/lib/notify-contact-accepted";
 import { createStripeCheckoutSession } from "@/lib/stripe-checkout";
 
 // Étape 8 = "Affaire terminée" → email Stripe Checkout pour la commission pro.
 // Les commissions MLM sont créées uniquement par le webhook Stripe après paiement.
-const STATUS_BY_STEP: Record<number, string> = {
-  1: RECOMMENDATION_STATUS.PENDING,
-  2: RECOMMENDATION_STATUS.ACCEPTED,
-  3: RECOMMENDATION_STATUS.CONTACT_MADE,
-  4: RECOMMENDATION_STATUS.MEETING_SCHEDULED,
-  5: RECOMMENDATION_STATUS.QUOTE_SUBMITTED,
-  6: RECOMMENDATION_STATUS.QUOTE_VALIDATED,
-  7: RECOMMENDATION_STATUS.PAYMENT_RECEIVED,
-  8: RECOMMENDATION_STATUS.COMPLETED,
-};
 
 export async function POST(request: Request) {
   try {
@@ -118,27 +108,36 @@ export async function POST(request: Request) {
 
       // IMPORTANT : update expected_completion_at AVANT de marquer l'étape complétée,
       // sinon le trigger SQL ne lit pas la valeur correcte.
-      await supabase
+      const { error: amountError } = await supabase
         .from("recommendations")
         .update({ amount, expected_completion_at: expectedDate.toISOString() })
         .eq("id", rec.id);
+      if (amountError) {
+        return NextResponse.json({ error: "Impossible d'enregistrer le devis" }, { status: 500 });
+      }
     }
 
     // Marquer l'étape comme complétée
-    await supabase
+    const { error: stepError } = await supabase
       .from("recommendation_steps")
       .update({
         completed_at: new Date().toISOString(),
         data: Object.keys(stepData).length > 0 ? stepData : undefined,
       })
       .eq("id", stepRow.id);
+    if (stepError) {
+      return NextResponse.json({ error: "Impossible de valider l'étape" }, { status: 500 });
+    }
 
     // Mettre à jour le statut de la recommandation
-    const newStatus = STATUS_BY_STEP[stepIndex] ?? rec.status;
-    await supabase
+    const newStatus = RECOMMENDATION_STATUS_BY_STEP[stepIndex] ?? rec.status;
+    const { error: statusError } = await supabase
       .from("recommendations")
       .update({ status: newStatus })
       .eq("id", rec.id);
+    if (statusError) {
+      return NextResponse.json({ error: "Impossible de mettre à jour le statut" }, { status: 500 });
+    }
 
     if (stepIndex === 8) {
       await createStripeCheckoutSession(rec.id);

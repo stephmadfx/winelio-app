@@ -3,7 +3,10 @@
 // Token HMAC signé, pas de session Supabase requise.
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { RECOMMENDATION_STATUS, RECOMMENDATION_STATUS_BY_STEP } from "@/lib/constants";
 import { verifyFollowupToken } from "@/lib/followup-token";
+import { notifyReferrerStep } from "@/lib/notify-referrer-step";
+import { notifyRecoRefused } from "@/lib/notify-reco-refused";
 
 const MAX_REPORTS = 5;
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
@@ -93,7 +96,7 @@ async function handleDone(fu: FollowupRow): Promise<Response> {
   const { data: stepRow } = await supabaseAdmin
     .schema("winelio")
     .from("recommendation_steps")
-    .select("id, completed_at, step:steps!inner(order_index)")
+    .select("id, completed_at, step:steps!inner(order_index, completion_role)")
     .eq("recommendation_id", fu.recommendation_id)
     .eq("step.order_index", targetOrder)
     .single();
@@ -105,22 +108,56 @@ async function handleDone(fu: FollowupRow): Promise<Response> {
     return htmlPage("Déjà fait, merci", "Cette étape a déjà été marquée comme complétée. Merci !", "success");
   }
 
+  const step = Array.isArray(stepRow.step) ? stepRow.step[0] : stepRow.step;
+  const role = step?.completion_role ?? null;
+
+  if (role === "REFERRER") {
+    return htmlPage(
+      "Validation du recommandeur requise",
+      "Cette étape doit être validée par le recommandeur dans l'application Winelio.",
+      "error"
+    );
+  }
+
+  // Le devis (étape 5) exige un montant et une date — pas via le bouton email.
+  if (targetOrder === 5) {
+    return htmlPage(
+      "Saisissez le devis dans Winelio",
+      "Pour marquer le devis comme soumis, connectez-vous et renseignez le montant ainsi que la date prévue de fin des travaux.",
+      "error"
+    );
+  }
+
   const actionability = await ensureRecommendationCanStillMove(fu);
   if (!actionability.ok) {
     return htmlPage(actionability.title, actionability.message, "error");
   }
 
-  await supabaseAdmin
+  const { error: stepError } = await supabaseAdmin
     .schema("winelio")
     .from("recommendation_steps")
     .update({ completed_at: new Date().toISOString() })
     .eq("id", stepRow.id);
+  if (stepError) {
+    return htmlPage("Erreur", "Impossible de valider cette étape pour le moment.", "error");
+  }
 
-  await supabaseAdmin
+  const newStatus = RECOMMENDATION_STATUS_BY_STEP[targetOrder];
+  const { error: recError } = await supabaseAdmin
     .schema("winelio")
     .from("recommendations")
-    .update({ abandoned_by_pro_at: null })
+    .update({
+      abandoned_by_pro_at: null,
+      ...(newStatus ? { status: newStatus } : {}),
+    })
     .eq("id", fu.recommendation_id);
+  if (recError) {
+    return htmlPage("Erreur", "L'étape est validée mais le statut n'a pas pu être mis à jour.", "error");
+  }
+
+  await notifyReferrerStep(fu.recommendation_id, targetOrder).catch((err) =>
+    console.error("[followup-action] notifyReferrerStep:", err)
+  );
 
   // Le trigger SQL cancel les followups pending et crée le suivant si applicable.
   return htmlPage("Étape validée", "Merci ! L'étape a été marquée comme complétée.", "success");
@@ -146,20 +183,27 @@ async function postJsonPostpone(fu: FollowupRow, postponeToParam: string | null)
 }
 
 async function postJsonAbandon(fu: FollowupRow): Promise<Response> {
-  // Marquer la reco comme refusée (statut CANCELLED, aligné sur /refuse)
-  await supabaseAdmin
+  const { error } = await supabaseAdmin
     .schema("winelio")
     .from("recommendations")
-    .update({ status: "CANCELLED" })
+    .update({ status: RECOMMENDATION_STATUS.CANCELLED })
     .eq("id", fu.recommendation_id);
 
-  // Cancel tous les followups pending de cette reco
+  if (error) {
+    console.error("[followup-action] abandon status:", error.message);
+    return NextResponse.json({ error: "Impossible d'annuler cette recommandation" }, { status: 500 });
+  }
+
   await supabaseAdmin
     .schema("winelio")
     .from("recommendation_followups")
     .update({ status: "cancelled", cancel_reason: "reco_refused" })
     .eq("recommendation_id", fu.recommendation_id)
     .eq("status", "pending");
+
+  notifyRecoRefused(fu.recommendation_id).catch((err) =>
+    console.error("[followup-action] notify-reco-refused:", err)
+  );
 
   return NextResponse.json({ ok: true });
 }

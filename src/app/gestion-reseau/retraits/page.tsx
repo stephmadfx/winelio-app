@@ -6,6 +6,14 @@ import {
   markWithdrawalPaid,
 } from "../actions";
 
+function formatIban(bankDetails: unknown): string | null {
+  if (!bankDetails || typeof bankDetails !== "object") return null;
+  const raw = (bankDetails as { iban?: unknown }).iban;
+  if (typeof raw !== "string" || raw.length < 14) return null;
+  const compact = raw.replace(/\s/g, "").toUpperCase();
+  return compact.replace(/(.{4})/g, "$1 ").trim();
+}
+
 const STATUS = {
   PROCESSING: { label: "Approuvé",   color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
   COMPLETED:  { label: "Payé",       color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
@@ -96,6 +104,11 @@ export default async function AdminRetraits() {
                       <p className="text-xs text-muted-foreground mt-0.5">
                         Demande du {new Date(w.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                       </p>
+                      {formatIban(w.bank_details) && (
+                        <p className="text-xs font-mono text-foreground mt-2 break-all">
+                          IBAN {formatIban(w.bank_details)}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-xl font-bold text-emerald-400">
@@ -180,6 +193,11 @@ export default async function AdminRetraits() {
                       <p className="text-xs text-muted-foreground">
                         {new Date(w.created_at).toLocaleDateString("fr-FR")}
                       </p>
+                      {formatIban(w.bank_details) && (
+                        <p className="text-xs font-mono text-muted-foreground mt-0.5 break-all">
+                          {formatIban(w.bank_details)}
+                        </p>
+                      )}
                     </div>
                     <p className="text-sm font-semibold text-foreground shrink-0">
                       {w.amount?.toLocaleString("fr-FR")} €

@@ -167,10 +167,26 @@ const TEMPLATES: Record<string, () => string> = {
 
   "step-6": () => wrap(`
     ${icon("✅")}
-    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Travaux terminés — affaire conclue&nbsp;!</h1></td></tr>
+    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Devis validé</h1></td></tr>
     <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
-    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;"><strong style="color:#2D3436;">${PRO}</strong> a confirmé que les travaux sont terminés et que le paiement de <strong style="color:#2D3436;">${CONTACT}</strong> a été reçu.<br><br>Vos <strong style="color:#FF6B35;">commissions d'intermédiation sont en cours de traitement</strong>.</p></td></tr>
-    ${infoBlock(`<p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Retrouvez le détail de vos commissions d'intermédiation dans votre <strong>wallet Winelio</strong> dès leur validation.</p>`)}
+    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;"><strong style="color:#2D3436;">${PRO}</strong> peut maintenant réaliser les travaux pour <strong style="color:#2D3436;">${CONTACT}</strong>.</p></td></tr>
+    ${cta(`${SITE}/recommendations/demo`, "Voir la recommandation →")}
+  `),
+
+  "step-7": () => wrap(`
+    ${icon("🔧")}
+    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Travaux terminés — paiement client reçu</h1></td></tr>
+    <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;"><strong style="color:#2D3436;">${PRO}</strong> a confirmé que les travaux sont terminés et que le paiement de <strong style="color:#2D3436;">${CONTACT}</strong> a été reçu.</p></td></tr>
+    ${cta(`${SITE}/recommendations/demo`, "Voir la recommandation →")}
+  `),
+
+  "step-8": () => wrap(`
+    ${icon("🏁")}
+    <tr><td align="center"><h1 style="margin:0;color:#2D3436;font-size:22px;font-weight:700;">Affaire terminée</h1></td></tr>
+    <tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center"><p style="margin:0;color:#636E72;font-size:15px;line-height:1.6;"><strong style="color:#2D3436;">${PRO}</strong> a clôturé l'affaire pour <strong style="color:#2D3436;">${CONTACT}</strong>. Le professionnel reçoit le lien de paiement de la commission.</p></td></tr>
+    ${infoBlock(`<p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">Votre part sera créditée après le règlement du professionnel, puis votre avis.</p>`)}
     ${cta(`${SITE}/recommendations/demo`, "Voir la recommandation →")}
   `),
 

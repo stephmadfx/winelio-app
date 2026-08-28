@@ -69,7 +69,7 @@ export async function notifyRecoRefused(recommendationId: string) {
 
   await queueEmail({
     to: referrer.email,
-    subject: `${he(proName)} a décliné votre recommandation`,
+    subject: `${proName} a décliné votre recommandation`,
     html,
   });
 }

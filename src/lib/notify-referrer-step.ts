@@ -42,16 +42,22 @@ const STEP_MESSAGES: Record<number, StepInfo> = {
   },
   6: {
     emoji: "✅",
-    subject: (pro, contact) => `Affaire conclue — vos commissions d'intermédiation sont en route !`,
-    title:   () => `Travaux terminés — affaire conclue !`,
-    body:    (pro, contact) => `<strong style="color:#2D3436;">${he(pro)}</strong> a confirmé que les travaux sont terminés et que le paiement de <strong style="color:#2D3436;">${he(contact)}</strong> a été reçu.<br><br>Vos <strong style="color:#FF6B35;">commissions d'intermédiation sont en cours de traitement</strong> et seront bientôt disponibles dans votre wallet Winelio.`,
-    highlight: true,
+    subject: (_pro, contact) => `Le devis pour ${contact} a été validé`,
+    title:   () => `Devis validé`,
+    body:    (pro, contact) => `<strong style="color:#2D3436;">${he(pro)}</strong> peut maintenant réaliser les travaux pour <strong style="color:#2D3436;">${he(contact)}</strong>. Les commissions d'intermédiation seront calculées après le paiement de la commission par le professionnel.`,
   },
   7: {
+    emoji: "🔧",
+    subject: (pro, contact) => `${pro} a confirmé les travaux pour ${contact}`,
+    title:   () => `Travaux terminés — paiement client reçu`,
+    body:    (pro, contact) => `<strong style="color:#2D3436;">${he(pro)}</strong> a confirmé que les travaux sont terminés et que le paiement de <strong style="color:#2D3436;">${he(contact)}</strong> a été reçu. Il reste à clôturer l'affaire pour lancer le règlement de votre commission d'intermédiation.`,
+  },
+  8: {
     emoji: "🏁",
-    subject: (pro, contact) => `Affaire terminée avec ${contact} — mission accomplie !`,
-    title:   () => `Affaire terminée avec succès !`,
-    body:    (pro, contact) => `<strong style="color:#2D3436;">${he(pro)}</strong> a clôturé l'affaire pour <strong style="color:#2D3436;">${he(contact)}</strong>. Merci pour votre recommandation, elle a porté ses fruits !`,
+    subject: (_pro, contact) => `Affaire terminée avec ${contact} — commission en cours de règlement`,
+    title:   () => `Affaire terminée`,
+    body:    (pro, contact) => `<strong style="color:#2D3436;">${he(pro)}</strong> a clôturé l'affaire pour <strong style="color:#2D3436;">${he(contact)}</strong>. Le professionnel reçoit maintenant le lien de paiement de la commission d'intermédiation. Votre part sera créditée après son règlement, puis votre avis.`,
+    highlight: true,
   },
 };
 

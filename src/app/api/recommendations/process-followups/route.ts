@@ -57,7 +57,7 @@ export async function POST(req: Request) {
       const emailQueueId = await notifyProFollowup({
         followupId: fu.id,
         recommendationId: fu.recommendation_id,
-        afterStep: fu.after_step_order as 2 | 4 | 5,
+        afterStep: fu.after_step_order as 2 | 4 | 6,
         cycleIndex: fu.cycle_index as 1 | 2 | 3,
       });
 
