@@ -172,17 +172,19 @@ export async function POST(req: Request) {
       );
       previousPasswordHash = previousRes.rows[0]?.encrypted_password ?? null;
 
-      // Définir le mot de passe temporaire + marquer le projet d'origine.
-      // Le marker 'app: winelio' permet au trigger winelio.handle_new_user de filtrer
-      // les users d'autres projets partageant la même instance Supabase Auth.
+      // Mot de passe temporaire pour signInWithPassword. On fusionne les métadonnées
+      // (ne pas écraser first_name / phone / scraped) et on repose app=winelio :
+      // sans ce marker, le cron auth-health classe le profil en « fantôme » et le
+      // trigger handle_new_user ignore le compte (instance Supabase partagée).
       await pgClient.query(
         `UPDATE auth.users
          SET encrypted_password = crypt($1, gen_salt('bf')),
-             raw_user_meta_data = jsonb_build_object(
+             raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object(
                'sub', id::text,
                'email', email,
                'email_verified', true,
-               'phone_verified', false
+               'phone_verified', false,
+               'app', 'winelio'
              )
          WHERE id = $2`,
         [tempPassword, userId]
