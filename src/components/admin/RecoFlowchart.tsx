@@ -322,20 +322,23 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           <line x1="500" y1="756" x2="500" y2="786" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
           <line x1="500" y1="830" x2="500" y2="860" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Étape 5 → étape 6 (direct, plus de losange) */}
+          {/* Étape 5 → étape 6 (validation du devis par le client) */}
           <line x1="500" y1="904" x2="500" y2="930" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Étape 6 → commissions */}
+          {/* Étape 6 → étape 7 */}
           <line x1="500" y1="978" x2="500" y2="1002" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Étape 6 → email "Commission à régler" (déclenché en parallèle des commissions MLM) */}
-          <line x1="700" y1="954" x2="830" y2="954" stroke="#F7931E" strokeWidth={1.5} strokeDasharray="4,3" markerEnd="url(#arr)" />
+          {/* Étape 7 → étape 8 */}
+          <line x1="500" y1="1050" x2="500" y2="1074" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Commissions → étape 7 (flux principal direct) */}
-          <line x1="500" y1="1038" x2="500" y2="1056" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          {/* Étape 8 → préparation de la commission */}
+          <line x1="500" y1="1122" x2="500" y2="1146" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
-          {/* Étape 7 → fin */}
-          <line x1="500" y1="1100" x2="500" y2="1172" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
+          {/* Étape 8 → email "Commission à régler" */}
+          <line x1="700" y1="1098" x2="830" y2="1098" stroke="#F7931E" strokeWidth={1.5} strokeDasharray="4,3" markerEnd="url(#arr)" />
+
+          {/* Commission → fin */}
+          <line x1="500" y1="1182" x2="500" y2="1202" stroke="#636E72" strokeWidth={1.5} markerEnd="url(#arr)" />
 
           {/* ══ NŒUDS ══ */}
 
@@ -456,16 +459,16 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           {/* Étape 5 */}
           <RectNode id="etape-5" x={300} y={860} w={400} h={44} fill="white" stroke="#2D3436"
             label="Étape 5 — Devis soumis"
-            sublabel="Le pro renseigne le montant · ✉️ email recommandeur"
+            sublabel="Montant + date facultative · demande envoyée au client"
             onClick={click} hasBadge={ann.has("etape-5")} />
 
-          {/* ── Branche relances pro automatiques (à droite des étapes 2/4/5) ── */}
+          {/* ── Branche relances pro automatiques (à droite des étapes 2/4/6) ── */}
 
-          {/* Connecteurs pointillés étapes 2/4/5 → pro-followup */}
+          {/* Connecteurs pointillés étapes 2/4/6 → pro-followup */}
           <line x1="700" y1="660" x2="780" y2="660" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4,3" />
           <line x1="700" y1="808" x2="780" y2="808" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4,3" />
-          <line x1="700" y1="882" x2="780" y2="882" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4,3" />
-          <line x1="780" y1="660" x2="780" y2="882" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4,3" />
+          <line x1="700" y1="954" x2="780" y2="954" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4,3" />
+          <line x1="780" y1="660" x2="780" y2="954" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4,3" />
 
           {/* Flèche pointillée → bloc relance */}
           <line x1="780" y1="770" x2="800" y2="770" stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="4,3" markerEnd="url(#arr)" />
@@ -473,7 +476,7 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           {/* Bloc Relances pro auto */}
           <RectNode id="pro-followup" x={800} y={745} w={300} h={50} fill="#F59E0B" stroke="#F59E0B"
             label="📧 Relances pro automatiques (3 cycles)"
-            sublabel="Étape 2/4/5 · T+24h / +48h / +5j · max 5 reports"
+            sublabel="Étapes 2/4/6 · T+24h / +48h / +5j · max 5 reports"
             labelColor="white" onClick={click} hasBadge={ann.has("pro-followup")} />
 
           {/* Flèche → abandoned */}
@@ -486,53 +489,50 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
             sublabel="abandoned_by_pro_at posé · email soft → recommandeur"
             labelColor="#E74C3C" onClick={click} hasBadge={ann.has("pro-abandoned")} />
 
-          {/* Email "Commission à régler" → Pro (déclenché PAR la complétion étape 6) */}
+          {/* Email "Commission à régler" → Pro (après confirmation client étape 8) */}
           <g style={{ cursor: "pointer" }} onClick={() => click("email-commission", '📧 Email "Commission à régler" → Professionnel')}>
-            <rect x={830} y={930} width={340} height={48} rx={8} fill="#F7931E" filter="url(#sh)" />
-            <text x={1000} y={952} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
+            <rect x={830} y={1074} width={340} height={48} rx={8} fill="#F7931E" filter="url(#sh)" />
+            <text x={1000} y={1096} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
               📧 &quot;Commission à régler&quot; → Pro
             </text>
-            <text x={1000} y={968} textAnchor="middle" fontSize={9} fill="rgba(255,255,255,0.85)">
+            <text x={1000} y={1112} textAnchor="middle" fontSize={9} fill="rgba(255,255,255,0.85)">
               J+0 · Relance J+2 · Alerte J+4 · Stripe Checkout
             </text>
-            {ann.has("email-commission") && <Badge x={1164} y={936} />}
+            {ann.has("email-commission") && <Badge x={1164} y={1080} />}
           </g>
 
-          {/* Étape 6 — Travaux terminés + Paiement reçu (déclenche commissions MLM + facture Stripe au pro) */}
+          {/* Étape 6 — validation directe du devis par le client */}
           <RectNode id="etape-6" x={300} y={930} w={400} h={48} fill="#FFF5F0" stroke="#FF6B35"
-            label="Étape 6 — Travaux terminés + Paiement reçu"
-            sublabel="Commissions MLM + facture Stripe au pro · recommandeur notifié"
+            label="Étape 6 — Devis accepté par le client"
+            sublabel="Lien sécurisé · contestation possible · aucune attente de date"
             labelColor="#FF6B35" onClick={click} hasBadge={ann.has("etape-6")} />
 
-          {/* Commissions */}
-          <g style={{ cursor: "pointer" }} onClick={() => click("commissions", "💰 Commissions créées automatiquement — 5 niveaux MLM")}>
-            <rect x={80} y={1002} width={840} height={36} rx={8} fill="#2D3436" filter="url(#sh)" />
-            <text x={500} y={1016} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
-              💰 Commissions déclenchées automatiquement — 5 niveaux MLM
-            </text>
-            <text x={500} y={1031} textAnchor="middle" fontSize={10} fill="rgba(255,255,255,0.65)">
-              Recommandeur 60% · Niveaux 1–5 : 3% chacun (15%) · Affiliation 1% · Cashback pro 1% (Gains) · Winelio 23%
-            </text>
-            {ann.has("commissions") && <Badge x={914} y={1008} />}
-          </g>
-
-          {/* Email commission d'intermédiation */}
-          <g style={{ cursor: "pointer" }} onClick={() => click("email-commission", '📧 Email "Commission d\'intermédiation à régler" → Professionnel')}>
-            <rect x={170} y={1056} width={660} height={34} rx={8} fill="#F7931E" filter="url(#sh)" />
-            <text x={500} y={1070} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
-              📧 Email &quot;Commission d&apos;intermédiation à régler&quot; → Professionnel (J+0 · Relance J+2 · Alerte J+4)
-            </text>
-            {ann.has("email-commission") && <Badge x={824} y={1062} />}
-          </g>
-
-          {/* Étape 7 — Affaire terminée */}
-          <RectNode id="etape-7" x={300} y={1110} w={400} h={42} fill="white" stroke="#2D3436"
-            label="Étape 7 — Affaire terminée"
-            sublabel="Clôture administrative (sans effet financier)"
+          {/* Étape 7 — déclaration du professionnel */}
+          <RectNode id="etape-7" x={300} y={1002} w={400} h={48} fill="white" stroke="#2D3436"
+            label="Étape 7 — Travaux terminés + paiement reçu"
+            sublabel="Déclaration du professionnel · confirmation envoyée au client"
             onClick={click} hasBadge={ann.has("etape-7")} />
 
+          {/* Étape 8 — confirmation finale du client */}
+          <RectNode id="etape-8" x={300} y={1074} w={400} h={48} fill="#FFF5F0" stroke="#FF6B35"
+            label="Étape 8 — Prestation confirmée par le client"
+            sublabel="Conforme ou litige · clôture uniquement après confirmation"
+            labelColor="#FF6B35" onClick={click} hasBadge={ann.has("etape-8")} />
+
+          {/* Préparation puis création des commissions après règlement Stripe */}
+          <g style={{ cursor: "pointer" }} onClick={() => click("commissions", "💰 Commissions créées automatiquement — 5 niveaux MLM")}>
+            <rect x={80} y={1146} width={840} height={36} rx={8} fill="#2D3436" filter="url(#sh)" />
+            <text x={500} y={1160} textAnchor="middle" fontSize={11} fontWeight="700" fill="white">
+              💰 Commission préparée · crédits créés après règlement Stripe — 5 niveaux MLM
+            </text>
+            <text x={500} y={1175} textAnchor="middle" fontSize={10} fill="rgba(255,255,255,0.65)">
+              Recommandeur 60% · Niveaux 1–5 : 3% chacun (15%) · Affiliation 1% · Cashback pro 1% (Gains) · Winelio 23%
+            </text>
+            {ann.has("commissions") && <Badge x={914} y={1152} />}
+          </g>
+
           {/* Fin */}
-          <PillNode id="fin" x={300} y={1172} w={400} h={42} fill="#27AE60"
+          <PillNode id="fin" x={300} y={1202} w={400} h={38} fill="#27AE60"
             label="✅ Recommandation complétée" onClick={click} hasBadge={ann.has("fin")} />
 
           </svg>
