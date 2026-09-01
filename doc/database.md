@@ -120,22 +120,24 @@ RLS : SELECT public.
 
 ---
 
-### `steps` (7 étapes workflow)
+### `steps` (8 étapes workflow)
 
 | Colonne | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
 | name, description | text | |
-| order_index | integer NOT NULL | 1–7 |
-| completion_role | text | 'PROFESSIONAL' ou 'REFERRER'. Étape 6 = REFERRER [20260417_fix_step_completion_role.sql] |
+| order_index | integer NOT NULL | 1–8 |
+| completion_role | text | `PROFESSIONAL`, `REFERRER` ou `CONTACT`. Étapes 6 et 8 = client final [20260901b_activate_client_recommendation_roles.sql] |
 | is_active | boolean DEFAULT true | |
 | created_at | timestamptz | |
 
-Restructuration : migration 20260427 supprime l'ancienne étape 7 "Paiement reçu" et renumérote → 7 étapes au total (étape 6 = "Travaux terminés + Paiement", étape 7 = "Affaire terminée").
+Parcours actuel : étape 5 devis soumis par le pro, étape 6 devis accepté par le client, étape 7 travaux terminés + paiement reçu déclaré par le pro, étape 8 prestation confirmée par le client.
 
 ---
 
 ### `recommendations`
+
+Les colonnes `client_quote_*` et `client_completion_*` conservent l'état, la version révocable du lien, son expiration, la date de réponse et l'éventuel motif de contestation. `expected_completion_at` est facultative et sert uniquement à programmer une relance.
 
 | Colonne | Type | Contraintes | Description |
 |---------|------|-------------|-------------|

@@ -26,10 +26,12 @@
 
 | Méthode | URL | Auth | Logique |
 |---|---|---|---|
-| POST | `/api/recommendations/create` | user | Body : `{ selectedContactId, selectedProId, description, urgency, selfForMe, createContact, selfProfile, contactForm }`. Crée reco + 7 recommendation_steps. [DÉCLENCHE] notifyNewRecommendation. |
+| POST | `/api/recommendations/create` | user | Body : `{ selectedContactId, selectedProId, description, urgency, createContact, contactForm }`. Crée reco + 8 recommendation_steps. [DÉCLENCHE] notifyNewRecommendation. |
 | GET | `/api/recommendations/list` | user | `?tab=sent\|received` — liste recos du user (filtré referrer_id ou professional_id). |
 | GET | `/api/recommendations/[id]` | user | Détail reco. Anonymat : identité pro masquée si status=PENDING. |
-| POST | `/api/recommendations/complete-step` | user | Body `{ recommendation_id, step_id, quote_amount? }`. Valide étape (check completion_role REFERRER/PROFESSIONAL). Étape 6 → [DÉCLENCHE] Stripe checkout (stripe-checkout.ts). [DÉCLENCHE] notifyReferrerStep. |
+| POST | `/api/recommendations/complete-step` | user | Body `{ recommendation_id, step_id, quote_amount?, expected_completion_at?, work_already_completed? }`. Valide uniquement les étapes PROFESSIONAL/REFERRER sans saut. Étape 5 → demande de validation du devis au client. Étape 7 → demande de confirmation finale au client. |
+| GET/POST | `/api/recommendations/client-action` | token HMAC | Page publique client : lecture puis confirmation/contestation du devis (étape 6) ou de la prestation (étape 8). Action atomique, révocable et idempotente. Étape 8 confirmée → prépare le règlement de la commission Stripe du professionnel. |
+| POST | `/api/recommendations/[id]/client-confirmation` | user (pro/admin) | Envoie ou renvoie la demande de confirmation sécurisée au client final. |
 | POST | `/api/recommendations/[id]/refuse` | user (pro) | Pro refuse la reco (status PENDING → CANCELLED). [DÉCLENCHE] notifyRecoRefused. |
 | POST | `/api/recommendations/[id]/transfer` | user | Transfère la reco à un autre pro. [PERSISTE DANS] transferred_at, transfer_reason, original_recommendation_id. |
 | POST | `/api/recommendations/process-followups` | Bearer CRON_SECRET | Cron 15min. Scanne followups pending échus, envoie relances, programme cycles 2/3, pose abandoned_by_pro_at 48h après le cycle 3 sans action. [UTILISE] notifyProFollowup, notifyProAbandoned. |

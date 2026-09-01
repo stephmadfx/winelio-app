@@ -153,7 +153,11 @@ export function StepTimeline({ steps, currentStepOrder }: StepTimelineProps) {
                   </span>
                   {step.completion_role && (
                     <span className="text-xs text-gray-300">
-                      {step.completion_role === "PROFESSIONAL" ? "👷 Pro" : "👤 Référent"}
+                      {step.completion_role === "PROFESSIONAL"
+                        ? "👷 Pro"
+                        : step.completion_role === "CONTACT"
+                          ? "🤝 Client final"
+                          : "👤 Recommandeur"}
                     </span>
                   )}
                 </div>

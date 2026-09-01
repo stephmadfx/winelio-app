@@ -34,6 +34,7 @@ function isPublicApiPath(path: string): boolean {
     path.startsWith("/api/recommendations/process-followups") ||
     path.startsWith("/api/recommendations/cron-scraped-reminder") ||
     path.startsWith("/api/recommendations/followup-action") ||
+    path.startsWith("/api/recommendations/client-action") ||
     path.startsWith("/api/pros/cron-onboarding-reminder") ||
     path.startsWith("/api/admin/auth-health")
   );
@@ -52,6 +53,7 @@ function isPublicPagePath(path: string): boolean {
     path.startsWith("/suppression-compte") ||
     path.startsWith("/plan-remuneration") ||
     path.startsWith("/recommendations/followup/") ||
+    path.startsWith("/recommendations/client/") ||
     path === "/"
   );
 }
@@ -88,6 +90,7 @@ export async function middleware(request: NextRequest) {
     const isCronApi =
       isPublicApiPath(path) ||
       path.startsWith("/recommendations/followup/") ||
+      path.startsWith("/recommendations/client/") ||
       path.startsWith("/api/video/");
     const isExempt =
       path === "/staging-login" ||

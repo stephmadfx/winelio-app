@@ -36,6 +36,7 @@ export async function GET(
     .from("recommendations")
     .select(
       `id, status, amount, project_description, urgency_level, created_at, referrer_id, professional_id, abandoned_by_pro_at,
+       expected_completion_at, client_quote_status, client_quote_note, client_completion_status, client_completion_note,
        contact:contacts(first_name, last_name, email, phone, address, city, postal_code),
        professional:profiles!recommendations_professional_id_fkey(first_name, last_name, company:companies(name)),
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name)`

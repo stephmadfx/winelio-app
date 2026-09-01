@@ -26,7 +26,7 @@ export async function PATCH(
   const { data: rec } = await supabaseAdmin
     .schema("winelio")
     .from("recommendations")
-    .select("id, professional_id, status")
+    .select("id, professional_id, status, amount, client_quote_status, client_quote_token_version")
     .eq("id", id)
     .single();
 
@@ -38,6 +38,16 @@ export async function PATCH(
   const isProfessional = rec.professional_id === user.id;
   if (!isAdmin && !isProfessional) {
     return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+  }
+
+  if (!isAdmin && !["MEETING_SCHEDULED", "QUOTE_SUBMITTED"].includes(rec.status)) {
+    return NextResponse.json(
+      {
+        error:
+          "Le montant ne peut plus être modifié après la validation du devis par le client.",
+      },
+      { status: 409 },
+    );
   }
 
   const { count: paidCount } = await supabaseAdmin
@@ -77,10 +87,23 @@ export async function PATCH(
     })
   );
 
+  const quoteConfirmationMustBeRenewed =
+    rec.client_quote_status === "pending" || rec.client_quote_status === "disputed";
   const { error: updateError } = await supabaseAdmin
     .schema("winelio")
     .from("recommendations")
-    .update({ amount })
+    .update({
+      amount,
+      ...(quoteConfirmationMustBeRenewed
+        ? {
+            client_quote_status: "not_requested",
+            client_quote_token_version: rec.client_quote_token_version + 1,
+            client_quote_token_expires_at: null,
+            client_quote_responded_at: null,
+            client_quote_note: null,
+          }
+        : {}),
+    })
     .eq("id", rec.id);
 
   if (updateError) {

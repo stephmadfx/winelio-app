@@ -55,7 +55,7 @@ export async function createStripeCheckoutSession(
   const { data: reco } = await supabaseAdmin
     .from("recommendations")
     .select(
-      "id, amount, professional_id, referrer_id, compensation_plan_id, contact:contacts(first_name, last_name)"
+      "id, amount, professional_id, referrer_id, compensation_plan_id, is_demo, contact:contacts(first_name, last_name, email)"
     )
     .eq("id", recommendationId)
     .single();
@@ -65,6 +65,16 @@ export async function createStripeCheckoutSession(
   }
   if (!reco.amount) {
     throw new Error(`Recommandation ${recommendationId} sans montant`);
+  }
+
+  // Les recommandations de démonstration/E2E ne doivent jamais créer de
+  // paiement réel chez Stripe.
+  const testContactRaw = Array.isArray(reco.contact) ? reco.contact[0] : reco.contact;
+  if (
+    reco.is_demo ||
+    testContactRaw?.email?.toLowerCase().endsWith("@winelio-e2e.local")
+  ) {
+    return `${APP_URL}?commission=test-skipped`;
   }
 
   // ── 3. Résoudre le plan de commission ────────────────────────────────────────

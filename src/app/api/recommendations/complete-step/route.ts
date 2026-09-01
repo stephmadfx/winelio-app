@@ -3,10 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { RECOMMENDATION_STATUS_BY_STEP } from "@/lib/constants";
 import { notifyReferrerStep } from "@/lib/notify-referrer-step";
 import { notifyContactAccepted } from "@/lib/notify-contact-accepted";
-import { createStripeCheckoutSession } from "@/lib/stripe-checkout";
+import { requestClientRecommendationAction } from "@/lib/notify-client-recommendation-action";
 
-// Étape 8 = "Affaire terminée" → email Stripe Checkout pour la commission pro.
-// Les commissions MLM sont créées uniquement par le webhook Stripe après paiement.
+// Les étapes client (6 et 8) ne passent pas par cette route : elles sont
+// confirmées via /api/recommendations/client-action avec un lien signé.
 
 export async function POST(request: Request) {
   try {
@@ -62,10 +62,44 @@ export async function POST(request: Request) {
         { status: 403 }
       );
     }
+    if (role === "CONTACT") {
+      return NextResponse.json(
+        { error: "Cette étape doit être confirmée par le client via son lien sécurisé" },
+        { status: 403 }
+      );
+    }
+    if (role !== "REFERRER" && role !== "PROFESSIONAL") {
+      return NextResponse.json(
+        { error: "Rôle de validation non reconnu" },
+        { status: 403 }
+      );
+    }
+
+    // Ne jamais permettre de sauter une étape en appelant directement l'API.
+    const { data: allSteps, error: allStepsError } = await supabase
+      .from("recommendation_steps")
+      .select("completed_at, step:steps(order_index)")
+      .eq("recommendation_id", recommendation_id);
+    if (allStepsError) {
+      return NextResponse.json({ error: "Impossible de vérifier le parcours" }, { status: 500 });
+    }
+    const hasIncompletePreviousStep = (allSteps ?? []).some((row) => {
+      const rowStep = Array.isArray(row.step) ? row.step[0] : row.step;
+      return (rowStep?.order_index ?? 0) < stepIndex && !row.completed_at;
+    });
+    if (hasIncompletePreviousStep) {
+      return NextResponse.json(
+        { error: "Les étapes précédentes doivent être terminées" },
+        { status: 409 }
+      );
+    }
 
     if (stepRow.completed_at) {
-      if (stepIndex === 8) {
-        await createStripeCheckoutSession(rec.id);
+      if (stepIndex === 5) {
+        await requestClientRecommendationAction(rec.id, "quote");
+      }
+      if (stepIndex === 7) {
+        await requestClientRecommendationAction(rec.id, "completion");
       }
       await notifyReferrerStep(rec.id, stepIndex);
       if (stepIndex === 2) {
@@ -76,7 +110,8 @@ export async function POST(request: Request) {
 
     const stepData: Record<string, unknown> = {};
 
-    // Étape 5 : enregistrer le montant du devis + date prévue de fin de travaux
+    // Étape 5 : enregistrer le montant du devis. La date de fin est facultative :
+    // elle sert uniquement à programmer une relance, jamais à bloquer le parcours.
     if (stepIndex === 5) {
       const amount = parseFloat(quote_amount);
       if (isNaN(amount) || amount <= 0 || amount > 1000000) {
@@ -84,33 +119,39 @@ export async function POST(request: Request) {
       }
 
       const expectedCompletionRaw = body.expected_completion_at;
-      if (!expectedCompletionRaw) {
-        return NextResponse.json(
-          { error: "Date prévue de fin des travaux obligatoire" },
-          { status: 400 }
-        );
-      }
-      const expectedDate = new Date(expectedCompletionRaw);
-      const nowMs = Date.now();
-      if (
-        isNaN(expectedDate.getTime()) ||
-        expectedDate.getTime() < nowMs + 24 * 60 * 60 * 1000 ||
-        expectedDate.getTime() > nowMs + 2 * 365 * 24 * 60 * 60 * 1000
-      ) {
-        return NextResponse.json(
-          { error: "Date prévue invalide (entre +1 jour et +2 ans)" },
-          { status: 400 }
-        );
+      const workAlreadyCompleted = body.work_already_completed === true;
+      let expectedDate: Date | null = null;
+      if (expectedCompletionRaw && !workAlreadyCompleted) {
+        expectedDate = new Date(expectedCompletionRaw);
+        const nowMs = Date.now();
+        if (
+          isNaN(expectedDate.getTime()) ||
+          expectedDate.getTime() < nowMs + 24 * 60 * 60 * 1000 ||
+          expectedDate.getTime() > nowMs + 2 * 365 * 24 * 60 * 60 * 1000
+        ) {
+          return NextResponse.json(
+            { error: "Date prévue invalide (entre +1 jour et +2 ans)" },
+            { status: 400 }
+          );
+        }
       }
 
       stepData.montant = amount;
-      stepData.date_prevue = expectedDate.toLocaleDateString("fr-FR");
+      if (expectedDate) {
+        stepData.date_prevue = expectedDate.toLocaleDateString("fr-FR");
+      }
+      if (workAlreadyCompleted) {
+        stepData.travaux_deja_termines = true;
+      }
 
       // IMPORTANT : update expected_completion_at AVANT de marquer l'étape complétée,
       // sinon le trigger SQL ne lit pas la valeur correcte.
       const { error: amountError } = await supabase
         .from("recommendations")
-        .update({ amount, expected_completion_at: expectedDate.toISOString() })
+        .update({
+          amount,
+          expected_completion_at: expectedDate?.toISOString() ?? null,
+        })
         .eq("id", rec.id);
       if (amountError) {
         return NextResponse.json({ error: "Impossible d'enregistrer le devis" }, { status: 500 });
@@ -139,8 +180,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Impossible de mettre à jour le statut" }, { status: 500 });
     }
 
-    if (stepIndex === 8) {
-      await createStripeCheckoutSession(rec.id);
+    if (stepIndex === 5) {
+      await requestClientRecommendationAction(rec.id, "quote");
+    }
+    if (stepIndex === 7) {
+      await requestClientRecommendationAction(rec.id, "completion");
     }
 
     // Notifier le referrer à chaque avancement pro. L'enfilement est attendu:

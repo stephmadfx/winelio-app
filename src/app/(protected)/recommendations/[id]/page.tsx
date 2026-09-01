@@ -19,6 +19,11 @@ interface RecommendationDetail {
   referrer_id: string;
   professional_id: string;
   abandoned_by_pro_at: string | null;
+  expected_completion_at: string | null;
+  client_quote_status: "not_requested" | "pending" | "accepted" | "disputed";
+  client_quote_note: string | null;
+  client_completion_status: "not_requested" | "pending" | "confirmed" | "disputed";
+  client_completion_note: string | null;
   contact: { first_name: string; last_name: string; email: string; phone: string; address: string | null; city: string | null; postal_code: string | null } | null;
   professional: { first_name: string; last_name: string; company: { name: string } | null } | null;
   referrer: { first_name: string; last_name: string } | null;
@@ -130,8 +135,11 @@ export default function RecommendationDetailPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
   const [paymentCheckDone, setPaymentCheckDone] = useState(false);
-  const [expectedDelay, setExpectedDelay] = useState("4w");
+  const [expectedDelay, setExpectedDelay] = useState("none");
   const [customExpectedDate, setCustomExpectedDate] = useState("");
+  const [stepError, setStepError] = useState<string | null>(null);
+  const [requestingClientConfirmation, setRequestingClientConfirmation] = useState(false);
+  const [clientConfirmationMessage, setClientConfirmationMessage] = useState<string | null>(null);
   const [contactMasked, setContactMasked] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
@@ -196,7 +204,7 @@ export default function RecommendationDetailPage() {
     const role = currentStep.step?.completion_role;
     if (role === "REFERRER" && userId !== recommendation.referrer_id) return false;
     if (role === "PROFESSIONAL" && userId !== recommendation.professional_id) return false;
-    return true;
+    return role === "REFERRER" || role === "PROFESSIONAL";
   };
 
   const DELAY_PRESETS: Record<string, number> = {
@@ -219,6 +227,7 @@ export default function RecommendationDetailPage() {
   const handleCompleteStep = async () => {
     if (!currentStep || !recommendation) return;
     setCompleting(true);
+    setStepError(null);
     try {
       const res = await fetch("/api/recommendations/complete-step", {
         method: "POST",
@@ -228,20 +237,52 @@ export default function RecommendationDetailPage() {
           step_id: currentStep.id,
           quote_amount: (currentStep?.step?.order_index ?? 0) === 5 ? quoteAmount : undefined,
           expected_completion_at: (currentStep?.step?.order_index ?? 0) === 5 ? computeExpectedDate() : undefined,
+          work_already_completed: (currentStep?.step?.order_index ?? 0) === 5 && expectedDelay === "done",
         }),
       });
       if (!res.ok) {
         const data = await res.json();
         console.error("Erreur complétion:", data.error);
+        setStepError(data.error ?? "Impossible de valider cette étape");
       }
     } catch (err) {
       console.error("Erreur réseau:", err);
+      setStepError("Erreur réseau lors de la validation");
     }
     await fetchData();
     setCompleting(false);
     setQuoteAmount("");
-    setExpectedDelay("");
+    setExpectedDelay("none");
     setCustomExpectedDate("");
+  };
+
+  const handleRequestClientConfirmation = async (purpose: "quote" | "completion") => {
+    if (!recommendation) return;
+    setRequestingClientConfirmation(true);
+    setClientConfirmationMessage(null);
+    try {
+      const response = await fetch(
+        `/api/recommendations/${recommendation.id}/client-confirmation`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ purpose }),
+        },
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Envoi impossible");
+      setClientConfirmationMessage(
+        data.queued
+          ? "La demande a été envoyée au client."
+          : "La demande est déjà en attente dans la file d'envoi.",
+      );
+      await fetchData();
+    } catch (requestError) {
+      setClientConfirmationMessage(
+        requestError instanceof Error ? requestError.message : "Envoi impossible",
+      );
+    }
+    setRequestingClientConfirmation(false);
   };
 
   const handleRefuse = async () => {
@@ -340,6 +381,22 @@ export default function RecommendationDetailPage() {
   const progressPct = steps.length > 0 ? Math.round((completedCount / steps.length) * 100) : 0;
   const urgency = recommendation.urgency_level ? URGENCY_CONFIG[recommendation.urgency_level] : null;
   const isReferrer = userId === recommendation.referrer_id;
+  const isProfessional = userId === recommendation.professional_id;
+  const clientActionPurpose = currentStepIndex === 6
+    ? "quote"
+    : currentStepIndex === 8
+      ? "completion"
+      : null;
+  const clientActionStatus = clientActionPurpose === "quote"
+    ? recommendation.client_quote_status
+    : clientActionPurpose === "completion"
+      ? recommendation.client_completion_status
+      : null;
+  const clientActionNote = clientActionPurpose === "quote"
+    ? recommendation.client_quote_note
+    : clientActionPurpose === "completion"
+      ? recommendation.client_completion_note
+      : null;
   const shouldShowPayoutReview =
     isReferrer &&
     (recommendation.status === "PAYMENT_RECEIVED" ||
@@ -573,7 +630,7 @@ export default function RecommendationDetailPage() {
                   </svg>
                 </div>
               </div>
-              {userId === recommendation.professional_id && (
+              {userId === recommendation.professional_id && ["MEETING_SCHEDULED", "QUOTE_SUBMITTED"].includes(recommendation.status) && (
                 <div className="mt-4 rounded-xl bg-white/8 p-3">
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/50">
                     Devis final (€)
@@ -772,6 +829,54 @@ export default function RecommendationDetailPage() {
               </div>
             </div>
           )}
+          {currentStep?.step?.completion_role === "CONTACT" && clientActionPurpose && (
+            <div className={`mb-4 rounded-2xl border p-5 ${
+              clientActionStatus === "disputed"
+                ? "border-red-200 bg-red-50"
+                : "border-blue-200 bg-blue-50"
+            }`}>
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-xl shadow-sm">
+                  {clientActionStatus === "disputed" ? "⚠️" : "✉️"}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`font-bold ${clientActionStatus === "disputed" ? "text-red-900" : "text-blue-900"}`}>
+                    {clientActionStatus === "disputed"
+                      ? "Le client a signalé un problème"
+                      : `En attente de confirmation par ${contactName}`}
+                  </p>
+                  <p className={`mt-1 text-sm leading-6 ${clientActionStatus === "disputed" ? "text-red-800" : "text-blue-800"}`}>
+                    {clientActionStatus === "disputed"
+                      ? clientActionNote || "La situation doit être corrigée avant de poursuivre."
+                      : clientActionPurpose === "quote"
+                        ? "Le client final doit confirmer qu'il a accepté le devis. La date estimée ne bloque pas cette étape."
+                        : "Le client final doit confirmer que la prestation est terminée et conforme."}
+                  </p>
+                  {isProfessional && (
+                    <button
+                      type="button"
+                      onClick={() => handleRequestClientConfirmation(clientActionPurpose)}
+                      disabled={requestingClientConfirmation || clientActionStatus === "pending"}
+                      className="mt-4 inline-flex items-center justify-center rounded-xl bg-winelio-orange px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-winelio-amber disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {requestingClientConfirmation
+                        ? "Envoi…"
+                        : clientActionStatus === "pending"
+                          ? "Confirmation envoyée"
+                          : clientActionStatus === "disputed"
+                            ? "Renvoyer après correction"
+                            : "Envoyer la demande au client"}
+                    </button>
+                  )}
+                  {clientConfirmationMessage && (
+                    <p className="mt-2 text-xs font-medium text-winelio-gray" aria-live="polite">
+                      {clientConfirmationMessage}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           <RecommendationFollowupCard
             recommendationId={recommendation.id}
             isProfessional={userId === recommendation.professional_id}
@@ -830,10 +935,12 @@ export default function RecommendationDetailPage() {
                 {(currentStep?.step?.order_index ?? 0) === 5 && (
                   <div className="mb-4">
                     <label className="mb-2 block text-sm font-bold text-winelio-dark">
-                      Délai estimé avant fin des travaux + paiement
+                      Date estimée de fin des travaux <span className="font-normal text-winelio-gray">(facultatif)</span>
                     </label>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                       {[
+                        { value: "none",   label: "Je ne sais pas encore" },
+                        { value: "done",   label: "Travaux déjà terminés" },
                         { value: "7d",     label: "Sous 7 jours" },
                         { value: "4w",     label: "2-4 semaines" },
                         { value: "3m",     label: "1-3 mois" },
@@ -866,7 +973,7 @@ export default function RecommendationDetailPage() {
                       />
                     )}
                     <p className="mt-2 text-xs text-winelio-gray">
-                      Nous vous enverrons un rappel à cette date pour confirmer la fin du chantier. Vous pourrez le reporter si besoin.
+                      Cette date sert uniquement à programmer un rappel. Elle ne bloque jamais l&apos;avancement de la recommandation.
                     </p>
                   </div>
                 )}
@@ -878,7 +985,7 @@ export default function RecommendationDetailPage() {
                   disabled={
                     completing ||
                     refusing ||
-                    ((currentStep?.step?.order_index ?? 0) === 5 && (!quoteAmount || !computeExpectedDate()))
+                    ((currentStep?.step?.order_index ?? 0) === 5 && !quoteAmount)
                   }
                   className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-winelio-orange px-5 py-3 text-sm font-bold text-white shadow-md shadow-winelio-orange/25 transition-all hover:bg-winelio-amber hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none cursor-pointer"
                 >
@@ -927,6 +1034,11 @@ export default function RecommendationDetailPage() {
                   </>
                 )}
               </div>
+              {stepError && (
+                <div className="mx-5 mb-5 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 ring-1 ring-red-100" role="alert">
+                  {stepError}
+                </div>
+              )}
             </div>
           )}
 

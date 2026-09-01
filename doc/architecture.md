@@ -210,6 +210,13 @@
 ├── notify-bug-status.ts               — Email user sur changement statut bug
 └── notify-company-modification-request.ts — Email support demande modif company
 
+[FEATURE] Validations client final
+├── src/lib/client-recommendation-token.ts — Token HMAC versionné et révocable
+├── src/lib/notify-client-recommendation-action.ts — Emails client + notifications parties
+├── /recommendations/client/[token] — Page publique de confirmation/contestation
+├── /api/recommendations/client-action — Lecture et mutation atomique des étapes 6/8
+└── /api/recommendations/[id]/client-confirmation — Envoi/renvoi par le professionnel
+
 
 [FEATURE] Bug Tracker
 ├── src/components/bug-report-button.tsx   — Bouton flottant global

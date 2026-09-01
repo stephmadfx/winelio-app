@@ -58,43 +58,33 @@ Le parcours d'une recommandation se déroule en 2 grandes phases :
 
 ---
 
-### Étape 3 : Devis accepté
+### Étape 3 : Devis soumis puis accepté
 
 | Élément | Détail |
 |---------|--------|
-| **Acteurs** | WINPRO + l'ami |
-| **Action** | WINPRO & l'ami valident le deal — WINPRO notifie le montant du devis |
+| **Acteurs** | WINPRO puis le client final |
+| **Action** | WINPRO saisit le montant et peut indiquer une date estimée facultative. Le client accepte ou conteste le devis via un lien sécurisé. |
 | **Notification** | WIN est informé du montant |
 
 ---
 
-### Étape 4 : Prestation achevée
+### Étape 4 : Prestation achevée et paiement reçu
 
 | Élément | Détail |
 |---------|--------|
-| **Acteur** | WINPRO |
-| **Action** | WINPRO confirme la fin de prestation |
+| **Acteurs** | WINPRO puis le client final |
+| **Action** | WINPRO déclare la prestation terminée et le paiement reçu. Le client confirme la conformité ou signale un problème via son lien sécurisé. |
 | **Notification** | WIN est informé |
 
 ---
 
-### Étape 5 : Avis de l'ami
+### Étape 5 : Clôture et commission Winelio
 
 | Élément | Détail |
 |---------|--------|
-| **Acteur** | WIN |
-| **Action** | WIN demande à son ami un retour sur la prestation |
-| **Notification** | WIN reçoit l'avis et peut noter le WINPRO |
-
----
-
-### Étape 6 : Facture acquittée
-
-| Élément | Détail |
-|---------|--------|
-| **Acteur** | WINPRO |
-| **Action** | WINPRO informe que sa facture est payée |
-| **Notification** | Le siège Winelio envoie le lien de facturation |
+| **Acteur** | Winelio + WINPRO |
+| **Action** | Après confirmation du client, Winelio prépare le règlement de la commission d'intermédiation due par le professionnel. |
+| **Notification** | WIN et WINPRO sont informés. |
 
 ---
 
@@ -108,10 +98,9 @@ WINPRO → Accepte / Refuse / Transfère
 [Suivi]
   1. Prise de contact confirmée
   2. RDV confirmé
-  3. Devis accepté + montant
-  4. Prestation achevée
-  5. Avis de l'ami + notation WINPRO
-  6. Facture acquittée → lien de facturation Winelio
+  3. Devis soumis par WINPRO → accepté par le client via lien sécurisé
+  4. Prestation + paiement déclarés par WINPRO → conformité confirmée par le client
+  5. Clôture → règlement de la commission Winelio par WINPRO
 ```
 
 ---

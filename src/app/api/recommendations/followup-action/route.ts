@@ -118,12 +118,19 @@ async function handleDone(fu: FollowupRow): Promise<Response> {
       "error"
     );
   }
+  if (role === "CONTACT") {
+    return htmlPage(
+      "Confirmation du client requise",
+      "Cette étape doit être confirmée directement par le client final via son lien sécurisé.",
+      "error"
+    );
+  }
 
   // Le devis (étape 5) exige un montant et une date — pas via le bouton email.
   if (targetOrder === 5) {
     return htmlPage(
       "Saisissez le devis dans Winelio",
-      "Pour marquer le devis comme soumis, connectez-vous et renseignez le montant ainsi que la date prévue de fin des travaux.",
+      "Pour marquer le devis comme soumis, connectez-vous et renseignez son montant. La date prévue de fin des travaux est facultative.",
       "error"
     );
   }
