@@ -28,6 +28,32 @@ export async function cleanupE2EAccounts(): Promise<{ deleted: number }> {
   if (error) throw new Error(`list profiles E2E: ${error.message}`);
 
   const targets = profiles ?? [];
+
+  // Les contacts E2E ne possèdent pas nécessairement de profil. Leurs emails
+  // de validation doivent donc être purgés par domaine, même quand aucun compte
+  // Auth E2E ne subsiste.
+  ensureSuccess(
+    "delete all E2E email queue rows",
+    await wn()
+      .from("email_queue")
+      .delete()
+      .ilike("to_email", `%@${E2E.emailDomain}`),
+  );
+  ensureSuccess(
+    "delete all E2E email sent logs",
+    await wn()
+      .from("email_sent_log")
+      .delete()
+      .ilike("to_email", `%@${E2E.emailDomain}`),
+  );
+  ensureSuccess(
+    "delete all E2E otp codes",
+    await wn()
+      .from("otp_codes")
+      .delete()
+      .ilike("email", `%@${E2E.emailDomain}`),
+  );
+
   if (targets.length === 0) return { deleted: 0 };
 
   const ids = targets.map((p) => p.id);
@@ -55,7 +81,6 @@ export async function cleanupE2EAccounts(): Promise<{ deleted: number }> {
   ensureSuccess("delete user commissions", await wn().from("commission_transactions").delete().in("user_id", ids));
   ensureSuccess("delete wallets", await wn().from("user_wallet_summaries").delete().in("user_id", ids));
   ensureSuccess("delete otp codes", await wn().from("otp_codes").delete().in("email", emails));
-  ensureSuccess("delete email queue", await wn().from("email_queue").delete().in("to_email", targets.map((p) => p.email)));
   ensureSuccess("detach sponsor chain", await wn().from("profiles").update({ sponsor_id: null }).in("id", ids));
 
   // 3) suppression auth.users (cascade vers profiles via FK ON DELETE CASCADE)
