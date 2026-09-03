@@ -29,6 +29,13 @@ async function loginWithPassword(page: Page, userId: string, email: string) {
  * n'embarquent pas Stripe Elements.
  */
 test("carte Stripe — le formulaire Elements s'affiche sans erreur CSP", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "winelio_cookie_consent",
+      JSON.stringify({ value: "declined", date: new Date().toISOString(), version: 1 }),
+    );
+  });
+
   const cspViolations: string[] = [];
   page.on("console", (msg) => {
     const text = msg.text();
@@ -64,6 +71,7 @@ test("carte Stripe — le formulaire Elements s'affiche sans erreur CSP", async 
       city: "Paris",
       address: "1 rue de la Carte",
       birth_date: "1990-01-15",
+      pro_prompt_dismissed_at: new Date().toISOString(),
     })
     .in("id", [referrer.id, pro.id]);
   const contact = await createTestContact({
