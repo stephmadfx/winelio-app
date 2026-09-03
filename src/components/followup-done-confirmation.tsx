@@ -76,7 +76,7 @@ export function FollowupDoneConfirmation({
               </a>
             </div>
           )}
-          <a href="https://winelio.app" className="mt-6 inline-flex text-sm font-semibold text-winelio-orange underline">
+          <a href="/" className="mt-6 inline-flex text-sm font-semibold text-winelio-orange underline">
             Aller sur Winelio
           </a>
         </section>

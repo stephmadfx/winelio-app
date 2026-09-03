@@ -11,7 +11,7 @@ function Unavailable({ message }: { message: string }) {
         <div className="mb-4 text-5xl" aria-hidden="true">⚠️</div>
         <h1 className="text-xl font-bold text-winelio-dark">Confirmation indisponible</h1>
         <p className="mt-3 text-sm leading-6 text-winelio-gray">{message}</p>
-        <a href="https://winelio.app" className="mt-6 inline-flex text-sm font-semibold text-winelio-orange underline">
+        <a href="/" className="mt-6 inline-flex text-sm font-semibold text-winelio-orange underline">
           Aller sur Winelio
         </a>
       </section>

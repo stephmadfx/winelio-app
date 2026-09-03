@@ -91,7 +91,7 @@ export async function notifyProFollowup(ctx: FollowupContext): Promise<string | 
   const icon = ICON_BY_CYCLE[cycleIndex];
   const question = QUESTION_BY_STEP[afterStep](he(contactName));
   const doneLabel = afterStep === 6
-    ? "✅ Oui, j’ai encaissé le paiement"
+    ? "✅ Oui, j’ai été payé"
     : "✅ C’est fait";
   const actionHint = afterStep === 6
     ? "En cliquant ci-dessous, vous pourrez confirmer que les travaux sont terminés et que le règlement du client a bien été encaissé. La commission Winelio sera alors débitée conformément à l’autorisation enregistrée."

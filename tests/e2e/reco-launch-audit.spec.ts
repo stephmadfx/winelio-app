@@ -220,7 +220,7 @@ test("lancement : golden path 8 étapes jusqu'aux travaux, sans Checkout live", 
     subjectMatch: /travaux.*terminés/i,
   });
   expect(paymentQuestionEmails).toHaveLength(1);
-  expect(paymentQuestionEmails[0].html).toContain("Oui, j’ai encaissé le paiement");
+  expect(paymentQuestionEmails[0].html).toContain("Oui, j’ai été payé");
   expect(paymentQuestionEmails[0].html).not.toContain("/api/recommendations/followup-action");
   const worksToken = followupTokenFromEmail(paymentQuestionEmails[0].html);
   const worksPreview = await page.request.get(
