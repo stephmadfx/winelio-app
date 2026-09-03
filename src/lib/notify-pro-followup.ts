@@ -90,9 +90,15 @@ export async function notifyProFollowup(ctx: FollowupContext): Promise<string | 
   const h1 = H1_BY_CYCLE[cycleIndex](baseSubject);
   const icon = ICON_BY_CYCLE[cycleIndex];
   const question = QUESTION_BY_STEP[afterStep](he(contactName));
+  const doneLabel = afterStep === 6
+    ? "✅ Oui, j’ai encaissé le paiement"
+    : "✅ C’est fait";
+  const actionHint = afterStep === 6
+    ? "En cliquant ci-dessous, vous pourrez confirmer que les travaux sont terminés et que le règlement du client a bien été encaissé. La commission Winelio sera alors débitée conformément à l’autorisation enregistrée."
+    : "Si c'est fait, confirmez-le en un clic. Sinon, dites-nous quand vous serez en mesure de le faire.";
 
   const token = signFollowupToken(followupId);
-  const doneUrl = `${SITE_URL}/api/recommendations/followup-action?token=${encodeURIComponent(token)}&action=done`;
+  const doneUrl = `${SITE_URL}/recommendations/followup/${encodeURIComponent(token)}/done`;
   const postponeUrl = `${SITE_URL}/recommendations/followup/${encodeURIComponent(token)}/postpone`;
   const abandonUrl = `${SITE_URL}/recommendations/followup/${encodeURIComponent(token)}/abandon`;
 
@@ -123,13 +129,13 @@ export async function notifyProFollowup(ctx: FollowupContext): Promise<string | 
           <tr><td><p style="margin:0;color:#2D3436;font-size:16px;line-height:1.6;font-weight:600;">${question}</p></td></tr>
           <tr><td style="height:20px;font-size:0;line-height:0;">&nbsp;</td></tr>
           <tr><td style="background:#FFF5F0;border-left:3px solid #FF6B35;padding:14px 18px;border-radius:4px;">
-            <p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">💡 Si c'est fait, marquez-le en 1 clic. Sinon, dites-nous quand vous serez en mesure de le faire.</p>
+            <p style="margin:0;color:#636E72;font-size:14px;line-height:1.6;">💡 ${actionHint}</p>
           </td></tr>
           <tr><td style="height:28px;font-size:0;line-height:0;">&nbsp;</td></tr>
           <tr><td align="center">
             <table cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td><a href="${doneUrl}" style="display:inline-block;background:linear-gradient(135deg,#FF6B35,#F7931E);color:#FFFFFF;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:600;font-size:15px;">✅ C'est fait</a></td>
+                <td><a href="${doneUrl}" style="display:inline-block;background:linear-gradient(135deg,#FF6B35,#F7931E);color:#FFFFFF;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:600;font-size:15px;">${doneLabel}</a></td>
                 <td width="12" style="font-size:0;line-height:0;">&nbsp;</td>
                 <td><a href="${postponeUrl}" style="display:inline-block;background:#FFFFFF;color:#FF6B35;text-decoration:none;padding:13px 26px;border-radius:10px;font-weight:600;font-size:15px;border:2px solid #FF6B35;">📅 Reporter</a></td>
               </tr>

@@ -6,8 +6,22 @@ import { createTestUser, createTestCompany } from "./helpers/factories";
 import { recoCreateBody } from "./helpers/reco";
 import { e2eEmail } from "./helpers/env";
 import { signFollowupToken } from "./helpers/followup";
+import { readQueuedEmails } from "./helpers/email";
+import { notifyProFollowup } from "../../src/lib/notify-pro-followup";
 
 const FUTURE = () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+function clientTokenFromEmail(html: string): string {
+  const match = html.match(/\/recommendations\/client\/([A-Za-z0-9._-]+)/);
+  if (!match?.[1]) throw new Error("Token client introuvable dans l'email");
+  return match[1];
+}
+
+function followupTokenFromEmail(html: string): string {
+  const match = html.match(/\/recommendations\/followup\/([A-Za-z0-9._-]+)\/done/);
+  if (!match?.[1]) throw new Error("Token de relance introuvable dans l'email");
+  return match[1];
+}
 
 async function stepIds(recoId: string): Promise<Map<number, string>> {
   const { data } = await wn()
@@ -108,11 +122,24 @@ test("lancement : golden path 8 étapes jusqu'aux travaux, sans Checkout live", 
   expect(after2?.status).toBe("pending");
 
   await logout(page, context);
-  const contactDone = await page.request.get(
-    `/api/recommendations/followup-action?token=${encodeURIComponent(signFollowupToken(after2!.id))}&action=done`
+  const after2Token = signFollowupToken(after2!.id);
+  const contactPreview = await page.request.get(
+    `/api/recommendations/followup-action?token=${encodeURIComponent(after2Token)}&action=done`,
+    { maxRedirects: 0 },
   );
+  expect(contactPreview.status()).toBe(307);
+  const contactConfirmationPage = await page.request.get(
+    `/recommendations/followup/${encodeURIComponent(after2Token)}/done`,
+  );
+  expect(contactConfirmationPage.status()).toBe(200);
+  expect(await contactConfirmationPage.text()).toMatch(/Confirmer l.avancement/i);
+  expect(await recoStatus(recoId), "un GET/scanner email ne doit jamais valider l'étape").toBe("ACCEPTED");
+
+  const contactDone = await page.request.post("/api/recommendations/followup-action", {
+    data: { token: after2Token, action: "done" },
+  });
   expect(contactDone.status()).toBe(200);
-  expect(await contactDone.text()).toMatch(/validée|Déjà fait/i);
+  expect(await contactDone.json()).toMatchObject({ ok: true });
   expect(await recoStatus(recoId)).toBe("CONTACT_MADE");
 
   await loginAsFast(page, pro.email);
@@ -132,10 +159,11 @@ test("lancement : golden path 8 étapes jusqu'aux travaux, sans Checkout live", 
   expect(after4?.id, "relance après RDV (étape 4)").toBeTruthy();
 
   await logout(page, context);
-  const devisViaEmail = await page.request.get(
-    `/api/recommendations/followup-action?token=${encodeURIComponent(signFollowupToken(after4!.id))}&action=done`
-  );
-  expect(await devisViaEmail.text()).toMatch(/Saisissez le devis|montant/i);
+  const devisViaEmail = await page.request.post("/api/recommendations/followup-action", {
+    data: { token: signFollowupToken(after4!.id), action: "done" },
+  });
+  expect(devisViaEmail.status()).toBe(409);
+  expect((await devisViaEmail.json()).error).toMatch(/devis|montant/i);
   expect(await recoStatus(recoId)).toBe("MEETING_SCHEDULED");
 
   await loginAsFast(page, pro.email);
@@ -157,16 +185,19 @@ test("lancement : golden path 8 étapes jusqu'aux travaux, sans Checkout live", 
     .eq("after_step_order", 6);
   expect(followupsAfterQuote ?? []).toHaveLength(0);
 
-  const proOnStep6 = await page.request.post("/api/recommendations/complete-step", {
-    data: { recommendation_id: recoId, step_id: steps.get(6) },
+  const { data: contact } = await wn()
+    .from("contacts")
+    .select("email")
+    .eq("id", contactId)
+    .single();
+  const quoteEmails = await readQueuedEmails(contact!.email, {
+    subjectMatch: /Confirmez-vous ce devis/i,
   });
-  expect(proOnStep6.status()).toBe(403);
-
-  await loginAsFast(page, referrer.email);
-  const referrerStep6 = await page.request.post("/api/recommendations/complete-step", {
-    data: { recommendation_id: recoId, step_id: steps.get(6) },
+  expect(quoteEmails).toHaveLength(1);
+  const quoteApproval = await page.request.post("/api/recommendations/client-action", {
+    data: { token: clientTokenFromEmail(quoteEmails[0].html), decision: "confirm" },
   });
-  expect(referrerStep6.ok(), await referrerStep6.text()).toBe(true);
+  expect(quoteApproval.ok(), await quoteApproval.text()).toBe(true);
   expect(await recoStatus(recoId)).toBe("QUOTE_VALIDATED");
 
   const { data: worksFollowup } = await wn()
@@ -179,12 +210,59 @@ test("lancement : golden path 8 étapes jusqu'aux travaux, sans Checkout live", 
   expect(worksFollowup?.after_step_order).toBe(6);
 
   await logout(page, context);
-  const worksDone = await page.request.get(
-    `/api/recommendations/followup-action?token=${encodeURIComponent(signFollowupToken(worksFollowup!.id))}&action=done`
+  await notifyProFollowup({
+    followupId: worksFollowup!.id,
+    recommendationId: recoId,
+    afterStep: 6,
+    cycleIndex: 1,
+  });
+  const paymentQuestionEmails = await readQueuedEmails(pro.email, {
+    subjectMatch: /travaux.*terminés/i,
+  });
+  expect(paymentQuestionEmails).toHaveLength(1);
+  expect(paymentQuestionEmails[0].html).toContain("Oui, j’ai encaissé le paiement");
+  expect(paymentQuestionEmails[0].html).not.toContain("/api/recommendations/followup-action");
+  const worksToken = followupTokenFromEmail(paymentQuestionEmails[0].html);
+  const worksPreview = await page.request.get(
+    `/api/recommendations/followup-action?token=${encodeURIComponent(worksToken)}&action=done`,
+    { maxRedirects: 0 },
   );
+  expect(worksPreview.status()).toBe(307);
+  const worksConfirmationPage = await page.request.get(
+    `/recommendations/followup/${encodeURIComponent(worksToken)}/done`,
+  );
+  expect(worksConfirmationPage.status()).toBe(200);
+  expect(await worksConfirmationPage.text()).toMatch(/Avez-vous bien encaissé votre client/i);
+  expect(await recoStatus(recoId), "l'ouverture du lien ne doit pas déclarer le paiement").toBe("QUOTE_VALIDATED");
+
+  const worksDone = await page.request.post("/api/recommendations/followup-action", {
+    data: { token: worksToken, action: "done" },
+  });
   expect(worksDone.status()).toBe(200);
-  expect(await worksDone.text()).toMatch(/validée|Déjà fait/i);
+  expect(await worksDone.json()).toMatchObject({
+    ok: true,
+    payment: { mode: "test", status: "skipped" },
+  });
   expect(await recoStatus(recoId)).toBe("PAYMENT_RECEIVED");
+
+  const repeatedDone = await page.request.post("/api/recommendations/followup-action", {
+    data: { token: worksToken, action: "done" },
+  });
+  expect(repeatedDone.status()).toBe(200);
+  expect(await repeatedDone.json()).toMatchObject({ ok: true, alreadyCompleted: true });
+
+  const { data: completionState } = await wn()
+    .from("recommendations")
+    .select("client_completion_status")
+    .eq("id", recoId)
+    .single();
+  expect(completionState?.client_completion_status).toBe("pending");
+
+  const { count: paymentAttempts } = await wn()
+    .from("stripe_payment_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("recommendation_id", recoId);
+  expect(paymentAttempts, "une recommandation E2E ne doit jamais toucher Stripe").toBe(0);
 });
 
 test("lancement : abandon email pose CANCELLED", async ({ page }) => {

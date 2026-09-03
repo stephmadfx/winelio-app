@@ -7,6 +7,8 @@ import { RECOMMENDATION_STATUS, RECOMMENDATION_STATUS_BY_STEP } from "@/lib/cons
 import { verifyFollowupToken } from "@/lib/followup-token";
 import { notifyReferrerStep } from "@/lib/notify-referrer-step";
 import { notifyRecoRefused } from "@/lib/notify-reco-refused";
+import { collectCommissionAutomatically } from "@/lib/stripe-automatic-commission";
+import { requestClientRecommendationAction } from "@/lib/notify-client-recommendation-action";
 
 const MAX_REPORTS = 5;
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
@@ -34,7 +36,11 @@ export async function GET(req: Request) {
   }
 
   if (action === "done") {
-    return await handleDone(fu);
+    // Ne jamais modifier une recommandation sur un GET : les scanners de liens
+    // des messageries peuvent ouvrir automatiquement les URL des boutons.
+    return NextResponse.redirect(
+      `${SITE_URL}/recommendations/followup/${encodeURIComponent(token)}/done`,
+    );
   }
   if (action === "postpone") {
     return await handlePostpone(fu, postponeTo, token);
@@ -70,6 +76,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Relance introuvable" }, { status: 404 });
   }
 
+  if (action === "done") {
+    return await handleDone(fu);
+  }
   if (action === "postpone") {
     return await postJsonPostpone(fu, postponeTo);
   }
@@ -102,42 +111,59 @@ async function handleDone(fu: FollowupRow): Promise<Response> {
     .single();
 
   if (!stepRow) {
-    return htmlPage("Étape introuvable", "Cette étape n'existe plus pour cette recommandation.", "error");
+    return NextResponse.json(
+      { error: "Cette étape n'existe plus pour cette recommandation." },
+      { status: 404 },
+    );
   }
   if (stepRow.completed_at) {
-    return htmlPage("Déjà fait, merci", "Cette étape a déjà été marquée comme complétée. Merci !", "success");
+    if (targetOrder === 7) {
+      const sideEffects = await finalizePaymentReceivedFromFollowup(fu.recommendation_id);
+      if (!sideEffects.ok) return sideEffects.response;
+      return NextResponse.json({
+        ok: true,
+        alreadyCompleted: true,
+        payment: sideEffects.payment,
+        message: "L'encaissement était déjà enregistré. Le paiement Winelio a été vérifié sans double prélèvement.",
+      });
+    }
+    return NextResponse.json({
+      ok: true,
+      alreadyCompleted: true,
+      message: "Cette étape était déjà enregistrée.",
+    });
   }
 
   const step = Array.isArray(stepRow.step) ? stepRow.step[0] : stepRow.step;
   const role = step?.completion_role ?? null;
 
   if (role === "REFERRER") {
-    return htmlPage(
-      "Validation du recommandeur requise",
-      "Cette étape doit être validée par le recommandeur dans l'application Winelio.",
-      "error"
+    return NextResponse.json(
+      { error: "Cette étape doit être validée par le recommandeur dans l'application Winelio." },
+      { status: 403 },
     );
   }
   if (role === "CONTACT") {
-    return htmlPage(
-      "Confirmation du client requise",
-      "Cette étape doit être confirmée directement par le client final via son lien sécurisé.",
-      "error"
+    return NextResponse.json(
+      { error: "Cette étape doit être confirmée directement par le client final via son lien sécurisé." },
+      { status: 403 },
     );
   }
 
   // Le devis (étape 5) exige un montant et une date — pas via le bouton email.
   if (targetOrder === 5) {
-    return htmlPage(
-      "Saisissez le devis dans Winelio",
-      "Pour marquer le devis comme soumis, connectez-vous et renseignez son montant. La date prévue de fin des travaux est facultative.",
-      "error"
+    return NextResponse.json(
+      { error: "Pour transmettre le devis, connectez-vous à Winelio et renseignez son montant." },
+      { status: 409 },
     );
   }
 
   const actionability = await ensureRecommendationCanStillMove(fu);
   if (!actionability.ok) {
-    return htmlPage(actionability.title, actionability.message, "error");
+    return NextResponse.json(
+      { error: actionability.message },
+      { status: actionability.status ?? 409 },
+    );
   }
 
   const { error: stepError } = await supabaseAdmin
@@ -146,7 +172,10 @@ async function handleDone(fu: FollowupRow): Promise<Response> {
     .update({ completed_at: new Date().toISOString() })
     .eq("id", stepRow.id);
   if (stepError) {
-    return htmlPage("Erreur", "Impossible de valider cette étape pour le moment.", "error");
+    return NextResponse.json(
+      { error: "Impossible de valider cette étape pour le moment." },
+      { status: 500 },
+    );
   }
 
   const newStatus = RECOMMENDATION_STATUS_BY_STEP[targetOrder];
@@ -159,7 +188,17 @@ async function handleDone(fu: FollowupRow): Promise<Response> {
     })
     .eq("id", fu.recommendation_id);
   if (recError) {
-    return htmlPage("Erreur", "L'étape est validée mais le statut n'a pas pu être mis à jour.", "error");
+    return NextResponse.json(
+      { error: "L'étape est validée mais le statut n'a pas pu être mis à jour." },
+      { status: 500 },
+    );
+  }
+
+  let payment = null;
+  if (targetOrder === 7) {
+    const sideEffects = await finalizePaymentReceivedFromFollowup(fu.recommendation_id);
+    if (!sideEffects.ok) return sideEffects.response;
+    payment = sideEffects.payment;
   }
 
   await notifyReferrerStep(fu.recommendation_id, targetOrder).catch((err) =>
@@ -167,7 +206,43 @@ async function handleDone(fu: FollowupRow): Promise<Response> {
   );
 
   // Le trigger SQL cancel les followups pending et crée le suivant si applicable.
-  return htmlPage("Étape validée", "Merci ! L'étape a été marquée comme complétée.", "success");
+  return NextResponse.json({
+    ok: true,
+    payment,
+    message: targetOrder === 7
+      ? "Votre encaissement client est confirmé. Le règlement de la commission Winelio a été lancé."
+      : "Merci ! L'étape a été enregistrée.",
+  });
+}
+
+async function finalizePaymentReceivedFromFollowup(recommendationId: string) {
+  try {
+    const payment = await collectCommissionAutomatically(recommendationId);
+    const { data: recommendation, error } = await supabaseAdmin
+      .schema("winelio")
+      .from("recommendations")
+      .select("client_completion_status")
+      .eq("id", recommendationId)
+      .single();
+
+    if (error) throw error;
+    if (recommendation?.client_completion_status === "not_requested") {
+      await requestClientRecommendationAction(recommendationId, "completion");
+    }
+
+    return { ok: true as const, payment };
+  } catch (error) {
+    console.error("[followup-action] finalisation paiement reçu:", error);
+    return {
+      ok: false as const,
+      response: NextResponse.json(
+        {
+          error: "Votre encaissement est enregistré, mais le paiement Winelio n'a pas pu être finalisé. Vous pouvez réessayer sans risque de double prélèvement.",
+        },
+        { status: 503 },
+      ),
+    };
+  }
 }
 
 async function handlePostpone(fu: FollowupRow, postponeToParam: string | null, token: string): Promise<Response> {
