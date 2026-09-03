@@ -39,6 +39,10 @@ interface StepRow {
 
 interface PayoutInfo {
   professional_paid: boolean;
+  professional_payment: {
+    amount: number;
+    status: string;
+  } | null;
   review: {
     id: string;
     rating: number | null;
@@ -150,6 +154,8 @@ export default function RecommendationDetailPage() {
   const [reviewAnswers, setReviewAnswers] = useState<string[]>(["", "", ""]);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
+  const [openingCommissionPayment, setOpeningCommissionPayment] = useState(false);
+  const [commissionPaymentError, setCommissionPaymentError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/whoami").then(async (res) => {
@@ -341,6 +347,31 @@ export default function RecommendationDetailPage() {
       setReviewError("Erreur réseau lors de l'envoi de l'avis.");
     }
     setReviewSubmitting(false);
+  };
+
+  const handleOpenCommissionPayment = async () => {
+    if (!recommendation || openingCommissionPayment) return;
+    setOpeningCommissionPayment(true);
+    setCommissionPaymentError(null);
+    try {
+      const response = await fetch(
+        `/api/recommendations/${recommendation.id}/commission-payment-link`,
+        { method: "POST" },
+      );
+      const data = await response.json();
+      if (!response.ok || typeof data.url !== "string") {
+        throw new Error(data.error || "Lien de paiement indisponible.");
+      }
+      window.location.assign(data.url);
+      return;
+    } catch (paymentError) {
+      setCommissionPaymentError(
+        paymentError instanceof Error ? paymentError.message : "Lien de paiement indisponible.",
+      );
+      await fetchData();
+    } finally {
+      setOpeningCommissionPayment(false);
+    }
   };
 
   if (loading) {
@@ -814,6 +845,40 @@ export default function RecommendationDetailPage() {
         </div>
 
         <div className="px-6 py-6 sm:px-8">
+          {isProfessional && recommendation.status === "COMPLETED" && !payout?.professional_paid && (
+            <div className="mb-5 rounded-2xl border border-winelio-orange/25 bg-gradient-to-br from-orange-50 to-amber-50 p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-xl shadow-sm">
+                    💳
+                  </div>
+                  <div>
+                    <p className="font-bold text-winelio-dark">Commission Winelio à régler</p>
+                    <p className="mt-1 text-sm leading-5 text-winelio-gray">
+                      Accédez ici au paiement Stripe, même si vous n&apos;avez pas reçu l&apos;e-mail. Le lien est vérifié et renouvelé automatiquement s&apos;il a expiré.
+                    </p>
+                    {commissionPaymentError && (
+                      <p className="mt-2 text-sm font-medium text-red-600" role="alert">
+                        {commissionPaymentError}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleOpenCommissionPayment}
+                  disabled={openingCommissionPayment}
+                  className="inline-flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3 text-sm font-bold text-white shadow-md shadow-winelio-orange/20 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {openingCommissionPayment
+                    ? "Vérification du lien…"
+                    : payout?.professional_payment?.amount
+                      ? `Payer ${Number(payout.professional_payment.amount).toFixed(2).replace(".", ",")} € sur Stripe`
+                      : "Accéder au paiement Stripe"}
+                </button>
+              </div>
+            </div>
+          )}
           {recommendation.abandoned_by_pro_at && userId === recommendation.referrer_id && (
             <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
               <div className="flex items-start gap-3">

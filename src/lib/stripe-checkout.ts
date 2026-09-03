@@ -11,8 +11,10 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app";
  * Appelée à l'étape 8, quand l'affaire est terminée.
  */
 export async function createStripeCheckoutSession(
-  recommendationId: string
+  recommendationId: string,
+  options: { notifyProfessional?: boolean } = {},
 ): Promise<string> {
+  const notifyProfessional = options.notifyProfessional ?? true;
   // ── 1. Vérification idempotente ──────────────────────────────────────────────
   const { data: paid, error: paidError } = await supabaseAdmin
     .from("stripe_payment_sessions")
@@ -40,7 +42,10 @@ export async function createStripeCheckoutSession(
     const existingSession = await stripe.checkout.sessions.retrieve(
       existing.stripe_session_id
     );
-    if (existingSession.status !== "expired" && existingSession.url) {
+    if (existingSession.payment_status === "paid" || existingSession.status === "complete") {
+      throw new Error("Cette commission est déjà réglée ou en cours de confirmation.");
+    }
+    if (existingSession.status === "open" && existingSession.url) {
       return existingSession.url;
     }
     // Session expirée → marquer expired et en créer une nouvelle
@@ -160,21 +165,39 @@ export async function createStripeCheckoutSession(
     } catch {
       // On a fait notre possible
     }
+    if (insertError.code === "23505") {
+      const { data: concurrent } = await supabaseAdmin
+        .from("stripe_payment_sessions")
+        .select("stripe_session_id")
+        .eq("recommendation_id", recommendationId)
+        .eq("status", "pending")
+        .maybeSingle();
+      if (concurrent) {
+        const concurrentSession = await stripe.checkout.sessions.retrieve(
+          concurrent.stripe_session_id
+        );
+        if (concurrentSession.status === "open" && concurrentSession.url) {
+          return concurrentSession.url;
+        }
+      }
+    }
     throw new Error(`Impossible d'enregistrer la session de paiement: ${insertError.message}`);
   }
 
   // ── 8. Envoyer l'email (non-critique — échec logué mais non propagé) ──────────
-  try {
-    await sendCommissionPaymentEmail(
-      reco.professional_id,
-      recommendationId,
-      clientName,
-      commissionAmount,
-      session.url
-    );
-  } catch (emailErr) {
-    console.error("[stripe-checkout] Échec envoi email commission:", emailErr);
-    // Ne pas faire échouer le flux — la session Stripe est créée et en DB
+  if (notifyProfessional) {
+    try {
+      await sendCommissionPaymentEmail(
+        reco.professional_id,
+        recommendationId,
+        clientName,
+        commissionAmount,
+        session.url
+      );
+    } catch (emailErr) {
+      console.error("[stripe-checkout] Échec envoi email commission:", emailErr);
+      // Ne pas faire échouer le flux — la session Stripe est créée et en DB
+    }
   }
 
   return session.url;

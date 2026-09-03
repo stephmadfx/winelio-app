@@ -29,6 +29,7 @@
 | POST | `/api/recommendations/create` | user | Body : `{ selectedContactId, selectedProId, description, urgency, createContact, contactForm }`. Crée reco + 8 recommendation_steps. [DÉCLENCHE] notifyNewRecommendation. |
 | GET | `/api/recommendations/list` | user | `?tab=sent\|received` — liste recos du user (filtré referrer_id ou professional_id). |
 | GET | `/api/recommendations/[id]` | user | Détail reco. Anonymat : identité pro masquée si status=PENDING. |
+| POST | `/api/recommendations/[id]/commission-payment-link` | user (pro) | Retourne ou renouvelle un lien Stripe actif pour la commission d'une recommandation terminée. Refuse les autres utilisateurs et les commissions déjà payées. |
 | POST | `/api/recommendations/complete-step` | user | Body `{ recommendation_id, step_id, quote_amount?, expected_completion_at?, work_already_completed? }`. Valide uniquement les étapes PROFESSIONAL/REFERRER sans saut. Étape 5 → demande de validation du devis au client. Étape 7 → demande de confirmation finale au client. |
 | GET/POST | `/api/recommendations/client-action` | token HMAC | Page publique client : lecture puis confirmation/contestation du devis (étape 6) ou de la prestation (étape 8). Action atomique, révocable et idempotente. Étape 8 confirmée → prépare le règlement de la commission Stripe du professionnel. |
 | POST | `/api/recommendations/[id]/client-confirmation` | user (pro/admin) | Envoie ou renvoie la demande de confirmation sécurisée au client final. |

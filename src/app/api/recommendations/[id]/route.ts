@@ -127,7 +127,7 @@ export async function GET(
     )
     .eq("recommendation_id", id);
 
-  const [{ data: review }, { data: referrerCommission }, professionalPaid] = await Promise.all([
+  const [{ data: review }, { data: referrerCommission }, { data: professionalPayment }, professionalPaid] = await Promise.all([
     supabaseAdmin
       .schema("winelio")
       .from("reviews")
@@ -143,6 +143,15 @@ export async function GET(
       .eq("user_id", rec.referrer_id)
       .eq("type", "recommendation")
       .maybeSingle(),
+    isPro
+      ? supabaseAdmin
+          .schema("winelio")
+          .from("stripe_payment_sessions")
+          .select("amount, status")
+          .eq("recommendation_id", id)
+          .eq("status", "pending")
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
     hasPaidProfessionalCommission(id),
   ]);
 
@@ -152,6 +161,7 @@ export async function GET(
     contactMasked,
     payout: {
       professional_paid: professionalPaid,
+      professional_payment: isPro ? professionalPayment : null,
       review,
       referrer_commission: referrerCommission,
     },
