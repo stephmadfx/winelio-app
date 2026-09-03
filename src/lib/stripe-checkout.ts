@@ -167,6 +167,7 @@ export async function createStripeCheckoutSession(
   try {
     await sendCommissionPaymentEmail(
       reco.professional_id,
+      recommendationId,
       clientName,
       commissionAmount,
       session.url

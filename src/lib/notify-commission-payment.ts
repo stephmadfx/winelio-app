@@ -37,15 +37,27 @@ function emailShell(content: string): string {
 }
 
 function ctaButton(label: string, url: string): string {
+  const safeUrl = he(url);
   return `<table width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr><td align="center">
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td align="center" style="background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:12px;">
-            <a href="${url.replace(/"/g, "&quot;")}" style="display:inline-block;color:#ffffff;font-size:15px;font-weight:700;padding:15px 36px;border-radius:12px;text-decoration:none;">${label}</a>
+            <a href="${safeUrl}" style="display:inline-block;color:#ffffff;font-size:15px;font-weight:700;padding:15px 36px;border-radius:12px;text-decoration:none;">${label}</a>
           </td>
         </tr>
       </table>
+    </td></tr>
+  </table>`;
+}
+
+function paymentFallbackLink(url: string): string {
+  const safeUrl = he(url);
+  return `<table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td style="height:14px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr><td align="center" style="color:#636E72;font-size:12px;line-height:1.5;">
+      Si le bouton ne s'affiche pas, utilisez ce lien sécurisé :<br />
+      <a href="${safeUrl}" style="color:#FF6B35;text-decoration:underline;word-break:break-all;">Ouvrir la page de paiement</a>
     </td></tr>
   </table>`;
 }
@@ -60,7 +72,7 @@ function infoBlock(content: string): string {
 
 // ─── Email 1 : Lien de paiement (J+0) ─────────────────────────────────────────
 
-function buildPaymentLinkEmail(
+export function buildPaymentLinkEmail(
   proFirstName: string,
   clientName: string,
   amount: number,
@@ -92,6 +104,7 @@ function buildPaymentLinkEmail(
       Ce lien est valable <strong style="color:#2D3436;">24 heures</strong>. Un rappel vous sera envoyé si nécessaire.
     </p>
     ${ctaButton("Payer ma commission d'intermédiation →", checkoutUrl)}
+    ${paymentFallbackLink(checkoutUrl)}
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr>
     </table>
@@ -104,7 +117,7 @@ function buildPaymentLinkEmail(
 
 // ─── Email 2 : Relance (J+2) ───────────────────────────────────────────────────
 
-function buildReminderEmail(
+export function buildReminderEmail(
   proFirstName: string,
   clientName: string,
   amount: number,
@@ -135,7 +148,8 @@ function buildReminderEmail(
     <p style="color:#636E72;font-size:13px;text-align:center;margin:0 0 20px;">
       Merci de procéder au règlement dès que possible pour maintenir votre accès à la plateforme.
     </p>
-    ${ctaButton("Payer ma commission d'intermédiation →", checkoutUrl)}`;
+    ${ctaButton("Payer ma commission d'intermédiation →", checkoutUrl)}
+    ${paymentFallbackLink(checkoutUrl)}`;
 
   return emailShell(content);
 }
@@ -182,6 +196,7 @@ function buildAlertEmail(recipientFirstName: string): string {
 
 export async function sendCommissionPaymentEmail(
   proId: string,
+  recommendationId: string,
   clientName: string,
   amount: number,
   checkoutUrl: string
@@ -204,11 +219,14 @@ export async function sendCommissionPaymentEmail(
     html: buildPaymentLinkEmail(firstName, clientName, amount, checkoutUrl),
     text: `Bonjour ${firstName},\n\nVotre commission d'intermédiation Winelio pour le client ${clientName} est de ${amount.toFixed(2)} €.\n\nRéglez-la ici : ${checkoutUrl}\n\n© 2026 Winelio`,
     priority: 5,
+    dedupeKey: `stripe-commission-payment:${recommendationId}`,
+    throwOnError: true,
   });
 }
 
 export async function sendCommissionReminderEmail(
   proId: string,
+  recommendationId: string,
   clientName: string,
   amount: number,
   checkoutUrl: string
@@ -231,6 +249,8 @@ export async function sendCommissionReminderEmail(
     html: buildReminderEmail(firstName, clientName, amount, checkoutUrl),
     text: `Bonjour ${firstName},\n\nRappel : votre commission d'intermédiation Winelio de ${amount.toFixed(2)} € pour ${clientName} n'a pas encore été réglée.\n\nLien de paiement : ${checkoutUrl}\n\n© 2026 Winelio`,
     priority: 5,
+    dedupeKey: `stripe-commission-reminder:${recommendationId}`,
+    throwOnError: true,
   });
 }
 

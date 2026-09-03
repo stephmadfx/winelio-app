@@ -46,7 +46,7 @@
 |---|---|---|---|
 | POST | `/api/stripe/setup-intent` | user | Crée/récupère Stripe Customer, retourne client_secret d'un SetupIntent. |
 | POST | `/api/stripe/payment-method` | user | Body `{ setupIntentId }`. Persiste payment_method sur profiles (brand, last4, saved_at). |
-| GET | `/api/stripe/cron-reminders` | Bearer CRON_SECRET | Relances sessions pending : J+2 → email reminder, J+4 → email alert. [UTILISE] notifyCommissionPayment. |
+| GET/POST | `/api/stripe/cron-reminders` | Bearer CRON_SECRET | Relances sessions pending : J+1 à l'expiration du lien → nouveau lien et email, puis J+3 → email d'alerte. Déclenché chaque heure par `pg_cron`. [UTILISE] notifyCommissionPayment. |
 | POST | `/api/stripe/webhook` | Stripe signature | `checkout.session.completed` → idempotence via stripe_payment_sessions → [DÉCLENCHE] createCommissions + recalculateWallet. |
 
 ---
@@ -179,6 +179,6 @@
 |---|---|---|
 | POST `/api/recommendations/process-followups` | Toutes les 15 min | Relances pro |
 | POST `/api/email/process-queue` | Toutes les 5 min | Envoi SMTP |
-| GET `/api/stripe/cron-reminders` | Toutes les heures | Relances paiement Stripe |
+| GET/POST `/api/stripe/cron-reminders` | Toutes les heures (`pg_cron`) | Relances paiement Stripe |
 | POST `/api/recommendations/cron-scraped-reminder` | Toutes les heures | Relances pros scrapés |
 | GET `/api/bugs/imap-poll` | Toutes les 15 min | Polling IMAP support |

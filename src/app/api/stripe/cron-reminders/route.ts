@@ -7,10 +7,10 @@ import {
   sendCommissionAlertEmails,
 } from "@/lib/notify-commission-payment";
 
-const REMINDER_DELAY_MS = 48 * 60 * 60 * 1000; // 48h
+const REMINDER_DELAY_MS = 24 * 60 * 60 * 1000; // des que le lien initial expire
 const ALERT_DELAY_MS    = 48 * 60 * 60 * 1000; // 48h après la relance
 
-export async function GET(req: Request) {
+async function handleCron(req: Request) {
   // ── Auth cron ────────────────────────────────────────────────────────────────
   const auth = req.headers.get("authorization") ?? "";
   const expected = `Bearer ${process.env.CRON_SECRET}`;
@@ -96,6 +96,7 @@ export async function GET(req: Request) {
 
       await sendCommissionReminderEmail(
         (reco as { professional_id: string }).professional_id,
+        session.recommendation_id,
         clientName,
         session.amount as number,
         checkoutUrl
@@ -155,3 +156,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json({ reminders, alerts, timestamp: now.toISOString() });
 }
+
+// pg_cron utilise le meme appel POST que le worker de la file d'emails.
+export const GET = handleCron;
+export const POST = handleCron;
