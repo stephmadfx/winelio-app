@@ -1,0 +1,5 @@
+export const STRIPE_OFF_SESSION_CONSENT_VERSION = "2026-09-03-v1";
+export const STRIPE_OFF_SESSION_TERMS_VERSION = "2026-09-03";
+
+export const STRIPE_OFF_SESSION_CONSENT_TEXT =
+  "En enregistrant ma carte, j’autorise expressément Winelio à débiter automatiquement cette carte, sans nouvelle validation de ma part, du montant de la commission d’intermédiation due pour chaque recommandation ayant abouti. Le montant est variable : il est calculé sur le montant TTC de chaque affaire selon le barème indiqué dans les Conditions Professionnels / CGV, soit 10 % jusqu’à 25 000 € TTC et 5 % sur la totalité du montant TTC lorsque l’affaire dépasse 25 000 € TTC. Le débit intervient lorsque je déclare dans Winelio avoir encaissé le règlement de mon client. Aucun montant n’est débité aujourd’hui. Si la banque refuse le paiement ou exige une authentification, Winelio m’enverra un lien Stripe sécurisé afin de régulariser le paiement ou choisir une autre carte. Je peux modifier mon moyen de paiement pour les opérations futures, sans supprimer les commissions déjà dues.";

@@ -4,6 +4,7 @@ import { RECOMMENDATION_STATUS_BY_STEP } from "@/lib/constants";
 import { notifyReferrerStep } from "@/lib/notify-referrer-step";
 import { notifyContactAccepted } from "@/lib/notify-contact-accepted";
 import { requestClientRecommendationAction } from "@/lib/notify-client-recommendation-action";
+import { collectCommissionAutomatically } from "@/lib/stripe-automatic-commission";
 
 // Les étapes client (6 et 8) ne passent pas par cette route : elles sont
 // confirmées via /api/recommendations/client-action avec un lien signé.
@@ -99,6 +100,7 @@ export async function POST(request: Request) {
         await requestClientRecommendationAction(rec.id, "quote");
       }
       if (stepIndex === 7) {
+        await collectCommissionAutomatically(rec.id);
         await requestClientRecommendationAction(rec.id, "completion");
       }
       await notifyReferrerStep(rec.id, stepIndex);
@@ -184,6 +186,7 @@ export async function POST(request: Request) {
       await requestClientRecommendationAction(rec.id, "quote");
     }
     if (stepIndex === 7) {
+      await collectCommissionAutomatically(rec.id);
       await requestClientRecommendationAction(rec.id, "completion");
     }
 

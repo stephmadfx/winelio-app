@@ -2,7 +2,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { COMMISSION_TYPE, COMMISSION_STATUS, WINELIO_SYSTEM_USER_ID } from "@/lib/constants";
 import { calculateCommissionBaseAmount } from "@/lib/commission-rate";
 
-interface CompensationPlan {
+export interface CompensationPlan {
   id: string;
   commission_rate: number;
   high_amount_threshold?: number | null;
@@ -16,6 +16,29 @@ interface CompensationPlan {
   platform_percentage: number;
   affiliation_percentage: number;
   cashback_wins_percentage: number;
+}
+
+export function assertValidCompensationPlan(plan: CompensationPlan): void {
+  const percentages = [
+    plan.referrer_percentage,
+    plan.level_1_percentage,
+    plan.level_2_percentage,
+    plan.level_3_percentage,
+    plan.level_4_percentage,
+    plan.level_5_percentage,
+    plan.platform_percentage,
+    plan.affiliation_percentage,
+    plan.cashback_wins_percentage,
+  ].map(Number);
+  const total = percentages.reduce((sum, value) => sum + value, 0);
+  if (
+    !Number.isFinite(Number(plan.commission_rate)) ||
+    Number(plan.commission_rate) <= 0 ||
+    percentages.some((value) => !Number.isFinite(value) || value < 0) ||
+    Math.abs(total - 100) > 0.001
+  ) {
+    throw new Error(`Plan de commission invalide (répartition=${total})`);
+  }
 }
 
 interface CommissionResult {
@@ -66,7 +89,8 @@ export async function createCommissions(
   referrerId: string,
   professionalId: string,
   amount: number,
-  planId: string | null
+  planId: string | null,
+  planSnapshot?: CompensationPlan | null,
 ): Promise<void> {
   const { data: recommendation, error: recommendationError } = await supabaseAdmin
     .from("recommendations")
@@ -90,7 +114,7 @@ export async function createCommissions(
   if ((count ?? 0) > 0) return;
 
   // Résolution du plan : plan de la recommandation ou plan par défaut
-  let resolvedPlanId = planId;
+  let resolvedPlanId = planSnapshot?.id ?? planId;
   if (!resolvedPlanId) {
     const { data: defaultPlan } = await supabaseAdmin
       .from("compensation_plans")
@@ -101,15 +125,23 @@ export async function createCommissions(
     resolvedPlanId = defaultPlan?.id ?? null;
   }
 
-  if (!resolvedPlanId) return;
+  if (!resolvedPlanId) {
+    throw new Error("Aucun plan de commission actif");
+  }
 
-  const { data: plan } = await supabaseAdmin
-    .from("compensation_plans")
-    .select("*")
-    .eq("id", resolvedPlanId)
-    .single();
+  let plan = planSnapshot ?? null;
+  if (!plan) {
+    const { data, error } = await supabaseAdmin
+      .from("compensation_plans")
+      .select("*")
+      .eq("id", resolvedPlanId)
+      .single();
+    if (error) throw new Error(`Lecture du plan de commission impossible: ${error.message}`);
+    plan = data as CompensationPlan | null;
+  }
 
-  if (!plan) return;
+  if (!plan) throw new Error("Plan de commission introuvable");
+  assertValidCompensationPlan(plan);
 
   const { referrer_commission, level_commissions, platform_commission, affiliation_commission, cashback_wins } =
     calculateCommissions(amount, plan);
@@ -223,6 +255,10 @@ export async function createCommissions(
     .insert(commissions.map((commission) => ({ ...commission, is_demo: isDemo })));
 
   if (insertError) {
+    // Un webhook Stripe et la réponse synchrone du PaymentIntent peuvent
+    // finaliser le même paiement presque simultanément. La contrainte unique
+    // garantit l'intégrité ; le second traitement est alors déjà satisfait.
+    if (insertError.code === "23505") return;
     throw new Error(
       `Échec de création des commissions pour ${recommendationId}: ${insertError.message}`
     );

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
-import { createStripeCheckoutSession } from "@/lib/stripe-checkout";
+import { collectCommissionAutomatically } from "@/lib/stripe-automatic-commission";
 
 const MAX_QUOTE_AMOUNT = 1_000_000;
 
@@ -64,6 +64,20 @@ export async function PATCH(
     );
   }
 
+  const { count: processingCount } = await supabaseAdmin
+    .schema("winelio")
+    .from("stripe_payment_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("recommendation_id", rec.id)
+    .eq("status", "processing");
+
+  if ((processingCount ?? 0) > 0) {
+    return NextResponse.json(
+      { error: "Le montant ne peut pas être modifié pendant le traitement du paiement." },
+      { status: 409 },
+    );
+  }
+
   const { data: pendingSessions } = await supabaseAdmin
     .schema("winelio")
     .from("stripe_payment_sessions")
@@ -73,6 +87,7 @@ export async function PATCH(
 
   await Promise.allSettled(
     (pendingSessions ?? []).map(async (session) => {
+      if (!session.stripe_session_id) return;
       try {
         await stripe.checkout.sessions.expire(session.stripe_session_id);
       } catch (err) {
@@ -111,7 +126,7 @@ export async function PATCH(
   }
 
   if (rec.status === "COMPLETED") {
-    await createStripeCheckoutSession(rec.id);
+    await collectCommissionAutomatically(rec.id);
   }
 
   return NextResponse.json({ success: true, amount });

@@ -38,9 +38,9 @@ export async function POST(
       { status: 403 },
     );
   }
-  if (recommendation.status !== "COMPLETED") {
+  if (!["PAYMENT_RECEIVED", "COMPLETED"].includes(recommendation.status)) {
     return NextResponse.json(
-      { error: "Le paiement sera disponible une fois la prestation confirmée par le client." },
+      { error: "Le paiement sera disponible lorsque le professionnel aura déclaré avoir encaissé son client." },
       { status: 409 },
     );
   }

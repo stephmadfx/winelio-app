@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { recalculateWallet } from "@/lib/wallet";
 import { COMMISSION_TYPE, COMMISSION_STATUS, WITHDRAWAL_STATUS } from "@/lib/constants";
-import { createStripeCheckoutSession } from "@/lib/stripe-checkout";
+import { collectCommissionAutomatically } from "@/lib/stripe-automatic-commission";
 import { notifyBugStatusChange } from "@/lib/notify-bug-status";
 
 async function assertSuperAdmin() {
@@ -116,10 +116,6 @@ export async function advanceRecommendationStep(
 
   if (stepRow.completed_at) return;
 
-  if (orderIndex === 8) {
-    await createStripeCheckoutSession(recommendationId);
-  }
-
   const { data: updatedStep, error: stepError } = await supabaseAdmin
     .from("recommendation_steps")
     .update({ completed_at: new Date().toISOString() })
@@ -143,6 +139,10 @@ export async function advanceRecommendationStep(
 
   if (recommendationError) {
     throw new Error(`Erreur mise à jour recommandation: ${recommendationError.message}`);
+  }
+
+  if (orderIndex === 7) {
+    await collectCommissionAutomatically(recommendationId);
   }
 
   revalidatePath(`/gestion-reseau/recommandations/${recommendationId}`);

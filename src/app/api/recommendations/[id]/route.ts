@@ -149,7 +149,9 @@ export async function GET(
           .from("stripe_payment_sessions")
           .select("amount, status")
           .eq("recommendation_id", id)
-          .eq("status", "pending")
+          .in("status", ["pending", "processing"])
+          .order("created_at", { ascending: false })
+          .limit(1)
           .maybeSingle()
       : Promise.resolve({ data: null }),
     hasPaidProfessionalCommission(id),

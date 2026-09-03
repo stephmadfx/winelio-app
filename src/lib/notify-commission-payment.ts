@@ -76,7 +76,8 @@ export function buildPaymentLinkEmail(
   proFirstName: string,
   clientName: string,
   amount: number,
-  checkoutUrl: string
+  checkoutUrl: string,
+  automaticAttemptFailed = false,
 ): string {
   const amountStr = amount.toFixed(2).replace(".", ",");
   const content = `
@@ -92,9 +93,13 @@ export function buildPaymentLinkEmail(
       <tr><td align="center"><p style="color:#636E72;font-size:15px;margin:0;">Bonjour <strong style="color:#2D3436;">${he(proFirstName)}</strong>,</p></td></tr>
       <tr><td style="height:24px;font-size:0;line-height:0;">&nbsp;</td></tr>
     </table>
+    ${automaticAttemptFailed ? `${infoBlock(`
+      <p style="margin:0;color:#2D3436;font-size:14px;font-weight:700;">Votre carte enregistrée n'a pas pu être débitée automatiquement.</p>
+      <p style="margin:8px 0 0;color:#636E72;font-size:13px;line-height:1.5;">Utilisez le lien sécurisé ci-dessous pour authentifier le paiement ou choisir une autre carte.</p>
+    `)}<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="height:16px;font-size:0;line-height:0;">&nbsp;</td></tr></table>` : ""}
     ${infoBlock(`
       <p style="margin:0;color:#2D3436;font-size:15px;font-weight:600;">Client : ${he(clientName)}</p>
-      <p style="margin:8px 0 0;color:#636E72;font-size:14px;">Le paiement de votre client a été confirmé. Voici la commission d'intermédiation Winelio à régler :</p>
+      <p style="margin:8px 0 0;color:#636E72;font-size:14px;">Vous avez déclaré avoir encaissé le règlement de votre client. Voici la commission d'intermédiation Winelio à régler :</p>
       <p style="margin:12px 0 0;color:#FF6B35;font-size:24px;font-weight:800;">${amountStr}&nbsp;€</p>
     `)}
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -199,7 +204,8 @@ export async function sendCommissionPaymentEmail(
   recommendationId: string,
   clientName: string,
   amount: number,
-  checkoutUrl: string
+  checkoutUrl: string,
+  automaticAttemptFailed = false,
 ): Promise<void> {
   const [profileResult, authResult] = await Promise.all([
     supabaseAdmin.from("profiles").select("first_name").eq("id", proId).single(),
@@ -215,9 +221,13 @@ export async function sendCommissionPaymentEmail(
 
   await queueEmail({
     to: email,
-    subject: `Commission d'intermédiation Winelio — ${clientName} — ${amount.toFixed(2).replace(".", ",")} €`,
-    html: buildPaymentLinkEmail(firstName, clientName, amount, checkoutUrl),
-    text: `Bonjour ${firstName},\n\nVotre commission d'intermédiation Winelio pour le client ${clientName} est de ${amount.toFixed(2)} €.\n\nRéglez-la ici : ${checkoutUrl}\n\n© 2026 Winelio`,
+    subject: automaticAttemptFailed
+      ? `Action requise — paiement Winelio de ${amount.toFixed(2).replace(".", ",")} €`
+      : `Commission d'intermédiation Winelio — ${clientName} — ${amount.toFixed(2).replace(".", ",")} €`,
+    html: buildPaymentLinkEmail(firstName, clientName, amount, checkoutUrl, automaticAttemptFailed),
+    text: automaticAttemptFailed
+      ? `Bonjour ${firstName},\n\nVotre carte enregistrée n'a pas pu être débitée automatiquement. La commission d'intermédiation Winelio pour ${clientName} est de ${amount.toFixed(2)} €.\n\nAuthentifiez le paiement ou choisissez une autre carte : ${checkoutUrl}\n\n© 2026 Winelio`
+      : `Bonjour ${firstName},\n\nVotre commission d'intermédiation Winelio pour le client ${clientName} est de ${amount.toFixed(2)} €.\n\nRéglez-la ici : ${checkoutUrl}\n\n© 2026 Winelio`,
     priority: 5,
     dedupeKey: `stripe-commission-payment:${recommendationId}`,
     throwOnError: true,

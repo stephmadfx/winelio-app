@@ -6,6 +6,7 @@ import {
   sendCommissionReminderEmail,
   sendCommissionAlertEmails,
 } from "@/lib/notify-commission-payment";
+import { reconcileStripeCommissionPayments } from "@/lib/stripe-commission-reconciliation";
 
 const REMINDER_DELAY_MS = 24 * 60 * 60 * 1000; // des que le lien initial expire
 const ALERT_DELAY_MS    = 48 * 60 * 60 * 1000; // 48h après la relance
@@ -18,10 +19,15 @@ async function handleCron(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const reconciliation = await reconcileStripeCommissionPayments().catch((error) => {
+    console.error("[cron-reminders] Réconciliation Stripe impossible:", error);
+    return { recovered: 0, fallbacks: 0, unresolved: 0, created: 0, error: true };
+  });
+
   const disabledReason = getEmailDisabledReason();
   if (disabledReason) {
     console.warn(`[cron-reminders] Relances ignorées: ${disabledReason}`);
-    return NextResponse.json({ reminders: 0, alerts: 0, skipped: true, reason: disabledReason });
+    return NextResponse.json({ reminders: 0, alerts: 0, reconciliation, skipped: true, reason: disabledReason });
   }
 
   const now = new Date();
@@ -154,7 +160,7 @@ async function handleCron(req: Request) {
     }
   }
 
-  return NextResponse.json({ reminders, alerts, timestamp: now.toISOString() });
+  return NextResponse.json({ reminders, alerts, reconciliation, timestamp: now.toISOString() });
 }
 
 // pg_cron utilise le meme appel POST que le worker de la file d'emails.

@@ -4,6 +4,7 @@ import {
   buildPaymentLinkEmail,
   buildReminderEmail,
 } from "../../src/lib/notify-commission-payment";
+import { buildPaymentMethodResetEmail } from "../../src/lib/notify-payment-method-reset";
 
 const checkoutUrl = "https://checkout.stripe.com/c/pay/cs_test_example?prefilled_email=a%40b.fr&locale=fr";
 
@@ -21,6 +22,26 @@ for (const [name, html] of [
   assert.equal((html.match(/https:\/\/checkout\.stripe\.com/g) ?? []).length, 2);
   assert.ok(html.length < 15_000, `${name}: HTML anormalement volumineux (${html.length} caractères)`);
 }
+
+const failedAutomaticPaymentHtml = buildPaymentLinkEmail(
+  "Thierry",
+  "Sacha CARLIER",
+  1,
+  checkoutUrl,
+  true,
+);
+assert.match(failedAutomaticPaymentHtml, /n'a pas pu être débitée automatiquement/);
+assert.match(failedAutomaticPaymentHtml, /choisir une autre carte/);
+assert.equal((failedAutomaticPaymentHtml.match(/https:\/\/checkout\.stripe\.com/g) ?? []).length, 2);
+
+const resetEmailHtml = buildPaymentMethodResetEmail("Thierry");
+assert.match(resetEmailHtml, /Veuillez réenregistrer votre carte/);
+assert.match(resetEmailHtml, /recommandation de test concernant Sacha Carlier a été annulée/);
+assert.match(resetEmailHtml, /Aucun paiement n'a été prélevé/);
+assert.match(resetEmailHtml, /10 % jusqu'à 25 000 € TTC/);
+assert.match(resetEmailHtml, /5 % sur la totalité de l'affaire au-delà/);
+assert.match(resetEmailHtml, /https:\/\/winelio\.app\/profile/);
+assert.doesNotMatch(resetEmailHtml, /<div/i);
 
 console.log("commission-payment-email: OK");
 

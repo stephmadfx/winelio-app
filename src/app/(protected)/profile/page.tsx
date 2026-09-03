@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { ProfileForm } from "@/components/profile-form";
+import { PaymentMethodCard } from "@/components/payment-method-card";
 
 export default async function ProfilePage({
   searchParams,
@@ -52,6 +53,7 @@ export default async function ProfilePage({
           </div>
         </div>
       )}
+      {profile.is_professional && <PaymentMethodCard />}
       <ProfileForm profile={profile} userEmail={user.email ?? ""} companyEmail={companyEmail} companyId={companyId} />
     </div>
   );

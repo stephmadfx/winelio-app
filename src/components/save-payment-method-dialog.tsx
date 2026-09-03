@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import {
   Elements,
@@ -8,6 +9,10 @@ import {
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
+import {
+  STRIPE_OFF_SESSION_CONSENT_TEXT,
+  STRIPE_OFF_SESSION_CONSENT_VERSION,
+} from "@/lib/stripe-off-session-consent";
 
 let stripePromise: Promise<Stripe | null> | null = null;
 function getStripe() {
@@ -68,6 +73,8 @@ export function SavePaymentMethodDialog({ open, onClose, onSaved }: Props) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [demoProcessing, setDemoProcessing] = useState(false);
+  const [consentAccepted, setConsentAccepted] = useState(false);
+  const [stripeLoading, setStripeLoading] = useState(false);
   const returnHandled = useRef(false);
 
   // Reprise après 3-D Secure : Stripe redirige vers return_url avec setup_intent=…
@@ -129,19 +136,30 @@ export function SavePaymentMethodDialog({ open, onClose, onSaved }: Props) {
   }, [open, onSaved, onClose]);
 
   useEffect(() => {
-    if (!open || DEMO_MODE) {
-      if (!open) {
-        setClientSecret(null);
-        setLoadError(null);
-      }
-      return;
-    }
+    if (open) return;
+    setClientSecret(null);
+    setLoadError(null);
+    setConsentAccepted(false);
+    setStripeLoading(false);
+  }, [open]);
+
+  async function initializeStripe() {
+    if (!consentAccepted || stripeLoading) return;
     if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
       setLoadError("Configuration Stripe manquante. Réessayez plus tard ou contactez le support.");
       return;
     }
-    let cancelled = false;
-    fetch("/api/stripe/setup-intent", { method: "POST" })
+
+    setStripeLoading(true);
+    setLoadError(null);
+    fetch("/api/stripe/setup-intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        consentAccepted: true,
+        consentVersion: STRIPE_OFF_SESSION_CONSENT_VERSION,
+      }),
+    })
       .then(async (r) => {
         const data = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(data.error ?? `Erreur initialisation Stripe (${r.status})`);
@@ -149,13 +167,13 @@ export function SavePaymentMethodDialog({ open, onClose, onSaved }: Props) {
         return data;
       })
       .then((d) => {
-        if (!cancelled) setClientSecret(d.clientSecret);
+        setClientSecret(d.clientSecret);
       })
       .catch((err) => {
-        if (!cancelled) setLoadError(err instanceof Error ? err.message : "Impossible d'initialiser Stripe");
-      });
-    return () => { cancelled = true; };
-  }, [open]);
+        setLoadError(err instanceof Error ? err.message : "Impossible d'initialiser Stripe");
+      })
+      .finally(() => setStripeLoading(false));
+  }
 
   if (!open) return null;
 
@@ -192,16 +210,42 @@ export function SavePaymentMethodDialog({ open, onClose, onSaved }: Props) {
           <>
             <div className="rounded-xl bg-winelio-light/60 border border-winelio-orange/20 p-3 mb-3 text-xs text-winelio-dark leading-relaxed">
               Pour accéder aux coordonnées du lead, enregistrez une carte bancaire.
-              Cette étape sert uniquement à <strong>valider votre sérieux</strong> en
-              tant que professionnel — c&apos;est un gage de confiance pour nos
-              recommandeurs et leurs contacts.
+              Aucun montant n&apos;est débité aujourd&apos;hui.
             </div>
-            <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 mb-4 text-xs text-emerald-900 leading-relaxed">
-              🔒 <strong>En aucun cas Winelio ne prélèvera automatiquement une somme
-              sur votre carte.</strong> 0 € aujourd&apos;hui, et aucun débit ne sera
-              jamais lancé sans votre accord : la commission d&apos;intermédiation se
-              règle plus tard, par vous-même, via un lien de paiement sécurisé.
+            <div className="rounded-xl border border-winelio-orange/25 bg-orange-50 p-3 mb-3 text-xs text-winelio-dark leading-relaxed">
+              <p className="font-bold">Autorisation de débits futurs</p>
+              <p className="mt-2">{STRIPE_OFF_SESSION_CONSENT_TEXT}</p>
             </div>
+            {!clientSecret && (
+              <>
+                <label className="mb-3 flex cursor-pointer items-start gap-2.5 rounded-xl border border-gray-200 p-3 text-xs leading-relaxed text-winelio-dark">
+                  <input
+                    type="checkbox"
+                    checked={consentAccepted}
+                    onChange={(event) => setConsentAccepted(event.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-winelio-orange"
+                  />
+                  <span>
+                    J&apos;autorise ces débits automatiques et j&apos;accepte les{" "}
+                    <Link
+                      href="/documents-legaux/conditions-professionnels"
+                      target="_blank"
+                      className="font-semibold text-winelio-orange underline"
+                    >
+                      Conditions Professionnels / CGV
+                    </Link>.
+                  </span>
+                </label>
+                <button
+                  type="button"
+                  onClick={initializeStripe}
+                  disabled={!consentAccepted || stripeLoading}
+                  className="mb-3 w-full rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {stripeLoading ? "Ouverture du formulaire sécurisé…" : "Continuer vers la saisie de la carte"}
+                </button>
+              </>
+            )}
           </>
         )}
 
@@ -218,7 +262,7 @@ export function SavePaymentMethodDialog({ open, onClose, onSaved }: Props) {
           </p>
         )}
 
-        {!DEMO_MODE && !clientSecret && !loadError && (
+        {!DEMO_MODE && stripeLoading && !clientSecret && !loadError && (
           <div className="flex items-center justify-center py-8">
             <div className="w-6 h-6 border-2 border-winelio-orange border-t-transparent rounded-full animate-spin" />
           </div>
@@ -353,7 +397,7 @@ function SetupIntentForm({
         disabled={!stripe || submitting}
         className="w-full py-3 rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {submitting ? "Enregistrement…" : "Enregistrer ma carte (0 €)"}
+        {submitting ? "Enregistrement…" : "Enregistrer et autoriser (0 € aujourd’hui)"}
       </button>
       <p className="text-[10px] text-winelio-gray text-center">
         Paiements sécurisés via Stripe · 3D Secure · PCI DSS Level 1

@@ -1,18 +1,19 @@
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendCommissionPaymentEmail } from "@/lib/notify-commission-payment";
-import { calculateCommissionBaseAmount, type CommissionRatePlan } from "@/lib/commission-rate";
+import { calculateCommissionBaseAmount } from "@/lib/commission-rate";
+import { assertValidCompensationPlan, type CompensationPlan } from "@/lib/commission";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app";
 
 /**
  * Crée une Stripe Checkout Session pour la commission d'une recommandation.
  * Idempotente : retourne l'URL existante si une session pending existe déjà.
- * Appelée à l'étape 8, quand l'affaire est terminée.
+ * Appelée à l'étape 7, quand le professionnel déclare avoir encaissé son client.
  */
 export async function createStripeCheckoutSession(
   recommendationId: string,
-  options: { notifyProfessional?: boolean } = {},
+  options: { notifyProfessional?: boolean; automaticAttemptFailed?: boolean } = {},
 ): Promise<string> {
   const notifyProfessional = options.notifyProfessional ?? true;
   // ── 1. Vérification idempotente ──────────────────────────────────────────────
@@ -39,6 +40,9 @@ export async function createStripeCheckoutSession(
   if (existingError) throw new Error(`Erreur lecture session existante: ${existingError.message}`);
 
   if (existing) {
+    if (!existing.stripe_session_id) {
+      throw new Error("Session Stripe de régularisation incomplète.");
+    }
     const existingSession = await stripe.checkout.sessions.retrieve(
       existing.stripe_session_id
     );
@@ -83,31 +87,41 @@ export async function createStripeCheckoutSession(
   }
 
   // ── 3. Résoudre le plan de commission ────────────────────────────────────────
-  let resolvedPlan: CommissionRatePlan | null = null;
+  let resolvedPlan: CompensationPlan | null = null;
   if (reco.compensation_plan_id) {
-    const { data: plan } = await supabaseAdmin
+    const { data: plan, error: planError } = await supabaseAdmin
       .from("compensation_plans")
       .select("*")
       .eq("id", reco.compensation_plan_id)
       .single();
-    resolvedPlan = plan;
+    if (planError) throw new Error(`Lecture du plan de commission impossible: ${planError.message}`);
+    resolvedPlan = plan as CompensationPlan | null;
   } else {
-    const { data: defaultPlan } = await supabaseAdmin
+    const { data: defaultPlan, error: planError } = await supabaseAdmin
       .from("compensation_plans")
       .select("*")
       .eq("is_default", true)
       .eq("is_active", true)
       .single();
-    resolvedPlan = defaultPlan;
+    if (planError) throw new Error(`Lecture du plan de commission impossible: ${planError.message}`);
+    resolvedPlan = defaultPlan as CompensationPlan | null;
   }
+
+  if (!resolvedPlan) throw new Error("Aucun plan de commission actif");
+  assertValidCompensationPlan(resolvedPlan);
 
   const { amount: commissionAmount, rate: commissionRate } =
     calculateCommissionBaseAmount(reco.amount, resolvedPlan);
 
-  // ── 4. Récupérer l'email du professionnel ────────────────────────────────────
-  const { data: proAuth } = await supabaseAdmin.auth.admin.getUserById(
-    reco.professional_id
-  );
+  // ── 4. Récupérer le compte Stripe et l'email du professionnel ────────────────
+  const [{ data: proAuth }, { data: proProfile }] = await Promise.all([
+    supabaseAdmin.auth.admin.getUserById(reco.professional_id),
+    supabaseAdmin
+      .from("profiles")
+      .select("stripe_customer_id")
+      .eq("id", reco.professional_id)
+      .single(),
+  ]);
   const proEmail = proAuth?.user?.email;
 
   // ── 5. Construire le nom du client ───────────────────────────────────────────
@@ -120,7 +134,13 @@ export async function createStripeCheckoutSession(
   // ── 6. Créer la Stripe Checkout Session ──────────────────────────────────────
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
-    ...(proEmail ? { customer_email: proEmail } : {}),
+    ...(proProfile?.stripe_customer_id
+      ? {
+          customer: proProfile.stripe_customer_id,
+        }
+      : proEmail
+        ? { customer_email: proEmail }
+        : {}),
     line_items: [
       {
         price_data: {
@@ -156,6 +176,11 @@ export async function createStripeCheckoutSession(
       recommendation_id: recommendationId,
       stripe_session_id: session.id,
       amount: commissionAmount,
+      payment_mode: "checkout",
+      deal_amount: reco.amount,
+      commission_rate: commissionRate,
+      compensation_plan_id: resolvedPlan.id,
+      plan_snapshot: resolvedPlan,
     });
 
   if (insertError) {
@@ -192,7 +217,8 @@ export async function createStripeCheckoutSession(
         recommendationId,
         clientName,
         commissionAmount,
-        session.url
+        session.url,
+        options.automaticAttemptFailed ?? false,
       );
     } catch (emailErr) {
       console.error("[stripe-checkout] Échec envoi email commission:", emailErr);

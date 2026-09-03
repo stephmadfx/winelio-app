@@ -1,8 +1,6 @@
 # Conditions Professionnels / CGV de commission d'intermédiation - Winelio
 
-Version publiee - 2026-06-04
-
-Certains parametres commerciaux et administratifs sont en attente de validation et seront completes apres confirmation definitive.
+Version publiee - 2026-09-03
 
 ## 1. Objet
 
@@ -83,12 +81,12 @@ Si le Professionnel n'est pas assujetti a la TVA, la commission d'intermédiatio
 
 ### 6.3 Taux
 
-Bareme de travail a valider :
+Le taux est determine pour chaque affaire prise individuellement :
 
-- 10 % du montant TTC de la prestation jusqu'a 25 000 euros TTC ;
-- 5 % sur la part du montant TTC excedant 25 000 euros TTC.
+- 10 % du montant TTC total de l'affaire lorsque celui-ci est inferieur ou egal a 25 000 euros TTC ;
+- 5 % du montant TTC total de l'affaire lorsque celui-ci est strictement superieur a 25 000 euros TTC.
 
-Point en attente de validation finale : le seuil de 25 000 euros doit etre precise. Il peut s'agir, selon la decision commerciale retenue, d'un seuil par mission, par client final, par professionnel ou par annee civile.
+Le taux de 5 % s'applique donc a la totalite du montant TTC de l'affaire concernee, et non a la seule fraction depassant 25 000 euros TTC.
 
 ### 6.4 Fait generateur
 
@@ -96,7 +94,7 @@ La commission d'intermédiation devient exigible lorsque les conditions suivante
 
 - le Client final a ete mis en relation avec le Professionnel via Winelio ou a la suite d'une recommandation issue de Winelio ;
 - le Client final a accepte une offre, un devis, une commande ou un contrat du Professionnel ;
-- la prestation a ete realisee et/ou payee selon le workflow applicable ;
+- le Professionnel a declare dans Winelio que la prestation est terminee et que le paiement du Client final a ete effectivement encaisse ;
 - le montant necessaire au calcul de la commission d'intermédiation a ete declare ou justifie.
 
 Les droits a reversement affilie ne deviennent definitivement acquis qu'apres encaissement effectif de la commission d'intermédiation Winelio et expiration des controles applicables.
@@ -111,16 +109,21 @@ Toute sous-declaration, omission volontaire ou fausse declaration constitue un m
 
 Winelio emet ou fait emettre une facture correspondant a la commission d'intermédiation due.
 
-Le paiement peut etre effectue :
+Lorsqu'il enregistre sa carte et coche la case d'autorisation correspondante, le Professionnel autorise expressement Winelio a initier, sans nouvelle validation de sa part, un debit automatique par carte pour chaque commission d'intermediation devenue exigible.
 
-- par carte bancaire ;
-- par prelevement ou mandat de paiement ;
-- via Stripe ou tout autre prestataire de paiement tiers ;
-- par tout autre moyen accepte par Winelio.
+Le montant de chaque debit est variable. Il correspond au montant TTC de chaque affaire, multiplie par le taux applicable : 10 % lorsque le montant est inferieur ou egal a 25 000 euros TTC, ou 5 % sur la totalite du montant lorsque l'affaire depasse 25 000 euros TTC. Le fait generateur du debit est la declaration par le Professionnel, dans le workflow Winelio, qu'il a effectivement encaisse le paiement de son Client final.
+
+Aucun montant n'est debite lors du seul enregistrement de la carte. L'autorisation porte sur des paiements futurs ponctuels, lies aux recommandations effectivement abouties, et non sur un abonnement.
+
+L'autorisation est recueillie de maniere explicite avant l'enregistrement de la carte. Winelio conserve la version du texte accepte, la date d'acceptation et les references techniques necessaires a la preuve de cette autorisation. Le Professionnel peut remplacer ou retirer son moyen de paiement pour les operations futures. Cette modification n'eteint pas les commissions deja dues.
+
+Si le debit automatique est refuse, si la carte est expiree ou si la banque exige une authentification forte, Winelio adresse au Professionnel un lien Stripe securise lui permettant d'authentifier le paiement ou de choisir un autre moyen de paiement. Ce lien est egalement accessible depuis le suivi de la recommandation.
+
+Une facture ou un justificatif mentionnant le montant de la commission est mis a disposition ou adresse au Professionnel. Aucune commission affiliee n'est rendue disponible au retrait avant l'encaissement effectif et confirme du paiement par Stripe.
 
 Winelio n'agit pas comme prestataire de services de paiement. Les operations de paiement sont executees par des prestataires tiers agrees ou habilites, selon leurs propres conditions.
 
-Sauf mention contraire sur la facture ou dans l'application, les sommes dues par le Professionnel sont payables dans un delai de 15 jours a compter de l'emission de la facture ou de la demande de paiement.
+En cas d'echec du debit automatique, les sommes dues par le Professionnel sont payables dans un delai de 15 jours a compter de l'emission de la facture ou de la demande de regularisation.
 
 ## 8. Retard ou defaut de paiement
 

@@ -96,11 +96,20 @@ test("carte Stripe — le formulaire Elements s'affiche sans erreur CSP", async 
 
   await expect(page.getByRole("heading", { name: /enregistrer votre carte/i })).toBeVisible();
 
+  await expect(page.getByText("Autorisation de débits futurs", { exact: true })).toBeVisible();
+  const consentCheckbox = page.getByRole("checkbox");
+  const continueButton = page.getByRole("button", { name: /continuer vers la saisie de la carte/i });
+  await expect(consentCheckbox).not.toBeChecked();
+  await expect(continueButton).toBeDisabled();
+  await consentCheckbox.check();
+  await expect(continueButton).toBeEnabled();
+  await continueButton.click();
+
   const stripeFrame = page.frameLocator("iframe[src*='js.stripe.com'], iframe[src*='stripe.com']").first();
   await expect(
     stripeFrame.locator("input, [name='number'], [autocomplete='cc-number']").first(),
   ).toBeVisible({ timeout: 20_000 });
 
-  await expect(page.getByRole("button", { name: /enregistrer ma carte/i })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /enregistrer et autoriser/i })).toBeEnabled();
   expect(cspViolations, `CSP bloquait Stripe :\n${cspViolations.join("\n")}`).toEqual([]);
 });

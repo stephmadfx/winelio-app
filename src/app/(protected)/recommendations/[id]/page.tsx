@@ -138,6 +138,7 @@ export default function RecommendationDetailPage() {
   const [amountError, setAmountError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
+  const [hasCurrentOffSessionConsent, setHasCurrentOffSessionConsent] = useState<boolean | null>(null);
   const [paymentCheckDone, setPaymentCheckDone] = useState(false);
   const [expectedDelay, setExpectedDelay] = useState("none");
   const [customExpectedDate, setCustomExpectedDate] = useState("");
@@ -165,8 +166,9 @@ export default function RecommendationDetailPage() {
       setUserId(user.id);
       const profileRes = await fetch(`/api/profile/payment-method-status`);
       if (profileRes.ok) {
-        const { hasPaymentMethod: hpm } = await profileRes.json();
+        const { hasPaymentMethod: hpm, hasCurrentOffSessionConsent: hasConsent } = await profileRes.json();
         setHasPaymentMethod(!!hpm);
+        setHasCurrentOffSessionConsent(!!hasConsent);
       }
       setPaymentCheckDone(true);
     });
@@ -448,6 +450,24 @@ export default function RecommendationDetailPage() {
         </svg>
         Recommandations
       </button>
+
+      {isProfessional && hasPaymentMethod && hasCurrentOffSessionConsent === false && (
+        <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
+          <div>
+            <p className="font-bold text-amber-900">Nouvelle autorisation de paiement requise</p>
+            <p className="mt-1 text-sm leading-5 text-amber-800">
+              Votre carte actuelle reste valable pour l&apos;accès aux leads, mais elle ne sera pas débitée automatiquement tant que vous n&apos;aurez pas accepté la nouvelle autorisation.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPaymentDialogOpen(true)}
+            className="mt-3 inline-flex shrink-0 items-center justify-center rounded-xl bg-winelio-orange px-4 py-2.5 text-sm font-bold text-white sm:mt-0"
+          >
+            Autoriser et confirmer ma carte
+          </button>
+        </div>
+      )}
 
       {/* ── Hero card ── */}
       <div className="mb-4 overflow-hidden rounded-3xl shadow-lg">
@@ -845,7 +865,7 @@ export default function RecommendationDetailPage() {
         </div>
 
         <div className="px-6 py-6 sm:px-8">
-          {isProfessional && recommendation.status === "COMPLETED" && !payout?.professional_paid && (
+          {isProfessional && ["PAYMENT_RECEIVED", "COMPLETED"].includes(recommendation.status) && !payout?.professional_paid && (
             <div className="mb-5 rounded-2xl border border-winelio-orange/25 bg-gradient-to-br from-orange-50 to-amber-50 p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-start gap-3">
@@ -853,9 +873,15 @@ export default function RecommendationDetailPage() {
                     💳
                   </div>
                   <div>
-                    <p className="font-bold text-winelio-dark">Commission Winelio à régler</p>
+                    <p className="font-bold text-winelio-dark">
+                      {payout?.professional_payment?.status === "processing"
+                        ? "Débit de la commission en cours"
+                        : "Commission Winelio à régler"}
+                    </p>
                     <p className="mt-1 text-sm leading-5 text-winelio-gray">
-                      Accédez ici au paiement Stripe, même si vous n&apos;avez pas reçu l&apos;e-mail. Le lien est vérifié et renouvelé automatiquement s&apos;il a expiré.
+                      {payout?.professional_payment?.status === "processing"
+                        ? "Stripe confirme actuellement le paiement automatique. Ne lancez pas un second règlement."
+                        : "Accédez ici au paiement Stripe, même si vous n'avez pas reçu l'e-mail. Le lien est vérifié et renouvelé automatiquement s'il a expiré."}
                     </p>
                     {commissionPaymentError && (
                       <p className="mt-2 text-sm font-medium text-red-600" role="alert">
@@ -864,18 +890,20 @@ export default function RecommendationDetailPage() {
                     )}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleOpenCommissionPayment}
-                  disabled={openingCommissionPayment}
-                  className="inline-flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3 text-sm font-bold text-white shadow-md shadow-winelio-orange/20 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {openingCommissionPayment
-                    ? "Vérification du lien…"
-                    : payout?.professional_payment?.amount
-                      ? `Payer ${Number(payout.professional_payment.amount).toFixed(2).replace(".", ",")} € sur Stripe`
-                      : "Accéder au paiement Stripe"}
-                </button>
+                {payout?.professional_payment?.status !== "processing" && (
+                  <button
+                    type="button"
+                    onClick={handleOpenCommissionPayment}
+                    disabled={openingCommissionPayment}
+                    className="inline-flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3 text-sm font-bold text-white shadow-md shadow-winelio-orange/20 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {openingCommissionPayment
+                      ? "Vérification du lien…"
+                      : payout?.professional_payment?.amount
+                        ? `Payer ${Number(payout.professional_payment.amount).toFixed(2).replace(".", ",")} € sur Stripe`
+                        : "Accéder au paiement Stripe"}
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -1230,6 +1258,7 @@ export default function RecommendationDetailPage() {
         onClose={() => setPaymentDialogOpen(false)}
         onSaved={() => {
           setHasPaymentMethod(true);
+          setHasCurrentOffSessionConsent(true);
           setPaymentDialogOpen(false);
           // Recharger la reco : l'API renvoie désormais les vraies coordonnées.
           fetchData();

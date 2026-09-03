@@ -3,6 +3,14 @@ import { wn } from "./helpers/supabase";
 import { loginAsFast } from "./helpers/auth";
 import { createTestUser } from "./helpers/factories";
 import { e2eEmail } from "./helpers/env";
+import { STRIPE_OFF_SESSION_CONSENT_VERSION } from "../../src/lib/stripe-off-session-consent";
+
+const setupIntentRequest = {
+  data: {
+    consentAccepted: true,
+    consentVersion: STRIPE_OFF_SESSION_CONSENT_VERSION,
+  },
+};
 
 /* ──────────────────────────────────────────────────────────── */
 /* Status payment-method : initialement aucun                    */
@@ -17,6 +25,17 @@ test("onboarding pro — état initial : pas de payment method", async ({ page }
   expect(res.ok()).toBe(true);
   const body = await res.json();
   expect(body.hasPaymentMethod).toBe(false);
+});
+
+test("onboarding pro — setup-intent refuse une autorisation absente", async ({ page }) => {
+  const pro = await createTestUser({
+    email: e2eEmail("pro-no-consent"), isProfessional: true,
+  });
+
+  await loginAsFast(page, pro.email);
+  const res = await page.request.post("/api/stripe/setup-intent");
+  expect(res.status()).toBe(400);
+  expect((await res.json()).error).toMatch(/autorisation explicite/i);
 });
 
 /* ──────────────────────────────────────────────────────────── */
@@ -37,7 +56,7 @@ test("onboarding pro — setup-intent crée le customer Stripe et retourne clien
     .single();
   expect(before?.stripe_customer_id).toBeFalsy();
 
-  const res = await page.request.post("/api/stripe/setup-intent");
+  const res = await page.request.post("/api/stripe/setup-intent", setupIntentRequest);
   expect(res.ok(), `setup-intent: ${await res.text()}`).toBe(true);
   const body = await res.json();
 
@@ -65,8 +84,8 @@ test("onboarding pro — setup-intent idempotent sur le customer (pas de doublon
 
   await loginAsFast(page, pro.email);
 
-  const first = await page.request.post("/api/stripe/setup-intent");
-  const second = await page.request.post("/api/stripe/setup-intent");
+  const first = await page.request.post("/api/stripe/setup-intent", setupIntentRequest);
+  const second = await page.request.post("/api/stripe/setup-intent", setupIntentRequest);
   const a = await first.json();
   const b = await second.json();
 
@@ -105,7 +124,7 @@ test("onboarding pro — payment-method refuse un SetupIntent d'un autre profil 
 
   // proA crée un SetupIntent avec metadata.profile_id = proA.id
   await loginAsFast(page, proA.email);
-  const aRes = await page.request.post("/api/stripe/setup-intent");
+  const aRes = await page.request.post("/api/stripe/setup-intent", setupIntentRequest);
   const { clientSecret } = await aRes.json();
   // clientSecret contient seti_<id>_secret_xxx → on extrait l'id
   const setupIntentId = clientSecret.split("_secret_")[0];

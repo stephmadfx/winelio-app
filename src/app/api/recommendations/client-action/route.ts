@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { verifyClientRecommendationToken } from "@/lib/client-recommendation-token";
 import { notifyClientRecommendationDecision } from "@/lib/notify-client-recommendation-action";
-import { createStripeCheckoutSession } from "@/lib/stripe-checkout";
 
 type ClientDecision = "confirm" | "dispute";
 
@@ -151,23 +150,6 @@ export async function POST(request: Request) {
     already_processed?: boolean;
   } | null;
 
-  let commissionPaymentPrepared = true;
-  if (
-    verified.payload.purpose === "completion" &&
-    decision === "confirm" &&
-    result?.status === "confirmed"
-  ) {
-    try {
-      await createStripeCheckoutSession(verified.payload.rid);
-    } catch (stripeError) {
-      commissionPaymentPrepared = false;
-      console.error(
-        "[client-action] confirmation enregistrée, préparation Stripe échouée:",
-        stripeError,
-      );
-    }
-  }
-
   await notifyClientRecommendationDecision({
     recommendationId: verified.payload.rid,
     purpose: verified.payload.purpose,
@@ -182,6 +164,6 @@ export async function POST(request: Request) {
     ok: true,
     status: result?.status,
     alreadyProcessed: Boolean(result?.already_processed),
-    commissionPaymentPrepared,
+    commissionPaymentPrepared: true,
   });
 }
