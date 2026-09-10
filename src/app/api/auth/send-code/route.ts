@@ -46,7 +46,7 @@ function buildEmailHtml(code: string): string {
     <p style="text-align:center;margin:0 0 24px;">${LOGO_IMG_HTML}</p>
     <h1 style="color:#2D3436;font-size:20px;text-align:center;margin:0 0 8px;">Votre code de connexion</h1>
     <p style="color:#636E72;font-size:14px;text-align:center;margin:0 0 28px;">
-      Saisissez ce code pour acceder a votre compte Winelio.
+      Saisissez ce code pour accéder à votre compte Winelio.
     </p>
     <p style="text-align:center;margin:0 0 28px;">
       <span style="display:inline-block;background:#FFF5F0;border:2px solid #FF6B35;border-radius:12px;padding:16px 40px;font-size:36px;font-weight:800;letter-spacing:10px;color:#2D3436;font-family:'Courier New',monospace;">
@@ -54,7 +54,7 @@ function buildEmailHtml(code: string): string {
       </span>
     </p>
     <p style="color:#636E72;font-size:12px;text-align:center;margin:0 0 24px;">
-      Ce code est valable <strong style="color:#2D3436;">${CODE_TTL_MINUTES} minutes</strong> et a usage unique.
+      Ce code est valable <strong style="color:#2D3436;">${CODE_TTL_MINUTES} minutes</strong> et à usage unique.
     </p>
     <p style="color:#999;font-size:11px;text-align:center;margin:0;border-top:1px solid #F0F2F4;padding-top:16px;">
       Si vous n'avez pas fait cette demande, ignorez cet email.

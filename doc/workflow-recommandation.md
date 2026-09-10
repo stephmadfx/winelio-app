@@ -1,5 +1,7 @@
 # Workflow Recommandation Winelio
 
+> Document historique, remplacé le 10 septembre 2026 par [le parcours recommandeur et les deux avis](workflow-recommandation-2026-09-10.md). Les validations du client par email décrites ci-dessous ne sont plus utilisées.
+
 ## Vue d'ensemble
 
 Le parcours d'une recommandation se déroule en 2 grandes phases :

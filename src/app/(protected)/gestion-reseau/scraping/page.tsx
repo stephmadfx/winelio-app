@@ -60,7 +60,7 @@ export default async function ScrapingAdminPage() {
       <div className="rounded-2xl border border-winelio-gray/10 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-bold text-winelio-dark">Format du CSV attendu</h2>
         <p className="mt-1 text-sm text-winelio-gray">
-          Entête obligatoire sur la première ligne, séparateur{" "}
+          En-tête obligatoire sur la première ligne, séparateur{" "}
           <code className="rounded bg-winelio-light px-1.5 py-0.5 text-xs">,</code>. Colonnes :
         </p>
         <pre className="mt-3 overflow-x-auto rounded-xl bg-winelio-dark p-4 text-xs text-white">

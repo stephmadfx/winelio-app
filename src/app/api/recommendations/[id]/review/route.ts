@@ -1,3 +1,4 @@
+import { notifyProfessionalReview } from "@/lib/review-notifications";
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -19,14 +20,14 @@ export async function POST(
 
   const { id } = await params;
   const body = await request.json().catch(() => null);
-  const validation = validateRecommendationReview(body?.rating, body?.answers);
+  const validation = validateRecommendationReview(body?.rating, body?.comment);
   if (!validation.ok) {
     return NextResponse.json({ error: validation.errors.join(" ") }, { status: 400 });
   }
 
   const { data: rec } = await supabaseAdmin
     .from("recommendations")
-    .select("id, referrer_id, professional_id")
+    .select("id, referrer_id, professional_id, status")
     .eq("id", id)
     .single();
 
@@ -41,14 +42,14 @@ export async function POST(
     );
   }
 
-  if (!(await hasPaidProfessionalCommission(rec.id))) {
+  if (rec.status !== "COMPLETED" || !(await hasPaidProfessionalCommission(rec.id))) {
     return NextResponse.json(
       { error: "Avis en attente : le professionnel doit d'abord régler sa commission d'intermédiation Winelio." },
       { status: 409 }
     );
   }
 
-  const { error } = await supabaseAdmin
+  const { data: saved, error } = await supabaseAdmin
     .from("reviews")
     .upsert(
       {
@@ -57,16 +58,18 @@ export async function POST(
         professional_id: rec.professional_id,
         rating: validation.rating,
         comment: validation.comment,
-        answers: validation.answers,
+        author_role: "referrer",
         status: "published",
       },
-      { onConflict: "recommendation_id,reviewer_id" }
-    );
+      { onConflict: "recommendation_id,reviewer_id", ignoreDuplicates: true }
+    ).select("id").maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: "Impossible d'enregistrer l'avis." }, { status: 500 });
   }
 
+  const { data: existing } = saved ? { data: saved } : await supabaseAdmin.from("reviews").select("id").eq("recommendation_id", rec.id).eq("reviewer_id", user.id).single();
+  if (existing) await notifyProfessionalReview(existing.id);
   const payout = await unlockRecommendationCommissions(rec.id);
   await notifyReferrerCommissionCredited(rec.id).catch((err) =>
     console.error("[recommendation-review] Échec notification cagnotte:", err)

@@ -447,19 +447,19 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           {/* Étape 3 */}
           <RectNode id="etape-3" x={300} y={712} w={400} h={44} fill="white" stroke="#2D3436"
             label="Étape 3 — Contact établi"
-            sublabel="Le pro contacte le client · ✉️ email recommandeur"
+            sublabel="Prise de contact confirmée par le recommandeur"
             onClick={click} hasBadge={ann.has("etape-3")} />
 
           {/* Étape 4 */}
           <RectNode id="etape-4" x={300} y={786} w={400} h={44} fill="white" stroke="#2D3436"
             label="Étape 4 — Rendez-vous fixé"
-            sublabel="Le pro fixe un rendez-vous · ✉️ email recommandeur"
+            sublabel="Rendez-vous confirmé par le recommandeur"
             onClick={click} hasBadge={ann.has("etape-4")} />
 
           {/* Étape 5 */}
           <RectNode id="etape-5" x={300} y={860} w={400} h={44} fill="white" stroke="#2D3436"
             label="Étape 5 — Devis soumis"
-            sublabel="Montant + date facultative · demande envoyée au client"
+            sublabel="Montant saisi par le pro · date facultative"
             onClick={click} hasBadge={ann.has("etape-5")} />
 
           {/* ── Branche relances pro automatiques (à droite des étapes 2/4/6) ── */}
@@ -504,19 +504,19 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
           {/* Étape 6 — validation directe du devis par le client */}
           <RectNode id="etape-6" x={300} y={930} w={400} h={48} fill="#FFF5F0" stroke="#FF6B35"
             label="Étape 6 — Devis accepté par le client"
-            sublabel="Lien sécurisé · contestation possible · aucune attente de date"
+            sublabel="Acceptation confirmée par le recommandeur"
             labelColor="#FF6B35" onClick={click} hasBadge={ann.has("etape-6")} />
 
           {/* Étape 7 — déclaration du professionnel */}
           <RectNode id="etape-7" x={300} y={1002} w={400} h={48} fill="white" stroke="#2D3436"
             label="Étape 7 — Travaux terminés + paiement reçu"
-            sublabel="Déclaration du professionnel · confirmation envoyée au client"
+            sublabel="Déclaration du professionnel · paiement Winelio lancé"
             onClick={click} hasBadge={ann.has("etape-7")} />
 
           {/* Étape 8 — confirmation finale du client */}
           <RectNode id="etape-8" x={300} y={1074} w={400} h={48} fill="#FFF5F0" stroke="#FF6B35"
-            label="Étape 8 — Prestation confirmée par le client"
-            sublabel="Conforme ou litige · clôture uniquement après confirmation"
+            label="Étape 8 — Clôture par le recommandeur"
+            sublabel="Après règlement : avis recommandeur + email unique au client"
             labelColor="#FF6B35" onClick={click} hasBadge={ann.has("etape-8")} />
 
           {/* Préparation puis création des commissions après règlement Stripe */}

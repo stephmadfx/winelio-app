@@ -1,4 +1,5 @@
 // src/lib/notify-pro-followup.ts
+import { emailShell } from "@/lib/notify-client-recommendation-action";
 import { queueEmail } from "@/lib/email-queue";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
@@ -59,7 +60,7 @@ export async function notifyProFollowup(ctx: FollowupContext): Promise<string | 
        professional:profiles!recommendations_professional_id_fkey(
          first_name, email, companies(name, email, deleted_at)
        ),
-       referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name),
+       referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name, email),
        contact:contacts(first_name, last_name)`
     )
     .eq("id", recommendationId)
@@ -72,8 +73,18 @@ export async function notifyProFollowup(ctx: FollowupContext): Promise<string | 
 
   const pro = normalize<{ first_name: string | null; email: string | null; companies: unknown }>(rec.professional);
   const company = pickActiveCompany<{ name: string | null; email: string | null; deleted_at: string | null }>(pro?.companies);
-  const referrer = normalize<{ first_name: string | null; last_name: string | null }>(rec.referrer);
+  const referrer = normalize<{ first_name: string | null; last_name: string | null; email: string | null }>(rec.referrer);
   const contact = normalize<{ first_name: string | null; last_name: string | null }>(rec.contact);
+
+  if (afterStep === 2) {
+    if (!referrer?.email) return null;
+    const result = await queueEmail({ to: referrer.email,
+      subject: "Votre recommandation : confirmez la prise de contact",
+      html: emailShell({ title: "Faites avancer votre recommandation", greeting: "Bonjour,", body: "Vérifiez auprès de votre contact que le professionnel l’a bien contacté, puis mettez à jour le suivi dans Winelio.", ctaLabel: "Suivre ma recommandation", ctaUrl: SITE_URL + "/recommendations/" + recommendationId }),
+      dedupeKey: "referrer-followup:" + followupId, throwOnError: true,
+    });
+    return result.id ?? null;
+  }
 
   // Email destinataire : email pro perso si dispo, sinon email company
   const recipientEmail = pro?.email || company?.email || null;

@@ -50,13 +50,13 @@ const STEP_MESSAGES: Record<number, StepInfo> = {
     emoji: "🔧",
     subject: (pro, contact) => `${pro} a confirmé les travaux pour ${contact}`,
     title:   () => `Travaux terminés — paiement client reçu`,
-    body:    (pro, contact) => `<strong style="color:#2D3436;">${he(pro)}</strong> a confirmé que les travaux sont terminés et que le paiement de <strong style="color:#2D3436;">${he(contact)}</strong> a été reçu. Il reste à clôturer l'affaire pour lancer le règlement de votre commission d'intermédiation.`,
+    body:    (pro, contact) => `<strong style="color:#2D3436;">${he(pro)}</strong> a confirmé que les travaux sont terminés et que le paiement de <strong style="color:#2D3436;">${he(contact)}</strong> a été reçu. Le règlement de la commission Winelio est lancé. Vérifiez auprès de votre contact que tout s’est bien passé, puis clôturez la recommandation.`,
   },
   8: {
     emoji: "🏁",
     subject: (_pro, contact) => `Affaire terminée avec ${contact} — commission en cours de règlement`,
     title:   () => `Affaire terminée`,
-    body:    (pro, contact) => `<strong style="color:#2D3436;">${he(pro)}</strong> a clôturé l'affaire pour <strong style="color:#2D3436;">${he(contact)}</strong>. Le professionnel reçoit maintenant le lien de paiement de la commission d'intermédiation. Votre part sera créditée après son règlement, puis votre avis.`,
+    body:    (pro, contact) => `<strong style="color:#2D3436;">${he(pro)}</strong> a réalisé la prestation pour <strong style="color:#2D3436;">${he(contact)}</strong>. Votre part devient disponible après le paiement de la commission Winelio et le dépôt de votre avis, quelle que soit la note attribuée.`,
     highlight: true,
   },
 };

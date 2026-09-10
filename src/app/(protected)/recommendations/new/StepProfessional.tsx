@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Professional, Category } from "./types";
 import { ProfessionalList } from "./ProfessionalList";
 import { GeoStatusBanner, GeoStatus } from "./GeoStatusBanner";
@@ -22,7 +21,6 @@ const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number): nu
 };
 
 export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfessionalProps) => {
-  const supabase = createClient();
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [proSearch, setProSearch] = useState("");
@@ -48,14 +46,12 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
   }, [proSearch]);
 
   useEffect(() => {
-    supabase.from("categories").select("id, name").order("name").then(({ data }) => setCategories(data ?? []));
-  }, []);
-
-  useEffect(() => {
-    if (!userId) return;
-    supabase.from("profiles").select("is_professional").eq("id", userId).maybeSingle().then(({ data }) => {
-      setIsPro(!!data?.is_professional);
-    });
+    let active = true;
+    fetch("/api/recommendations/options", { cache: "no-store" })
+      .then(async response => { const body = await response.json(); if (!response.ok) throw new Error(body.error); return body; })
+      .then(body => { if (active) { setCategories(body.categories ?? []); setIsPro(Boolean(body.profile?.is_professional)); } })
+      .catch(error => { if (active) setSearchError(error.message || "Impossible de charger les catégories."); });
+    return () => { active = false; };
   }, [userId]);
 
   const lat = userLocation?.lat ?? null;
@@ -73,28 +69,15 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
     setSearchLoading(true);
     setSearchError(null);
 
-    supabase
-      .rpc("search_professionals_by_distance", {
-        p_latitude: lat,
-        p_longitude: lng,
-        p_category_name: selectedCategory,
-        p_commune: selectedCommune || null,
-        p_search: debouncedSearch.trim().length >= 2 ? debouncedSearch.trim() : null,
-        p_limit: 250,
-      })
-      .then(({ data, error }) => {
+    const controller = new AbortController();
+    fetch("/api/professionals/search", {
+      method: "POST", headers: { "Content-Type": "application/json" }, signal: controller.signal,
+      body: JSON.stringify({ latitude: lat, longitude: lng, category: selectedCategory, commune: selectedCommune, search: debouncedSearch }),
+    }).then(async response => { const body = await response.json(); if (!response.ok) throw new Error(body.error); return body; })
+      .then(body => {
         if (cancelled) return;
-        setSearchLoading(false);
-
-        if (error) {
-          console.error("[StepProfessional] query error:", error);
-          setSearchError("La recherche de professionnels est momentanément indisponible.");
-          setProfessionals([]);
-          return;
-        }
-
         setProfessionals(
-          (data ?? []).map((p: any) => ({
+          (body.professionals ?? []).map((p: any) => ({
             id: p.profile_id,
             first_name: p.first_name,
             last_name: p.last_name,
@@ -104,8 +87,8 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
             latitude: p.latitude ?? null,
             longitude: p.longitude ?? null,
             distance: p.distance_km ?? null,
-            avg_rating: null,
-            review_count: 0,
+            avg_rating: p.avg_rating != null ? Number(p.avg_rating) : null,
+            review_count: Number(p.review_count ?? 0),
             is_claimed: p.company_source === "owner",
             last_active_at: fakeLastActive(p.profile_id),
             company_source: p.company_source ?? null,
@@ -113,10 +96,12 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
             geo_precision: p.geo_precision ?? null,
           }))
         );
-      });
+      }).catch(error => { if (!cancelled) { setSearchError(error.message || "La recherche est indisponible."); setProfessionals([]); } })
+      .finally(() => { if (!cancelled) setSearchLoading(false); });
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [debouncedSearch, selectedCategory, lat, lng, selectedCommune]);
 
@@ -192,7 +177,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
     <div>
       <div className="mb-6">
         <h2 className="text-lg font-bold text-winelio-dark">Quel professionnel recommandez-vous ?</h2>
-        <p className="mt-1 text-sm text-winelio-gray">Choisissez un professionnel Winelio — si le deal aboutit, vous touchez une commission.</p>
+        <p className="mt-1 text-sm text-winelio-gray">Choisissez un professionnel Winelio — si l’affaire aboutit, vous recevez une commission.</p>
       </div>
 
       <GeoStatusBanner status={geoStatus} radius={radius} onRequestGeo={requestGeo} onRadiusChange={setRadius} />

@@ -212,7 +212,7 @@ export function NetworkTree({
     return (
       <div className="py-8 flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-3 border-winelio-orange border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-winelio-gray">Chargement du reseau...</p>
+        <p className="text-sm text-winelio-gray">Chargement du réseau...</p>
       </div>
     );
   }
@@ -220,7 +220,7 @@ export function NetworkTree({
   if (roots.length === 0) {
     return (
       <p className="text-center text-winelio-gray py-8">
-        Aucun membre dans votre reseau.
+        Aucun membre dans votre réseau.
       </p>
     );
   }

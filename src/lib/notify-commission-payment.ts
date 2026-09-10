@@ -286,12 +286,7 @@ export async function sendCommissionAlertEmails(
 
   const recipients: Array<{ email: string; firstName: string }> = [];
 
-  if (contactRow?.email) {
-    recipients.push({
-      email: contactRow.email,
-      firstName: contactRow.first_name || "Client",
-    });
-  }
+
   if (referrerEmail) {
     recipients.push({ email: referrerEmail, firstName: referrerFirstName });
   }

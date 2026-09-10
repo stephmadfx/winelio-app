@@ -8,7 +8,7 @@ const SECRET = (
 const VERSION = 1;
 const DOMAIN = "winelio-client-recommendation-action-v1";
 
-export type ClientActionPurpose = "quote" | "completion";
+export type ClientActionPurpose = "quote" | "completion" | "review";
 
 export interface ClientRecommendationPayload {
   rid: string;
@@ -109,7 +109,7 @@ export function verifyClientRecommendationToken(
   if (
     typeof payload.rid !== "string" ||
     !/^[0-9a-f-]{36}$/i.test(payload.rid) ||
-    !["quote", "completion"].includes(payload.purpose) ||
+    !["quote", "completion", "review"].includes(payload.purpose) ||
     !Number.isInteger(payload.tokenVersion) ||
     payload.tokenVersion < 1
   ) {

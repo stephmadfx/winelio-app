@@ -5,7 +5,7 @@ import { formatDisplayName, formatProspectDisplayName } from "@/lib/utils";
 import { StepTimeline } from "@/components/step-timeline";
 import { RecommendationFollowupCard } from "@/components/recommendation-followup-card";
 import { SavePaymentMethodDialog } from "@/components/save-payment-method-dialog";
-import { REVIEW_QUESTIONS } from "@/lib/recommendation-review-questions";
+import { ReviewForm } from "@/components/review-form";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -143,18 +143,12 @@ export default function RecommendationDetailPage() {
   const [expectedDelay, setExpectedDelay] = useState("none");
   const [customExpectedDate, setCustomExpectedDate] = useState("");
   const [stepError, setStepError] = useState<string | null>(null);
-  const [requestingClientConfirmation, setRequestingClientConfirmation] = useState(false);
-  const [clientConfirmationMessage, setClientConfirmationMessage] = useState<string | null>(null);
   const [contactMasked, setContactMasked] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [transferTarget, setTransferTarget] = useState("");
   const [transferring, setTransferring] = useState(false);
   const [transferError, setTransferError] = useState<string | null>(null);
-  const [reviewRating, setReviewRating] = useState(0);
-  const [reviewAnswers, setReviewAnswers] = useState<string[]>(["", "", ""]);
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewError, setReviewError] = useState<string | null>(null);
   const [openingCommissionPayment, setOpeningCommissionPayment] = useState(false);
   const [commissionPaymentError, setCommissionPaymentError] = useState<string | null>(null);
 
@@ -264,34 +258,6 @@ export default function RecommendationDetailPage() {
     setCustomExpectedDate("");
   };
 
-  const handleRequestClientConfirmation = async (purpose: "quote" | "completion") => {
-    if (!recommendation) return;
-    setRequestingClientConfirmation(true);
-    setClientConfirmationMessage(null);
-    try {
-      const response = await fetch(
-        `/api/recommendations/${recommendation.id}/client-confirmation`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ purpose }),
-        },
-      );
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Envoi impossible");
-      setClientConfirmationMessage(
-        data.queued
-          ? "La demande a été envoyée au client."
-          : "La demande est déjà en attente dans la file d'envoi.",
-      );
-      await fetchData();
-    } catch (requestError) {
-      setClientConfirmationMessage(
-        requestError instanceof Error ? requestError.message : "Envoi impossible",
-      );
-    }
-    setRequestingClientConfirmation(false);
-  };
 
   const handleRefuse = async () => {
     if (!recommendation) return;
@@ -327,29 +293,6 @@ export default function RecommendationDetailPage() {
     setSavingAmount(false);
   };
 
-  const handleSubmitReview = async () => {
-    if (!recommendation) return;
-    setReviewSubmitting(true);
-    setReviewError(null);
-    try {
-      const res = await fetch(`/api/recommendations/${recommendation.id}/review`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rating: reviewRating, answers: reviewAnswers }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setReviewError(data.error ?? "Avis invalide.");
-      } else {
-        setReviewRating(0);
-        setReviewAnswers(["", "", ""]);
-        await fetchData();
-      }
-    } catch {
-      setReviewError("Erreur réseau lors de l'envoi de l'avis.");
-    }
-    setReviewSubmitting(false);
-  };
 
   const handleOpenCommissionPayment = async () => {
     if (!recommendation || openingCommissionPayment) return;
@@ -415,21 +358,6 @@ export default function RecommendationDetailPage() {
   const urgency = recommendation.urgency_level ? URGENCY_CONFIG[recommendation.urgency_level] : null;
   const isReferrer = userId === recommendation.referrer_id;
   const isProfessional = userId === recommendation.professional_id;
-  const clientActionPurpose = currentStepIndex === 6
-    ? "quote"
-    : currentStepIndex === 8
-      ? "completion"
-      : null;
-  const clientActionStatus = clientActionPurpose === "quote"
-    ? recommendation.client_quote_status
-    : clientActionPurpose === "completion"
-      ? recommendation.client_completion_status
-      : null;
-  const clientActionNote = clientActionPurpose === "quote"
-    ? recommendation.client_quote_note
-    : clientActionPurpose === "completion"
-      ? recommendation.client_completion_note
-      : null;
   const shouldShowPayoutReview =
     isReferrer &&
     (recommendation.status === "PAYMENT_RECEIVED" ||
@@ -729,7 +657,7 @@ export default function RecommendationDetailPage() {
               <div>
                 <h2 className="text-lg font-bold text-winelio-dark">Avis requis pour débloquer le paiement</h2>
                 <p className="mt-1 text-sm text-winelio-gray">
-                  Le recommandeur est payé uniquement si le professionnel a réglé Winelio et si un avis qualifié est déposé.
+                  Votre commission est disponible après le paiement de Winelio par le professionnel et le dépôt de votre note, quelle que soit sa valeur.
                 </p>
               </div>
               <span className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-bold ${
@@ -743,9 +671,9 @@ export default function RecommendationDetailPage() {
           </div>
 
           <div className="px-6 py-5 sm:px-8">
-            {!payout?.professional_paid ? (
+            {(!payout?.professional_paid || recommendation.status !== "COMPLETED") ? (
               <div className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-800 ring-1 ring-amber-100">
-                En attente du paiement du professionnel. Vous pourrez déposer l'avis dès que son règlement sera confirmé.
+                Vous pourrez donner votre avis après la clôture de la recommandation et le paiement de la commission Winelio par le professionnel.
               </div>
             ) : payout.review ? (
               <div className="rounded-2xl bg-green-50 p-4 ring-1 ring-green-100">
@@ -764,73 +692,7 @@ export default function RecommendationDetailPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-5">
-                <div>
-                  <p className="mb-2 text-sm font-bold text-winelio-dark">Note globale</p>
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setReviewRating(star)}
-                        className={`text-3xl transition-transform hover:scale-110 ${
-                          star <= reviewRating ? "text-winelio-amber" : "text-gray-300"
-                        }`}
-                        aria-label={`${star} étoile${star > 1 ? "s" : ""}`}
-                      >
-                        ★
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {REVIEW_QUESTIONS.map((question, index) => (
-                  <div key={question}>
-                    <label className="mb-2 block text-sm font-bold text-winelio-dark">
-                      {index + 1}. {question}
-                    </label>
-                    <textarea
-                      value={reviewAnswers[index]}
-                      onChange={(e) => {
-                        const next = [...reviewAnswers];
-                        next[index] = e.target.value;
-                        setReviewAnswers(next);
-                        setReviewError(null);
-                      }}
-                      rows={3}
-                      minLength={20}
-                      maxLength={500}
-                      placeholder="Réponse précise et utile, 20 caractères minimum."
-                      className="w-full rounded-xl border border-winelio-gray/20 bg-white px-4 py-3 text-sm focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15"
-                    />
-                    <p className="mt-1 text-right text-[11px] text-winelio-gray">
-                      {reviewAnswers[index].trim().length}/500
-                    </p>
-                  </div>
-                ))}
-
-                {reviewError && (
-                  <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600 ring-1 ring-red-100">
-                    {reviewError}
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={handleSubmitReview}
-                  disabled={reviewSubmitting}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3 text-sm font-bold text-white shadow-md shadow-winelio-orange/20 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-                >
-                  {reviewSubmitting ? (
-                    <>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Envoi de l'avis…
-                    </>
-                  ) : (
-                    "Valider l'avis et débloquer mon paiement"
-                  )}
-                </button>
-              </div>
+              <ReviewForm endpoint={`/api/recommendations/${recommendation.id}/review`} onSuccess={() => { void fetchData(); }} />
             )}
           </div>
         </div>
@@ -918,54 +780,6 @@ export default function RecommendationDetailPage() {
                   <p className="text-xs text-amber-800 mt-1">
                     Vous pouvez la transférer à un autre pro depuis le bouton « Transférer » ci-dessous.
                   </p>
-                </div>
-              </div>
-            </div>
-          )}
-          {currentStep?.step?.completion_role === "CONTACT" && clientActionPurpose && (
-            <div className={`mb-4 rounded-2xl border p-5 ${
-              clientActionStatus === "disputed"
-                ? "border-red-200 bg-red-50"
-                : "border-blue-200 bg-blue-50"
-            }`}>
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-xl shadow-sm">
-                  {clientActionStatus === "disputed" ? "⚠️" : "✉️"}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className={`font-bold ${clientActionStatus === "disputed" ? "text-red-900" : "text-blue-900"}`}>
-                    {clientActionStatus === "disputed"
-                      ? "Le client a signalé un problème"
-                      : `En attente de confirmation par ${contactName}`}
-                  </p>
-                  <p className={`mt-1 text-sm leading-6 ${clientActionStatus === "disputed" ? "text-red-800" : "text-blue-800"}`}>
-                    {clientActionStatus === "disputed"
-                      ? clientActionNote || "La situation doit être corrigée avant de poursuivre."
-                      : clientActionPurpose === "quote"
-                        ? "Le client final doit confirmer qu'il a accepté le devis. La date estimée ne bloque pas cette étape."
-                        : "Le client final doit confirmer que la prestation est terminée et conforme."}
-                  </p>
-                  {isProfessional && (
-                    <button
-                      type="button"
-                      onClick={() => handleRequestClientConfirmation(clientActionPurpose)}
-                      disabled={requestingClientConfirmation || clientActionStatus === "pending"}
-                      className="mt-4 inline-flex items-center justify-center rounded-xl bg-winelio-orange px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-winelio-amber disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {requestingClientConfirmation
-                        ? "Envoi…"
-                        : clientActionStatus === "pending"
-                          ? "Confirmation envoyée"
-                          : clientActionStatus === "disputed"
-                            ? "Renvoyer après correction"
-                            : "Envoyer la demande au client"}
-                    </button>
-                  )}
-                  {clientConfirmationMessage && (
-                    <p className="mt-2 text-xs font-medium text-winelio-gray" aria-live="polite">
-                      {clientConfirmationMessage}
-                    </p>
-                  )}
                 </div>
               </div>
             </div>

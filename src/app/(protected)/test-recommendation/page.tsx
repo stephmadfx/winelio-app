@@ -51,7 +51,7 @@ export default function TestRecommendationPage() {
       setResponse({ data: testData, error: testError });
 
       if (testError) {
-        setError(`Error: ${testError.message} | Code: ${testError.code} | Details: ${JSON.stringify(testError.details)}`);
+        setError(`Error: ${testError.message} | Code: ${testError.code} | Détails: ${JSON.stringify(testError.details)}`);
       } else {
         setError(null);
       }

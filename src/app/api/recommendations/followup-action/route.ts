@@ -2,13 +2,13 @@
 // Endpoint appelé par les boutons des emails de relance.
 // Token HMAC signé, pas de session Supabase requise.
 import { NextResponse } from "next/server";
+import { recommendationStepRole } from "@/lib/recommendation-workflow";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { RECOMMENDATION_STATUS, RECOMMENDATION_STATUS_BY_STEP } from "@/lib/constants";
 import { verifyFollowupToken } from "@/lib/followup-token";
 import { notifyReferrerStep } from "@/lib/notify-referrer-step";
 import { notifyRecoRefused } from "@/lib/notify-reco-refused";
 import { collectCommissionAutomatically } from "@/lib/stripe-automatic-commission";
-import { requestClientRecommendationAction } from "@/lib/notify-client-recommendation-action";
 
 const MAX_REPORTS = 5;
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
@@ -135,7 +135,7 @@ async function handleDone(fu: FollowupRow): Promise<Response> {
   }
 
   const step = Array.isArray(stepRow.step) ? stepRow.step[0] : stepRow.step;
-  const role = step?.completion_role ?? null;
+  const role = recommendationStepRole(targetOrder);
 
   if (role === "REFERRER") {
     return NextResponse.json(
@@ -143,12 +143,7 @@ async function handleDone(fu: FollowupRow): Promise<Response> {
       { status: 403 },
     );
   }
-  if (role === "CONTACT") {
-    return NextResponse.json(
-      { error: "Cette étape doit être confirmée directement par le client final via son lien sécurisé." },
-      { status: 403 },
-    );
-  }
+
 
   // Le devis (étape 5) exige un montant et une date — pas via le bouton email.
   if (targetOrder === 5) {
@@ -218,17 +213,7 @@ async function handleDone(fu: FollowupRow): Promise<Response> {
 async function finalizePaymentReceivedFromFollowup(recommendationId: string) {
   try {
     const payment = await collectCommissionAutomatically(recommendationId);
-    const { data: recommendation, error } = await supabaseAdmin
-      .schema("winelio")
-      .from("recommendations")
-      .select("client_completion_status")
-      .eq("id", recommendationId)
-      .single();
 
-    if (error) throw error;
-    if (recommendation?.client_completion_status === "not_requested") {
-      await requestClientRecommendationAction(recommendationId, "completion");
-    }
 
     return { ok: true as const, payment };
   } catch (error) {

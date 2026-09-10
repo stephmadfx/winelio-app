@@ -1,3 +1,4 @@
+import { notifyCompletedRecommendationReviews } from "@/lib/review-notifications";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createCommissions } from "@/lib/commission";
 import { notifyReferrerCommissionCredited } from "@/lib/notify-commission-credited";
@@ -75,6 +76,7 @@ export async function finalizeCommissionPayment(
     planSnapshot,
   );
 
+  await notifyCompletedRecommendationReviews(recommendationId);
   await expireOtherCommissionCheckouts(recommendationId, paymentRecordId);
   const payout = await unlockRecommendationCommissions(recommendationId);
   await notifyReferrerCommissionCredited(recommendationId).catch((err) =>

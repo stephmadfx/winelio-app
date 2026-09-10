@@ -594,7 +594,7 @@ export function BugTrackerBoard({ reports }: { reports: BugBoardReport[] }) {
 
                 {selectedReport.admin_reply && (
                   <div className="rounded-2xl border border-border bg-muted/30 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reponse publiee</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Réponse publiée</p>
                     <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground">{selectedReport.admin_reply}</p>
                   </div>
                 )}

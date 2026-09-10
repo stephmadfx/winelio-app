@@ -287,7 +287,7 @@ export default function WithdrawPage() {
       {step === "confirm" && (
         <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-6">
           <h2 className="text-lg font-semibold text-winelio-dark">
-            Recapitulatif
+            Récapitulatif
           </h2>
 
           <div className="space-y-4">
@@ -373,7 +373,7 @@ export default function WithdrawPage() {
             </svg>
           </div>
           <h2 className="text-xl font-bold text-winelio-dark">
-            Demande envoyee
+            Demande envoyée
           </h2>
           <p className="text-sm text-winelio-gray max-w-sm mx-auto">
             Votre demande de retrait a été enregistrée. Vous recevrez{" "}

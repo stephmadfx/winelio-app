@@ -18,8 +18,6 @@ interface StepContactProps {
   setContactForm: (form: ContactFormData) => void;
   contactErrors: Record<string, string>;
   setContactErrors: (e: Record<string, string>) => void;
-  wantsToJoin: boolean;
-  setWantsToJoin: (v: boolean) => void;
   thirdPartyConsent: boolean;
   setThirdPartyConsent: (v: boolean) => void;
 }
@@ -45,40 +43,6 @@ const Initials = ({ name }: { name: string }) => {
     </div>
   );
 };
-
-const JoinNetworkCheckbox = ({
-  checked,
-  onChange,
-}: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) => (
-  <label className="flex items-start gap-3 cursor-pointer mt-4">
-    <input
-      type="checkbox"
-      checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
-      className="sr-only"
-    />
-    <div
-      className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 transition-all ${
-        checked
-          ? "bg-gradient-to-br from-winelio-orange to-winelio-amber border-winelio-orange"
-          : "border-gray-300 hover:border-winelio-orange/50"
-      }`}
-    >
-      {checked && (
-        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-      )}
-    </div>
-    <span className="text-sm text-winelio-dark leading-relaxed">
-      Cette personne souhaite rejoindre le réseau Winelio —{" "}
-      <span className="text-winelio-gray">je lui enverrai une invitation par email avec mon code de parrainage.</span>
-    </span>
-  </label>
-);
 
 const ThirdPartyConsentCheckbox = ({
   checked,
@@ -116,7 +80,6 @@ export const StepContact = ({
   selectedContactId, setSelectedContactId,
   createContact, setCreateContact,
   contactForm, setContactForm, contactErrors, setContactErrors,
-  wantsToJoin, setWantsToJoin,
   thirdPartyConsent, setThirdPartyConsent,
 }: StepContactProps) => {
   const resetContactForm = () => {
@@ -154,7 +117,7 @@ export const StepContact = ({
             <>
               <p className="text-xs font-semibold uppercase tracking-widest text-winelio-gray/60">Recommandés existants</p>
               {otherContacts.map((c) => (
-                <button key={c.id} type="button" onClick={() => { setSelectedContactId(c.id); setWantsToJoin(false); setThirdPartyConsent(false); }}
+                <button key={c.id} type="button" onClick={() => { setSelectedContactId(c.id); setThirdPartyConsent(false); }}
                   className={`w-full flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition-all cursor-pointer ${
                     selectedContactId === c.id
                       ? "border-winelio-orange bg-winelio-orange/5 shadow-sm shadow-winelio-orange/10"
@@ -171,14 +134,13 @@ export const StepContact = ({
               {selectedContactId && otherContacts.some((c) => c.id === selectedContactId) && (
                 <>
                   <ThirdPartyConsentCheckbox checked={thirdPartyConsent} onChange={setThirdPartyConsent} />
-                  <JoinNetworkCheckbox checked={wantsToJoin} onChange={setWantsToJoin} />
                 </>
               )}
               <Separator />
             </>
           )}
 
-          <button type="button" onClick={() => { setCreateContact(true); setSelectedContactId(null); setWantsToJoin(false); setThirdPartyConsent(false); }}
+          <button type="button" onClick={() => { setCreateContact(true); setSelectedContactId(null); setThirdPartyConsent(false); }}
             className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-winelio-orange/40 px-5 py-4 text-sm font-semibold text-winelio-orange hover:border-winelio-orange hover:bg-winelio-orange/5 transition-all cursor-pointer">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -233,7 +195,6 @@ export const StepContact = ({
             </Field>
           </div>
           <ThirdPartyConsentCheckbox checked={thirdPartyConsent} onChange={setThirdPartyConsent} />
-          <JoinNetworkCheckbox checked={wantsToJoin} onChange={setWantsToJoin} />
         </div>
       )}
     </div>

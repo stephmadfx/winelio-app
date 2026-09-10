@@ -112,6 +112,7 @@ async function abandonExpiredThirdCycleFollowups(): Promise<number> {
     .select("id, recommendation_id, after_step_order")
     .eq("status", "sent")
     .eq("cycle_index", 3)
+    .neq("after_step_order", 2)
     .not("sent_at", "is", null)
     .lte("sent_at", cutoff)
     .order("sent_at", { ascending: true })
@@ -203,7 +204,7 @@ async function checkCancelReason(
     .single();
 
   if (!rec) return "reco_deleted";
-  if (rec.status === "CANCELLED") return "reco_refused";
+  if (["CANCELLED", "REJECTED", "EXPIRED", "COMPLETED"].includes(rec.status)) return "reco_refused";
   if (rec.status === "TRANSFERRED") return "reco_transferred";
 
   // Une étape > afterStepOrder déjà complétée ?

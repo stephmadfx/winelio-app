@@ -35,6 +35,7 @@ function isPublicApiPath(path: string): boolean {
     path.startsWith("/api/recommendations/cron-scraped-reminder") ||
     path.startsWith("/api/recommendations/followup-action") ||
     path.startsWith("/api/recommendations/client-action") ||
+    path === "/api/recommendations/client-review" ||
     path.startsWith("/api/pros/cron-onboarding-reminder") ||
     path.startsWith("/api/admin/auth-health")
   );
@@ -54,6 +55,8 @@ function isPublicPagePath(path: string): boolean {
     path.startsWith("/plan-remuneration") ||
     path.startsWith("/recommendations/followup/") ||
     path.startsWith("/recommendations/client/") ||
+    path.startsWith("/recommendations/client-review/") ||
+    /^\/professionnels\/[^/]+\/avis$/.test(path) ||
     path === "/"
   );
 }
@@ -91,6 +94,7 @@ export async function middleware(request: NextRequest) {
       isPublicApiPath(path) ||
       path.startsWith("/recommendations/followup/") ||
       path.startsWith("/recommendations/client/") ||
+      path.startsWith("/recommendations/client-review/") ||
       path.startsWith("/api/video/");
     const isExempt =
       path === "/staging-login" ||
@@ -241,7 +245,7 @@ export async function middleware(request: NextRequest) {
   // page blanche indéfiniment. Dans le WebView mobile, le garde-fou de 20 s finit
   // par afficher « Connexion impossible ». Cas nominal pour tout nouvel inscrit,
   // dont le profil est par définition incomplet au premier passage.
-  if (user && requiresCompleteProfile(request.nextUrl.pathname)) {
+  if (user && !isPublicPagePath(request.nextUrl.pathname) && requiresCompleteProfile(request.nextUrl.pathname)) {
     const alreadyValidated = request.cookies.get(PROFILE_COMPLETE_COOKIE)?.value === "1";
 
     if (!alreadyValidated && !isSignupGracePeriod(user.email_confirmed_at)) {

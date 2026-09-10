@@ -2,12 +2,11 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { RECOMMENDATION_STATUS_BY_STEP } from "@/lib/constants";
 import { notifyReferrerStep } from "@/lib/notify-referrer-step";
-import { notifyContactAccepted } from "@/lib/notify-contact-accepted";
-import { requestClientRecommendationAction } from "@/lib/notify-client-recommendation-action";
+import { notifyCompletedRecommendationReviews } from "@/lib/review-notifications";
 import { collectCommissionAutomatically } from "@/lib/stripe-automatic-commission";
+import { recommendationStepRole } from "@/lib/recommendation-workflow";
 
-// Les étapes client (6 et 8) ne passent pas par cette route : elles sont
-// confirmées via /api/recommendations/client-action avec un lien signé.
+// Le recommandeur assure le suivi ; le professionnel déclare le devis et l’encaissement.
 
 export async function POST(request: Request) {
   try {
@@ -35,6 +34,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Recommandation introuvable" }, { status: 404 });
     }
 
+    if (["CANCELLED", "REJECTED", "TRANSFERRED", "EXPIRED"].includes(rec.status)) {
+      return NextResponse.json({ error: "Cette recommandation est clôturée sans suite." }, { status: 409 });
+    }
+
     const { data: stepRow } = await supabase
       .from("recommendation_steps")
       .select("id, completed_at, step:steps(completion_role, order_index)")
@@ -48,8 +51,8 @@ export async function POST(request: Request) {
 
     // Vérification des droits par rôle
     const step = Array.isArray(stepRow.step) ? stepRow.step[0] : stepRow.step;
-    const role = step?.completion_role;
     const stepIndex = step?.order_index ?? 0;
+    const role = recommendationStepRole(stepIndex);
 
     if (role === "REFERRER" && user.id !== rec.referrer_id) {
       return NextResponse.json(
@@ -60,12 +63,6 @@ export async function POST(request: Request) {
     if (role === "PROFESSIONAL" && user.id !== rec.professional_id) {
       return NextResponse.json(
         { error: "Non autorisé : seul le professionnel peut valider cette étape" },
-        { status: 403 }
-      );
-    }
-    if (role === "CONTACT") {
-      return NextResponse.json(
-        { error: "Cette étape doit être confirmée par le client via son lien sécurisé" },
         { status: 403 }
       );
     }
@@ -96,17 +93,11 @@ export async function POST(request: Request) {
     }
 
     if (stepRow.completed_at) {
-      if (stepIndex === 5) {
-        await requestClientRecommendationAction(rec.id, "quote");
-      }
       if (stepIndex === 7) {
         await collectCommissionAutomatically(rec.id);
-        await requestClientRecommendationAction(rec.id, "completion");
       }
+      if (stepIndex === 8) await notifyCompletedRecommendationReviews(rec.id);
       await notifyReferrerStep(rec.id, stepIndex);
-      if (stepIndex === 2) {
-        await notifyContactAccepted(rec.id);
-      }
       return NextResponse.json({ success: true, already_completed: true });
     }
 
@@ -176,28 +167,22 @@ export async function POST(request: Request) {
     const newStatus = RECOMMENDATION_STATUS_BY_STEP[stepIndex] ?? rec.status;
     const { error: statusError } = await supabase
       .from("recommendations")
-      .update({ status: newStatus })
+      .update({ status: newStatus, ...(stepIndex === 6 ? { validation_date: new Date().toISOString() } : {}) })
       .eq("id", rec.id);
     if (statusError) {
       return NextResponse.json({ error: "Impossible de mettre à jour le statut" }, { status: 500 });
     }
-
-    if (stepIndex === 5) {
-      await requestClientRecommendationAction(rec.id, "quote");
-    }
     if (stepIndex === 7) {
       await collectCommissionAutomatically(rec.id);
-      await requestClientRecommendationAction(rec.id, "completion");
     }
+
+    if (stepIndex === 8) await notifyCompletedRecommendationReviews(rec.id);
 
     // Notifier le referrer à chaque avancement pro. L'enfilement est attendu:
     // l'etape ne doit plus passer silencieusement si la notification critique echoue.
     await notifyReferrerStep(rec.id, stepIndex);
 
     // Étape 2 : prévenir aussi le client que le pro a accepté et va le contacter.
-    if (stepIndex === 2) {
-      await notifyContactAccepted(rec.id);
-    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

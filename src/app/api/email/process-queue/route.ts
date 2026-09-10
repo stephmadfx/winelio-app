@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email-sender";
 import { getEmailDisabledReason } from "@/lib/email-environment";
+import { retryReviewNotifications } from "@/lib/review-notifications";
 
 const BATCH_SIZE = 10;
 const RETRY_DELAYS_MIN = [5, 30, 120];
@@ -15,6 +16,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  await retryReviewNotifications().catch(() => console.error("Reprise des notifications d’avis indisponible"));
   const disabledReason = getEmailDisabledReason();
   if (disabledReason) {
     console.warn(`[process-queue] Envoi SMTP ignoré: ${disabledReason}`);
@@ -42,17 +44,22 @@ export async function POST(req: Request) {
 
   const ids = batch.map((r) => r.id);
 
-  await supabaseAdmin
+  const { data: claimed, error: claimError } = await supabaseAdmin
     .schema("winelio")
     .from("email_queue")
     .update({ status: "sending" })
-    .in("id", ids);
+    .in("id", ids)
+    .eq("status", "pending")
+    .select("id");
+  if (claimError) return NextResponse.json({ error: "Impossible de réserver les emails à envoyer." }, { status: 500 });
+  const claimedIds = new Set((claimed ?? []).map(row => row.id));
+  const workBatch = batch.filter(row => claimedIds.has(row.id));
 
   let sent = 0;
   let failed = 0;
 
   await Promise.allSettled(
-    batch.map(async (row) => {
+    workBatch.map(async (row) => {
       // E2E test recipients : on ne touche pas au SMTP. L'email reste lisible
       // dans la table pour que les tests Playwright puissent le récupérer.
       if (E2E_TEST_EMAIL_RE.test(row.to_email)) {
@@ -108,5 +115,5 @@ export async function POST(req: Request) {
     })
   );
 
-  return NextResponse.json({ processed: batch.length, sent, failed });
+  return NextResponse.json({ processed: workBatch.length, sent, failed });
 }

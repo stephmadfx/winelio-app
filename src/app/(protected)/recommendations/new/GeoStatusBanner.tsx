@@ -25,12 +25,12 @@ export const GeoStatusBanner = ({ status, radius, onRequestGeo, onRadiusChange }
   );
   if (status === "unavailable") return (
     <div className="mb-4 rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3.5 text-sm text-amber-700">
-      Position non disponible. Recherchez par nom ou code postal.
+      Position indisponible. Saisissez un code postal pour rechercher des professionnels.
     </div>
   );
   if (status === "denied") return (
     <div className="mb-4 rounded-2xl bg-red-50 border border-red-100 px-4 py-3.5 text-sm text-red-600">
-      Géolocalisation refusée. Recherchez par nom ou catégorie.
+      Géolocalisation refusée. Saisissez un code postal pour rechercher des professionnels.
     </div>
   );
   return (

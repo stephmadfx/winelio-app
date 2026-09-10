@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recommendationStepRole } from "@/lib/recommendation-workflow";
 import { getUser } from "@/lib/supabase/get-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
@@ -159,7 +160,10 @@ export async function GET(
 
   return NextResponse.json({
     recommendation: rec,
-    steps: recSteps ?? [],
+    steps: (recSteps ?? []).map(row => {
+      const step = (Array.isArray(row.step) ? row.step[0] : row.step) as { name: string; description: string | null; order_index: number; completion_role: string | null } | null;
+      return { ...row, step: step ? { ...step, completion_role: recommendationStepRole(step.order_index), ...(step.order_index === 6 ? { description: "Confirmez auprès de votre contact que le devis est accepté." } : step.order_index === 8 ? { name: "Affaire terminée", description: "Confirmez auprès de votre contact que la prestation est terminée et que tout s’est bien passé." } : {}) } : null };
+    }),
     contactMasked,
     payout: {
       professional_paid: professionalPaid,

@@ -1,6 +1,5 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { StickyFormActions } from "@/components/StickyFormActions";
@@ -12,7 +11,6 @@ import { StepProject } from "./StepProject";
 
 export default function NewRecommendationPage() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [userId, setUserId] = useState<string | null>(null);
   const [selfProfile, setSelfProfile] = useState<SelfProfile | null>(null);
@@ -26,7 +24,6 @@ export default function NewRecommendationPage() {
   const [createContact, setCreateContact] = useState(false);
   const [contactForm, setContactForm] = useState<ContactFormData>({ first_name: "", last_name: "", email: "", phone: "", country_code: "+33", address: "", city: "", postal_code: "" });
   const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
-  const [wantsToJoin, setWantsToJoin] = useState(false);
   const [thirdPartyConsent, setThirdPartyConsent] = useState(false);
 
   const [selectedProId, setSelectedProId] = useState<string | null>(null);
@@ -35,34 +32,17 @@ export default function NewRecommendationPage() {
   const [urgency, setUrgency] = useState<Urgency>("normal");
 
   useEffect(() => {
-    setError(null);
-    const loadProfile = async () => {
-      try {
-        const res = await fetch("/api/auth/whoami");
-        if (!res.ok) {
-          setError("Erreur authentification: session introuvable");
-          return;
-        }
-        const { user } = await res.json();
-        if (user?.id) {
-          setUserId(user.id);
-          const { data: profile } = await supabase.schema("winelio").from("profiles").select("first_name, last_name, phone").eq("id", user.id).single();
-          if (profile) {
-            setSelfProfile({ first_name: profile.first_name ?? "", last_name: profile.last_name ?? "", email: user.email ?? "", phone: profile.phone ?? "" });
-          }
-        } else {
-          setError("Erreur authentification: Aucun utilisateur trouvé");
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        setError(`Erreur lors du chargement du profil: ${msg}`);
-      }
-    };
-    loadProfile();
-
-    supabase.schema("winelio").from("contacts").select("id, first_name, last_name, email, phone").order("last_name").then(({ data }) => {
-      setContacts(data ?? []);
-    });
+    let active = true;
+    fetch("/api/recommendations/options", { cache: "no-store" })
+      .then(async response => { const body = await response.json(); if (!response.ok) throw new Error(body.error); return body; })
+      .then(body => {
+        if (!active) return;
+        setUserId(body.userId);
+        setSelfProfile(body.profile);
+        setContacts(body.contacts ?? []);
+      })
+      .catch(error => { if (active) setError(error.message || "Impossible de charger vos contacts."); });
+    return () => { active = false; };
   }, []);
 
   const ownEmail = selfProfile?.email.trim().toLowerCase() ?? "";
@@ -136,19 +116,6 @@ export default function NewRecommendationPage() {
 
       const recommendation = payload.recommendation;
 
-      if (wantsToJoin) {
-        const contactEmail = createContact
-          ? contactForm.email
-          : contacts.find((c) => c.id === selectedContactId)?.email;
-        if (contactEmail) {
-          fetch("/api/network/send-invite", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ to: contactEmail }),
-          }).catch(() => undefined);
-        }
-      }
-
       router.push(`/recommendations/${recommendation.id}`);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Erreur inconnue";
@@ -187,7 +154,6 @@ export default function NewRecommendationPage() {
           createContact={createContact} setCreateContact={setCreateContact}
           contactForm={contactForm} setContactForm={setContactForm}
           contactErrors={contactErrors} setContactErrors={setContactErrors}
-          wantsToJoin={wantsToJoin} setWantsToJoin={setWantsToJoin}
           thirdPartyConsent={thirdPartyConsent} setThirdPartyConsent={setThirdPartyConsent} />
       )}
       {step === 2 && <StepProfessional userId={userId} selectedProId={selectedProId} onSelect={setSelectedProId} />}

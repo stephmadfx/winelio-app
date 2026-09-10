@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
-import { notifyContactAccepted } from "@/lib/notify-contact-accepted";
 import {
   STRIPE_OFF_SESSION_CONSENT_TEXT,
   STRIPE_OFF_SESSION_TERMS_VERSION,
@@ -114,22 +113,6 @@ export async function POST(req: Request) {
       await stripe.paymentMethods.detach(currentProfile.stripe_payment_method_id).catch((error) =>
         console.warn("[payment-method] Ancienne carte non détachée:", error),
       );
-    }
-
-    // Le pro a maintenant réellement accès à ses leads : prévenir les clients
-    // des recos acceptées mais pas encore notifiées (dédupliqué par reco).
-    try {
-      const { data: acceptedRecs } = await supabaseAdmin
-        .from("recommendations")
-        .select("id")
-        .eq("professional_id", user.id)
-        .eq("status", "ACCEPTED");
-
-      for (const r of acceptedRecs ?? []) {
-        await notifyContactAccepted(r.id);
-      }
-    } catch (err) {
-      console.error("[payment-method] notifyContactAccepted failed:", err);
     }
 
     return NextResponse.json({
