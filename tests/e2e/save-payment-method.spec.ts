@@ -1,4 +1,6 @@
 import type { Page } from "@playwright/test";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { test, expect } from "./fixtures/test";
 import { e2eEmail } from "./helpers/env";
 import {
@@ -29,6 +31,7 @@ async function loginWithPassword(page: Page, userId: string, email: string) {
  * n'embarquent pas Stripe Elements.
  */
 test("carte Stripe — le formulaire Elements s'affiche sans erreur CSP", async ({ page }) => {
+  if (process.env.E2E_IOS_DEVICE) test.setTimeout(240_000);
   await page.addInitScript(() => {
     localStorage.setItem(
       "winelio_cookie_consent",
@@ -37,6 +40,10 @@ test("carte Stripe — le formulaire Elements s'affiche sans erreur CSP", async 
   });
 
   const cspViolations: string[] = [];
+  const stripeRequests: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).hostname === "js.stripe.com") stripeRequests.push(request.url());
+  });
   page.on("console", (msg) => {
     const text = msg.text();
     if (/content security policy|refused to frame|Framing .* violates/i.test(text)) {
@@ -97,6 +104,23 @@ test("carte Stripe — le formulaire Elements s'affiche sans erreur CSP", async 
     .single();
   if (recErr || !rec) throw new Error(`create reco: ${recErr?.message}`);
 
+  // Un recommandeur doit pouvoir consulter et recharger la fiche sans Stripe.
+  await loginWithPassword(page, referrer.id, referrer.email);
+  await page.goto(`/recommendations/${rec.id}`);
+  await expect(page.getByText("Reco test enregistrement carte")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Reco test enregistrement carte")).toBeVisible();
+  expect(stripeRequests, "Stripe ne doit pas charger pendant la consultation").toEqual([]);
+  await page.screenshot({ path: "output/playwright/recommendation-without-stripe.png", fullPage: true });
+  if (process.env.E2E_IOS_DEVICE) {
+    await promisify(execFile)("maestro", [
+      "--device", process.env.E2E_IOS_DEVICE, "test", ".maestro/stripe-recommendation-ios.yaml",
+    ], {
+      env: { ...process.env, MAESTRO_TEST_EMAIL: referrer.email, MAESTRO_TEST_PASSWORD: TEST_PASSWORD },
+      timeout: 180_000,
+    }).catch(() => { throw new Error("Le parcours iOS a échoué ; consulter les captures Maestro."); });
+  }
+
   await loginWithPassword(page, pro.id, pro.email);
   await page.goto(`/recommendations/${rec.id}`);
   await expect(page.getByRole("button", { name: /accéder/i }).first()).toBeVisible({ timeout: 15_000 });
@@ -109,6 +133,11 @@ test("carte Stripe — le formulaire Elements s'affiche sans erreur CSP", async 
   const continueButton = page.getByRole("button", { name: /continuer vers la saisie de la carte/i });
   await expect(consentCheckbox).not.toBeChecked();
   await expect(continueButton).toBeDisabled();
+  expect(stripeRequests, "Stripe ne doit pas charger avant le consentement").toEqual([]);
+  await page.getByRole("button", { name: "Fermer", exact: true }).click();
+  await expect(page.getByRole("heading", { name: /enregistrer votre carte/i })).not.toBeVisible();
+  await page.getByRole("button", { name: /accéder/i }).first().click();
+  await expect(consentCheckbox).not.toBeChecked();
   await consentCheckbox.check();
   await expect(continueButton).toBeEnabled();
   await continueButton.click();
@@ -119,5 +148,7 @@ test("carte Stripe — le formulaire Elements s'affiche sans erreur CSP", async 
   ).toBeVisible({ timeout: 20_000 });
 
   await expect(page.getByRole("button", { name: /enregistrer et autoriser/i })).toBeEnabled();
+  expect(stripeRequests.length).toBeGreaterThan(0);
+  await page.screenshot({ path: "output/playwright/stripe-form-after-consent.png", fullPage: true });
   expect(cspViolations, `CSP bloquait Stripe :\n${cspViolations.join("\n")}`).toEqual([]);
 });

@@ -2,7 +2,10 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { loadStripe, type Stripe } from "@stripe/stripe-js";
+// L'entrée standard injecte Stripe.js dès l'import, même avec le dialogue fermé.
+// Les anciennes WebViews iOS ouvrent alors son iframe technique dans Safari.
+import { loadStripe } from "@stripe/stripe-js/pure";
+import type { Stripe } from "@stripe/stripe-js";
 import {
   Elements,
   PaymentElement,

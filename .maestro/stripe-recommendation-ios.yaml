@@ -1,0 +1,40 @@
+# À lancer via save-payment-method.spec.ts avec E2E_IOS_DEVICE :
+# comptes éphémères créés et nettoyés par la fixture, application iOS installée.
+appId: app.winelio.mobile
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "vous@exemple.com"
+    timeout: 30000
+- tapOn: "vous@exemple.com"
+- inputText: "${MAESTRO_TEST_EMAIL}"
+- tapOn: "••••••••"
+- inputText: "${MAESTRO_TEST_PASSWORD}"
+- hideKeyboard
+- tapOn: "Se connecter"
+- extendedWaitUntil:
+    visible: "Recommandations"
+    timeout: 30000
+- tapOn:
+    text: "Tout refuser"
+    optional: true
+- tapOn: "Recommandations"
+- tapOn:
+    text: ".*Lead.*"
+- extendedWaitUntil:
+    visible: "Reco test enregistrement carte"
+    timeout: 20000
+- assertNotVisible: "js.stripe.com"
+- takeScreenshot: output/playwright/ios-recommendation-without-stripe
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Recommandations"
+    timeout: 30000
+- tapOn: "Recommandations"
+- tapOn:
+    text: ".*Lead.*"
+- assertVisible: "Reco test enregistrement carte"
+- assertNotVisible: "js.stripe.com"
+- takeScreenshot: output/playwright/ios-recommendation-after-relaunch
