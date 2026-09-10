@@ -524,7 +524,7 @@ export function NewsletterEditor({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Envoi impossible");
-      setStatus(`${recipients.length} email${recipients.length > 1 ? "s" : ""} de test envoyé${recipients.length > 1 ? "s" : ""}`);
+      setStatus(`${recipients.length} email${recipients.length > 1 ? "s" : ""} de test accepté${recipients.length > 1 ? "s" : ""} par Resend`);
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Envoi impossible");
     } finally {
@@ -573,7 +573,7 @@ export function NewsletterEditor({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Envoi impossible");
-      setStatus(`Campagne terminée : ${data.sent} envoyé${data.sent > 1 ? "s" : ""}, ${data.failed} échec${data.failed > 1 ? "s" : ""}, ${data.suppressed} exclu${data.suppressed > 1 ? "s" : ""}`);
+      setStatus(`Campagne Resend terminée : ${data.sent} accepté${data.sent > 1 ? "s" : ""}, ${data.failed} échec${data.failed > 1 ? "s" : ""}, ${data.suppressed} exclu${data.suppressed > 1 ? "s" : ""}`);
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Envoi impossible");
     } finally {

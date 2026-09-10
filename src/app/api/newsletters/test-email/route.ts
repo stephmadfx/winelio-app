@@ -22,15 +22,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email de test invalide" }, { status: 400 });
     }
 
+    const deliveries = [];
     for (const to of recipients) {
       const variables = await fetchNewsletterVariablesForEmail(to);
       const compiled = await compileNewsletterMjml(applyNewsletterVariables(mjmlContent, variables));
-      await sendNewsletterTestEmail({
+      deliveries.push(await sendNewsletterTestEmail({
         to,
         subject: applyNewsletterVariables(subject, variables),
         preheader: applyNewsletterVariables(preheader, variables),
         html: compiled.html,
-      });
+      }));
     }
 
     if (typeof body.id === "string") {
@@ -42,7 +43,12 @@ export async function POST(req: Request) {
         .eq("user_id", user.id);
     }
 
-    return NextResponse.json({ success: true, sent: recipients.length });
+    return NextResponse.json({
+      success: true,
+      sent: recipients.length,
+      provider: "resend",
+      messageIds: deliveries.map((item) => item.messageId),
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Envoi impossible";
     console.error("[newsletters/test-email]", err);

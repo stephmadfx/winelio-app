@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "crypto";
 import { he } from "@/lib/html-escape";
-import { sendMailWithTimeout, SMTP_FROM } from "@/lib/email-transporter";
+import { sendNewsletterEmail } from "@/lib/newsletter-email-service";
 import { resolveNewsletterAudience, type NewsletterAudienceFilters } from "@/lib/newsletter-audience";
 import { applyNewsletterVariables, fetchNewsletterVariablesForEmail } from "@/lib/newsletter-variables";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -88,16 +88,20 @@ export const sendNewsletterTemplateCampaign = async ({
     try {
       const variables = await fetchNewsletterVariablesForEmail(recipient.email);
       const personalized = applyNewsletterVariables(template.html_content, variables);
-      await sendMailWithTimeout({
-        from: SMTP_FROM,
+      const delivery = await sendNewsletterEmail({
         to: recipient.email,
         subject: applyNewsletterVariables(template.subject, variables),
         text: template.preheader || `Newsletter Winelio : ${template.subject}`,
         html: addCampaignTracking(personalized, saved.id, unsubscribeToken),
         headers: { "List-Unsubscribe": `<${APP_URL}/api/newsletter/unsubscribe/${unsubscribeToken}>` },
+        campaignId: campaign.id,
       });
       sent += 1;
-      await supabaseAdmin.from("newsletter_recipients").update({ sent_at: new Date().toISOString() }).eq("id", saved.id);
+      await supabaseAdmin.from("newsletter_recipients").update({
+        sent_at: new Date().toISOString(),
+        delivery_provider: delivery.provider,
+        provider_message_id: delivery.messageId,
+      }).eq("id", saved.id);
       await supabaseAdmin.from("newsletter_events").insert({ newsletter_id: campaign.id, recipient_id: saved.id, event_type: "sent" });
     } catch (sendError) {
       failed += 1;
@@ -115,5 +119,5 @@ export const sendNewsletterTemplateCampaign = async ({
   }).eq("id", campaign.id);
 
   if (sent === 0) throw new Error(`Aucun email envoyé (${failed} échec${failed > 1 ? "s" : ""})`);
-  return { campaignId: campaign.id, sent, failed, suppressed, total: resolved.length, subject: he(template.subject) };
+  return { campaignId: campaign.id, sent, failed, suppressed, total: resolved.length, provider: "resend", subject: he(template.subject) };
 };

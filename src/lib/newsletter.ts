@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import { NextResponse } from "next/server";
 import { he } from "@/lib/html-escape";
-import { sendMailWithTimeout, SMTP_FROM } from "@/lib/email-transporter";
+import { sendNewsletterEmail } from "@/lib/newsletter-email-service";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -378,8 +378,7 @@ export const sendNewsletter = async (newsletterId: string) => {
     }
 
     try {
-      await sendMailWithTimeout({
-        from: SMTP_FROM,
+      const delivery = await sendNewsletterEmail({
         to: recipient.email,
         subject: newsletter.subject,
         text: newsletter.content,
@@ -389,12 +388,20 @@ export const sendNewsletter = async (newsletterId: string) => {
           recipientId: saved.id,
           unsubscribeToken: saved.unsubscribe_token,
         }),
+        headers: {
+          "List-Unsubscribe": `<${newsletterAppUrl()}/api/newsletter/unsubscribe/${saved.unsubscribe_token}>`,
+        },
+        campaignId: newsletterId,
       });
 
       sent += 1;
       await supabaseAdmin
         .from("newsletter_recipients")
-        .update({ sent_at: new Date().toISOString() })
+        .update({
+          sent_at: new Date().toISOString(),
+          delivery_provider: delivery.provider,
+          provider_message_id: delivery.messageId,
+        })
         .eq("id", saved.id);
       await supabaseAdmin.from("newsletter_events").insert({
         newsletter_id: newsletterId,
