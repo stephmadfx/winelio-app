@@ -3,6 +3,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 export type NewsletterAudienceFilters = {
   audienceType?: "all" | "members" | "professionals" | "individuals";
   activeStatus?: "active" | "inactive" | "all";
+  engagement?: "recent" | "less_active" | "dormant" | "never" | "all";
+  affiliation?: "sponsored" | "sponsor" | "network" | "none" | "all";
   companyVerified?: "verified" | "unverified" | "all";
   hasSiret?: "yes" | "no" | "all";
   categoryId?: string;
@@ -27,6 +29,7 @@ export type NewsletterAudienceRecipient = {
   lastName: string | null;
   isProfessional: boolean;
   isActive: boolean;
+  lastSignInAt: string | null;
   city: string | null;
   postalCode: string | null;
   companyName: string | null;
@@ -43,6 +46,7 @@ type ProfileRow = {
   city: string | null;
   postal_code: string | null;
   created_at: string;
+  sponsor_id: string | null;
   work_mode: string | null;
   is_founder: boolean | null;
   is_demo: boolean | null;
@@ -56,6 +60,10 @@ type ProfileRow = {
     category_id: string | null;
     category: { name: string | null } | Array<{ name: string | null }> | null;
   }> | null;
+};
+
+export type NewsletterAudienceResolvedRecipient = NewsletterAudienceRecipient & {
+  userId: string;
 };
 
 const uniq = <T>(values: T[]) => [...new Set(values)];
@@ -95,7 +103,7 @@ const asIsoBoundary = (value: string | undefined, endOfDay = false) => {
 };
 
 const getRelatedUserIds = async (filters: NewsletterAudienceFilters) => {
-  const ids = new Set<string>();
+  const sets: Set<string>[] = [];
 
   if (filters.recommendationRole && filters.recommendationRole !== "any" && filters.recommendationRole !== "none") {
     let query = supabaseAdmin.from("recommendations").select(
@@ -103,12 +111,14 @@ const getRelatedUserIds = async (filters: NewsletterAudienceFilters) => {
     );
     if (filters.recommendationStatus) query = query.eq("status", filters.recommendationStatus);
     const { data } = await query.limit(10_000);
+    const ids = new Set<string>();
     for (const row of data ?? []) {
       const id = filters.recommendationRole === "referrer"
         ? (row as { referrer_id?: string | null }).referrer_id
         : (row as { professional_id?: string | null }).professional_id;
       if (id) ids.add(id);
     }
+    sets.push(ids);
   }
 
   if (filters.commissionStatus && filters.commissionStatus !== "any" && filters.commissionStatus !== "none") {
@@ -117,9 +127,11 @@ const getRelatedUserIds = async (filters: NewsletterAudienceFilters) => {
       .select("user_id")
       .eq("status", filters.commissionStatus)
       .limit(10_000);
+    const ids = new Set<string>();
     for (const row of data ?? []) {
       if (row.user_id) ids.add(row.user_id);
     }
+    sets.push(ids);
   }
 
   if (filters.withdrawalStatus && filters.withdrawalStatus !== "any" && filters.withdrawalStatus !== "none") {
@@ -128,12 +140,15 @@ const getRelatedUserIds = async (filters: NewsletterAudienceFilters) => {
       .select("user_id")
       .eq("status", filters.withdrawalStatus)
       .limit(10_000);
+    const ids = new Set<string>();
     for (const row of data ?? []) {
       if (row.user_id) ids.add(row.user_id);
     }
+    sets.push(ids);
   }
 
-  return ids;
+  if (sets.length === 0) return null;
+  return new Set([...sets[0]].filter((id) => sets.slice(1).every((set) => set.has(id))));
 };
 
 const getExcludedUserIds = async (filters: NewsletterAudienceFilters) => {
@@ -228,6 +243,7 @@ const toRecipient = (profile: ProfileRow): NewsletterAudienceRecipient => {
     lastName: profile.last_name,
     isProfessional: profile.is_professional === true,
     isActive: profile.is_active !== false,
+    lastSignInAt: null,
     city: profile.city ?? company?.city ?? null,
     postalCode: profile.postal_code ?? company?.postal_code ?? null,
     companyName: company?.name ?? company?.legal_name ?? null,
@@ -235,7 +251,40 @@ const toRecipient = (profile: ProfileRow): NewsletterAudienceRecipient => {
   };
 };
 
-export const previewNewsletterAudience = async (filters: NewsletterAudienceFilters) => {
+const getAuthActivity = async () => {
+  const activity = new Map<string, string | null>();
+  for (let page = 1; page <= 100; page += 1) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw new Error(`Activité des comptes inaccessible : ${error.message}`);
+    for (const user of data.users) activity.set(user.id, user.last_sign_in_at ?? null);
+    if (data.users.length < 1000) break;
+  }
+  return activity;
+};
+
+const matchesEngagement = (lastSignInAt: string | null, engagement: NewsletterAudienceFilters["engagement"]) => {
+  if (!engagement || engagement === "all") return true;
+  if (!lastSignInAt) return engagement === "never" || engagement === "dormant";
+  const ageDays = (Date.now() - new Date(lastSignInAt).getTime()) / 86_400_000;
+  if (engagement === "recent") return ageDays <= 30;
+  if (engagement === "less_active") return ageDays > 30 && ageDays <= 90;
+  if (engagement === "dormant") return ageDays > 90;
+  return false;
+};
+
+const getSponsorIds = (profiles: ProfileRow[]) => new Set(profiles.map((profile) => profile.sponsor_id).filter(Boolean) as string[]);
+
+const matchesAffiliation = (profile: ProfileRow, sponsorIds: Set<string>, affiliation: NewsletterAudienceFilters["affiliation"]) => {
+  if (!affiliation || affiliation === "all") return true;
+  const isSponsored = Boolean(profile.sponsor_id);
+  const isSponsor = sponsorIds.has(profile.id);
+  if (affiliation === "sponsored") return isSponsored;
+  if (affiliation === "sponsor") return isSponsor;
+  if (affiliation === "network") return isSponsored || isSponsor;
+  return !isSponsored && !isSponsor;
+};
+
+const queryNewsletterAudience = async (filters: NewsletterAudienceFilters) => {
   let query = supabaseAdmin
     .from("profiles")
     .select(`
@@ -248,6 +297,7 @@ export const previewNewsletterAudience = async (filters: NewsletterAudienceFilte
       city,
       postal_code,
       created_at,
+      sponsor_id,
       work_mode,
       is_founder,
       is_demo,
@@ -301,29 +351,40 @@ export const previewNewsletterAudience = async (filters: NewsletterAudienceFilte
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  const relatedIds = await getRelatedUserIds(filters);
+  const [relatedIds, authActivity] = await Promise.all([
+    getRelatedUserIds(filters),
+    filters.engagement && filters.engagement !== "all" ? getAuthActivity() : Promise.resolve(new Map<string, string | null>()),
+  ]);
   const excludedIds = await getExcludedUserIds(filters);
-  const hasRequiredRelations = relatedIds.size > 0;
+  const profiles = (data ?? []) as ProfileRow[];
+  const sponsorIds = getSponsorIds(profiles);
 
-  const recipients = ((data ?? []) as ProfileRow[])
+  const recipients = profiles
     .filter((profile) => {
       if (!profile.email) return false;
       if (isTechnicalNewsletterEmail(profile.email)) return false;
       if (filters.audienceType === "members" && profile.is_professional === true) return false;
-      if (hasRequiredRelations && !relatedIds.has(profile.id)) return false;
+      if (relatedIds && !relatedIds.has(profile.id)) return false;
       if (excludedIds.has(profile.id)) return false;
       if (!matchesCompanyFilters(profile, filters)) return false;
       if (!matchesTextFilters(profile, filters)) return false;
+      if (!matchesAffiliation(profile, sponsorIds, filters.affiliation)) return false;
+      if (!matchesEngagement(authActivity.get(profile.id) ?? null, filters.engagement)) return false;
       return true;
     })
-    .map(toRecipient);
+    .map((profile) => ({ ...toRecipient(profile), lastSignInAt: authActivity.get(profile.id) ?? null }));
 
   const deduped = uniq(recipients.map((recipient) => recipient.email.toLowerCase()))
     .map((email) => recipients.find((recipient) => recipient.email.toLowerCase() === email))
     .filter(Boolean) as NewsletterAudienceRecipient[];
 
-  return {
-    count: deduped.length,
-    sample: deduped.slice(0, 50),
-  };
+  return deduped;
 };
+
+export const previewNewsletterAudience = async (filters: NewsletterAudienceFilters) => {
+  const recipients = await queryNewsletterAudience(filters);
+  return { count: recipients.length, sample: recipients.slice(0, 50) };
+};
+
+export const resolveNewsletterAudience = async (filters: NewsletterAudienceFilters): Promise<NewsletterAudienceResolvedRecipient[]> =>
+  (await queryNewsletterAudience(filters)).map((recipient) => ({ ...recipient, userId: recipient.id }));

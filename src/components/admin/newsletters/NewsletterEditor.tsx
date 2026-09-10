@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Component, Editor } from "grapesjs";
 import { useRouter } from "next/navigation";
-import { Code, Download, Eye, Image as ImageIcon, Loader2, Mail, Monitor, Save, Sparkles, Smartphone, Upload } from "lucide-react";
+import { Code, Download, Eye, Image as ImageIcon, Loader2, Mail, Monitor, Save, Send, Sparkles, Smartphone, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DEFAULT_NEWSLETTER_MJML, WINELIO_LOGO_COLOR_URL } from "@/lib/newsletter-defaults";
@@ -40,6 +40,8 @@ type SelectedBlock = {
 type AudienceFilters = {
   audienceType: "all" | "members" | "professionals" | "individuals";
   activeStatus: "active" | "inactive" | "all";
+  engagement: "recent" | "less_active" | "dormant" | "never" | "all";
+  affiliation: "sponsored" | "sponsor" | "network" | "none" | "all";
   companyVerified: "verified" | "unverified" | "all";
   hasSiret: "yes" | "no" | "all";
   categoryId: string;
@@ -64,6 +66,7 @@ type AudienceRecipient = {
   lastName: string | null;
   isProfessional: boolean;
   isActive: boolean;
+  lastSignInAt: string | null;
   city: string | null;
   postalCode: string | null;
   companyName: string | null;
@@ -109,6 +112,8 @@ const emptySelectedBlock: SelectedBlock = {
 const defaultAudienceFilters: AudienceFilters = {
   audienceType: "all",
   activeStatus: "active",
+  engagement: "all",
+  affiliation: "all",
   companyVerified: "all",
   hasSiret: "all",
   categoryId: "",
@@ -180,6 +185,7 @@ export function NewsletterEditor({
   const [showHtml, setShowHtml] = useState(false);
   const [testEmails, setTestEmails] = useState(currentUserEmail);
   const [sendingTest, setSendingTest] = useState(false);
+  const [sendingCampaign, setSendingCampaign] = useState(false);
   const [audienceFilters, setAudienceFilters] = useState<AudienceFilters>(() => getInitialAudienceFilters(initialTemplate));
   const [audiencePreview, setAudiencePreview] = useState<AudiencePreview>({ count: 0, sample: [] });
   const [audienceLoading, setAudienceLoading] = useState(false);
@@ -526,6 +532,55 @@ export function NewsletterEditor({
     }
   };
 
+  const sendCampaign = async () => {
+    if (!id) {
+      setStatus("Sauvegardez la newsletter avant l'envoi");
+      return;
+    }
+    if (!subject.trim()) {
+      setStatus("Ajoutez un sujet avant l'envoi");
+      return;
+    }
+    if (audiencePreview.count === 0) {
+      setStatus("Cette audience ne contient aucun destinataire");
+      return;
+    }
+    if (!window.confirm(`Confirmer l'envoi à ${audiencePreview.count} destinataire${audiencePreview.count > 1 ? "s" : ""} ? Cette action est irréversible.`)) return;
+
+    setSendingCampaign(true);
+    setStatus("Préparation de la campagne...");
+    try {
+      const saveResponse = await fetch("/api/newsletters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          name,
+          subject,
+          preheader,
+          mjmlContent: getMjmlContent(),
+          projectData: { ...editorRef.current?.getProjectData(), newsletterAudienceFilters: audienceFilters },
+        }),
+      });
+      if (!saveResponse.ok) {
+        const saveData = await saveResponse.json();
+        throw new Error(saveData.error || "Sauvegarde impossible");
+      }
+      const res = await fetch(`/api/newsletters/${id}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filters: audienceFilters, expectedCount: audiencePreview.count }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Envoi impossible");
+      setStatus(`Campagne terminée : ${data.sent} envoyé${data.sent > 1 ? "s" : ""}, ${data.failed} échec${data.failed > 1 ? "s" : ""}, ${data.suppressed} exclu${data.suppressed > 1 ? "s" : ""}`);
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : "Envoi impossible");
+    } finally {
+      setSendingCampaign(false);
+    }
+  };
+
   return (
     <div className="newsletter-studio space-y-5 pb-8">
       <div className="relative overflow-hidden rounded-2xl border border-orange-200/60 bg-[#2D3436] px-5 py-5 text-white shadow-[0_22px_70px_rgba(45,52,54,0.14)]">
@@ -786,6 +841,10 @@ export function NewsletterEditor({
             <Button type="button" className="w-full" onClick={sendTest} disabled={sendingTest}>
               {sendingTest ? <Loader2 className="animate-spin" /> : <Mail />} Envoyer un test
             </Button>
+            <Button type="button" variant="outline" className="mt-2 w-full border-winelio-orange text-winelio-orange hover:bg-orange-50" onClick={sendCampaign} disabled={sendingCampaign || audienceLoading}>
+              {sendingCampaign ? <Loader2 className="animate-spin" /> : <Send />} Envoyer la campagne
+            </Button>
+            <p className="mt-2 text-xs text-muted-foreground">Le nombre est recalculé au moment de l'envoi et les adresses désinscrites sont toujours exclues.</p>
             </CardContent>
           </Card>
           <p className="rounded-2xl border border-orange-100 bg-white/80 p-3 text-xs text-muted-foreground shadow-sm">
@@ -827,7 +886,7 @@ export function NewsletterEditor({
           <div className="space-y-5">
             <div className="rounded-2xl border border-orange-100/80 bg-[#fffdfa] p-4">
               <p className="mb-3 text-sm font-semibold">Segment principal</p>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 <label className="space-y-1">
                   <span className="text-xs font-semibold uppercase text-muted-foreground">Audience</span>
                   <select
@@ -839,6 +898,26 @@ export function NewsletterEditor({
                     <option value="members">Membres particuliers</option>
                     <option value="professionals">Professionnels</option>
                     <option value="individuals">Non professionnels</option>
+                  </select>
+                </label>
+                <label className="space-y-1">
+                  <span className="text-xs font-semibold uppercase text-muted-foreground">Dernière connexion</span>
+                  <select className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-winelio-orange" value={audienceFilters.engagement} onChange={(event) => updateAudienceFilter("engagement", event.target.value as AudienceFilters["engagement"])}>
+                    <option value="all">Toutes</option>
+                    <option value="recent">Actifs · 30 jours</option>
+                    <option value="less_active">Moins actifs · 31 à 90 jours</option>
+                    <option value="dormant">Inactifs · plus de 90 jours</option>
+                    <option value="never">Jamais connectés</option>
+                  </select>
+                </label>
+                <label className="space-y-1">
+                  <span className="text-xs font-semibold uppercase text-muted-foreground">Affiliation</span>
+                  <select className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-winelio-orange" value={audienceFilters.affiliation} onChange={(event) => updateAudienceFilter("affiliation", event.target.value as AudienceFilters["affiliation"])}>
+                    <option value="all">Tous</option>
+                    <option value="sponsored">Parrainés</option>
+                    <option value="sponsor">Parrains actifs</option>
+                    <option value="network">Dans un réseau</option>
+                    <option value="none">Sans affiliation</option>
                   </select>
                 </label>
                 <label className="space-y-1">

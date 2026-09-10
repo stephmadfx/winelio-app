@@ -14,6 +14,11 @@ export async function GET(request: Request, context: Context) {
 
   if (recipient) {
     await recordNewsletterEvent({ recipientId: recipient.id, eventType: "unsubscribed", request });
+    await supabaseAdmin.from("newsletter_suppressions").upsert({
+      email: recipient.email.trim().toLowerCase(),
+      reason: "unsubscribed",
+      source_recipient_id: recipient.id,
+    });
   }
 
   return new NextResponse(`<!DOCTYPE html>
