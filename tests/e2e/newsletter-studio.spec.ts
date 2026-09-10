@@ -27,7 +27,14 @@ test("le super-admin crée une newsletter et dispose du ciblage avancé", async 
   await page.getByLabel("Preheader").fill("Un aperçu personnalisé et responsive.");
   await page.getByLabel("Dernière connexion").selectOption("less_active");
   await page.getByLabel("Affiliation").selectOption("network");
-  await page.getByRole("button", { name: "Sauvegarder" }).click();
+  const saveButton = page.getByRole("button", { name: "Sauvegarder" });
+  await expect(saveButton).toBeEnabled();
+  const saveResponse = page.waitForResponse((response) =>
+    response.url().endsWith("/api/newsletters") && response.request().method() === "POST"
+  );
+  await saveButton.click();
+  const response = await saveResponse;
+  expect(response.ok(), await response.text()).toBeTruthy();
 
   await expect(page.getByText(/Sauvegardé à/)).toBeVisible({ timeout: 20_000 });
   await expect(page).toHaveURL(/\/gestion-reseau\/newsletters\/[0-9a-f-]+$/);
