@@ -325,7 +325,15 @@ export function NewsletterEditor({
       editor.on("component:selected", syncSelectedBlock);
       editor.on("component:deselected", () => syncSelectedBlock());
 
-      if (initialProjectData && Object.keys(initialProjectData).length > 0) {
+      const hasEditorProject = Boolean(
+        initialProjectData
+        && (
+          Array.isArray(initialProjectData.pages)
+          || Array.isArray(initialProjectData.components)
+        )
+      );
+
+      if (hasEditorProject && initialProjectData) {
         editor.loadProjectData(initialProjectData);
       } else {
         editor.setComponents(initialTemplate?.mjmlContent || DEFAULT_NEWSLETTER_MJML);
