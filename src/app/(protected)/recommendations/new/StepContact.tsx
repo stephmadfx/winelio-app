@@ -95,7 +95,7 @@ export const StepContact = ({
   };
 
   const referrerEmail = selfProfile?.email?.trim().toLowerCase() ?? "";
-  const otherContacts = contacts.filter((c) => c.email.trim().toLowerCase() !== referrerEmail);
+  const otherContacts = contacts.filter((c) => !referrerEmail || (c.email ?? "").trim().toLowerCase() !== referrerEmail);
 
   return (
     <div>
