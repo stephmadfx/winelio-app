@@ -20,7 +20,7 @@ export default async function EditNewsletterPage({
     supabaseAdmin
       .schema("winelio")
       .from("newsletter_templates")
-      .select("id, name, subject, preheader, mjml_content, html_content, project_data, status, updated_at, last_campaign_id")
+      .select("id, name, subject, preheader, mjml_content, html_content, project_data, status, updated_at, last_campaign_id, last_test_campaign_id")
       .eq("id", id)
       .eq("user_id", user?.id ?? "")
       .single(),
@@ -45,6 +45,7 @@ export default async function EditNewsletterPage({
   return (
     <div>
     {data.last_campaign_id && <Link href={`/gestion-reseau/newsletters/campagnes/${data.last_campaign_id}`} className="mb-4 inline-flex rounded-xl border border-border bg-card px-4 py-2 text-sm font-medium text-winelio-orange">Voir les statistiques du dernier envoi →</Link>}
+    {data.last_test_campaign_id && <Link href={`/gestion-reseau/newsletters/campagnes/${data.last_test_campaign_id}`} className="mb-4 ml-2 inline-flex rounded-xl border border-border bg-card px-4 py-2 text-sm font-medium text-winelio-orange">Statistiques du dernier test →</Link>}
     <NewsletterEditor
       initialTemplate={template}
       currentUserEmail={currentUserEmail}

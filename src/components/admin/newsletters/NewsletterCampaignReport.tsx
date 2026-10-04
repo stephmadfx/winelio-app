@@ -10,7 +10,7 @@ type Recipient = {
   failure_reason: string | null; unsubscribed_at: string | null;
 };
 type Report = {
-  newsletter: { subject: string; status: string; sent_at: string | null; created_at: string;
+  newsletter: { is_test?: boolean; subject: string; status: string; sent_at: string | null; created_at: string;
     recipient_count: number; sent_count: number; failed_count: number; opened_count: number; clicked_count: number };
   recipients: Recipient[];
   events: { event_type: string; url: string | null; created_at: string }[];
@@ -61,7 +61,7 @@ export function NewsletterCampaignReport({ campaignId }: { campaignId: string })
   return <div className="space-y-6 pb-8">
     <Link href="/gestion-reseau/newsletters" className="inline-flex items-center gap-2 text-sm text-winelio-orange"><ArrowLeft className="size-4" />Toutes les newsletters</Link>
     <div className="flex flex-wrap items-start justify-between gap-4">
-      <div><h1 className="text-2xl font-bold">Statistiques de la campagne</h1>
+      <div><h1 className="text-2xl font-bold">{newsletter?.is_test ? "Statistiques du mail de test" : "Statistiques de la campagne"}</h1>
         {newsletter && <><p className="mt-2 font-medium">{newsletter.subject}</p><p className="mt-1 text-sm text-muted-foreground">{statuses[newsletter.status] || newsletter.status} · {date(newsletter.sent_at || newsletter.created_at)}</p></>}
       </div>
       <button type="button" disabled={loading} onClick={() => setRevision(v => v + 1)} className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm disabled:opacity-50"><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />Actualiser</button>
@@ -79,6 +79,7 @@ export function NewsletterCampaignReport({ campaignId }: { campaignId: string })
           ["Désinscriptions", report.unsubscribedCount, rate(report.unsubscribedCount, newsletter.sent_count)],
         ].map(([label, value, detail]) => <div key={label} className="rounded-xl border border-border bg-card p-4"><p className="text-sm text-muted-foreground">{label}</p><p className="mt-2 text-3xl font-bold">{value}</p><p className="mt-1 text-xs text-muted-foreground">{detail}</p></div>)}
       </div>
+      {newsletter.is_test && <p className="rounded-xl border border-border bg-card p-4 text-sm">Cet envoi de test possède ses propres statistiques. Sa désinscription est simulée et ne retire personne des futures campagnes.</p>}
       <p className="text-sm text-muted-foreground">Les ouvertures et clics sont comptés par destinataire. Les taux sont calculés sur les envois acceptés. Le blocage des images et les protections des messageries peuvent fausser les ouvertures ou clics. Un envoi accepté ne confirme pas sa réception en boîte de réception.</p>
       <section className="rounded-xl border border-border bg-card p-4 md:p-5" aria-busy={loading}>
         <h2 className="text-lg font-semibold">Détail des destinataires</h2>

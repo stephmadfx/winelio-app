@@ -15,7 +15,7 @@ export async function GET(request: Request, context: Context) {
   const filter = params.get("filter");
   const pageSize = 50;
   const { data: newsletter, error } = await supabaseAdmin.from("newsletters")
-    .select("id, subject, status, recipient_count, sent_count, failed_count, opened_count, clicked_count, sent_at, created_at")
+    .select("id, subject, is_test, status, recipient_count, sent_count, failed_count, opened_count, clicked_count, sent_at, created_at")
     .eq("id", id).maybeSingle();
   if (error) return NextResponse.json({ error: "Impossible de charger la campagne" }, { status: 500 });
   if (!newsletter) return NextResponse.json({ error: "Campagne introuvable" }, { status: 404 });

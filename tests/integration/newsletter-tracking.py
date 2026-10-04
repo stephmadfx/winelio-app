@@ -20,9 +20,10 @@ def get(path):
 def state():
     q=f"select json_build_object('recipients',recipient_count,'sent',sent_count,'opened',opened_count,'clicked',clicked_count) from winelio.newsletters where id='{campaign}';"
     return json.loads(db(q))
+is_test='--test' in sys.argv
 cleanup=False
 try:
-    db(f"BEGIN; INSERT INTO winelio.newsletters(id,subject,content,status,created_by,recipient_count,sent_count) SELECT '{campaign}','[TEST TEMPORAIRE] Suivi newsletter','Contrôle technique sans envoi','sent',created_by,1,1 FROM winelio.newsletters WHERE created_by IS NOT NULL ORDER BY created_at DESC LIMIT 1; INSERT INTO winelio.newsletter_recipients(id,newsletter_id,email,recipient_type,sent_at,unsubscribe_token) VALUES ('{recipient}','{campaign}','{email}','profile',now(),'{token}'); COMMIT;")
+    db(f"BEGIN; INSERT INTO winelio.newsletters(id,subject,content,status,created_by,recipient_count,sent_count,is_test) SELECT '{campaign}','[TEST TEMPORAIRE] Suivi newsletter','Contrôle technique sans envoi','sent',created_by,1,1,{str(is_test).lower()} FROM winelio.newsletters WHERE created_by IS NOT NULL ORDER BY created_at DESC LIMIT 1; INSERT INTO winelio.newsletter_recipients(id,newsletter_id,email,recipient_type,sent_at,unsubscribe_token) VALUES ('{recipient}','{campaign}','{email}','profile',now(),'{token}'); COMMIT;")
     for _ in range(2):
         code,headers,body=get('/api/newsletter/track/open/'+recipient)
         assert code==200 and headers['Content-Type'].startswith('image/gif') and body[:6]==b'GIF89a', 'Pixel bloqué ou invalide'
@@ -37,10 +38,10 @@ try:
     print('PASS : liens suivis Apple et Google sans session ; paramètres Google préservés ; trois clics => un destinataire',flush=True)
     for _ in range(2):
         code,headers,body=get('/api/newsletter/unsubscribe/'+token)
-        assert code==200 and 'Désinscription confirmée'.encode() in body, 'Désinscription bloquée'
+        assert code==200 and ('Désinscription de test confirmée' if is_test else 'Désinscription confirmée').encode() in body, 'Désinscription bloquée'
     assert db(f"select count(*) from winelio.newsletter_recipients where id='{recipient}' and unsubscribed_at is not null;")=='1'
-    assert db(f"select count(*) from winelio.newsletter_suppressions where email='{email}';")=='1'
-    print('PASS : désinscription sans session, persistée et répétable',flush=True)
+    assert db(f"select count(*) from winelio.newsletter_suppressions where email='{email}';")==('0' if is_test else '1')
+    print('PASS : désinscription de test simulée sans suppression globale' if is_test else 'PASS : désinscription sans session, persistée et répétable',flush=True)
     for path in ['/api/newsletters', '/api/admin/newsletters/'+campaign+'/stats']:
         code,headers,body=get(path)
         assert code==401, 'Route admin devenue publique'

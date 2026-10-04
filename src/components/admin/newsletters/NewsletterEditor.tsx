@@ -183,6 +183,7 @@ export function NewsletterEditor({
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [previewHtml, setPreviewHtml] = useState(initialTemplate?.htmlContent ?? "");
   const [showHtml, setShowHtml] = useState(false);
+  const [testReportId, setTestReportId] = useState<string | null>(null);
   const [testEmails, setTestEmails] = useState(currentUserEmail);
   const [sendingTest, setSendingTest] = useState(false);
   const [sendingCampaign, setSendingCampaign] = useState(false);
@@ -532,7 +533,9 @@ export function NewsletterEditor({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Envoi impossible");
-      setStatus(`${recipients.length} email${recipients.length > 1 ? "s" : ""} de test accepté${recipients.length > 1 ? "s" : ""} par Resend`);
+      setTestReportId(data.campaignId);
+      setStatus(`${data.sent} test(s) accepté(s) par Resend · ${data.failed} échec(s)`);
+      router.refresh();
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Envoi impossible");
     } finally {
@@ -850,6 +853,7 @@ export function NewsletterEditor({
             <Button type="button" className="w-full" onClick={sendTest} disabled={sendingTest}>
               {sendingTest ? <Loader2 className="animate-spin" /> : <Mail />} Envoyer un test
             </Button>
+            {testReportId && <a href={`/gestion-reseau/newsletters/campagnes/${testReportId}`} className="mt-2 block text-sm text-winelio-orange underline">Voir les statistiques de ce test →</a>}
             <Button type="button" variant="outline" className="mt-2 w-full border-winelio-orange text-winelio-orange hover:bg-orange-50" onClick={sendCampaign} disabled={sendingCampaign || audienceLoading}>
               {sendingCampaign ? <Loader2 className="animate-spin" /> : <Send />} Envoyer la campagne
             </Button>
