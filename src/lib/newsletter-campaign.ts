@@ -7,7 +7,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
 
-const addCampaignTracking = (html: string, recipientId: string, unsubscribeToken: string) => {
+export const addCampaignTracking = (html: string, recipientId: string, unsubscribeToken: string) => {
   const unsubscribeUrl = `${APP_URL}/api/newsletter/unsubscribe/${unsubscribeToken}`;
   const withUnsubscribe = html.replace(/https?:\/\/[^"']*\/newsletter\/unsubscribe\?email=[^"']*/gi, unsubscribeUrl);
   const withLinks = withUnsubscribe.replace(/href=("|')(https?:\/\/[^"']+)\1/gi, (match, quote: string, url: string) => {

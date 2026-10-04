@@ -49,6 +49,13 @@ export function NewsletterCampaignReport({ campaignId }: { campaignId: string })
     return () => controller.abort();
   }, [campaignId, page, search, filter, revision]);
 
+  useEffect(() => {
+    const refresh = () => { if (document.visibilityState === "visible") setRevision(v => v + 1); };
+    const timer = setInterval(refresh, 30_000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { clearInterval(timer); document.removeEventListener("visibilitychange", refresh); };
+  }, []);
+
   const newsletter = report?.newsletter;
   const pages = Math.max(1, Math.ceil((report?.total ?? 0) / (report?.pageSize ?? 50)));
   return <div className="space-y-6 pb-8">
@@ -96,7 +103,7 @@ export function NewsletterCampaignReport({ campaignId }: { campaignId: string })
       <section className="rounded-xl border border-border bg-card p-4 md:p-5"><h2 className="text-lg font-semibold">Activité récente</h2><p className="mt-1 text-sm text-muted-foreground">Les 100 derniers événements, avec la destination des clics.</p>
         <div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b border-border"><th scope="col" className="p-2">Date</th><th scope="col" className="p-2">Événement</th><th scope="col" className="p-2">Lien cliqué</th></tr></thead><tbody>{report.events.map((event, i) => <tr key={i} className="border-b border-border last:border-0"><td className="whitespace-nowrap p-2">{date(event.created_at)}</td><td className="p-2">{eventsLabels[event.event_type] || event.event_type}</td><td className="max-w-lg break-all p-2 text-muted-foreground">{event.url || "—"}</td></tr>)}</tbody></table></div>{!report.events.length && <p className="py-6 text-muted-foreground">Aucune activité enregistrée pour cette campagne.</p>}
       </section>
-      <p className="text-xs text-muted-foreground">Dernière actualisation : {date(updatedAt)}</p>
+      <p className="text-xs text-muted-foreground">Dernière actualisation : {date(updatedAt)} · Actualisation automatique toutes les 30 secondes</p>
     </>}
   </div>;
 }

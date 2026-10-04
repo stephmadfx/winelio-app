@@ -7,7 +7,11 @@ const PIXEL = Buffer.from("R0lGODlhAQABAPAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICR
 
 export async function GET(request: Request, context: Context) {
   const { recipientId } = await context.params;
-  await recordNewsletterEvent({ recipientId, eventType: "opened", request });
+  try {
+    await recordNewsletterEvent({ recipientId, eventType: "opened", request });
+  } catch {
+    console.error("[newsletter/open] Échec de l’enregistrement de l’ouverture");
+  }
 
   return new NextResponse(PIXEL, {
     headers: {

@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./lib/supabase/config";
+import { isPublicNewsletterPath } from "./lib/newsletter-public-routes";
 import {
   PROFILE_COMPLETE_COOKIE,
   PROFILE_COMPLETION_SELECT,
@@ -23,6 +24,7 @@ const RATE_WINDOW_MS = 60_000;
 
 function isPublicApiPath(path: string): boolean {
   return (
+    isPublicNewsletterPath(path) ||
     path.startsWith("/api/auth/") ||
     path.startsWith("/api/staging-auth") ||
     path.startsWith("/api/bugs/imap-poll") ||
@@ -133,12 +135,18 @@ export async function middleware(request: NextRequest) {
       !!process.env.E2E_BYPASS_TOKEN &&
       bypassToken === process.env.E2E_BYPASS_TOKEN;
 
-    if (!isE2EBypass && isRateLimited(ip)) {
+    if (!isPublicNewsletterPath(request.nextUrl.pathname) && !isE2EBypass && isRateLimited(ip)) {
       return new NextResponse("Too Many Requests", { status: 429 });
     }
     // Note : rate-limit dédié OTP (5/heure/IP) est appliqué dans
     // /api/auth/send-code lui-même pour pouvoir exempter les emails
     // de test E2E (@winelio-e2e.local).
+  }
+
+  // Mail clients and image proxies have no Winelio session and may share an IP.
+  // Their public tracking links must not depend on Auth or its API rate bucket.
+  if (isPublicNewsletterPath(request.nextUrl.pathname)) {
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   let supabaseResponse = NextResponse.next({

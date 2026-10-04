@@ -280,19 +280,20 @@ export const recordNewsletterEvent = async ({
   request?: Request;
   url?: string;
 }) => {
-  const { data: recipient } = await supabaseAdmin
+  const { data: recipient, error: recipientError } = await supabaseAdmin
     .from("newsletter_recipients")
     .select("id, newsletter_id, opened_at, clicked_at, unsubscribed_at")
     .eq("id", recipientId)
     .maybeSingle();
 
+  if (recipientError) throw new Error("Lecture du destinataire impossible");
   if (!recipient) return;
 
   const ip = request?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "";
   const userAgent = request?.headers.get("user-agent") ?? null;
   const ipHash = ip ? createHash("sha256").update(ip).digest("hex") : null;
 
-  await supabaseAdmin.from("newsletter_events").insert({
+  const { error: eventError } = await supabaseAdmin.from("newsletter_events").insert({
     newsletter_id: recipient.newsletter_id,
     recipient_id: recipient.id,
     event_type: eventType,
@@ -301,29 +302,39 @@ export const recordNewsletterEvent = async ({
     ip_hash: ipHash,
   });
 
+  if (eventError) throw new Error("Enregistrement de l’événement impossible");
+
   if (eventType === "opened" && !recipient.opened_at) {
-    await supabaseAdmin.from("newsletter_recipients").update({ opened_at: new Date().toISOString() }).eq("id", recipient.id);
-    await recomputeNewsletterStats(recipient.newsletter_id);
+    const { error } = await supabaseAdmin.from("newsletter_recipients").update({ opened_at: new Date().toISOString() }).eq("id", recipient.id).is("opened_at", null);
+    if (error) throw new Error("Mise à jour du suivi impossible");
   }
 
   if (eventType === "clicked" && !recipient.clicked_at) {
-    await supabaseAdmin.from("newsletter_recipients").update({ clicked_at: new Date().toISOString() }).eq("id", recipient.id);
+    const { error } = await supabaseAdmin.from("newsletter_recipients").update({ clicked_at: new Date().toISOString() }).eq("id", recipient.id).is("clicked_at", null);
+    if (error) throw new Error("Mise à jour du suivi impossible");
+  }
+
+  // Repeated opens/clicks retry a previously failed counter refresh while
+  // preserving the first timestamp and unique-recipient totals.
+  if (eventType === "opened" || eventType === "clicked") {
     await recomputeNewsletterStats(recipient.newsletter_id);
   }
 
   if (eventType === "unsubscribed" && !recipient.unsubscribed_at) {
-    await supabaseAdmin.from("newsletter_recipients").update({ unsubscribed_at: new Date().toISOString() }).eq("id", recipient.id);
+    const { error } = await supabaseAdmin.from("newsletter_recipients").update({ unsubscribed_at: new Date().toISOString() }).eq("id", recipient.id).is("unsubscribed_at", null);
+    if (error) throw new Error("Mise à jour du suivi impossible");
   }
 };
 
 export const recomputeNewsletterStats = async (newsletterId: string) => {
-  const { data } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from("newsletter_recipients")
     .select("sent_at, failed_at, opened_at, clicked_at")
     .eq("newsletter_id", newsletterId);
 
-  const rows = data ?? [];
-  await supabaseAdmin
+  if (error || !data) throw new Error("Lecture des compteurs impossible");
+  const rows = data;
+  const { error: updateError } = await supabaseAdmin
     .from("newsletters")
     .update({
       recipient_count: rows.length,
@@ -333,6 +344,7 @@ export const recomputeNewsletterStats = async (newsletterId: string) => {
       clicked_count: rows.filter((row) => row.clicked_at).length,
     })
     .eq("id", newsletterId);
+  if (updateError) throw new Error("Mise à jour des compteurs impossible");
 };
 
 export const sendNewsletter = async (newsletterId: string) => {

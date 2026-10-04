@@ -6,19 +6,25 @@ type Context = { params: Promise<{ token: string }> };
 
 export async function GET(request: Request, context: Context) {
   const { token } = await context.params;
-  const { data: recipient } = await supabaseAdmin
+  const { data: recipient, error } = await supabaseAdmin
     .from("newsletter_recipients")
     .select("id, email")
     .eq("unsubscribe_token", token)
     .maybeSingle();
 
-  if (recipient) {
+  if (error) return new NextResponse("Désinscription temporairement indisponible. Réessayez.", { status: 503 });
+  if (!recipient) return new NextResponse("Ce lien de désinscription est invalide.", { status: 400 });
+  try {
     await recordNewsletterEvent({ recipientId: recipient.id, eventType: "unsubscribed", request });
-    await supabaseAdmin.from("newsletter_suppressions").upsert({
+    const { error: suppressionError } = await supabaseAdmin.from("newsletter_suppressions").upsert({
       email: recipient.email.trim().toLowerCase(),
       reason: "unsubscribed",
       source_recipient_id: recipient.id,
     });
+    if (suppressionError) throw new Error("Désinscription non enregistrée");
+  } catch {
+    console.error("[newsletter/unsubscribe] Échec de la désinscription");
+    return new NextResponse("Désinscription temporairement indisponible. Réessayez.", { status: 503 });
   }
 
   return new NextResponse(`<!DOCTYPE html>
@@ -35,6 +41,6 @@ export async function GET(request: Request, context: Context) {
 </td></tr></table>
 </body>
 </html>`, {
-    headers: { "Content-Type": "text/html; charset=utf-8" },
+    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
   });
 }
