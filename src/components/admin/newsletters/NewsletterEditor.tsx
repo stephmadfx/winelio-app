@@ -582,6 +582,7 @@ export function NewsletterEditor({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Envoi impossible");
       setStatus(`Campagne Resend terminée : ${data.sent} accepté${data.sent > 1 ? "s" : ""}, ${data.failed} échec${data.failed > 1 ? "s" : ""}, ${data.suppressed} exclu${data.suppressed > 1 ? "s" : ""}`);
+      router.refresh();
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Envoi impossible");
     } finally {
