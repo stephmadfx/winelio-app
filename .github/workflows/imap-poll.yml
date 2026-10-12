@@ -13,9 +13,11 @@ jobs:
       - name: Call imap-poll endpoint
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ secrets.APP_URL }}
         run: |
+          target_url="${APP_URL:-https://winelio.app}/api/bugs/imap-poll"
           response=$(curl -s -w "\n%{http_code}" \
-            "https://dev2.winelio.app/api/bugs/imap-poll" \
+            "$target_url" \
             -H "Authorization: Bearer ${CRON_SECRET}")
           body=$(echo "$response" | head -n -1)
           status=$(echo "$response" | tail -n 1)
