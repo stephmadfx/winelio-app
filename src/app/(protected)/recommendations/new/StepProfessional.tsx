@@ -183,30 +183,42 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
       <GeoStatusBanner status={geoStatus} radius={radius} onRequestGeo={requestGeo} onRadiusChange={setRadius} />
 
       {/* Code postal */}
-      <div className="mb-4 flex gap-2">
-        <div className="relative flex-1 max-w-[160px]">
-          <input type="text" inputMode="numeric" maxLength={5} placeholder="Code postal" value={postalCode}
-            onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, "").slice(0, 5))}
-            className="w-full rounded-xl border border-winelio-gray/20 px-4 py-3 text-sm focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15" />
-          {postalLoading && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-winelio-orange border-t-transparent rounded-full animate-spin" />}
+      <div className="mb-4">
+        <label className="block text-xs font-semibold text-winelio-dark mb-1.5">
+          Localisation par code postal {geoStatus === "denied" && <span className="text-winelio-orange">(conseillé suite au refus GPS)</span>}
+        </label>
+        <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+          <div className="relative w-full sm:w-36 shrink-0">
+            <input type="text" inputMode="numeric" maxLength={5} placeholder="Code postal" value={postalCode}
+              onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, "").slice(0, 5))}
+              className={`w-full rounded-xl border px-4 py-3 text-sm focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15 ${
+                geoStatus === "denied" && !postalCode ? "border-winelio-orange/50 bg-winelio-orange/5" : "border-winelio-gray/20"
+              }`} />
+            {postalLoading && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-winelio-orange border-t-transparent rounded-full animate-spin" />}
+          </div>
+          {postalCommunes.length > 0 && (
+            <div className="flex flex-1 w-full gap-2 items-center">
+              {postalCommunes.length === 1 ? (
+                <div className="flex-1 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
+                  <svg className="w-4 h-4 text-green-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="truncate">{postalCommunes[0]}</span>
+                </div>
+              ) : (
+                <select value={selectedCommune ?? ""} onChange={(e) => setSelectedCommune(e.target.value || null)}
+                  className="flex-1 min-w-0 rounded-xl border border-winelio-gray/20 px-4 py-3 text-sm text-winelio-dark focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15 bg-white cursor-pointer truncate">
+                  <option value="">Toutes les communes ({postalCommunes.length})</option>
+                  {postalCommunes.map((nom) => <option key={nom} value={nom}>{nom}</option>)}
+                </select>
+              )}
+              <button onClick={() => { setPostalCode(""); setPostalCommunes([]); setSelectedCommune(null); }}
+                className="flex items-center justify-center w-11 h-11 shrink-0 rounded-xl border border-winelio-gray/20 text-winelio-gray hover:text-red-500 hover:border-red-200 transition-colors cursor-pointer" title="Effacer">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+          )}
         </div>
-        {postalCommunes.length > 0 && (
-          <>
-            {postalCommunes.length === 1 ? (
-              <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">{postalCommunes[0]}</div>
-            ) : (
-              <select value={selectedCommune ?? ""} onChange={(e) => setSelectedCommune(e.target.value || null)}
-                className="flex-1 rounded-xl border border-winelio-gray/20 px-4 py-3 text-sm text-winelio-dark focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15 bg-white cursor-pointer">
-                <option value="">Toutes les communes</option>
-                {postalCommunes.map((nom) => <option key={nom} value={nom}>{nom}</option>)}
-              </select>
-            )}
-            <button onClick={() => { setPostalCode(""); setPostalCommunes([]); setSelectedCommune(null); }}
-              className="flex items-center justify-center w-10 rounded-xl border border-winelio-gray/20 text-winelio-gray hover:text-red-500 hover:border-red-200 transition-colors cursor-pointer" title="Effacer">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-          </>
-        )}
       </div>
 
       {/* Recherche + catégorie */}

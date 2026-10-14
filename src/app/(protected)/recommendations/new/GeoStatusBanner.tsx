@@ -24,13 +24,25 @@ export const GeoStatusBanner = ({ status, radius, onRequestGeo, onRadiusChange }
     </div>
   );
   if (status === "unavailable") return (
-    <div className="mb-4 rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3.5 text-sm text-amber-700">
-      Position indisponible. Saisissez un code postal pour rechercher des professionnels.
+    <div className="mb-4 rounded-2xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800 flex items-start justify-between gap-3">
+      <div>
+        <p className="font-semibold">Position indisponible</p>
+        <p className="mt-0.5 text-xs text-amber-700">Saisissez votre code postal ci-dessous pour trouver les professionnels de votre secteur.</p>
+      </div>
+      <button onClick={onRequestGeo} type="button" className="text-xs shrink-0 font-medium text-amber-900 underline hover:no-underline cursor-pointer">
+        Réessayer
+      </button>
     </div>
   );
   if (status === "denied") return (
-    <div className="mb-4 rounded-2xl bg-red-50 border border-red-100 px-4 py-3.5 text-sm text-red-600">
-      Géolocalisation refusée. Saisissez un code postal pour rechercher des professionnels.
+    <div className="mb-4 rounded-2xl bg-red-50 border border-red-200 p-4 text-sm text-red-700 flex items-start justify-between gap-3">
+      <div>
+        <p className="font-semibold">Géolocalisation refusée</p>
+        <p className="mt-0.5 text-xs text-red-600">Pas de souci : entrez simplement votre code postal ci-dessous pour afficher les professionnels.</p>
+      </div>
+      <button onClick={onRequestGeo} type="button" className="text-xs shrink-0 font-medium text-red-800 underline hover:no-underline cursor-pointer">
+        Réessayer
+      </button>
     </div>
   );
   return (

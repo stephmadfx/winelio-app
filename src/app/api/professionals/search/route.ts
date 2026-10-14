@@ -16,8 +16,37 @@ export async function POST(request: Request) {
   });
   if (error) return NextResponse.json({ error: "La recherche de professionnels est momentanément indisponible." }, { status: 500 });
   const ids = (data ?? []).map((row: { profile_id: string }) => row.profile_id);
-  const { data: summaries, error: ratingError } = ids.length ? await db.from("professional_review_summaries").select("professional_id,avg_rating,review_count").in("professional_id", ids) : { data: [], error: null };
-  if (ratingError) return NextResponse.json({ error: "Les notes sont momentanément indisponibles. Réessayez." }, { status: 500 });
-  const byId = new Map((summaries ?? []).map(row => [row.professional_id, row]));
-  return NextResponse.json({ professionals: (data ?? []).filter((row: { profile_id: string }) => row.profile_id !== user.id).map((row: { profile_id: string }) => ({ ...row, avg_rating: byId.get(row.profile_id)?.avg_rating ?? null, review_count: byId.get(row.profile_id)?.review_count ?? 0 })) }, { headers: { "Cache-Control": "no-store" } });
+  const byId = new Map<string, { avg_rating: number | null; review_count: number }>();
+  if (ids.length) {
+    try {
+      const CHUNK_SIZE = 40;
+      const chunks: string[][] = [];
+      for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+        chunks.push(ids.slice(i, i + CHUNK_SIZE));
+      }
+      const results = await Promise.all(
+        chunks.map(chunk =>
+          db.from("professional_review_summaries")
+            .select("professional_id,avg_rating,review_count")
+            .in("professional_id", chunk)
+        )
+      );
+      for (const res of results) {
+        if (res.data) {
+          for (const row of res.data) {
+            byId.set(row.professional_id, row);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[search/professionals] Non-fatal error loading ratings:", e);
+    }
+  }
+  return NextResponse.json({
+    professionals: (data ?? []).filter((row: { profile_id: string }) => row.profile_id !== user.id).map((row: { profile_id: string }) => ({
+      ...row,
+      avg_rating: byId.get(row.profile_id)?.avg_rating ?? null,
+      review_count: byId.get(row.profile_id)?.review_count ?? 0,
+    })),
+  }, { headers: { "Cache-Control": "no-store" } });
 }
