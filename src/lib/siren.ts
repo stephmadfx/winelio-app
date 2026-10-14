@@ -52,6 +52,23 @@ export async function verifySiren(input: string): Promise<SirenVerification | nu
   const siege = company.siege ?? {};
   const siret = parsed.kind === "siret" ? parsed.value : siege.siret ?? null;
 
+  const streetParts = [
+    siege.numero_voie,
+    siege.indice_repetition,
+    siege.type_voie,
+    siege.libelle_voie,
+  ]
+    .map((p: unknown) => (typeof p === "string" ? p.trim() : ""))
+    .filter(Boolean);
+
+  let streetAddress: string | null = streetParts.length > 0 ? streetParts.join(" ") : (siege.adresse ?? null);
+  if (!streetParts.length && streetAddress && siege.code_postal) {
+    const cpIdx = streetAddress.indexOf(siege.code_postal);
+    if (cpIdx > 0) {
+      streetAddress = streetAddress.slice(0, cpIdx).trim();
+    }
+  }
+
   return {
     siren: company.siren,
     siret,
@@ -61,7 +78,7 @@ export async function verifySiren(input: string): Promise<SirenVerification | nu
     forme_juridique: company.nature_juridique ?? null,
     date_creation: company.date_creation ?? null,
     actif: company.etat_administratif === "A",
-    adresse: siege.adresse ?? null,
+    adresse: streetAddress,
     city: siege.libelle_commune ?? null,
     postal_code: siege.code_postal ?? null,
     dirigeants: Array.isArray(company.dirigeants)

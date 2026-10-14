@@ -43,7 +43,7 @@ export function MobileNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-white/80 backdrop-blur-xl border-t border-black/5 shadow-[0_-8px_24px_rgba(255,107,53,0.06)] lg:hidden">
-      <div className="flex items-end justify-around px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div className="flex items-end justify-between px-1.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           const isLoading = loadingHref === item.href;
@@ -53,9 +53,9 @@ export function MobileNav() {
               key={item.href}
               href={item.href}
               onClick={() => { if (!isActive) setLoadingHref(item.href); }}
-              className={`flex flex-col items-center justify-center min-w-[3rem] px-2 py-2 rounded-2xl transition-all ${
+              className={`flex flex-1 min-w-0 flex-col items-center justify-center px-1 py-2 rounded-2xl transition-all ${
                 isActive
-                  ? "bg-gradient-to-br from-winelio-orange to-winelio-amber text-white shadow-lg scale-110 -translate-y-1"
+                  ? "bg-gradient-to-br from-winelio-orange to-winelio-amber text-white shadow-lg scale-105 -translate-y-1"
                   : isLoading
                   ? "bg-winelio-orange/10 text-winelio-orange scale-95"
                   : "text-winelio-gray active:text-winelio-orange active:scale-95"
@@ -77,7 +77,7 @@ export function MobileNav() {
                   <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
                 </svg>
               )}
-              <span className="text-[10px] mt-0.5 leading-tight font-semibold uppercase tracking-wide">
+              <span className="max-w-full truncate text-[10px] mt-0.5 leading-tight font-semibold uppercase tracking-normal">
                 {item.label}
               </span>
             </Link>

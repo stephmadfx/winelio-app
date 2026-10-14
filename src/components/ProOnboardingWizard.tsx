@@ -1,7 +1,7 @@
 // src/components/ProOnboardingWizard.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { completeProOnboarding } from "@/app/(protected)/profile/actions";
@@ -248,14 +248,15 @@ function Step2({
 }) {
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+  const lastVerifiedRef = useRef<string>("");
 
-  const handleVerify = async () => {
+  const runVerify = useCallback(async (inputVal: string) => {
     setVerifying(true);
     setVerifyError(null);
     setSirenData(null);
     setNafCheck(null);
     try {
-      const data = await verifySiren(siret);
+      const data = await verifySiren(inputVal);
       if (!data) {
         setVerifyError("SIRET introuvable dans le registre des entreprises.");
       } else {
@@ -267,14 +268,37 @@ function Step2({
         } else if (!naf.allowed) {
           setVerifyError(naf.reason);
         }
-        if (data.siret) setSiret(data.siret);
+        if (data.siret) {
+          lastVerifiedRef.current = data.siret.replace(/\D/g, "");
+          setSiret(data.siret);
+        }
       }
     } catch {
       setVerifyError("Erreur de connexion au service de vérification.");
     } finally {
       setVerifying(false);
     }
+  }, [setSirenData, setNafCheck, setSiret]);
+
+  const handleVerify = async () => {
+    const parsed = isValidSirenOrSiret(siret);
+    if (!parsed) return;
+    lastVerifiedRef.current = parsed.value;
+    await runVerify(siret);
   };
+
+  useEffect(() => {
+    const parsed = isValidSirenOrSiret(siret);
+    if (!parsed) return;
+    if (lastVerifiedRef.current === parsed.value) return;
+
+    const timer = setTimeout(() => {
+      lastVerifiedRef.current = parsed.value;
+      void runVerify(parsed.value);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [siret, runVerify]);
 
   const canContinue =
     !!categoryId &&
@@ -312,18 +336,22 @@ function Step2({
           <label className="block text-sm font-medium text-winelio-gray mb-1">
             Numéro SIRET <span className="text-winelio-orange">*</span>
           </label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap sm:flex-nowrap gap-2">
             <input
               type="text"
+              inputMode="numeric"
               value={siret}
               onChange={(e) => {
-                setSiret(e.target.value);
-                setSirenData(null);
-                setNafCheck(null);
-                setVerifyError(null);
+                const val = e.target.value;
+                setSiret(val);
+                if (val.replace(/\D/g, "") !== lastVerifiedRef.current) {
+                  setSirenData(null);
+                  setNafCheck(null);
+                  setVerifyError(null);
+                }
               }}
               placeholder="123 456 789 00012"
-              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
+              className="min-w-0 flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
             />
             <button
               type="button"
@@ -331,7 +359,7 @@ function Step2({
               disabled={!isValidSirenOrSiret(siret) || verifying}
               className="px-4 py-2.5 bg-winelio-dark text-white text-sm font-semibold rounded-xl hover:bg-winelio-dark/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
             >
-              {verifying ? "…" : "Vérifier"}
+              {verifying ? "Vérification…" : "Vérifier"}
             </button>
           </div>
           <p className="mt-1.5 text-xs text-winelio-gray">

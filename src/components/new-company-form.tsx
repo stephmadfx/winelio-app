@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { verifySiren, isValidSirenOrSiret, type SirenVerification } from "@/lib/siren";
 import { checkNafCode, type NafCheckResult } from "@/lib/naf-rules";
@@ -43,41 +42,77 @@ export function NewCompanyForm({
     description: "",
   });
   const companyEmail = usePersonalEmail ? personalEmail.trim() : form.email.trim();
+  const lastVerifiedInputRef = useRef<string>("");
 
-  const handleVerify = async () => {
+  const runVerify = useCallback(async (rawInput: string): Promise<{
+    data: SirenVerification | null;
+    naf: NafCheckResult | null;
+    err: string | null;
+  }> => {
     setVerifying(true);
     setVerifyError(null);
     setSirenData(null);
     setNafCheck(null);
     try {
-      const data = await verifySiren(form.siret);
+      const data = await verifySiren(rawInput);
       if (!data) {
-        setVerifyError("SIRET/SIREN introuvable dans le registre des entreprises.");
-      } else {
-        setSirenData(data);
-        const naf = checkNafCode(data.naf);
-        setNafCheck(naf);
-        if (!data.actif) {
-          setVerifyError("⚠️ Cette entreprise est cessée ou radiée.");
-        } else if (!naf.allowed) {
-          setVerifyError(naf.reason);
-        }
-        setForm((prev) => ({
-          ...prev,
-          name: prev.name || data.nom,
-          legal_name: prev.legal_name || data.legal_name || "",
-          address: prev.address || data.adresse || "",
-          city: prev.city || data.city || "",
-          postal_code: prev.postal_code || data.postal_code || "",
-          siret: data.siret || prev.siret,
-        }));
+        const err = "SIRET/SIREN introuvable dans le registre des entreprises.";
+        setVerifyError(err);
+        return { data: null, naf: null, err };
       }
+      setSirenData(data);
+      const naf = checkNafCode(data.naf);
+      setNafCheck(naf);
+      let err: string | null = null;
+      if (!data.actif) {
+        err = "⚠️ Cette entreprise est cessée ou radiée.";
+        setVerifyError(err);
+      } else if (!naf.allowed) {
+        err = naf.reason;
+        setVerifyError(err);
+      }
+      setForm((prev) => ({
+        ...prev,
+        name: prev.name.trim() ? prev.name : data.nom,
+        legal_name: prev.legal_name.trim() ? prev.legal_name : (data.legal_name || ""),
+        address: prev.address.trim() ? prev.address : (data.adresse || ""),
+        city: prev.city.trim() ? prev.city : (data.city || ""),
+        postal_code: prev.postal_code.trim() ? prev.postal_code : (data.postal_code || ""),
+        siret: data.siret || prev.siret,
+      }));
+      if (data.siret) {
+        lastVerifiedInputRef.current = data.siret.replace(/\D/g, "");
+      }
+      return { data, naf, err };
     } catch {
-      setVerifyError("Erreur de connexion au service de vérification.");
+      const err = "Erreur de connexion au service de vérification.";
+      setVerifyError(err);
+      return { data: null, naf: null, err };
     } finally {
       setVerifying(false);
     }
+  }, []);
+
+  const handleVerify = async () => {
+    const parsed = isValidSirenOrSiret(form.siret);
+    if (!parsed) return;
+    lastVerifiedInputRef.current = parsed.value;
+    await runVerify(form.siret);
   };
+
+  // Auto-vérification dès que l'utilisateur saisit un SIREN (9 chiffres) ou SIRET (14 chiffres)
+  useEffect(() => {
+    const parsed = isValidSirenOrSiret(form.siret);
+    if (!parsed) return;
+    if (lastVerifiedInputRef.current === parsed.value) return;
+
+    const timer = setTimeout(() => {
+      lastVerifiedInputRef.current = parsed.value;
+      void runVerify(parsed.value);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [form.siret, runVerify]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -88,7 +123,48 @@ export function NewCompanyForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) {
+    setError(null);
+
+    let activeSirenData = sirenData;
+    let activeNafCheck = nafCheck;
+    let activeName = form.name;
+    let activeLegalName = form.legal_name;
+    let activeAddress = form.address;
+    let activeCity = form.city;
+    let activePostalCode = form.postal_code;
+    let activeSiret = form.siret;
+
+    // Si un SIRET/SIREN est renseigné mais pas encore vérifié, on le vérifie automatiquement
+    if (form.siret.trim() && !activeSirenData) {
+      const parsed = isValidSirenOrSiret(form.siret);
+      if (!parsed) {
+        setError("Le numéro SIREN (9 chiffres) ou SIRET (14 chiffres) est invalide.");
+        return;
+      }
+      const res = await runVerify(form.siret);
+      if (res.err || !res.data) {
+        setError(res.err ?? "Impossible de vérifier ce SIRET/SIREN.");
+        return;
+      }
+      activeSirenData = res.data;
+      activeNafCheck = res.naf;
+      activeName = activeName.trim() || res.data.nom;
+      activeLegalName = activeLegalName.trim() || res.data.legal_name || "";
+      activeAddress = activeAddress.trim() || res.data.adresse || "";
+      activeCity = activeCity.trim() || res.data.city || "";
+      activePostalCode = activePostalCode.trim() || res.data.postal_code || "";
+      activeSiret = res.data.siret || activeSiret;
+    }
+
+    if (form.siret.trim() && activeSirenData && !activeSirenData.actif) {
+      setError("⚠️ Cette entreprise est cessée ou radiée.");
+      return;
+    }
+    if (form.siret.trim() && activeNafCheck && !activeNafCheck.allowed) {
+      setError(activeNafCheck.reason);
+      return;
+    }
+    if (!activeName.trim()) {
       setError("Le nom est obligatoire.");
       return;
     }
@@ -112,14 +188,6 @@ export function NewCompanyForm({
       setError("Le numéro d'assurance professionnelle est obligatoire.");
       return;
     }
-    if (form.siret && !sirenData) {
-      setError("Veuillez cliquer sur « Vérifier » pour valider votre SIRET avant de continuer.");
-      return;
-    }
-    if (form.siret && nafCheck && !nafCheck.allowed) {
-      setError(nafCheck.reason);
-      return;
-    }
 
     if (form.description.trim()) {
       const descCheck = validateCompanyDescription(form.description);
@@ -130,19 +198,18 @@ export function NewCompanyForm({
     }
 
     setSaving(true);
-    setError(null);
 
     const result = await createCompany({
-      name: form.name,
-      legal_name: form.legal_name || undefined,
+      name: activeName,
+      legal_name: activeLegalName || undefined,
       email: companyEmail,
       phone: form.phone,
       website: form.website || undefined,
-      address: form.address || undefined,
-      city: form.city || undefined,
-      postal_code: form.postal_code || undefined,
-      siret: form.siret || undefined,
-      siren: sirenData?.siren || undefined,
+      address: activeAddress || undefined,
+      city: activeCity || undefined,
+      postal_code: activePostalCode || undefined,
+      siret: activeSiret || undefined,
+      siren: activeSirenData?.siren || undefined,
       insurance_number: form.insurance_number || undefined,
       // Toute fiche créée manuellement par son owner est marquée vérifiée
       // (l'utilisateur a déclaré sa propre fiche professionnelle).
@@ -181,14 +248,23 @@ export function NewCompanyForm({
               (auto-remplit nom, adresse et ville)
             </span>
           </label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap sm:flex-nowrap gap-2">
             <input
               type="text"
+              inputMode="numeric"
               name="siret"
               value={form.siret}
-              onChange={(e) => { handleChange(e); setSirenData(null); setNafCheck(null); setVerifyError(null); }}
+              onChange={(e) => {
+                handleChange(e);
+                const digits = e.target.value.replace(/\D/g, "");
+                if (digits !== lastVerifiedInputRef.current) {
+                  setSirenData(null);
+                  setNafCheck(null);
+                  setVerifyError(null);
+                }
+              }}
               placeholder="123 456 789 00012"
-              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
+              className="min-w-0 flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange"
             />
             <button
               type="button"
@@ -196,7 +272,7 @@ export function NewCompanyForm({
               disabled={!isValidSirenOrSiret(form.siret) || verifying}
               className="px-4 py-2.5 bg-winelio-dark text-white text-sm font-semibold rounded-xl hover:bg-winelio-dark/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
             >
-              {verifying ? "…" : "Vérifier"}
+              {verifying ? "Vérification…" : "Vérifier"}
             </button>
           </div>
           {sirenData && sirenData.actif && nafCheck?.allowed && (
@@ -205,8 +281,10 @@ export function NewCompanyForm({
                 <span className="text-green-600 font-bold">✓</span>
                 <div>
                   <div className="font-semibold text-green-800">{sirenData.nom}</div>
-                  {sirenData.adresse && (
-                    <div className="text-xs text-green-700 mt-0.5">{sirenData.adresse}</div>
+                  {(sirenData.adresse || sirenData.postal_code || sirenData.city) && (
+                    <div className="text-xs text-green-700 mt-0.5">
+                      {[sirenData.adresse, sirenData.postal_code, sirenData.city].filter(Boolean).join(" ")}
+                    </div>
                   )}
                   <div className="text-xs text-green-600 mt-1">
                     Active — SIREN {sirenData.siren} — NAF {nafCheck.code}
@@ -330,10 +408,10 @@ export function NewCompanyForm({
         <div className="mt-6 flex gap-3">
           <button
             type="submit"
-            disabled={saving || (!!form.siret && (!nafCheck || !nafCheck.allowed))}
+            disabled={saving || verifying || (!!sirenData && !sirenData.actif) || (!!nafCheck && !nafCheck.allowed)}
             className="px-6 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {saving ? "Création..." : "Créer l'entreprise"}
+            {saving ? "Création..." : verifying ? "Vérification..." : "Créer l'entreprise"}
           </button>
           <button
             type="button"
