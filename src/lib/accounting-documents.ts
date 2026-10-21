@@ -26,5 +26,5 @@ export async function archiveAccountingDocument(kind: "invoice" | "payout", sour
   const { data, error } = await supabaseAdmin.from("accounting_documents").select("*")
     .eq("kind", kind).eq("source_id", sourceId).maybeSingle();
   if (error) throw new Error("Lecture du document à archiver impossible");
-  if (data) await accountingDocumentPdf(data as AccountingDocument);
+  if (data?.number && data.issued_at) await accountingDocumentPdf(data as AccountingDocument);
 }

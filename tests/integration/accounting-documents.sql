@@ -15,6 +15,9 @@ DECLARE
   v_new_issuer uuid;
   v_count integer;
   v_before integer;
+  v_draft_reco uuid := gen_random_uuid();
+  v_draft_payment uuid := gen_random_uuid();
+  v_draft_document uuid;
 BEGIN
   INSERT INTO winelio.profiles(id,email,phone,first_name,last_name,address,postal_code,city,is_demo,sponsor_code)
     VALUES(v_owner,'accounting-owner@winelio-e2e.local','07'||(10000000+floor(random()*89999999))::text,'Affilié','Comptable','1 rue Test','75001','Paris',true,'AC'||substr(md5(v_owner::text),1,4)),
@@ -38,6 +41,30 @@ BEGIN
   ASSERT winelio.issue_accounting_document('invoice',v_payment)=v_document,'Idempotence';
   SELECT count(*) INTO v_count FROM winelio.accounting_documents WHERE source_id=v_payment;
   ASSERT v_count=1,'Aucun doublon';
+  SELECT last_number INTO v_before FROM winelio.accounting_document_counters
+    WHERE kind='invoice' AND year=extract(year FROM now() AT TIME ZONE 'Europe/Paris') AND is_demo;
+  UPDATE winelio.companies SET address=NULL WHERE id=v_company;
+  INSERT INTO winelio.recommendations(id,referrer_id,professional_id,company_id,is_demo,amount)
+    VALUES(v_draft_reco,v_other,v_owner,v_company,true,1000);
+  INSERT INTO winelio.stripe_payment_sessions(id,recommendation_id,stripe_session_id,amount,status,paid_at)
+    VALUES(v_draft_payment,v_draft_reco,'accounting-draft-'||v_draft_payment,100,'paid',now());
+  SELECT id INTO v_draft_document FROM winelio.accounting_documents WHERE source_id=v_draft_payment;
+  ASSERT EXISTS(SELECT 1 FROM winelio.accounting_documents WHERE id=v_draft_document AND number IS NULL AND issued_at IS NULL),'Coordonnées incomplètes : aucun document officiel';
+  BEGIN
+    UPDATE winelio.accounting_documents SET issuer='{}' WHERE id=v_draft_document;
+    RAISE EXCEPTION 'Émetteur financier du brouillon modifiable à tort';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM NOT LIKE '%immuable%' THEN RAISE; END IF;
+  END;
+  BEGIN
+    INSERT INTO winelio.accounting_document_files(document_id,pdf_base64,sha256)
+      VALUES(v_draft_document,'JVBERi0=',repeat('a',64));
+    RAISE EXCEPTION 'Le contrôle d’archivage n’a pas rejeté la pièce';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM NOT LIKE '%brouillon%' THEN RAISE; END IF;
+  END;
+  ASSERT (SELECT last_number=v_before FROM winelio.accounting_document_counters
+    WHERE kind='invoice' AND year=extract(year FROM now() AT TIME ZONE 'Europe/Paris') AND is_demo),'Un brouillon ne consomme aucun numéro';
   BEGIN
     UPDATE winelio.accounting_documents SET recipient='{}' WHERE id=v_document;
     RAISE EXCEPTION 'Modification historique autorisée à tort';
@@ -51,6 +78,10 @@ BEGIN
     SELECT 'SOCIÉTÉ TEST FUTURE',address,postal_code,city,rcs,siren,siret,naf_code,vat_number,'Émetteur futur de test',true
     FROM winelio.accounting_issuers WHERE id=v_old_issuer RETURNING id INTO v_new_issuer;
   ASSERT (SELECT to_jsonb(d)=v_snapshot FROM winelio.accounting_documents d WHERE id=v_document),'Émetteur et coordonnées historiques figés';
+  ASSERT winelio.issue_accounting_document('invoice',v_draft_payment)=v_draft_document,'Même pièce après complétion';
+  ASSERT EXISTS(SELECT 1 FROM winelio.accounting_documents WHERE id=v_draft_document AND number IS NOT NULL
+    AND issuer->>'legal_name'='EXASUD' AND recipient->>'address'='Adresse modifiée'
+    AND (amounts->>'vat')::numeric=16.67),'Le brouillon complété conserve son émetteur et ses montants d’origine';
 
   PERFORM winelio.process_withdrawal(v_owner,25,'bank_transfer','{}',0.25);
   SELECT id INTO v_withdrawal FROM winelio.withdrawals WHERE user_id=v_owner ORDER BY created_at DESC LIMIT 1;

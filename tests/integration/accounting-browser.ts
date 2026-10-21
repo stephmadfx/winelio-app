@@ -94,13 +94,34 @@ async function main() {
     await writeFile("output/playwright/accounting/attestation-downloaded.pdf",await attestationPdf.body());
     await page.screenshot({ path: "output/playwright/accounting/attestations-mobile.png", fullPage: true });
     await page.getByRole("link", { name: /Consulter toutes mes commissions/ }).click();
-    await page.getByText("Retrait - Virement bancaire").waitFor();
+    await page.getByText("Retrait - Virement bancaire").first().waitFor();
+
+    check(await wn().from("profiles").update({ address:null }).eq("id",referrer.id));
+    check(await wn().rpc("process_withdrawal",{ p_user_id:referrer.id,p_amount:10,p_payment_method:"bank_transfer",p_payment_details:{},p_fee_amount:0.25 }));
+    const { data: incompleteWithdrawal } = await wn().from("withdrawals").select("id").eq("user_id",referrer.id).eq("status","PENDING").single();
+    assert.ok(incompleteWithdrawal);
+    check(await wn().from("withdrawals").update({ status:"COMPLETED",processed_at:new Date().toISOString() }).eq("id",incompleteWithdrawal.id));
+    const { data: draft } = await wn().from("accounting_documents").select("id,number").eq("source_id",incompleteWithdrawal.id).single();
+    assert.ok(draft);
+    assert.equal(draft.number,null,"Aucune numérotation avec une adresse manquante");
+    assert.equal((await page.request.get(`/api/accounting/documents/${draft.id}`)).status(),409);
+    await page.goto("/wallet/documents");
+    await page.getByRole("button",{ name:"Actualiser les documents à compléter",exact:true }).waitFor();
+    check(await wn().from("profiles").update({ address:"Adresse complétée" }).eq("id",referrer.id));
+    await page.getByRole("button",{ name:"Actualiser les documents à compléter",exact:true }).click();
+    await page.getByRole("button",{ name:"Actualiser les documents à compléter",exact:true }).waitFor({ state:"hidden" });
+    const { data: issuedDraft } = await wn().from("accounting_documents").select("id,number").eq("id",draft.id).single();
+    assert.ok(issuedDraft?.number);
+    await page.getByText(issuedDraft.number,{ exact:true }).waitFor();
+    assert.equal((await page.request.get(`/api/accounting/documents/${draft.id}`)).status(),200);
+    await page.goto("/wallet/history");
+    await page.getByText("Retrait - Virement bancaire").first().waitFor();
     await page.route("**/rest/v1/wallet_movements*", (route) => route.fulfill({ status:503,contentType:"application/json",body:'{"message":"Erreur de test temporaire"}' }));
     await page.reload();
     await page.getByRole("alert").filter({ hasText:"Impossible de charger vos commissions et retraits" }).waitFor();
     await page.unroute("**/rest/v1/wallet_movements*");
     await page.getByRole("button",{ name:"Réessayer",exact:true }).click();
-    await page.getByText("Retrait - Virement bancaire").waitFor();
+    await page.getByText("Retrait - Virement bancaire").first().waitFor();
 
     // Administrateur de démonstration uniquement : aucun rôle d'un compte réel n'est changé.
     const { error: roleError } = await db().auth.admin.updateUserById(pro.id,{ app_metadata: { role: "super_admin" } });
@@ -119,7 +140,7 @@ async function main() {
     await injectStagingCookie(anonymous);
     assert.equal((await anonymous.request.get(`/api/accounting/documents/${invoice.id}`)).status(),401);
     await anonymous.close();
-    console.log("accounting-browser: factures, attestations, PDF identique, mobile, historique, permissions et CSV OK");
+    console.log("accounting-browser: factures, attestations, brouillons, PDF identique, mobile, historique, permissions et CSV OK");
   } finally {
     await context.close();
     await browser.close();

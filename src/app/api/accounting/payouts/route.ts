@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       .gte("event_at", `${year}-01-01T00:00:00+01:00`).lt("event_at", `${year + 1}-01-01T00:00:00+01:00`)
       .order("event_at").order("id").range(offset, offset + 499);
     if (error) return NextResponse.json({ error: "Export indisponible" }, { status: 503 });
-    for (const d of data ?? []) rows.push([d.number,d.issuer.legal_name,d.issuer.siret,
+    for (const d of data ?? []) rows.push([d.number ?? "Coordonnées à compléter",d.issuer.legal_name,d.issuer.siret,
       new Date(d.event_at).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" }),d.owner_id,
       d.recipient.name,d.recipient.address,d.recipient.postal_code,d.recipient.city,
       Number(d.amounts.withdrawn).toFixed(2).replace(".", ","),Number(d.amounts.fees).toFixed(2).replace(".", ","),Number(d.amounts.paid).toFixed(2).replace(".", ",")]);

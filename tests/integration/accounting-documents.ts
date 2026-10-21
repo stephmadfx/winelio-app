@@ -25,6 +25,7 @@ async function main() {
   const escaped = await accountingDocumentHtml({ ...document, recipient: { ...document.recipient, name: '<img src="file:///etc/passwd">' } });
   assert.ok(escaped.includes("&lt;img src=&quot;file:///etc/passwd&quot;&gt;"));
   await assert.rejects(() => accountingDocumentHtml({ ...document, template_version: 2 }), /Version/);
+  await assert.rejects(() => accountingDocumentHtml({ ...document, number: "" }), /non émis/);
   const plan: CompensationPlan = { id: "test", commission_rate: 10, referrer_percentage: 60,
     level_1_percentage: 3, level_2_percentage: 3, level_3_percentage: 3, level_4_percentage: 3, level_5_percentage: 3,
     platform_percentage: 23, affiliation_percentage: 1, cashback_wins_percentage: 1 };

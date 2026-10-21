@@ -17,6 +17,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const { data, error } = await supabase.from("accounting_documents").select("*").eq("id", id).maybeSingle();
   if (error) return NextResponse.json({ error: "Lecture du document impossible" }, { status: 503 });
   if (!data) return NextResponse.json({ error: "Document introuvable" }, { status: 404 });
+  if (!data.number || !data.issued_at) return NextResponse.json({ error: "Complétez vos coordonnées pour émettre ce document." }, { status: 409 });
   try {
     const pdf = await accountingDocumentPdf(data as AccountingDocument);
     return new Response(new Uint8Array(pdf), { headers: {

@@ -31,6 +31,7 @@ const date = (value: string) => new Date(value).toLocaleDateString("fr-FR", { ti
 // Version figée : toute évolution des pièces futures doit utiliser une nouvelle version.
 export async function accountingDocumentHtml(document: AccountingDocument): Promise<string> {
   if (document.template_version !== 1) throw new Error("Version de document inconnue");
+  if (!document.number || !document.issued_at) throw new Error("Document non émis");
   const { issuer, recipient, amounts, details } = document;
   const invoice = document.kind === "invoice";
   const escape = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
