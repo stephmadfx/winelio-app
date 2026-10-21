@@ -99,6 +99,11 @@ SELECT set_config('request.jwt.claims', jsonb_build_object('sub',(SELECT owner_i
 DO $$ BEGIN
   ASSERT EXISTS(SELECT 1 FROM winelio.accounting_documents WHERE id=(SELECT document_id FROM accounting_test_context)),'RLS : propriétaire autorisé';
   ASSERT EXISTS(SELECT 1 FROM winelio.wallet_movements WHERE user_id=(SELECT owner_id FROM accounting_test_context)),'RLS : mouvements propres visibles';
+  BEGIN
+    PERFORM winelio.recalculate_wallet((SELECT owner_id FROM accounting_test_context));
+    RAISE EXCEPTION 'RPC de recalcul accessible à tort au client';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
 END; $$;
 SELECT set_config('request.jwt.claims', jsonb_build_object('sub',(SELECT other_id FROM accounting_test_context),'role','authenticated','app_metadata',jsonb_build_object('role','super_admin'))::text,true) IS NOT NULL AS session_configured;
 DO $$ BEGIN
