@@ -5,6 +5,7 @@ import { notifyReferrerCommissionCredited } from "@/lib/notify-commission-credit
 import { unlockRecommendationCommissions } from "@/lib/recommendation-review";
 import { expireOtherCommissionCheckouts } from "@/lib/stripe-payment-safety";
 import type { CompensationPlan } from "@/lib/commission";
+import { archiveAccountingDocument } from "@/lib/accounting-documents";
 
 type ClaimResult = {
   claimed?: boolean;
@@ -81,6 +82,11 @@ export async function finalizeCommissionPayment(
   const payout = await unlockRecommendationCommissions(recommendationId);
   await notifyReferrerCommissionCredited(recommendationId).catch((err) =>
     console.error("[stripe-payment] Échec notification cagnotte:", err),
+  );
+
+  // Le paiement est acquis ; un échec PDF reste récupérable au téléchargement.
+  await archiveAccountingDocument("invoice", paymentRecordId).catch(() =>
+    console.error("[accounting] PDF de facture à reprendre au téléchargement"),
   );
 
   return { duplicate: false as const, payout };

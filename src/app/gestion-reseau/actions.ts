@@ -7,6 +7,7 @@ import { recalculateWallet } from "@/lib/wallet";
 import { COMMISSION_TYPE, COMMISSION_STATUS, WITHDRAWAL_STATUS } from "@/lib/constants";
 import { collectCommissionAutomatically } from "@/lib/stripe-automatic-commission";
 import { notifyBugStatusChange } from "@/lib/notify-bug-status";
+import { archiveAccountingDocument } from "@/lib/accounting-documents";
 
 async function assertSuperAdmin() {
   const supabase = await createClient();
@@ -679,5 +680,10 @@ export async function markWithdrawalPaid(withdrawalId: string) {
   if (!updated) throw new Error("Le retrait a déjà changé de statut");
 
   await recalculateWallet(w.user_id);
+  await archiveAccountingDocument("payout", withdrawalId).catch(() =>
+    console.error("[accounting] PDF d’attestation à reprendre au téléchargement"),
+  );
   revalidatePath("/gestion-reseau/retraits");
+  revalidatePath("/wallet/documents");
+  revalidatePath("/gestion-reseau/comptabilite");
 }

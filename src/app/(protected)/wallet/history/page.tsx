@@ -12,6 +12,7 @@ type Transaction = {
   created_at: string;
   status: string;
   description: string;
+  wins?: boolean;
 };
 
 const PAGE_SIZE = 20;
@@ -22,14 +23,16 @@ const statusColors: Record<string, string> = {
   processing: "bg-blue-100 text-blue-700",
   failed: "bg-red-100 text-red-700",
   cancelled: "bg-gray-100 text-gray-500",
+  rejected: "bg-red-100 text-red-700",
 };
 
 const statusLabels: Record<string, string> = {
-  completed: "Completee",
+  completed: "Reçue / payé",
   pending: "En attente",
   processing: "En cours",
   failed: "Echouee",
   cancelled: "Annulee",
+  rejected: "Rejetée",
 };
 
 export default function WalletHistoryPage() {
@@ -37,6 +40,7 @@ export default function WalletHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [error, setError] = useState("");
 
   // Filters
   const [filterType, setFilterType] = useState<"all" | "commission" | "withdrawal">("all");
@@ -46,76 +50,29 @@ export default function WalletHistoryPage() {
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
+    setError("");
     const supabase = createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) return;
+    if (!user) { setLoading(false); setError("Votre session a expiré. Reconnectez-vous."); return; }
 
-    const allTx: Transaction[] = [];
-
-    // Fetch commissions
-    if (filterType === "all" || filterType === "commission") {
-      let query = supabase
-        .from("commission_transactions")
-        .select("id, amount, created_at, status, description")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (filterStatus !== "all") query = query.eq("status", filterStatus);
-      if (filterFrom) query = query.gte("created_at", filterFrom);
-      if (filterTo) query = query.lte("created_at", filterTo + "T23:59:59");
-
-      const { data } = await query;
-      (data ?? []).forEach((c) =>
-        allTx.push({
-          id: c.id,
-          type: "commission",
-          amount: c.amount,
-          created_at: c.created_at,
-          status: c.status,
-          description: c.description ?? "Commission",
-        })
-      );
+    let query = supabase.from("wallet_movements").select("*", { count: "exact" })
+      .eq("user_id", user.id).order("created_at", { ascending: false }).order("id").order("type");
+    if (filterType !== "all") query = query.eq("type", filterType);
+    if (filterStatus !== "all") query = query.eq("status", filterStatus);
+    if (filterFrom) query = query.gte("created_at", new Date(`${filterFrom}T00:00:00`).toISOString());
+    if (filterTo) query = query.lte("created_at", new Date(`${filterTo}T23:59:59.999`).toISOString());
+    const { data, error: queryError, count } = await query.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+    if (queryError) {
+      setTransactions([]);
+      setHasMore(false);
+      setError("Impossible de charger vos commissions et retraits. Réessayez.");
+    } else {
+      setTransactions((data ?? []) as Transaction[]);
+      setHasMore((page + 1) * PAGE_SIZE < (count ?? 0));
     }
-
-    // Fetch withdrawals
-    if (filterType === "all" || filterType === "withdrawal") {
-      let query = supabase
-        .from("withdrawals")
-        .select("id, amount, created_at, status, payment_method")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (filterStatus !== "all") query = query.eq("status", filterStatus);
-      if (filterFrom) query = query.gte("created_at", filterFrom);
-      if (filterTo) query = query.lte("created_at", filterTo + "T23:59:59");
-
-      const { data } = await query;
-      (data ?? []).forEach((w) =>
-        allTx.push({
-          id: w.id,
-          type: "withdrawal",
-          amount: w.amount,
-          created_at: w.created_at,
-          status: w.status,
-          description: `Retrait - ${w.payment_method === "paypal" ? "PayPal" : "Virement bancaire"}`,
-        })
-      );
-    }
-
-    // Sort by date descending
-    allTx.sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-
-    // Paginate
-    const start = page * PAGE_SIZE;
-    const paged = allTx.slice(start, start + PAGE_SIZE);
-    setHasMore(start + PAGE_SIZE < allTx.length);
-    setTransactions(paged);
     setLoading(false);
   }, [filterType, filterStatus, filterFrom, filterTo, page]);
 
@@ -161,6 +118,8 @@ export default function WalletHistoryPage() {
       </div>
 
       {/* Filters */}
+      <Link href="/wallet/documents" className="inline-block text-sm text-winelio-orange">Mes attestations de versement →</Link>
+      {error && <div role="alert" className="rounded-xl border border-red-200 p-4 text-sm text-red-700">{error} <button onClick={fetchTransactions} className="underline">Réessayer</button></div>}
       <Card className="!rounded-2xl">
        <CardContent className="p-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -190,11 +149,12 @@ export default function WalletHistoryPage() {
               className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/30 focus:border-winelio-orange"
             >
               <option value="all">Tous</option>
-              <option value="completed">Completee</option>
+              <option value="completed">Reçue / payé</option>
               <option value="pending">En attente</option>
               <option value="processing">En cours</option>
               <option value="failed">Echouee</option>
               <option value="cancelled">Annulee</option>
+              <option value="rejected">Rejetée</option>
             </select>
           </div>
           <div>
@@ -300,7 +260,7 @@ export default function WalletHistoryPage() {
                       }`}
                     >
                       {tx.type === "commission" ? "+" : "-"}
-                      {new Intl.NumberFormat("fr-FR", {
+                      {tx.wins ? `${tx.amount.toLocaleString("fr-FR")} Wins` : new Intl.NumberFormat("fr-FR", {
                         style: "currency",
                         currency: "EUR",
                       }).format(tx.amount)}

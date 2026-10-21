@@ -1,12 +1,6 @@
 // src/lib/generate-signed-pdf.ts
-import { execFile } from "child_process";
-import { promisify } from "util";
-import { writeFile, readFile, unlink } from "fs/promises";
-import { tmpdir } from "os";
-import { join } from "path";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-
-const execFileAsync = promisify(execFile);
+import { htmlToPdf } from "@/lib/html-to-pdf";
 
 export async function generateSignedPDF(params: {
   documentId: string;
@@ -17,16 +11,7 @@ export async function generateSignedPDF(params: {
   documentHash: string;
 }): Promise<Buffer> {
   const html = await buildSignedPdfHtml(params);
-  const tmpHtml = join(tmpdir(), `sign-${Date.now()}.html`);
-  const tmpPdf = join(tmpdir(), `sign-${Date.now()}.pdf`);
-  try {
-    await writeFile(tmpHtml, html, "utf-8");
-    await execFileAsync("weasyprint", [tmpHtml, tmpPdf]);
-    return await readFile(tmpPdf);
-  } finally {
-    await unlink(tmpHtml).catch(() => {});
-    await unlink(tmpPdf).catch(() => {});
-  }
+  return htmlToPdf(html);
 }
 
 async function buildSignedPdfHtml(params: {

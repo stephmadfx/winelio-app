@@ -59,6 +59,9 @@ export async function cleanupE2EAccounts(): Promise<{ deleted: number }> {
   const ids = targets.map((p) => p.id);
   const emails = targets.map((p) => p.email.toLowerCase());
 
+  ensureSuccess("delete E2E accounting documents", await wn().from("accounting_documents")
+    .delete().in("owner_id", ids).eq("is_demo", true));
+
   // 2) purge applicative en amont (FK potentiellement SET NULL)
   // recommendation_followups référence recommendations (FK CASCADE en place
   // mais on purge aussi par sécurité avant de supprimer les recos elles-mêmes).
@@ -79,6 +82,7 @@ export async function cleanupE2EAccounts(): Promise<{ deleted: number }> {
   ensureSuccess("delete contacts", await wn().from("contacts").delete().in("user_id", ids));
   ensureSuccess("delete companies", await wn().from("companies").delete().in("owner_id", ids));
   ensureSuccess("delete user commissions", await wn().from("commission_transactions").delete().in("user_id", ids));
+  ensureSuccess("delete test withdrawals", await wn().from("withdrawals").delete().in("user_id", ids));
   ensureSuccess("delete wallets", await wn().from("user_wallet_summaries").delete().in("user_id", ids));
   ensureSuccess("delete otp codes", await wn().from("otp_codes").delete().in("email", emails));
   ensureSuccess("detach sponsor chain", await wn().from("profiles").update({ sponsor_id: null }).in("id", ids));

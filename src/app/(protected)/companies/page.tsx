@@ -37,6 +37,7 @@ export default async function CompaniesPage() {
         )}
       </div>
 
+      <Link href="/companies/invoices" className="mb-6 inline-block text-sm font-medium text-winelio-orange hover:underline">Mes factures de commission →</Link>
       {!companies || companies.length === 0 ? (
         <Card className="!rounded-2xl text-center">
           <CardContent className="p-6 sm:p-12 flex flex-col items-center">

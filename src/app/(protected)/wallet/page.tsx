@@ -131,6 +131,7 @@ export default async function WalletPage() {
       </div>
 
       {/* Balance Cards */}
+      <Link href="/wallet/documents" className="inline-block text-sm font-medium text-winelio-orange hover:underline">Mes attestations de versement →</Link>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <WalletCard
           title="Disponible"
