@@ -116,6 +116,7 @@ async function main() {
     await page.waitForFunction(() => document.querySelector("main")!.getBoundingClientRect().x >= 256);
     await page.screenshot({ path:"output/playwright/accounting/admin-desktop.png",fullPage:true });
     const anonymous = await browser.newContext({ baseURL:process.env.E2E_BASE_URL });
+    await injectStagingCookie(anonymous);
     assert.equal((await anonymous.request.get(`/api/accounting/documents/${invoice.id}`)).status(),401);
     await anonymous.close();
     console.log("accounting-browser: factures, attestations, PDF identique, mobile, historique, permissions et CSV OK");
