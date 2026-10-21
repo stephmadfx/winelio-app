@@ -10,6 +10,7 @@ import { AvatarCropModal } from "@/components/avatar-crop-modal";
 import { WelcomeModal } from "@/components/welcome-modal";
 import { isAtLeastAge, maxBirthDate } from "@/lib/age";
 import { ProOnboardingVideoReplayButton } from "@/components/pro-onboarding-video";
+import { CopyButton, ShareButton } from "@/components/referral-buttons";
 
 interface Profile {
   id: string;
@@ -91,7 +92,6 @@ export function ProfileForm({
   const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [copied, setCopied] = useState(false);
   // On stocke la clé brute (ex: "users/<id>/<file>.webp"). ProfileAvatar la résout
   // en interne via resolveProfileAvatarUrl — passer une URL déjà résolue produirait
   // un double préfixe `/api/avatars/api/avatars/...` qui 404.
@@ -227,14 +227,6 @@ export function ProfileForm({
       setSponsorInput("");
     }
     setSaving(false);
-  };
-
-  const copyCode = async () => {
-    if (profile.sponsor_code) {
-      await navigator.clipboard.writeText(profile.sponsor_code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
   };
 
   const uploadAvatar = async (blob: Blob) => {
@@ -464,19 +456,23 @@ export function ProfileForm({
         <h3 className="text-lg font-semibold text-winelio-dark mb-4">
           Votre code parrain
         </h3>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3">
           <input
             type="text"
             readOnly
+            aria-label="Votre code parrain"
             value={profile.sponsor_code ?? ""}
             className="flex-1 min-w-0 px-4 py-2.5 bg-winelio-light border border-gray-200 rounded-xl text-winelio-dark font-mono text-lg tracking-wider"
           />
-          <button
-            onClick={copyCode}
-            className="px-4 py-2.5 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-medium rounded-xl hover:opacity-90 transition-opacity"
-          >
-            {copied ? "Copié !" : "Copier"}
-          </button>
+          <p className="text-sm text-winelio-gray">
+            Partagez votre lien d’invitation : votre code parrain sera repris automatiquement à l’inscription.
+          </p>
+          {profile.sponsor_code && (
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3 [&>button]:justify-center">
+              <CopyButton code={profile.sponsor_code} label="Copier mon lien d’invitation" />
+              <ShareButton code={profile.sponsor_code} label="Partager mon invitation" />
+            </div>
+          )}
         </div>
       </div>
 

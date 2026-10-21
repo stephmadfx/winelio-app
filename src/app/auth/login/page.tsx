@@ -134,9 +134,10 @@ function LoginForm() {
       setCheckingPromo(false);
     } else {
       const typeParam = searchParams.get("type");
+      const invitationRef = searchParams.get("ref") || refCode;
       let target = "/";
       const params = new URLSearchParams();
-      if (refCode) params.set("ref", refCode);
+      if (invitationRef) params.set("ref", invitationRef);
       if (typeParam) params.set("type", typeParam);
       
       const queryStr = params.toString();

@@ -22,35 +22,40 @@ function isNativeShareAbort(err: unknown) {
   );
 }
 
-export function CopyButton({ code, isPro = false }: { code: string; isPro?: boolean }) {
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const el = document.createElement("textarea");
+    el.value = text;
+    el.style.cssText = "position:fixed;opacity:0";
+    document.body.appendChild(el);
+    try {
+      el.select();
+      if (!document.execCommand("copy")) throw new Error("Copie indisponible");
+    } finally {
+      el.remove();
+    }
+  }
+}
+
+export function CopyButton({ code, isPro = false, label }: { code: string; isPro?: boolean; label?: string }) {
   const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
 
   const handleCopy = async () => {
     const url = `${window.location.origin}/auth/login?mode=register&ref=${code}${isPro ? "&type=pro" : ""}`;
     try {
-      await navigator.clipboard.writeText(url);
+      await copyText(url);
       setStatus("copied");
     } catch {
-      // Fallback pour les contextes sans clipboard API
-      try {
-        const el = document.createElement("textarea");
-        el.value = url;
-        el.style.position = "fixed";
-        el.style.opacity = "0";
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand("copy");
-        document.body.removeChild(el);
-        setStatus("copied");
-      } catch {
-        setStatus("error");
-      }
+      setStatus("error");
     }
     setTimeout(() => setStatus("idle"), 2000);
   };
 
   return (
     <button
+      type="button"
       onClick={handleCopy}
       className={`inline-flex items-center gap-2 px-5 py-3 ${isPro ? 'bg-gradient-to-r from-winelio-dark to-winelio-gray' : 'bg-gradient-to-r from-winelio-orange to-winelio-amber'} text-white font-semibold rounded-xl hover:opacity-90 transition-opacity cursor-pointer`}
     >
@@ -73,7 +78,7 @@ export function CopyButton({ code, isPro = false }: { code: string; isPro?: bool
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
-          {isPro ? "Copier le lien pro" : "Copier le lien"}
+          {label ?? (isPro ? "Copier le lien pro" : "Copier le lien")}
         </>
       )}
     </button>
@@ -229,28 +234,24 @@ export function EmailInviteButton({ code, isPro = false }: { code: string; isPro
   );
 }
 
-export function ShareButton({ code, isPro = false }: { code: string; isPro?: boolean }) {
+export function ShareButton({ code, isPro = false, label }: { code: string; isPro?: boolean; label?: string }) {
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "link" | "message" | "error">("idle");
 
   const referralUrl = typeof window !== "undefined"
     ? `${window.location.origin}/auth/login?mode=register&ref=${code}${isPro ? "&type=pro" : ""}`
-    : `https://winelio.fr/auth/login?mode=register&ref=${code}${isPro ? "&type=pro" : ""}`;
+    : `https://winelio.app/auth/login?mode=register&ref=${code}${isPro ? "&type=pro" : ""}`;
 
-  const handleCopyLink = async () => {
+  const invitationMessage = `${isPro ? "Rejoins Winelio en tant que professionnel" : "Rejoins mon réseau Winelio"} avec mon lien d’invitation :\n${referralUrl}\n\nMon code parrain : ${code}`;
+
+  const handleCopy = async (kind: "link" | "message") => {
     try {
-      await navigator.clipboard.writeText(referralUrl);
+      await copyText(kind === "message" ? invitationMessage : referralUrl);
+      setCopyStatus(kind);
     } catch {
-      const el = document.createElement("textarea");
-      el.value = referralUrl;
-      el.style.cssText = "position:fixed;opacity:0";
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand("copy");
-      document.body.removeChild(el);
+      setCopyStatus("error");
     }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopyStatus("idle"), 2000);
   };
 
   const handleNativeShare = async () => {
@@ -258,14 +259,13 @@ export function ShareButton({ code, isPro = false }: { code: string; isPro?: boo
       try {
         await navigator.share({
           title: "Rejoins Winelio",
-          text: "Rejoins Winelio avec mon lien de parrainage !",
-          url: referralUrl,
+          text: invitationMessage,
         });
       } catch (err) {
         // iOS Safari lève un AbortError (ou DOMException code 20) quand l'utilisateur
         // ferme le menu de partage — ce n'est pas une erreur réelle.
         if (isNativeShareAbort(err)) return;
-        await handleCopyLink();
+        await handleCopy("message");
       }
     }
   };
@@ -273,17 +273,18 @@ export function ShareButton({ code, isPro = false }: { code: string; isPro?: boo
   return (
     <>
       <button
+        type="button"
         onClick={() => setOpen(true)}
         className={`inline-flex items-center gap-2 px-5 py-3 border-2 ${isPro ? 'border-winelio-dark text-winelio-dark hover:bg-winelio-dark' : 'border-winelio-orange text-winelio-orange hover:bg-winelio-orange'} font-semibold rounded-xl hover:text-white transition-colors cursor-pointer`}
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
         </svg>
-        {isPro ? "Partager le lien pro" : "Partager"}
+        {label ?? (isPro ? "Partager le lien pro" : "Partager")}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="p-0 overflow-hidden rounded-2xl flex flex-col">
+        <DialogContent className="p-0 max-h-[90dvh] overflow-y-auto rounded-2xl flex flex-col">
           {/* Header */}
           <div className={`bg-gradient-to-r ${isPro ? 'from-winelio-dark to-winelio-gray' : 'from-winelio-orange to-winelio-amber'} px-6 pt-6 pb-5 text-white text-center`}>
             <DialogHeader>
@@ -319,11 +320,12 @@ export function ShareButton({ code, isPro = false }: { code: string; isPro?: boo
             <div className="w-full mt-2 bg-slate-50 rounded-xl border border-slate-100 px-3 py-2.5 flex items-center gap-2 min-w-0">
               <span className="flex-1 text-xs text-slate-500 truncate min-w-0">{referralUrl}</span>
               <button
-                onClick={handleCopyLink}
+                type="button"
+                onClick={() => handleCopy("link")}
                 className="shrink-0 text-winelio-orange hover:text-winelio-amber transition-colors cursor-pointer"
                 title="Copier le lien"
               >
-                {copied ? (
+                {copyStatus === "link" ? (
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                   </svg>
@@ -335,10 +337,32 @@ export function ShareButton({ code, isPro = false }: { code: string; isPro?: boo
               </button>
             </div>
 
+            <div className="w-full space-y-3">
+              <label htmlFor={`invitation-message-${isPro ? "pro" : "individual"}`} className="text-sm font-medium text-winelio-dark">
+                Message prêt à envoyer
+              </label>
+              <textarea
+                id={`invitation-message-${isPro ? "pro" : "individual"}`}
+                readOnly
+                value={invitationMessage}
+                rows={5}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-winelio-dark"
+              />
+              <button
+                type="button"
+                onClick={() => handleCopy("message")}
+                className="w-full rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber py-3 text-sm font-semibold text-white hover:opacity-90 cursor-pointer"
+              >
+                {copyStatus === "message" ? "Message copié !" : "Copier le message"}
+              </button>
+              {copyStatus === "error" && <p role="alert" className="text-sm text-red-600">Copie impossible. Sélectionnez et copiez le texte du message.</p>}
+            </div>
+
             {/* Partage natif (mobile) */}
             {typeof navigator !== "undefined" && "share" in navigator && (
               <button
-                onClick={() => void handleNativeShare()}
+                type="button"
+                onClick={handleNativeShare}
                 className={`w-full py-3 rounded-xl border-2 ${isPro ? 'border-winelio-dark text-winelio-dark hover:bg-winelio-dark' : 'border-winelio-orange text-winelio-orange hover:bg-winelio-orange'} font-semibold text-sm flex items-center justify-center gap-2 hover:text-white transition-colors cursor-pointer`}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
