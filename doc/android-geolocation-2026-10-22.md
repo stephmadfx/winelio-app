@@ -33,6 +33,10 @@ La déclaration Google Play « Sécurité des données » ne couvrait que la pos
 
 Console : https://play.google.com/console/u/0/developers/6645855122676552974/app/4976328415040786163/publishing
 
-Les contrôles rapides Google sont terminés (« Vous pouvez maintenant envoyer vos modifications pour examen »). La confirmation finale d'envoi a été tentée via les contrôles sémantiques, après rechargement, puis dans la fenêtre Chrome native. La console revient toutefois à « Modifications pas encore envoyées pour examen ». Une notification d'erreur a ensuite été observée : « Une erreur inattendue s'est produite. Veuillez réessayer. (4165B974) ». Une nouvelle tentative après retour à la diffusion automatique laisse aussi les deux modifications non envoyées. L'historique vérifié ne montrait aucun nouvel envoi au-delà de l'envoi 9 du build 10 : la soumission du build 11 n'est donc pas confirmée. L'onglet de publication est conservé pour reprise.
+Après les contrôles rapides, les premières confirmations d'envoi revenaient à « Modifications pas encore envoyées pour examen », avec une erreur Google intermittente `4165B974`. Le blocage a ensuite disparu. Vérification live finale : le build **1.0.1 (11)** et la déclaration Sécurité des données figurent dans « Modifications en cours d'examen ». L'historique confirme l'**envoi 10**, daté du 22 octobre 2026 à 18 h 43 dans la console, avec le statut **En cours d'examen**, pour Production et Contenu de l'application. L'approbation et la disponibilité publique du build 11 restent à vérifier.
 
-À reprendre : faire enregistrer la soumission (binaire et déclaration), vérifier son reçu, puis effectuer un essai après installation sur le téléphone de Thierry. La diffusion est automatique après approbation, conformément à la demande de l'utilisateur. Aucun push des commits locaux ni déploiement web n'a été effectué dans cette intervention Android.
+Reçu : https://play.google.com/console/u/0/developers/6645855122676552974/app/4976328415040786163/publishing/submission-activity/10/details
+
+Preuves : `outputs/google-play/geolocation-build-11/google-play-in-review.jpg` et `google-play-submission-10.jpg` dans le même dossier.
+
+À reprendre : vérifier l'approbation et la diffusion, puis effectuer un essai après installation sur le téléphone de Thierry. La diffusion est automatique après approbation, conformément à la demande de l'utilisateur. Aucun push des commits locaux ni déploiement web n'a été effectué dans cette intervention Android.
