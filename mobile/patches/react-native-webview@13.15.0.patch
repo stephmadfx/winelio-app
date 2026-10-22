@@ -1,0 +1,77 @@
+diff --git a/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java b/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java
+index 07f73fd00a083ebf5a03bffaa7bbadbd1f648505..9ebb660544bca4d5068bdde37a88306a5ccb6aff 100644
+--- a/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java	
++++ b/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java
+@@ -33,7 +33,7 @@ import com.reactnativecommunity.webview.events.TopLoadingProgressEvent;
+ import com.reactnativecommunity.webview.events.TopOpenWindowEvent;
+ 
+ import java.util.ArrayList;
+-import java.util.Collections;
++import java.util.Arrays;
+ import java.util.List;
+ 
+ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEventListener {
+@@ -197,6 +197,8 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
+     public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+ 
+         if (ContextCompat.checkSelfPermission(this.mWebView.getThemedReactContext(), Manifest.permission.ACCESS_FINE_LOCATION)
++                != PackageManager.PERMISSION_GRANTED
++                && ContextCompat.checkSelfPermission(this.mWebView.getThemedReactContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+                 != PackageManager.PERMISSION_GRANTED) {
+ 
+             /*
+@@ -205,7 +207,8 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
+             geolocationPermissionCallback = callback;
+             geolocationPermissionOrigin = origin;
+ 
+-            requestPermissions(Collections.singletonList(Manifest.permission.ACCESS_FINE_LOCATION));
++            // Android 12+ requires both permissions together and allows approximate location.
++            requestPermissions(Arrays.asList(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION));
+ 
+         } else {
+             callback.invoke(origin, true, false);
+@@ -258,6 +261,8 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
+          * came from geolocation or camera/audio. This is why shouldAnswerToPermissionRequest is used
+          */
+         boolean shouldAnswerToPermissionRequest = false;
++        boolean locationPermissionRequested = false;
++        boolean locationPermissionGranted = false;
+ 
+         for (int i = 0; i < permissions.length; i++) {
+ 
+@@ -265,17 +270,9 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
+             boolean granted = grantResults[i] == PackageManager.PERMISSION_GRANTED;
+ 
+             if (permission.equals(Manifest.permission.ACCESS_FINE_LOCATION)
+-                    && geolocationPermissionCallback != null
+-                    && geolocationPermissionOrigin != null) {
+-
+-                if (granted) {
+-                    geolocationPermissionCallback.invoke(geolocationPermissionOrigin, true, false);
+-                } else {
+-                    geolocationPermissionCallback.invoke(geolocationPermissionOrigin, false, false);
+-                }
+-
+-                geolocationPermissionCallback = null;
+-                geolocationPermissionOrigin = null;
++                    || permission.equals(Manifest.permission.ACCESS_COARSE_LOCATION)) {
++                locationPermissionRequested = true;
++                locationPermissionGranted |= granted;
+             }
+ 
+             if (permission.equals(Manifest.permission.RECORD_AUDIO)) {
+@@ -300,6 +297,14 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
+             }
+         }
+ 
++        if (locationPermissionRequested
++                && geolocationPermissionCallback != null
++                && geolocationPermissionOrigin != null) {
++            geolocationPermissionCallback.invoke(geolocationPermissionOrigin, locationPermissionGranted, false);
++            geolocationPermissionCallback = null;
++            geolocationPermissionOrigin = null;
++        }
++
+         if (shouldAnswerToPermissionRequest
+                 && permissionRequest != null
+                 && grantedPermissions != null) {

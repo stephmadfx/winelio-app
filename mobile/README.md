@@ -35,3 +35,7 @@ Avant la génération native, définir `EXPO_PUBLIC_WEB_APP_URL=https://winelio.
 Archiver le schéma Winelio en Release avec Xcode, exporter pour App Store et envoyer l’IPA. Pour Android, exécuter `python3 scripts/build-android-release.py` depuis `mobile/` avec la signature de publication locale, puis importer l’AAB dans Google Play Console. Les mots de passe et clés de signature restent dans le trousseau ou l’environnement sécurisé, jamais dans les commandes, le dépôt ou cette documentation.
 
 Une validation locale ne remplace pas la première installation des versions distribuées par les stores. Activer les boutons de téléchargement de parrainage après leur disponibilité.
+
+### Géolocalisation Android
+
+Le patch pnpm de `react-native-webview@13.15.0` demande les permissions précise et approximative ensemble, et accepte l'une ou l'autre. Il reste nécessaire avec cette version de WebView même si les deux permissions sont déclarées dans `app.json`. Après une réinstallation des dépendances ou une mise à jour de WebView, vérifier avec `python3 tests/regression/android-location-permissions.py` depuis la racine du dépôt, puis tester les permissions sur Android.

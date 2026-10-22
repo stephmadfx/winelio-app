@@ -25,7 +25,8 @@
       "package": "app.winelio.mobile",
       "permissions": [
         "CAMERA",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -33,7 +34,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": true,
-      "versionCode": 10
+      "versionCode": 11
     },
     "web": {
       "bundler": "metro",

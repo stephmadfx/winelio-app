@@ -2,3 +2,5 @@ allowBuilds:
   unrs-resolver: true
 onlyBuiltDependencies:
   - unrs-resolver
+patchedDependencies:
+  react-native-webview@13.15.0: patches/react-native-webview@13.15.0.patch
