@@ -32,6 +32,7 @@ interface Profile {
 }
 
 const REQUIRED_STRING_FIELDS = ["first_name", "last_name", "phone", "postal_code", "city", "address", "birth_date"] as const;
+const SAVE_UNCONFIRMED_MESSAGE = "La sauvegarde n'a pas pu être confirmée. Vos saisies sont conservées. Vérifiez votre connexion et réessayez.";
 
 const FIELD_LABELS: Record<typeof REQUIRED_STRING_FIELDS[number], string> = {
   first_name: "Prénom",
@@ -138,7 +139,10 @@ export function ProfileForm({
     setBirthDateError(null);
     setAutoSaveStatus("saving");
     setMessage(null);
-    const result = await updateProfile(data);
+    const result = await updateProfile(data).catch(() => ({
+      error: SAVE_UNCONFIRMED_MESSAGE,
+      firstCompletion: false,
+    }));
     if (!result.error) {
       setAutoSaveStatus("saved");
       // Rafraîchit le layout serveur après chaque save :
@@ -219,7 +223,7 @@ export function ProfileForm({
     if (!sponsorInput.trim()) return;
     setSaving(true);
     setMessage(null);
-    const result = await assignSponsor(sponsorInput);
+    const result = await assignSponsor(sponsorInput).catch(() => ({ error: SAVE_UNCONFIRMED_MESSAGE }));
     if (result.error) {
       setMessage({ type: "error", text: result.error });
     } else {
@@ -288,6 +292,7 @@ export function ProfileForm({
       {/* Message */}
       {message && (
         <div
+          role={message.type === "error" ? "alert" : "status"}
           className={`p-4 rounded-xl text-sm font-medium ${
             message.type === "success"
               ? "bg-green-50 text-green-700 border border-green-200"
@@ -382,11 +387,13 @@ export function ProfileForm({
             type="button"
             role="switch"
             aria-checked={avatarVisibleToNetwork}
+            disabled={avatarVisibilitySaving === "saving"}
             onClick={async () => {
               const next = !avatarVisibleToNetwork;
               setAvatarVisibleToNetwork(next);
               setAvatarVisibilitySaving("saving");
-              const result = await updateProfile({ avatar_visible_to_network: next });
+              const result = await updateProfile({ avatar_visible_to_network: next })
+                .catch(() => ({ error: SAVE_UNCONFIRMED_MESSAGE }));
               if (result.error) {
                 setAvatarVisibleToNetwork(!next);
                 setMessage({ type: "error", text: result.error });
@@ -540,7 +547,10 @@ export function ProfileForm({
               disabled={proEmailSaving === "saving"}
               onClick={async () => {
                 setProEmailSaving("saving");
-                const result = await updateCompanyEmail(proEmailInput.trim() || null);
+                setMessage(null);
+                const result = await updateCompanyEmail(proEmailInput.trim() || null)
+                  .catch(() => ({ error: SAVE_UNCONFIRMED_MESSAGE }));
+                if (result.error) setMessage({ type: "error", text: result.error });
                 setProEmailSaving(result.error ? "error" : "saved");
                 setTimeout(() => setProEmailSaving("idle"), 3000);
               }}
@@ -553,7 +563,7 @@ export function ProfileForm({
             <p className="mt-2 text-xs text-green-600 font-medium">✓ Email professionnel sauvegardé</p>
           )}
           {proEmailSaving === "error" && (
-            <p className="mt-2 text-xs text-red-500 font-medium">⚠ Adresse email invalide</p>
+            <p className="mt-2 text-xs text-red-500 font-medium">⚠ Email professionnel non sauvegardé, réessayez</p>
           )}
         </div>
       )}
