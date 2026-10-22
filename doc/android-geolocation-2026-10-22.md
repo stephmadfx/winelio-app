@@ -44,3 +44,9 @@ Preuves : `outputs/google-play/geolocation-build-11/google-play-production-100.j
 Le suivi automatique `surveiller-la-diffusion-android-winelio-1-0-1-11` a été supprimé après ce contrôle concluant pour éviter les notifications répétées. Aucun message n'a été envoyé à Thierry.
 
 À reprendre : effectuer un essai après mise à jour sur le téléphone de Thierry. Aucun push des commits locaux ni déploiement web n'a été effectué dans cette intervention Android.
+
+## Consolidation Git — 22 octobre 2026
+
+Les sept commits Android, de `3f27dbdd` à `77c5371f`, sont conservés sans réécriture dans la fusion main `33044703`. Le bundle externe `../backups/consolidation-2026-10-22/local-commits.bundle` et la branche `codex/backup-before-consolidation-20261022` conservent aussi l’état antérieur. Cette consolidation sauvegarde le source du build 11 ; elle ne crée ni nouveau binaire natif ni nouvelle soumission Google Play.
+
+Le test Java des permissions Android, les 9 tests de navigation/chargement WebView et TypeScript mobile ont été rejoués avec succès. Les tests navigateur de recherche de ville passent également en web, Android simulé et iPhone simulé. Ils ne remplacent pas un essai physique sur le téléphone de Thierry.
