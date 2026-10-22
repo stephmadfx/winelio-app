@@ -33,10 +33,14 @@ La déclaration Google Play « Sécurité des données » ne couvrait que la pos
 
 Console : https://play.google.com/console/u/0/developers/6645855122676552974/app/4976328415040786163/publishing
 
-Après les contrôles rapides, les premières confirmations d'envoi revenaient à « Modifications pas encore envoyées pour examen », avec une erreur Google intermittente `4165B974`. Le blocage a ensuite disparu. Vérification live finale : le build **1.0.1 (11)** et la déclaration Sécurité des données figurent dans « Modifications en cours d'examen ». L'historique confirme l'**envoi 10**, daté du 22 octobre 2026 à 18 h 43 dans la console, avec le statut **En cours d'examen**, pour Production et Contenu de l'application. L'approbation et la disponibilité publique du build 11 restent à vérifier.
+Après les contrôles rapides, les premières confirmations d'envoi revenaient à « Modifications pas encore envoyées pour examen », avec une erreur Google intermittente `4165B974`. Le blocage a ensuite disparu. L'historique confirmait l'**envoi 10**, daté du 22 octobre 2026 à 18 h 43 dans la console, pour Production et Contenu de l'application.
+
+Contrôle du 22 octobre 2026 à 19 h 20, heure de Paris : le build exact **11 (1.0.1)** est **Disponible sur Google Play**, canal **Production**, **déployé à 100 %**, dans les 2 pays/régions ciblés. La console donne une date de sortie au **22 octobre à 18 h 55** et place le build 10 dans les bundles désactivés. La fiche publique est accessible avec le bouton Installer, une mise à jour datée du 22 octobre et les nouvelles notes sur la correction de géolocalisation et le maintien du parrainage. Approbation et diffusion du build 11 sont donc confirmées ; l'installation et le résultat sur le téléphone de Thierry ne sont pas vérifiés.
 
 Reçu : https://play.google.com/console/u/0/developers/6645855122676552974/app/4976328415040786163/publishing/submission-activity/10/details
 
-Preuves : `outputs/google-play/geolocation-build-11/google-play-in-review.jpg` et `google-play-submission-10.jpg` dans le même dossier.
+Preuves : `outputs/google-play/geolocation-build-11/google-play-production-100.jpg` pour la diffusion finale ; `google-play-in-review.jpg` et `google-play-submission-10.jpg` dans le même dossier pour la soumission.
 
-À reprendre : vérifier l'approbation et la diffusion, puis effectuer un essai après installation sur le téléphone de Thierry. La diffusion est automatique après approbation, conformément à la demande de l'utilisateur. Aucun push des commits locaux ni déploiement web n'a été effectué dans cette intervention Android.
+Le suivi automatique `surveiller-la-diffusion-android-winelio-1-0-1-11` a été supprimé après ce contrôle concluant pour éviter les notifications répétées. Aucun message n'a été envoyé à Thierry.
+
+À reprendre : effectuer un essai après mise à jour sur le téléphone de Thierry. Aucun push des commits locaux ni déploiement web n'a été effectué dans cette intervention Android.
