@@ -1,6 +1,6 @@
 import * as Linking from "expo-linking";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, BackHandler, Platform, StyleSheet, View } from "react-native";
+import { AppState, BackHandler, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import WebView, { type WebViewMessageEvent } from "react-native-webview";
 
@@ -18,8 +18,11 @@ import {
   shouldUnmountWebViewOnFailure,
 } from "@/features/webapp/webAppLoadPolicy";
 import { isExternalProtocol, shouldLoadInWebView, webAppEntryUrl } from "@/features/webapp/webAppNavigation";
+import { useReferralEntry } from "./useReferralEntry";
 
 export const WinelioWebAppScreen = () => {
+  const referral = useReferralEntry();
+  const [showPaste, setShowPaste] = useState(true);
   const webView = useRef<WebView>(null);
   const loadTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstPaintDone = useRef(false);
@@ -136,6 +139,8 @@ export const WinelioWebAppScreen = () => {
     );
   }
 
+  if (!referral.entryUrl) return <SafeAreaView style={styles.safeArea}><WebAppLoading progress={0} /></SafeAreaView>;
+
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={styles.safeArea} testID="webapp-root">
       {failed ? <WebAppError message={failureMessage} onRetry={retry} /> : (
@@ -175,7 +180,14 @@ export const WinelioWebAppScreen = () => {
             }}
             onLoadStart={beginLoading}
             onMessage={handleMessage}
-            onNavigationStateChange={(state) => setCanGoBack(state.canGoBack)}
+            onNavigationStateChange={(state) => {
+              setCanGoBack(state.canGoBack);
+              referral.onNavigation(state.url);
+              try {
+                const path = new URL(state.url).pathname;
+                setShowPaste(path === "/" || path === "/auth/login");
+              } catch { setShowPaste(false); }
+            }}
             onRenderProcessGone={() => showFailure("La page ne répondait plus et a été arrêtée. Touchez Réessayer pour la relancer.", "crash")}
             onShouldStartLoadWithRequest={(request) => {
               if (shouldLoadInWebView(request.url, request.isTopFrame)) return true;
@@ -188,7 +200,7 @@ export const WinelioWebAppScreen = () => {
             pullToRefreshEnabled
             setSupportMultipleWindows={false}
             sharedCookiesEnabled
-            source={{ uri: webAppEntryUrl }}
+            source={{ uri: referral.entryUrl }}
             startInLoadingState={false}
             style={styles.webView}
             thirdPartyCookiesEnabled
@@ -198,11 +210,20 @@ export const WinelioWebAppScreen = () => {
           {loaded ? <View style={styles.testMarker} testID="auth-loaded" /> : null}
         </View>
       )}
+      {referral.canPaste && showPaste && (
+        <SafeAreaView edges={["bottom"]}>
+          <Pressable accessibilityRole="button" onPress={() => { void referral.pasteInvitation(); }} style={styles.pasteButton}>
+            <Text style={styles.pasteText}>Coller mon invitation de parrainage</Text>
+          </Pressable>
+        </SafeAreaView>
+      )}
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  pasteButton: { padding: 14, alignItems: "center", backgroundColor: colors.light },
+  pasteText: { color: colors.orange, fontSize: 14 },
   safeArea: { backgroundColor: colors.light, flex: 1 },
   container: { flex: 1 },
   webView: { backgroundColor: colors.light, flex: 1 },

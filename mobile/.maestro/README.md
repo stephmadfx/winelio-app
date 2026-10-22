@@ -14,6 +14,7 @@ maestro test .maestro/smoke.yaml
 | `flows/guest-login.yaml` | déconnecté | bascule code email / mot de passe |
 | `flows/authenticated-navigation.yaml` | connecté | navigation des cinq sections métier |
 | `authenticated-e2e.yaml` | identifiants éphémères | connexion réelle et navigation des cinq sections métier |
+| `referral-install-ios.yaml` | simulateur vierge, invitation dans le presse-papiers | collage, relance, invitation à chaud, sans création de compte |
 
 `authenticated-e2e.yaml` reçoit `E2E_EMAIL` et `E2E_PASSWORD` à l’exécution.
 Ces valeurs ne sont jamais conservées dans le dépôt.

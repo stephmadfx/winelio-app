@@ -5,5 +5,7 @@ web-build/
 *.log
 .env
 .env.local
-ios/
-android/
+/ios/
+/android/
+modules/*/android/build/
+modules/*/android/.gradle/

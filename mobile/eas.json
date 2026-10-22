@@ -19,6 +19,9 @@
       "environment": "production",
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_WEB_APP_URL": "https://winelio.app"
       }
     },
     "production-resubmission": {

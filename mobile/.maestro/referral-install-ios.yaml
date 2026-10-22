@@ -1,0 +1,33 @@
+# Sur un simulateur de test vierge avec la nouvelle app et le site accessibles.
+# Avant le lancement : simctl pbcopy <UDID> avec https://winelio.app/?ref=ABC12345&type=pro&video=1
+# Aucun compte créé : on vérifie seulement le préremplissage, la reprise et les invitations à chaud.
+appId: app.winelio.mobile
+tags:
+  - ios
+  - referral
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Retrouver votre parrain"
+    timeout: 30000
+- tapOn: "Coller mon invitation"
+- tapOn:
+    text: "Allow Paste|Autoriser le collage"
+    optional: true
+- extendedWaitUntil:
+    visible: "ABC12345"
+    timeout: 30000
+- takeScreenshot: output/referral-install/iphone-native-paste
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "ABC12345"
+    timeout: 30000
+- openLink: "winelio://invite?ref=DEF12345&type=pro&video=1"
+- tapOn:
+    text: "^Ouvrir$|^Open$"
+    optional: true
+- extendedWaitUntil:
+    visible: "DEF12345"
+    timeout: 30000
+- takeScreenshot: output/referral-install/iphone-native-warm-link
