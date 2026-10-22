@@ -63,104 +63,26 @@ export async function POST(req: Request) {
     const pgClient = new Pool({ connectionString: dbUrl, max: 1, connectionTimeoutMillis: 8000 });
     let userId: string | null = null;
     let previousPasswordHash: string | null = null;
-    let isNewSignup = false;
 
     try {
       await pgClient.query("BEGIN");
 
-      // Un BEFORE INSERT sur auth.users impose un téléphone Winelio. Ce trigger
-      // s'exécute même si la ligne va matcher ON CONFLICT, donc un upsert
-      // « app: winelio » sans phone casse aussi la reconnexion OTP d'un compte
-      // existant. On ne crée que s'il n'y a vraiment personne.
+      // Une connexion OTP ne doit jamais créer ni réactiver un compte supprimé.
       const existingRes = await pgClient.query<{ id: string }>(
-        "SELECT id FROM auth.users WHERE lower(email) = $1 LIMIT 1",
+        `SELECT u.id FROM auth.users u
+         JOIN winelio.profiles p ON p.id = u.id
+         WHERE lower(u.email) = $1
+           AND p.onboarding_status IS DISTINCT FROM 'pending_confirmation'
+         LIMIT 1 FOR UPDATE OF u`,
         [normalizedEmail]
       );
-      if (existingRes.rows[0]?.id) {
-        userId = existingRes.rows[0].id;
-        isNewSignup = false;
-      }
-
-      // Créer l'utilisateur s'il n'existe pas (trigger corrigé vers winelio.profiles).
-      // GoTrue self-hosted attend des chaînes vides, pas NULL, sur plusieurs
-      // colonnes token héritées du schéma auth.
-      const upsertRes = userId ? null : await pgClient.query<{ id: string; inserted: boolean }>(`
-        INSERT INTO auth.users (
-          instance_id,
-          id,
-          aud,
-          role,
-          email,
-          email_confirmed_at,
-          confirmation_token,
-          recovery_token,
-          email_change_token_new,
-          email_change,
-          email_change_token_current,
-          phone_change,
-          phone_change_token,
-          reauthentication_token,
-          created_at,
-          updated_at,
-          raw_app_meta_data,
-          raw_user_meta_data,
-          is_super_admin,
-          is_sso_user,
-          is_anonymous
-        )
-        VALUES (
-          '00000000-0000-0000-0000-000000000000',
-          gen_random_uuid(),
-          'authenticated',
-          'authenticated',
-          $1,
-          now(),
-          '',
-          '',
-          '',
-          '',
-          '',
-          '',
-          '',
-          '',
-          now(),
-          now(),
-          '{"provider":"email","providers":["email"]}',
-          '{"app": "winelio"}'::jsonb,
-          false,
-          false,
-          false
-        )
-        ON CONFLICT (email) WHERE is_sso_user = false DO UPDATE SET
-          instance_id = COALESCE(auth.users.instance_id, '00000000-0000-0000-0000-000000000000'),
-          confirmation_token = COALESCE(auth.users.confirmation_token, ''),
-          recovery_token = COALESCE(auth.users.recovery_token, ''),
-          email_change_token_new = COALESCE(auth.users.email_change_token_new, ''),
-          email_change = COALESCE(auth.users.email_change, ''),
-          email_change_token_current = COALESCE(auth.users.email_change_token_current, ''),
-          phone_change = COALESCE(auth.users.phone_change, ''),
-          phone_change_token = COALESCE(auth.users.phone_change_token, ''),
-          reauthentication_token = COALESCE(auth.users.reauthentication_token, ''),
-          updated_at = now()
-        RETURNING id, (xmax = 0) AS inserted
-      `, [normalizedEmail]);
-
-      if (upsertRes) {
-        userId = upsertRes.rows[0]?.id ?? null;
-        // xmax = 0 → ligne réellement INSERT (pas UPDATE via ON CONFLICT).
-        isNewSignup = upsertRes.rows[0]?.inserted === true;
-      }
-
+      userId = existingRes.rows[0]?.id ?? null;
       if (!userId) {
-        // Si ON CONFLICT ne retourne pas l'id (vieux PostgreSQL), on le récupère
-        const selectRes = await pgClient.query<{ id: string }>(
-          "SELECT id FROM auth.users WHERE lower(email) = $1 LIMIT 1", [normalizedEmail]
+        await pgClient.query("ROLLBACK");
+        return NextResponse.json(
+          { error: "Aucun compte actif. Inscrivez-vous avec un code de parrainage valide." },
+          { status: 404 }
         );
-        userId = selectRes.rows[0]?.id ?? null;
-      }
-
-      if (!userId) {
-        throw new Error("Impossible de trouver l'utilisateur après upsert");
       }
 
       // Sauvegarde du hash existant pour le restaurer après création de session.

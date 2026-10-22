@@ -23,6 +23,11 @@ export async function createTestUser(opts: {
   termsAccepted?: boolean;
   phone?: string;
 }): Promise<TestUser> {
+  const sponsorQuery = wn().from("profiles").select("sponsor_code").eq("is_active", true);
+  const { data: sponsor, error: sponsorError } = opts.sponsorId
+    ? await sponsorQuery.eq("id", opts.sponsorId).single()
+    : await sponsorQuery.eq("is_founder", true).limit(1).single();
+  if (sponsorError || !sponsor) throw new Error("A valid sponsor is required for test account creation");
   const phone = opts.phone ?? `06${Math.floor(Math.random() * 100_000_000).toString().padStart(8, "0")}`;
   const { data: auth, error: authErr } = await db().auth.admin.createUser({
     email: opts.email,
@@ -30,6 +35,7 @@ export async function createTestUser(opts: {
     // Le trigger winelio.handle_new_user ne crée le profile que si app='winelio'.
     user_metadata: {
       app: "winelio",
+      sponsor_code: sponsor.sponsor_code,
       first_name: opts.firstName ?? "E2E",
       last_name:  opts.lastName  ?? "Test",
       phone,

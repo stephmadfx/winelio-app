@@ -10,8 +10,6 @@ export default function AuthCallbackPage() {
   const router = useRouter();
   const [errorType, setErrorType] = useState<ErrorType | null>(null);
   const [email, setEmail] = useState("");
-  const [resendLoading, setResendLoading] = useState(false);
-  const [resendSent, setResendSent] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -69,20 +67,6 @@ export default function AuthCallbackPage() {
     }
   }, [router]);
 
-  const handleResend = async () => {
-    if (!email) return;
-    setResendLoading(true);
-    const supabase = createClient();
-    await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    setResendLoading(false);
-    setResendSent(true);
-  };
-
   if (errorType !== null) {
     const isSpamLikely = errorType === "used";
     const isExpired = errorType === "expired";
@@ -120,14 +104,9 @@ export default function AuthCallbackPage() {
           </p>
 
           <p className="text-gray-500 text-sm mb-6">
-            Entrez votre email pour recevoir un nouveau lien.
+            Connectez-vous avec un code reçu par e-mail. Une inscription nécessite un code de parrainage valide.
           </p>
 
-          {resendSent ? (
-            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-green-400 text-sm">
-              ✅ Un nouveau lien vous a été envoyé. Vérifiez votre boîte mail.
-            </div>
-          ) : (
             <div className="space-y-3">
               <input
                 type="email"
@@ -137,11 +116,11 @@ export default function AuthCallbackPage() {
                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-winelio-orange focus:border-transparent transition"
               />
               <button
-                onClick={handleResend}
-                disabled={resendLoading || !email}
+                onClick={() => router.push(`/auth/login?email=${encodeURIComponent(email)}`)}
+                disabled={!email}
                 className="w-full py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {resendLoading ? "Envoi en cours..." : "Recevoir un nouveau lien"}
+                Aller à la connexion
               </button>
 
               <a
@@ -151,7 +130,6 @@ export default function AuthCallbackPage() {
                 Retour à la page de connexion
               </a>
             </div>
-          )}
         </div>
       </div>
     );

@@ -62,10 +62,14 @@ async function createMember(sponsorId, level) {
   const nom = rand(NOMS);
   const email = uniqueEmail();
 
+  const { data: parent, error: parentError } = await supabase.from("profiles")
+    .select("sponsor_code").eq("id", sponsorId).eq("is_active", true).single();
+  if (parentError || !parent) throw new Error("Un code de parrainage valide est requis pour créer un membre de démonstration.");
+
   const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
     email,
     email_confirm: true,
-    user_metadata: { source: "demo_seed", level },
+    user_metadata: { source: "demo_seed", level, sponsor_code: parent.sponsor_code },
   });
 
   if (authErr) {

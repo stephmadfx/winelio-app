@@ -59,6 +59,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Aucune ligne à importer" }, { status: 400 });
   }
 
+  const { data: sponsor, error: sponsorError } = await supabaseAdmin
+    .from("profiles").select("sponsor_code").eq("id", user.id).eq("is_active", true).single();
+  if (sponsorError || !sponsor?.sponsor_code) {
+    return NextResponse.json({ error: "Le code de parrainage de l’administrateur est requis pour cet import." }, { status: 400 });
+  }
+
   // Charger les catégories pour résoudre category_name → category_id
   const { data: cats } = await supabaseAdmin
     .schema("winelio")
@@ -114,7 +120,7 @@ export async function POST(req: Request) {
     const { data: authUser, error: authErr } = await supabaseAdmin.auth.admin.createUser({
       email: placeholderEmail,
       email_confirm: true,
-      user_metadata: { scraped: true, app: "winelio" },
+      user_metadata: { scraped: true, app: "winelio", sponsor_code: sponsor.sponsor_code },
     });
     if (authErr || !authUser.user) {
       errors.push(`auth ${row.name}: ${authErr?.message || "unknown"}`);

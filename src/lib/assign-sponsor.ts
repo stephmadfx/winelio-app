@@ -1,7 +1,6 @@
 /**
  * Assigne un parrain à un utilisateur s'il n'en a pas encore.
- * - Si sponsorCode fourni → utilise ce code
- * - Sinon → rotation round-robin parmi les fondateurs (is_founder = true)
+ * Uniquement avec un code valide fourni explicitement, sans attribution automatique.
  * Retourne true si un sponsor a été assigné, false sinon.
  *
  * Note : l'email de notification au parrain N'EST PAS envoyé ici.
@@ -13,6 +12,8 @@ export async function assignSponsorIfNeeded(
   userId: string,
   sponsorCode?: string | null
 ): Promise<boolean> {
+  const code = typeof sponsorCode === "string" ? sponsorCode.trim().toUpperCase() : "";
+  if (!code) return false;
   // Vérifier si l'utilisateur a déjà un parrain, ou s'il est tête de lignée
   const { data: profile } = await supabaseAdmin
     .from("profiles")
@@ -24,65 +25,21 @@ export async function assignSponsorIfNeeded(
   // Un fondateur reste tête de lignée, jamais rattaché à un parrain
   if (profile?.is_founder) return false;
 
-  let sponsorId: string | null = null;
-
-  if (sponsorCode) {
-    const { data: sponsor } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .eq("sponsor_code", sponsorCode)
-      .neq("id", userId)
-      .single();
-    sponsorId = sponsor?.id ?? null;
-  } else {
-    sponsorId = await getNextFounderSponsor(userId);
-  }
-
-  if (!sponsorId) return false;
-
-  await supabaseAdmin
-    .from("profiles")
-    .update({ sponsor_id: sponsorId })
-    .eq("id", userId);
-
-  return true;
-}
-
-/**
- * Rotation séquentielle pure entre les fondateurs (têtes de lignée).
- * Chacun son tour dans l'ordre de création, indépendamment du nombre de filleuls.
- * L'état est persisté dans winelio.founder_rotation (1 seule ligne).
- */
-async function getNextFounderSponsor(excludeUserId: string): Promise<string | null> {
-  const { data: founders } = await supabaseAdmin
+  const { data: sponsor, error: sponsorError } = await supabaseAdmin
     .from("profiles")
     .select("id")
-    .eq("is_founder", true)
-    .neq("id", excludeUserId)
-    .order("created_at", { ascending: true });
-
-  if (!founders || founders.length === 0) return null;
-
-  const { data: state } = await supabaseAdmin
-    .from("founder_rotation")
-    .select("last_founder_id")
-    .eq("id", 1)
+    .eq("sponsor_code", code)
+    .eq("is_active", true)
+    .neq("id", userId)
     .maybeSingle();
+  if (sponsorError || !sponsor) return false;
 
-  const lastIdx = state?.last_founder_id
-    ? founders.findIndex((f) => f.id === state.last_founder_id)
-    : -1;
-  const nextIdx = (lastIdx + 1) % founders.length;
-  const nextFounder = founders[nextIdx];
+  const { data: assigned, error } = await supabaseAdmin
+    .from("profiles")
+    .update({ sponsor_id: sponsor.id })
+    .eq("id", userId)
+    .is("sponsor_id", null)
+    .select("id");
 
-  // Persiste l'état — pas de lock, race condition bénigne en phase bêta
-  await supabaseAdmin
-    .from("founder_rotation")
-    .update({
-      last_founder_id: nextFounder.id,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", 1);
-
-  return nextFounder.id;
+  return !error && assigned?.length === 1;
 }

@@ -32,7 +32,9 @@ async function user(role, sponsorId, customEmail) {
   emails.push(email);
   const password = crypto.randomBytes(24).toString("base64url");
   const phone = `06${crypto.randomInt(10000000,99999999)}`;
-  const data = checked(await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { app: "winelio", first_name: "Élodie", last_name: "Test", phone } }));
+  const sponsorQuery = db.from("profiles").select("sponsor_code").eq("is_active", true);
+  const sponsor = checked(await (sponsorId ? sponsorQuery.eq("id", sponsorId) : sponsorQuery.eq("is_founder", true).limit(1)).single());
+  const data = checked(await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { app: "winelio", sponsor_code: sponsor.sponsor_code, first_name: "Élodie", last_name: "Test", phone } }));
   const id = data.user.id; userIds.push(id);
   checked(await db.from("profiles").update({ is_demo: true, sponsor_id: sponsorId || null, is_founder: !sponsorId, is_professional: role === "pro", first_name: "Élodie", last_name: "Test", phone, address: "1 rue du Test", city: "Paris", postal_code: "75001", birth_date: "1990-01-01", terms_accepted: true, terms_accepted_at: new Date().toISOString() }).eq("id", id));
   const context = await browser.newContext({ baseURL: BASE, extraHTTPHeaders: process.env.E2E_BYPASS_TOKEN ? { "x-e2e-bypass-token": process.env.E2E_BYPASS_TOKEN } : {} });

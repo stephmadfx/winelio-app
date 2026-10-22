@@ -120,7 +120,7 @@ test('registration passes the invitation code and resolved sponsor to account cr
   const { POST } = load('src/app/api/auth/register/route.ts', {
     '@/lib/supabase/admin': { supabaseAdmin: {
       schema() { return this; },
-      from() { return { select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: null, error: null }) }; },
+      from() { let sponsorLookup = false; return { select() { return this; }, eq(key) { if (key === 'sponsor_code') sponsorLookup = true; return this; }, maybeSingle: async () => ({ data: sponsorLookup ? { id: '00000000-0000-4000-8000-000000000001' } : null, error: null }) }; },
       auth: { admin: { async generateLink(options) { metadata = options.options.data; return { error: { message: 'Stop before account creation or email delivery' } }; } } },
     } },
     '@/lib/email-sender': { sendEmail() { assert.fail('No email should be sent'); } },

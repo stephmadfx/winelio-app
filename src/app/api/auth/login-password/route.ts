@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { Pool } from "pg";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config";
-import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
 import { normalizeEmail } from "@/lib/normalize-email";
 
 async function checkPasswordNotSet(email: string): Promise<boolean> {
@@ -83,12 +82,6 @@ export async function POST(req: Request) {
         { error: "Email ou mot de passe incorrect." },
         { status: 401 }
       );
-    }
-
-    try {
-      await assignSponsorIfNeeded(data.user.id);
-    } catch (e) {
-      console.error("assign-sponsor in login-password error:", e);
     }
 
     return response;

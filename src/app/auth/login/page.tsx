@@ -107,17 +107,17 @@ function LoginForm() {
   const [refCode, setRefCode] = useState<string | null>(null);
   const [checkingPromo, setCheckingPromo] = useState(true);
 
-  // Charger le code de parrainage (URL -> LocalStorage -> Fallback)
+  // Charger le code de parrainage fourni par une invitation.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const urlRef = searchParams.get("ref");
     if (urlRef) {
-      setRefCode(urlRef);
-      localStorage.setItem("winelio_ref", urlRef);
+      setRefCode(urlRef.trim().toUpperCase());
+      localStorage.setItem("winelio_ref", urlRef.trim().toUpperCase());
     } else {
       const storedRef = localStorage.getItem("winelio_ref");
       if (storedRef) {
-        setRefCode(storedRef);
+        setRefCode(storedRef.trim().toUpperCase());
       }
     }
   }, [searchParams]);
@@ -147,24 +147,24 @@ function LoginForm() {
     }
   }, [isRegister, refCode, searchParams, router]);
 
-  // Récupérer le nom du parrain depuis la DB
+  // Ignorer les réponses obsolètes lorsqu’un autre code est saisi.
   useEffect(() => {
+    setSponsorId(null);
+    setSponsorName(null);
     if (!refCode) return;
-
-    import("@/lib/supabase/client").then(({ createClient }) => {
-      const supabase = createClient();
-      supabase
+    let cancelled = false;
+    import("@/lib/supabase/client").then(async ({ createClient }) => {
+      const { data } = await createClient()
         .from("profiles")
         .select("id, first_name, last_name")
         .eq("sponsor_code", refCode)
-        .single()
-        .then(({ data }) => {
-          if (!data) return;
-          setSponsorId(data.id);
-          const name = formatDisplayName(data.first_name, data.last_name, "");
-          setSponsorName(name || null);
-        });
-    });
+        .eq("is_active", true)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      setSponsorId(data.id);
+      setSponsorName(formatDisplayName(data.first_name, data.last_name, ""));
+    }).catch(() => {});
+    return () => { cancelled = true; };
   }, [refCode]);
 
   // Appliquer le parrainage après connexion/inscription
@@ -213,6 +213,10 @@ function LoginForm() {
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (!refCode || !sponsorId) {
+      setError("Un code de parrainage valide est obligatoire pour vous inscrire.");
+      return;
+    }
     if (!firstName.trim() || !lastName.trim() || !phone.trim() || !email.trim() || !password) {
       setError("Veuillez remplir tous les champs obligatoires.");
       return;
@@ -352,6 +356,10 @@ function LoginForm() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setBirthDateError("");
+    if (!refCode || !sponsorId) {
+      setError("Un code de parrainage valide est obligatoire pour vous inscrire.");
+      return;
+    }
     const bdErr = validateBirthDate();
     if (bdErr) { setBirthDateError(bdErr); return; }
     if (!termsAccepted) { setError("Vous devez accepter les CGU."); return; }
@@ -381,7 +389,6 @@ function LoginForm() {
           postalCode: postalCode.trim(),
           birthDate,
           termsAccepted,
-          sponsorId,
           sponsorCode: refCode || null,
           isPro: isProRegistration,
           companyName: isProRegistration ? companyName.trim() : null,
@@ -516,31 +523,6 @@ function LoginForm() {
               </svg>
             </div>
           </div>
-
-          {/* Bloc parrain */}
-          {isRegister && refCode && (
-            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-winelio-gray">Parrain validé</p>
-              <p className="mt-1 text-sm text-winelio-dark">
-                {sponsorName ? (
-                  <>
-                    Compte de <span className="font-semibold">{sponsorName}</span>{" "}
-                    <span className="text-winelio-gray">({refCode})</span>
-                  </>
-                ) : (
-                  <>Code <span className="font-semibold">{refCode}</span></>
-                )}
-              </p>
-            </div>
-          )}
-
-          {isRegister && !refCode && (
-            <div className="mt-5 rounded-2xl border border-gray-100 bg-winelio-light/80 px-4 py-3">
-              <p className="text-sm leading-6 text-winelio-gray">
-                Vous serez automatiquement rattaché à un parrain de notre réseau.
-              </p>
-            </div>
-          )}
 
           {/* ── Formulaire MOT DE PASSE ── */}
           {!isRegister && authMethod === "password" && (
@@ -706,6 +688,39 @@ function LoginForm() {
                 <div className="flex-1 h-1 rounded-full bg-gray-200" />
                 {isProRegistration && <div className="flex-1 h-1 rounded-full bg-gray-200" />}
                 <span className="text-xs text-winelio-gray ml-1">Étape 1/{isProRegistration ? "3" : "2"}</span>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="sponsor-code" className="text-sm font-medium text-winelio-dark">
+                  Code de parrainage <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="sponsor-code"
+                  name="sponsorCode"
+                  type="text"
+                  value={refCode ?? ""}
+                  onChange={(e) => {
+                    const value = e.target.value.trim().toUpperCase();
+                    setSponsorId(null);
+                    setSponsorName(null);
+                    setRefCode(value);
+                    setError("");
+                    if (value) localStorage.setItem("winelio_ref", value);
+                    else localStorage.removeItem("winelio_ref");
+                  }}
+                  required
+                  autoCapitalize="characters"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  aria-describedby="sponsor-code-help"
+                  placeholder="Code fourni par votre parrain"
+                  className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
+                />
+                <p id="sponsor-code-help" className="text-sm text-winelio-gray" aria-live="polite">
+                  {sponsorId
+                    ? `Parrain validé : ${sponsorName || refCode}`
+                    : "Un code de parrainage valide est obligatoire. Demandez-le à votre parrain."}
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

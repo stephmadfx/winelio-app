@@ -5,8 +5,7 @@
  * Mise en queue avec priority = 10 (bulk / basse priorité) pour ne jamais
  * ralentir les emails métier (OTP, recommandations, commissions).
  *
- * À appeler depuis verify-code APRÈS l'assignation du parrain, sinon le
- * sponsor ne sera pas encore connu pour les inscriptions sans code parrain
+ * À appeler après la création du profil et son rattachement au parrain validé.
  * (assignation auto à un fondateur).
  */
 import { queueEmail } from "@/lib/email-queue";

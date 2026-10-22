@@ -43,7 +43,23 @@ async function generateCompanyAlias(): Promise<string> {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, firstName, lastName, phone, address, city, postalCode, birthDate, termsAccepted, sponsorCode, sponsorId, siret, nafCode, companyName, professionalEmail, isPro = false } = body;
+    const { email, password, firstName, lastName, phone, address, city, postalCode, birthDate, termsAccepted, sponsorCode, siret, nafCode, companyName, professionalEmail, isPro = false } = body;
+    const sponsorCodeValue = clean(sponsorCode).toUpperCase();
+    if (!sponsorCodeValue) {
+      return NextResponse.json({ error: "Un code de parrainage valide est obligatoire pour vous inscrire." }, { status: 400 });
+    }
+    const { data: sponsor, error: sponsorError } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("sponsor_code", sponsorCodeValue)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (sponsorError) {
+      return NextResponse.json({ error: "Impossible de vérifier le code de parrainage. Réessayez." }, { status: 503 });
+    }
+    if (!sponsor) {
+      return NextResponse.json({ error: "Code de parrainage invalide. Demandez un code valide à votre parrain." }, { status: 400 });
+    }
     const personalEmail = clean(email).toLowerCase();
     const passwordValue = clean(password);
     const firstNameValue = clean(firstName);
@@ -117,8 +133,8 @@ export async function POST(request: Request) {
           postal_code: postalCodeValue,
           birth_date: birthDateValue,
           terms_accepted: termsAccepted === true,
-          sponsor_id: sponsorId || null,
-          sponsor_code: sponsorCode || null,
+          sponsor_id: sponsor.id,
+          sponsor_code: sponsorCodeValue,
           siret: siretValue || null,
           naf_code: nafCodeValue || null,
         },

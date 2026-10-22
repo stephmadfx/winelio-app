@@ -172,7 +172,7 @@ async function main() {
       const { data: authUser, error: authErr } = await supabase.auth.admin.createUser({
         email: placeholderEmail,
         email_confirm: true,
-        user_metadata: { scraped: true, app: "winelio" },
+        user_metadata: { scraped: true, app: "winelio", sponsor_code: process.env.WINELIO_IMPORT_SPONSOR_CODE?.trim().toUpperCase() },
       });
 
       if (authErr || !authUser?.user) {

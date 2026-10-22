@@ -110,11 +110,15 @@ async function main() {
       const email = `winelio.test.${Date.now()}.${Math.random().toString(36).slice(2,6)}@example.com`;
       const sponsorId = random(previousLevel);
 
+      const { data: parent, error: parentError } = await supabase.from("profiles")
+        .select("sponsor_code").eq("id", sponsorId).eq("is_active", true).single();
+      if (parentError || !parent) throw new Error("Un code de parrainage valide est requis pour créer un membre de démonstration.");
+
       // Créer l'utilisateur auth
       const { data: { user: newUser }, error: authErr } = await supabase.auth.admin.createUser({
         email,
         email_confirm: true,
-        user_metadata: { first_name: firstName, last_name: lastName },
+        user_metadata: { first_name: firstName, last_name: lastName, sponsor_code: parent.sponsor_code },
       });
 
       if (authErr || !newUser) {
@@ -168,6 +172,7 @@ async function main() {
     const { data: { user: proUser }, error: proAuthErr } = await supabase.auth.admin.createUser({
       email,
       email_confirm: true,
+      user_metadata: { sponsor_code: sandrineProfile.sponsor_code },
     });
 
     if (proAuthErr || !proUser) continue;

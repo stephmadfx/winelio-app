@@ -35,7 +35,7 @@
     ├── /api/auth/set-password          — Définit mdp pour user connecté (via admin API)
     ├── /api/auth/sign-out              — Invalide session + efface cookies
     ├── /api/auth/whoami                — GET : retourne id+email de la session courante
-    ├── /api/auth/assign-sponsor        — POST : assignSponsorIfNeeded(code|null)
+    ├── /api/auth/assign-sponsor        — POST : assignSponsorIfNeeded(code explicite)
     ├── /api/auth/callback              — Callback PKCE (legacy)
     └── /api/admin/auth-health          — Diagnostic fantômes profils/sessions manquantes (public, SMTP alert)
 
@@ -45,7 +45,7 @@
     │   Si code fourni → cherche profil avec ce sponsor_code
     │   Sinon → appelle get_next_open_registration_sponsor() (round-robin fondateurs)
     │   [UTILISE] → supabaseAdmin, winelio.founder_rotation
-    └── /api/network/assign-open-registration-sponsor — Assigne si pas de parrain
+    └── /api/network/assign-open-registration-sponsor — Désactivée (410), inscription avec code obligatoire
 
 
 [FEATURE] Recommendations (workflow 7 étapes)

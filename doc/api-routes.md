@@ -7,16 +7,18 @@
 
 ## Auth
 
+L’inscription (`POST /api/auth/register`) exige un `sponsorCode` non vide correspondant à un parrain actif. Le serveur résout lui-même le parrain ; un `sponsorId` client ne peut pas remplacer le code. Le trigger `winelio.handle_new_user` applique aussi cette règle aux créations directes Supabase.
+
 | Méthode | URL | Auth | Logique |
 |---|---|---|---|
 | POST | `/api/auth/send-code` | public | Rate-limit 5/h/IP (bypass @winelio-e2e.local). Génère OTP 6 chiffres, stocke dans `public.otp_codes`, envoie email SMTP inline. Side-effect : email SMTP direct. |
-| POST | `/api/auth/verify-code` | public | Vérifie OTP (max 5 attempts). Crée/trouve user via Pool pg direct (`SUPABASE_DB_URL`), pose session via SSR cookies. [DÉCLENCHE] `assignSponsorIfNeeded`. |
+| POST | `/api/auth/verify-code` | public | Vérifie OTP (max 5 attempts). Connecte uniquement un compte Winelio existant via Pool pg direct (`SUPABASE_DB_URL`), sans créer de compte, pose session via SSR cookies. [DÉCLENCHE] `assignSponsorIfNeeded`. |
 | POST | `/api/auth/reset-password` | public | Vérifie OTP + change mdp via admin API (Pool pg + GoTrue). |
 | POST | `/api/auth/login-password` | public | Login email+mdp via GoTrue, pose cookies session. |
 | POST | `/api/auth/set-password` | user | Met à jour mdp via `auth.admin.updateUserById`. |
 | POST | `/api/auth/sign-out` | user | Invalide session GoTrue + efface cookies. |
 | GET | `/api/auth/whoami` | user | Retourne `{ id, email }` de la session courante. |
-| POST | `/api/auth/assign-sponsor` | user | Body `{ sponsorCode? }` — assigne sponsor si pas encore fait. |
+| POST | `/api/auth/assign-sponsor` | user | Body `{ sponsorCode }` — assigne uniquement un parrain actif correspondant au code explicite si aucun parrain n’est déjà rattaché. |
 | GET | `/api/auth/callback` | public | Callback PKCE legacy (redirect post-auth). |
 | GET/POST | `/api/admin/auth-health` | public | Diagnostic fantômes (profils sans auth.users ou inversement), envoie alert email. Utilise Pool pg direct. |
 
@@ -61,7 +63,7 @@
 | GET | `/api/network/user-events` | user | Feed événements réseau (recos actives des membres). |
 | POST | `/api/network/send-invite` | user | Body `{ email, message? }`. Enqueue email d'invitation avec lien `?ref=CODE`. |
 | POST | `/api/network/new-referral` | user | Notifie le parrain (envoi email notifyNewReferral). |
-| POST | `/api/network/assign-open-registration-sponsor` | user | Assigne un fondateur via round-robin si pas de parrain. |
+| POST | `/api/network/assign-open-registration-sponsor` | user | Désactivée : HTTP 410. Aucun parrain automatique. |
 
 ---
 
