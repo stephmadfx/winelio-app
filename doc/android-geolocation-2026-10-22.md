@@ -33,4 +33,6 @@ La déclaration Google Play « Sécurité des données » ne couvrait que la pos
 
 Console : https://play.google.com/console/u/0/developers/6645855122676552974/app/4976328415040786163/publishing
 
-À reprendre : contrôler l'état final d'examen, puis effectuer un essai après installation sur le téléphone de Thierry. L'approbation de Google et la diffusion ne sont pas prouvées par l'importation du binaire.
+Les contrôles rapides Google sont terminés (« Vous pouvez maintenant envoyer vos modifications pour examen »). La confirmation finale d'envoi a été tentée via les contrôles sémantiques, après rechargement, puis dans la fenêtre Chrome native. La console revient toutefois à « Modifications pas encore envoyées pour examen » sans erreur explicite. L'historique ne montre aucun nouvel envoi au-delà de l'envoi 9 du build 10 : la soumission du build 11 n'est donc pas confirmée. L'onglet est laissé sur le dialogue « Envoyer 2 modifications pour examen ? » pour un essai manuel. Capture : `outputs/google-play/geolocation-build-11/google-play-confirmation-pending.jpg`.
+
+À reprendre : faire enregistrer la soumission (binaire et déclaration), vérifier son reçu, puis effectuer un essai après installation sur le téléphone de Thierry. La diffusion reste manuelle. Aucun push des commits locaux ni déploiement web n'a été effectué dans cette intervention Android.
