@@ -18,7 +18,8 @@
         "NSCameraUsageDescription": "Winelio utilise l’appareil photo pour joindre une image ou mettre à jour votre profil.",
         "NSPhotoLibraryUsageDescription": "Winelio accède à vos photos uniquement lorsque vous choisissez une image à joindre.",
         "NSLocationWhenInUseUsageDescription": "Winelio utilise votre position pour proposer les professionnels pertinents autour de vous."
-      }
+      },
+      "buildNumber": "8"
     },
     "android": {
       "package": "app.winelio.mobile",
@@ -31,7 +32,8 @@
         "backgroundColor": "#F8F9FA"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": true
+      "predictiveBackGestureEnabled": true,
+      "versionCode": 10
     },
     "web": {
       "bundler": "metro",
@@ -58,11 +60,7 @@
       "typedRoutes": false
     },
     "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "f3943d80-f915-4a92-8e14-7a4e01190b5d"
-      }
-    },
-    "owner": "stephmadfx"
+      "router": {}
+    }
   }
 }

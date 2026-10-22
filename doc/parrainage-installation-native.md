@@ -93,21 +93,26 @@ Le test a révélé puis permis de corriger une course entre l'injection JavaScr
 
 Ces binaires de vérification utilisent l'URL du serveur de test local. Pour les stores, reconstruire avec l'URL publique habituelle. Le simulateur ne remplace pas la vérification d'une installation réelle depuis chaque store ni celle du dialogue de collage depuis Safari sur un iPhone physique.
 
-## Livraison 1.0.1 — 22 octobre 2026
+## Livraison 1.0.1 — compilation locale uniquement
 
-- Versions publiques contrôlées : iPhone 1.0 (API publique Apple), Android 0.2.2 (9), disponible à 100 % dans Google Play Console.
-- Binaires demandés : Android 1.0.1 (10), iOS 1.0.1 (8). Signature existante conservée ; URL WebView explicitement fixée à `https://winelio.app` dans le profil EAS production.
-- [Build Android](https://expo.dev/accounts/stephmadfx/projects/winelio/builds/3cbd9b3c-3e78-4ada-9838-458d2ec42f18) ; [build iOS](https://expo.dev/accounts/stephmadfx/projects/winelio/builds/3fc2f70d-468c-4402-a118-2573ba3df7ff). Ces builds ne prouvent ni soumission ni disponibilité publique.
-- Les sources de livraison ont été isolées de la copie de travail partagée, à partir de `b69147ee`. Aucun autre changement en cours n'a été embarqué. Les archives excluent les fichiers locaux de configuration et les productions sans rapport avec le mobile.
-- `.easignore` limite les prochains builds à `mobile/` et au seul contrat `src/lib/referral-install.ts`. Les exclusions natives de `mobile/.gitignore` sont ancrées à la racine pour conserver les sources du module local.
-- Vérification de publication : build Next réussi, contrôles TypeScript web et mobile réussis, 20 tests de contrat/parcours natif/navigation réussis à nouveau. Les six tests navigateur et le scénario iPhone sur simulateur ont été validés pendant la préparation initiale.
-- Appareils physiques détectés : Samsung Galaxy S10 par ADB et iPhone 15 Pro jumelé, sans Winelio installé sur ce dernier. Aucun de ces constats ne constitue une première installation via un store.
+Instruction explicite du 22 octobre 2026 : compiler entièrement sur le Mac, puis envoyer les binaires aux stores. Les anciens builds distants ne constituent plus le processus de livraison. Les configurations de compilation distante ont été retirées du projet.
 
-| Parcours | Consommateurs et états | Risque à contrôler | Preuve attendue |
-| --- | --- | --- | --- |
-| Invitation Android → Play → installation | Site, Play Install Referrer, module Kotlin, WebView ; premier lancement et relance | Mauvaise version installée, état restauré, référence absente | Installation par Play du nouveau code de version et code prérempli |
-| Invitation Safari → copie → App Store → installation | Safari, presse-papiers, module Swift, WebView ; autorisation, refus, reprise | Presse-papiers remplacé ou refusé | Version installée, collage autorisé, code prérempli et conservé après relance |
-| Application déjà installée | Schéma Winelio, route Expo, WebView ; lancement à froid/chaud | Course avec une ancienne référence | La dernière invitation explicite gagne |
-| Site public | Vidéo, détection du téléphone, store, inscription web | Proposer un ancien binaire sans récupération | Applications disponibles avant activation des boutons ; contrôle du rendu public |
+- Versions publiques vérifiées : iPhone 1.0 ; Android 0.2.2 (9), disponible à 100 % dans Google Play Console.
+- Versions préparées localement : iPhone 1.0.1 (8), Android 1.0.1 (10). URL WebView de production : `https://winelio.app`.
+- Signature iPhone : certificat Apple Distribution et profil App Store existants dans le trousseau/Xcode du Mac. Aucun secret dans le dépôt.
+- Compilation iPhone : `xcodebuild archive`, puis export App Store local et envoi du fichier IPA.
+- Compilation Android : Gradle `:app:bundleRelease`, signature de publication depuis l’environnement sécurisé local, puis import du fichier AAB dans Google Play Console.
+- Les versions doivent être disponibles avant activation des boutons du site. Un téléversement ou une soumission ne prouve pas leur disponibilité.
+- Les essais physiques attendus restent Safari → App Store → première ouverture → collage autorisé sur iPhone, et lien Google Play avec referrer → installation → code récupéré sur Android. Contrôler aussi le refus/reprise et la persistance à la relance, sans créer de compte ni envoyer d’email.
 
-Les validations physiques n'exigent pas de créer un compte ni d'envoyer un email : contrôler le code prérempli suffit pour le transfert. L'attribution finale reste couverte par les validations serveur existantes.
+Le build Next et les contrôles TypeScript web/mobile ont réussi ; 20 tests de contrat/parcours/navigation ont été rejoués avec succès avant la livraison. Six tests navigateur et le scénario iPhone sur simulateur avaient déjà réussi lors de la préparation.
+
+### État de livraison local
+
+Le 22 octobre 2026, l’AAB Android 1.0.1 (10) a été compilé par Gradle sur le Mac. Le script `mobile/scripts/build-android-release.py` utilise le fichier protégé `~/.config/winelio-signing/upload.jks` et les entrées du trousseau `winelio.android.upload.*` ; les mots de passe ne passent pas dans les arguments de commande et le certificat de l’AAB est comparé à celui de la clé. Les caches de configuration et les daemons Gradle sont désactivés pour cette opération.
+
+L’AAB local a été accepté par Google Play et soumis à l’examen pour un déploiement complet. Une validation automatique encore en cours ne prouve pas que la nouvelle version est installable. Le fichier livré est dans `output/referral-install/release/Winelio-Android-1.0.1-10.aab` ; la capture de soumission est `output/referral-install/google-play-in-review.jpg`.
+
+L’archive iPhone pour appareil 1.0.1 (8) a compilé en local. Le profil de distribution `Winelio App Store Local 2026` a été créé pour le certificat Apple Distribution déjà installé sur le Mac, sans nouvelle clé. Son installation locale, l’export signé, l’envoi Apple et la vérification après installation restent à terminer.
+
+Les fichiers de configuration de compilation distante ont été supprimés. Les numéros de build sont désormais explicitement versionnés dans `mobile/app.json`. Les binaires des stores proviendront uniquement des compilations locales. Aucun bouton de téléchargement de parrainage n’a encore été déployé sur le site.
