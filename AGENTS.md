@@ -30,7 +30,7 @@ src/
 │   │   ├── companies/        # Gestion entreprises
 │   │   ├── recommendations/  # Workflow 8 étapes
 │   │   ├── network/          # Réseau MLM (arbre 5 niveaux)
-│   │   ├── wallet/           # Wallet EUR + Wins
+│   │   ├── wallet/           # Wallet EUR
 │   │   └── settings/         # Paramètres (thème clair/sombre)
 │   ├── gestion-reseau/       # Super admin (role super_admin requis)
 │   │   ├── layout.tsx        # AdminLayoutShell (sidebar collapsible)
@@ -78,8 +78,8 @@ src/
 
 ### Appliquer une migration
 ```bash
-sshpass -p '04660466aA@@@' scp supabase/migrations/XXX.sql root@31.97.152.195:/tmp/
-sshpass -p '04660466aA@@@' ssh root@31.97.152.195 \
+scp supabase/migrations/XXX.sql root@31.97.152.195:/tmp/
+ssh root@31.97.152.195 \
   "docker cp /tmp/XXX.sql supabase-db-ixlhs1fg5t2n8c4zsgvnys0r:/tmp/ && \
    docker exec supabase-db-ixlhs1fg5t2n8c4zsgvnys0r psql -U supabase_admin -d postgres -f /tmp/XXX.sql"
 ```
@@ -108,7 +108,7 @@ Pour attribuer : `PUT /auth/v1/admin/users/{id}` avec `{"app_metadata": {"role":
 | recommendations | Recommandations (referrer → professional, statut, montant) |
 | recommendation_steps | Junction table (étape complétée ou non, données associées) |
 | commission_transactions | Commissions (type, level, montant, statut PENDING/EARNED) |
-| user_wallet_summaries | Cache dénormalisé du wallet (EUR + Wins) |
+| user_wallet_summaries | Cache dénormalisé du wallet (EUR) |
 | withdrawals | Demandes de retrait |
 | devices | Tokens push notification |
 | audit_logs | Journal d'audit |
@@ -137,29 +137,31 @@ Toutes les tables ont des politiques RLS actives. Les utilisateurs ne voient que
 3. Contact établi
 4. Rendez-vous fixé
 5. Devis soumis (avec montant)
-6. **Devis validé** → déclenche la création des commissions (PENDING → EARNED)
+6. **Devis validé** → prépare le paiement de la commission Winelio ; ne débloque pas les gains à lui seul
 7. Paiement reçu
 8. Affaire terminée
 
-### Système MLM (5 niveaux)
-- Chaque user a un `sponsor_code` unique (6 chars)
-- `sponsor_id` pointe vers le parrain
-- Quand une reco est validée (étape 6) :
-  - Referrer reçoit 60% de la commission
-  - Niveau 1 (sponsor du referrer) : 3%
-  - Niveau 2-5 : 3% chacun
-  - Affiliation bonus (sponsor du pro) : 1%
-  - Cashback pro (en Wins) : 1%
-  - Plateforme : 23% (tout le reste)
+### Système MLM (5 niveaux) — répartition applicable depuis le 22 octobre 2026
+- Chaque user a un `sponsor_code` unique ; `sponsor_id` pointe vers son parrain.
+- Pour chaque affaire aboutie, les pourcentages portent sur la **commission effectivement encaissée par Winelio**, jamais directement sur le chiffre d'affaires du professionnel :
+  - Recommandeur : **60 %**.
+  - Parrain du recommandeur et niveaux 2 à 5 : **3 % par niveau**, soit **15 %** au total.
+  - **Bonus d'affiliation du professionnel : 1 %**, crédité automatiquement en euros au **parrain du professionnel**, même lorsqu'un autre membre est le recommandeur. Ce bonus s'applique à chaque nouvelle affaire aboutie et payée de ce professionnel ; il ne rémunère pas la simple inscription.
+  - **Plateforme Winelio : 24 %**, auxquels s'ajoutent les parts des niveaux ou de l'affiliation sans bénéficiaire.
+- La répartition standard totalise **100 %** : 60 + 15 + 1 + 24.
+- Le paiement effectif de la commission Winelio conditionne le déblocage des gains ; la commission directe du recommandeur reste en attente jusqu'à son avis qualifié.
+- **Règle absolue : ne pas réintroduire de cashback professionnel, d'attribution de Wins, de cadeaux ni de prime annuelle liée à l'utilisation de l'application.** Le bonus de 1 % au parrain du professionnel reste obligatoire et distinct de ces anciens dispositifs.
+- Préserver les écritures historiques et les instantanés des paiements passés ; ne pas les supprimer ni les convertir en euros. Pour les nouvelles commissions, une ancienne part cashback présente dans un instantané revient à Winelio.
 
 ### Wallet
-- **EUR** : total_earned, total_withdrawn, pending_commissions, available
-- **Wins** : total_wins, available_wins, redeemed_wins (monnaie interne)
+- **EUR** : total_earned, total_withdrawn, pending_commissions, available.
+- Le bonus d'affiliation du professionnel est une commission en euros, soumise au même mécanisme de portefeuille et de retrait que les autres gains en euros.
+- Les anciens champs de fidélité conservés en base servent uniquement à la compatibilité historique et ne constituent pas un programme actif.
 
 ## VPS Hostinger
 - **IP** : 31.97.152.195
-- **SSH** : root / 04660466aA@@@
-- **Coolify** : http://31.97.152.195:8000 (contact@aide-multimedia.fr / 04660466aA@@@)
+- **SSH** : utilisateur `root`, avec la clé SSH configurée ; aucun mot de passe dans le dépôt.
+- **Coolify** : http://31.97.152.195:8000 — identifiants dans le gestionnaire de secrets.
 - **SMTP** : dahu.o2switch.net port 587 (contact@aide-multimedia.fr)
 
 ## Serveur de développement local
@@ -182,7 +184,7 @@ npm run dev
 pkill -f "next dev" ; sleep 1 ; npm run dev &
 
 # Accéder à la DB Supabase (production sur VPS — container temp-supabase-db)
-sshpass -p '04660466aA@@@' ssh root@31.97.152.195 "docker exec temp-supabase-db psql -U supabase_admin -d postgres"
+ssh root@31.97.152.195 "docker exec temp-supabase-db psql -U supabase_admin -d postgres"
 ```
 
 ## Code source de l'ancien développeur
@@ -208,6 +210,7 @@ Fichiers de reference dans `/doc/` :
 - Les headers de securite sont configures dans `next.config.ts`
 - **Après chaque `git push`, relancer le serveur dev local** (voir commande ci-dessus)
 - **Règles de push (Prioritaire)** : Tous les pushs doivent être appliqués et envoyés de manière synchrone sur les branches `dev2` et `main`.
+- **Déploiement sur les deux environnements — règle absolue** : Toute demande de déploiement pour Winelio implique obligatoirement un déploiement sur les branches `dev2` et `main`, vers `https://dev2.winelio.app` et `https://winelio.app`. Ne jamais limiter un déploiement à un seul de ces environnements. Vérifier la réussite des deux déploiements avant de déclarer la livraison terminée. Si l'un échoue ou reste en attente, poursuivre le traitement et signaler explicitement son état ; un push réussi ne constitue pas une preuve de déploiement.
 
 ### Tailwind CSS v4 — IMPORTANT
 - **Ne jamais construire des classes dynamiques partielles** : Tailwind JIT scanne statiquement le code.
