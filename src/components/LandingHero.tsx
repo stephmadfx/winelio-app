@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PromoVideo } from "@/components/PromoVideo";
+import { ReferralAppInstall } from "@/components/referral-app-install";
+import { referralFromParams } from "@/lib/referral-install";
 
 export const KNOWN_USER_KEY = "winelio_known_user";
 
@@ -43,6 +45,7 @@ export function LandingHero() {
   const handleUnlock = useCallback(() => setUnlocked(true), []);
 
   const typeParam = searchParams.get("type");
+  const invitation = referralFromParams(new URLSearchParams(searchParams.toString()));
   const registerHref = refCode
     ? `/auth/login?mode=register&ref=${encodeURIComponent(refCode)}${typeParam ? `&type=${encodeURIComponent(typeParam)}` : ""}`
     : `/auth/login?mode=register${typeParam ? `&type=${encodeURIComponent(typeParam)}` : ""}`;
@@ -106,6 +109,12 @@ export function LandingHero() {
       )}
 
       <div className={`flex flex-col gap-3 ${knownUser ? "mt-6" : "mt-4"}`}>
+        {unlocked && invitation && (
+          <ReferralAppInstall
+            invite={{ ...invitation, videoWatched: true }}
+            className={primaryClass}
+          />
+        )}
         {/* Pour un visiteur connu : Se connecter d'abord (CTA principal).
             Pour un nouveau visiteur : Créer un compte juste sous la vidéo. */}
         {knownUser ? (

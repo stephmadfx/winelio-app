@@ -114,6 +114,10 @@ function LoginForm() {
     if (urlRef) {
       setRefCode(urlRef.trim().toUpperCase());
       localStorage.setItem("winelio_ref", urlRef.trim().toUpperCase());
+      // État d'interface transféré après visionnage avant installation, sans effet sur les droits.
+      if (navigator.userAgent.includes("WinelioNative/") && searchParams.get("video") === "1") {
+        localStorage.setItem(PROMO_WATCHED_KEY, "1");
+      }
     } else {
       const storedRef = localStorage.getItem("winelio_ref");
       if (storedRef) {
