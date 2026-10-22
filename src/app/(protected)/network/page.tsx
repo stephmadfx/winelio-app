@@ -20,9 +20,13 @@ export default async function NetworkPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, first_name, last_name, avatar, sponsor_code")
+    .select("id, first_name, last_name, avatar, sponsor_code, sponsor_id, is_founder")
     .eq("id", user.id)
     .single();
+
+  const { data: sponsor } = profile?.sponsor_id
+    ? await supabase.from("profiles").select("first_name, last_name, sponsor_code").eq("id", profile.sponsor_id).maybeSingle()
+    : { data: null };
 
   const { data: referrals, count: totalReferrals } = await supabase
     .from("profiles")
@@ -116,13 +120,28 @@ export default async function NetworkPage() {
       {/* Sponsor code */}
       <Card className="!rounded-2xl mb-6">
         <CardContent className="p-5 sm:p-6">
-          <h3 className="text-sm font-semibold text-winelio-gray uppercase tracking-wider mb-4">Mon code parrain</h3>
+          <h3 className="text-sm font-semibold text-winelio-gray uppercase tracking-wider mb-2">Mon code d’invitation</h3>
+          <p className="text-sm text-winelio-gray mb-4">Partagez ce code pour parrainer de nouveaux membres.</p>
 
           {/* Code parrain en pleine largeur, mis en évidence */}
           <div className="bg-winelio-light dark:bg-muted rounded-xl border-2 border-dashed border-winelio-orange px-6 py-4 text-center mb-4">
             <span className="text-3xl sm:text-4xl font-extrabold tracking-[0.2em] bg-gradient-to-r from-winelio-orange to-winelio-amber bg-clip-text text-transparent select-all">
               {sponsorCode}
             </span>
+          </div>
+
+          <div className="rounded-xl border border-gray-100 bg-winelio-light/50 p-4 mb-6">
+            <h3 className="text-sm font-semibold text-winelio-dark">Votre parrain</h3>
+            {sponsor ? (
+              <>
+                <p className="mt-1 font-medium text-winelio-dark">{formatDisplayName(sponsor.first_name, sponsor.last_name)}</p>
+                <p className="text-sm text-winelio-gray">Son code d’invitation : <span className="font-semibold tracking-wider">{sponsor.sponsor_code}</span></p>
+              </>
+            ) : (
+              <p className="mt-1 text-sm text-winelio-gray">
+                {profile?.is_founder ? "Vous êtes à la tête de votre lignée, sans parrain." : profile?.sponsor_id ? "Les informations de votre parrain sont momentanément indisponibles." : "Aucun parrain n’est actuellement rattaché à votre compte."}
+              </p>
+            )}
           </div>
 
           {/* Vignette vidéo + actions de partage */}
