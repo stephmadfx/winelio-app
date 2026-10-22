@@ -20,6 +20,7 @@ La version Android 1.0.1 (10), avec la récupération du parrainage après insta
 - AAB signé : `outputs/google-play/geolocation-build-11/winelio-1.0.1-11-geolocation.aab`.
 - SHA-256 : `605ef6c9caaeb8ac23b78bccd204a8fe48debc12cffa8c695e5f28bef4404c3a`.
 - Les deux permissions sont présentes dans l'AAB compilé.
+- Comparaison binaire des assets : `base/assets/index.android.bundle` est strictement identique entre les builds 10 et 11 (SHA-256 `72cee80e86271552f1a691f692e9023cdb647f222c452982de4b66c2e5850112`). Le JavaScript du parrainage est donc conservé sans modification.
 - Tests sur émulateur Android API 36, avec un APK extrait de cet AAB et signé pour les tests. Instrumentation exécutant `navigator.geolocation.getCurrentPosition` dans la véritable WebView, avec les options du parcours de recommandation : première autorisation approximative, autorisations approximative et précise conservées après relance, refus avec code 1. Tous ces cas passent.
 - Des positions synthétiques réseau/fused/GPS sont nécessaires à l'émulateur ; sans elles, les premières acquisitions ont expiré avec code 3. Aucun téléphone réel ni parcours authentifié de recommandation testé.
 - Aucun compte ni donnée serveur de test créé. Instrumentation et fournisseurs de position simulée supprimés, permission de simulation rétablie et émulateur arrêté.
@@ -27,6 +28,8 @@ La version Android 1.0.1 (10), avec la récupération du parrainage après insta
 ## Soumission et reprise
 
 Build 11 importé dans la release Google Play 6. Un seul avertissement non bloquant : absence de fichier de désobscurcissement, alors que la minification est désactivée. Aucun appareil supplémentaire exclu. Publication gérée activée pour limiter la demande à la soumission : la diffusion doit être déclenchée manuellement après approbation.
+
+La déclaration Google Play « Sécurité des données » ne couvrait que la position approximative. La position exacte a été ajoutée : collectée, non partagée, facultative, traitée de manière éphémère, pour le fonctionnement de l'application. La route `/api/professionals/search` et la fonction SQL de recherche utilisent les coordonnées pour calculer les distances, sans écriture de la position du membre dans ce parcours. La console a confirmé l'enregistrement de cette modification pour examen avec le binaire.
 
 Console : https://play.google.com/console/u/0/developers/6645855122676552974/app/4976328415040786163/publishing
 
