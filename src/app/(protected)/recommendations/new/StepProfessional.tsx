@@ -29,12 +29,13 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [radius, setRadius] = useState(25);
   const [sortBy, setSortBy] = useState<"distance" | "name">("name");
-  const [postalCode, setPostalCode] = useState("");
-  const [postalCommunes, setPostalCommunes] = useState<string[]>([]);
+  const [locationQuery, setLocationQuery] = useState("");
+  const [communes, setCommunes] = useState<{ code: string; nom: string; codesPostaux: string[]; departement?: { nom: string; code: string }; centre?: { coordinates: [number, number] } }[]>([]);
   const [selectedCommune, setSelectedCommune] = useState<string | null>(null);
-  const [postalLoading, setPostalLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationSelected, setLocationSelected] = useState(false);
   const [isPro, setIsPro] = useState(false);
-  const [postalData, setPostalData] = useState<{ nom: string; centre?: { coordinates: [number, number] } }[]>([]);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -117,57 +118,39 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
   }, [professionals, userId, sortBy, radius]);
 
   useEffect(() => {
-    if (postalCode.length !== 5) {
-      setPostalCommunes([]);
-      setSelectedCommune(null);
-      setPostalData([]);
-      if (geoStatus !== "granted") {
-        setUserLocation(null);
-      }
-      return;
-    }
-    setPostalLoading(true);
-    fetch(`https://geo.api.gouv.fr/communes?codePostal=${postalCode}&fields=nom,centre`)
-      .then((r) => r.json())
-      .then((data: { nom: string; centre?: { coordinates: [number, number] } }[]) => {
-        setPostalData(data);
-        const noms = data.map((c) => c.nom);
-        setPostalCommunes(noms);
-        setSelectedCommune(noms.length === 1 ? noms[0] : null);
-
-        if (geoStatus !== "granted" && data.length > 0 && data[0].centre?.coordinates) {
-          const [lng, lat] = data[0].centre.coordinates;
-          setUserLocation({ lat, lng });
-          setSortBy("distance");
-          setRadius(99999);
+    const query = locationQuery.trim();
+    setCommunes([]);
+    setLocationError(null);
+    setLocationLoading(false);
+    if (locationSelected || query.length < 2 || (/^\d+$/.test(query) && query.length !== 5)) return;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setLocationLoading(true);
+      try {
+        const params = new URLSearchParams({ fields: "nom,code,codesPostaux,departement,centre", limit: "10" });
+        params.set(/^\d{5}$/.test(query) ? "codePostal" : "nom", query);
+        const response = await fetch(`https://geo.api.gouv.fr/communes?${params}`, { signal: controller.signal });
+        if (!response.ok) throw new Error();
+        const data = await response.json();
+        if (!Array.isArray(data)) throw new Error();
+        if (!controller.signal.aborted) {
+          setCommunes(data.filter(c => c.centre?.coordinates?.length === 2));
+          if (!data.some(c => c.centre?.coordinates?.length === 2)) setLocationError("Aucune ville trouvée. Vérifiez la saisie.");
         }
-      })
-      .catch(() => {
-        setPostalCommunes([]);
-        setPostalData([]);
-      })
-      .finally(() => setPostalLoading(false));
-  }, [postalCode, geoStatus]);
-
-  useEffect(() => {
-    if (geoStatus === "granted") return;
-    if (selectedCommune) {
-      const match = postalData.find((c) => c.nom === selectedCommune);
-      if (match?.centre?.coordinates) {
-        const [lng, lat] = match.centre.coordinates;
-        setUserLocation({ lat, lng });
+      } catch {
+        if (!controller.signal.aborted) setLocationError("Recherche de villes indisponible. Réessayez ou utilisez la géolocalisation.");
+      } finally {
+        if (!controller.signal.aborted) setLocationLoading(false);
       }
-    } else if (postalData.length > 0 && postalData[0].centre?.coordinates) {
-      const [lng, lat] = postalData[0].centre.coordinates;
-      setUserLocation({ lat, lng });
-    }
-  }, [selectedCommune, postalData, geoStatus]);
+    }, 300);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [locationQuery, locationSelected]);
 
   const requestGeo = () => {
     if (!navigator.geolocation) { setGeoStatus("unavailable"); return; }
     setGeoStatus("loading");
     navigator.geolocation.getCurrentPosition(
-      (pos) => { setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGeoStatus("granted"); setSortBy("distance"); setRadius(99999); },
+      (pos) => { setLocationQuery(""); setLocationSelected(false); setCommunes([]); setSelectedCommune(null); setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGeoStatus("granted"); setSortBy("distance"); setRadius(99999); },
       (err) => setGeoStatus(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable"),
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
     );
@@ -182,43 +165,33 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
 
       <GeoStatusBanner status={geoStatus} radius={radius} onRequestGeo={requestGeo} onRadiusChange={setRadius} />
 
-      {/* Code postal */}
       <div className="mb-4">
-        <label className="block text-xs font-semibold text-winelio-dark mb-1.5">
-          Localisation par code postal {geoStatus === "denied" && <span className="text-winelio-orange">(conseillé suite au refus GPS)</span>}
-        </label>
-        <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
-          <div className="relative w-full sm:w-36 shrink-0">
-            <input type="text" inputMode="numeric" maxLength={5} placeholder="Code postal" value={postalCode}
-              onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, "").slice(0, 5))}
-              className={`w-full rounded-xl border px-4 py-3 text-sm focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15 ${
-                geoStatus === "denied" && !postalCode ? "border-winelio-orange/50 bg-winelio-orange/5" : "border-winelio-gray/20"
-              }`} />
-            {postalLoading && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-winelio-orange border-t-transparent rounded-full animate-spin" />}
-          </div>
-          {postalCommunes.length > 0 && (
-            <div className="flex flex-1 w-full gap-2 items-center">
-              {postalCommunes.length === 1 ? (
-                <div className="flex-1 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
-                  <svg className="w-4 h-4 text-green-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="truncate">{postalCommunes[0]}</span>
-                </div>
-              ) : (
-                <select value={selectedCommune ?? ""} onChange={(e) => setSelectedCommune(e.target.value || null)}
-                  className="flex-1 min-w-0 rounded-xl border border-winelio-gray/20 px-4 py-3 text-sm text-winelio-dark focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15 bg-white cursor-pointer truncate">
-                  <option value="">Toutes les communes ({postalCommunes.length})</option>
-                  {postalCommunes.map((nom) => <option key={nom} value={nom}>{nom}</option>)}
-                </select>
-              )}
-              <button onClick={() => { setPostalCode(""); setPostalCommunes([]); setSelectedCommune(null); }}
-                className="flex items-center justify-center w-11 h-11 shrink-0 rounded-xl border border-winelio-gray/20 text-winelio-gray hover:text-red-500 hover:border-red-200 transition-colors cursor-pointer" title="Effacer">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-          )}
+        <label htmlFor="professional-location" className="block text-xs font-semibold text-winelio-dark mb-1.5">Ville ou code postal</label>
+        <div className="flex gap-2">
+          <input id="professional-location" type="search" autoComplete="off" placeholder="Ex. Lyon ou 69003" value={locationQuery}
+            aria-describedby="professional-location-status" aria-controls="professional-location-results"
+            onChange={(e) => { setLocationQuery(e.target.value); setLocationSelected(false); }}
+            className="w-full rounded-xl border border-winelio-gray/20 px-4 py-3 text-sm focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15" />
+          {locationQuery && <button type="button" aria-label="Effacer la localisation" onClick={() => { setLocationQuery(""); setLocationSelected(false); setSelectedCommune(null); setUserLocation(null); setGeoStatus("idle"); }}
+            className="rounded-xl border border-winelio-gray/20 px-4 text-winelio-gray">×</button>}
         </div>
+        <p id="professional-location-status" role="status" className="mt-1 text-xs text-winelio-gray">
+          {locationLoading ? "Recherche des villes…" : locationError || (locationSelected ? `Recherche autour de ${selectedCommune}` : "Saisissez une ville ou un code postal, puis choisissez une proposition.")}
+        </p>
+        {communes.length > 0 && <ul id="professional-location-results" aria-label="Villes proposées" className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-winelio-gray/20 bg-white">
+          {communes.map(commune => <li key={commune.code}>
+            <button type="button" className="w-full px-4 py-3 text-left text-sm hover:bg-orange-50 focus:bg-orange-50 focus:outline-none"
+              onClick={() => {
+                const [lng, lat] = commune.centre!.coordinates;
+                setLocationQuery(`${commune.nom} (${commune.departement?.code ?? commune.codesPostaux.join(", ")})`);
+                setLocationSelected(true); setCommunes([]); setSelectedCommune(commune.nom);
+                setUserLocation({ lat, lng }); setGeoStatus("idle"); setSortBy("distance"); setRadius(99999);
+              }}>
+              <span className="font-medium">{commune.nom}</span>
+              <span className="ml-2 text-winelio-gray">{commune.departement?.nom} ({commune.departement?.code}) · {commune.codesPostaux.join(", ")}</span>
+            </button>
+          </li>)}
+        </ul>}
       </div>
 
       {/* Recherche + catégorie */}
@@ -247,7 +220,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
           </div>
           <h3 className="mt-3 text-sm font-semibold text-winelio-dark">Localisation requise</h3>
           <p className="mt-1 text-xs text-winelio-gray max-w-sm mx-auto">
-            Pour rechercher et recommander un professionnel, vous devez activer la géolocalisation ou saisir un code postal.
+            Pour rechercher et recommander un professionnel, vous devez activer la géolocalisation ou choisir une ville ou un code postal.
           </p>
         </div>
       ) : (

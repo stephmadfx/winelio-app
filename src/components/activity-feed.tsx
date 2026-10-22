@@ -11,6 +11,7 @@ import {
 } from "@/lib/feed-utils"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 /* ── Types internes ── */
 type FeedItem = FeedEvent & {
@@ -41,6 +42,7 @@ function toFeedItem(event: FeedEvent): FeedItem {
 
 /* ── Composant ── */
 export function ActivityFeed({ initialEvents, demoMode, className }: Props) {
+  const [history, setHistory] = useState<FeedEvent[]>(initialEvents)
   const [items, setItems] = useState<FeedItem[]>(
     () => initialEvents.slice(0, MAX_VISIBLE).map((e) => ({ ...e, _key: e.id, _phase: "idle" as const }))
   )
@@ -56,7 +58,8 @@ export function ActivityFeed({ initialEvents, demoMode, className }: Props) {
   const initialEventsRef = useRef<FeedEvent[]>(initialEvents)
 
   /* ── Fonction centrale : ajouter un événement avec animation ── */
-  const pushEvent = useCallback((event: FeedEvent) => {
+  const pushEvent = useCallback((event: FeedEvent, retain = true) => {
+    if (retain) setHistory((previous) => [event, ...previous.filter((item) => item.id !== event.id)].slice(0, 100))
     lastEventTimeRef.current = Date.now()
     let keyToRemove: string | null = null
 
@@ -116,7 +119,7 @@ export function ActivityFeed({ initialEvents, demoMode, className }: Props) {
         if (events.length === 0) return
         const event = events[demoIndexRef.current % events.length]
         demoIndexRef.current++
-        pushEvent({ ...event, id: event.id + "-demo-" + demoIndexRef.current, timestamp: new Date().toISOString() })
+        pushEvent({ ...event, id: event.id + "-demo-" + demoIndexRef.current, timestamp: new Date().toISOString() }, false)
         scheduleNext()
       }, randomDelay())
     }
@@ -206,7 +209,7 @@ export function ActivityFeed({ initialEvents, demoMode, className }: Props) {
           if (events.length > 0) {
             const event = events[demoIndexRef.current % events.length]
             demoIndexRef.current++
-            pushEvent({ ...event, id: event.id + "-idle-" + demoIndexRef.current, timestamp: new Date().toISOString() })
+            pushEvent({ ...event, id: event.id + "-idle-" + demoIndexRef.current, timestamp: new Date().toISOString() }, false)
           }
           idleTimerRef.current = setTimeout(scheduleIdleCheck, IDLE_RECYCLE_MS)
         } else {
@@ -241,9 +244,24 @@ export function ActivityFeed({ initialEvents, demoMode, className }: Props) {
               Live
             </div>
           </div>
-          <Link href="/recommendations" className="text-winelio-orange font-bold text-sm hover:underline">
-            Voir tout
-          </Link>
+          <Dialog>
+            <DialogTrigger className="text-winelio-orange font-bold text-sm hover:underline">
+              Voir tout
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-xl max-h-[85dvh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle>Activité réseau</DialogTitle>
+                <DialogDescription>Les événements récents de votre réseau.</DialogDescription>
+              </DialogHeader>
+              <div className="min-h-0 overflow-y-auto flex flex-col gap-2">
+                {history.length > 0 ? history.map((event) => (
+                  <FeedItemRow key={event.id} item={{ ...event, _key: event.id, _phase: "idle" }} refCallback={() => {}} />
+                )) : (
+                  <p className="text-winelio-gray text-sm py-6 text-center">Aucune activité récente.</p>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Zone de feed — hauteur fixe, overflow hidden */}
