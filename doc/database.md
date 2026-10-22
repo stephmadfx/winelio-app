@@ -111,7 +111,7 @@ RLS : SELECT public.
 | level_1..5_percentage | numeric DEFAULT 3 each | niveaux MLM |
 | platform_percentage | numeric DEFAULT 23 | cagnotte Winelio, tout le reste [20260414_cagnotte_winelio.sql] |
 | affiliation_percentage | numeric DEFAULT 1 | sponsor du pro [20260414_cagnotte_winelio.sql] |
-| cashback_wins_percentage | numeric DEFAULT 1 | cashback pro en Wins [20260414_cagnotte_winelio.sql] |
+| cashback_wins_percentage | numeric DEFAULT 1 | Ancien cashback désactivé (0 depuis 2026-10-22), conservé pour compatibilité |
 | priority, conditions | int / jsonb | |
 | is_default, is_active | boolean | |
 | created_at, updated_at | timestamptz | |
@@ -151,7 +151,7 @@ Les colonnes `client_quote_*` et `client_completion_*` conservent l'état, la ve
 | `level_4_percentage` | `decimal` | | Part parrain N4 (3%) |
 | `level_5_percentage` | `decimal` | | Part parrain N5 (3%) |
 | `affiliation_bonus_percentage` | `decimal` | | Bonus sponsor du professionnel (1%) |
-| `cashback_wins_percentage` | `decimal` | | Cashback Wins professionnel (1%) |
+| `cashback_wins_percentage` | `decimal` | | Ancien cashback désactivé (0 %) |
 | `platform_percentage` | `decimal` | | Part plateforme (23%) |
 | `created_at` | `timestamptz` | DEFAULT NOW() | |
 

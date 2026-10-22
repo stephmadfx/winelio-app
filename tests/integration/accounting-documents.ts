@@ -28,10 +28,10 @@ async function main() {
   await assert.rejects(() => accountingDocumentHtml({ ...document, number: "" }), /non émis/);
   const plan: CompensationPlan = { id: "test", commission_rate: 10, referrer_percentage: 60,
     level_1_percentage: 3, level_2_percentage: 3, level_3_percentage: 3, level_4_percentage: 3, level_5_percentage: 3,
-    platform_percentage: 23, affiliation_percentage: 1, cashback_wins_percentage: 1 };
+    platform_percentage: 24, affiliation_percentage: 1, cashback_wins_percentage: 0 };
   const commissions = calculateCommissions(1000, plan);
   assert.equal(commissions.referrer_commission, 60, "Commission conservée sur le TTC");
-  assert.equal(commissions.platform_commission, 23);
+  assert.equal(commissions.platform_commission, 24);
   assert.ok(commissions.level_commissions.every((level) => level.amount === 3));
 
   const payout: AccountingDocument = { ...document, kind: "payout", number: "TEST-ATT-2026-0001",

@@ -1,6 +1,6 @@
-# Reglement du programme d'affiliation et Winelio Rewards
+# Reglement du programme d'affiliation
 
-Version publiee - 2026-06-04
+Version publiee - 2026-10-22
 
 ## 1. Objet
 
@@ -60,10 +60,9 @@ Sous reserve de validation commerciale et comptable, la commission d'intermédia
 - sponsor de niveau 4 : 3 % ;
 - sponsor de niveau 5 : 3 % ;
 - bonus sponsor du professionnel : 1 % ;
-- cashback professionnel en Wins : 1 % ;
-- cagnotte / plateforme Winelio : 23 %.
+- cagnotte / plateforme Winelio : 24 %.
 
-Cette repartition totalise 100 % de la commission d'intermédiation Winelio. Elle correspond au plan standard actif constate en base le 2026-06-04.
+Cette repartition totalise 100 % de la commission d'intermédiation Winelio. Elle correspond au plan standard actif applicable au 2026-10-22.
 
 Les pourcentages peuvent varier selon les plans de compensation, categories, operations, offres promotionnelles ou modifications du programme, sous reserve d'information des utilisateurs.
 
@@ -95,25 +94,9 @@ Le traitement depend du plan de compensation en vigueur au moment de l'operation
 
 Lorsqu'un professionnel rejoint Winelio grace a un utilisateur et genere ensuite une commission d'intermédiation Winelio, un bonus peut etre attribue au sponsor du professionnel.
 
-Bareme de travail : 1 % de la commission d'intermédiation Winelio effectivement encaissee.
+Le parrain du professionnel recoit automatiquement 1 % de chaque commission d'intermédiation Winelio effectivement encaissee pour une affaire aboutie de ce professionnel, meme lorsqu'un autre membre est le recommandeur. Ce bonus est credite en euros dans son portefeuille.
 
 Ce bonus ne constitue pas une remuneration pour simple recrutement. Il est conditionne a une operation reelle generatrice de commission d'intermédiation.
-
-## 9. Winelio Rewards / Wins
-
-Winelio peut attribuer des Wins ou avantages internes a certains professionnels actifs.
-
-Les Wins :
-
-- ne sont pas de la monnaie legale ;
-- ne sont pas convertibles automatiquement en euros ;
-- ne sont pas transferables hors conditions prevues par Winelio ;
-- ne constituent pas un salaire, revenu garanti ou instrument financier ;
-- peuvent etre utilises uniquement pour des avantages, remises, services promotionnels ou offres partenaires definis par Winelio.
-
-Bareme de travail : 1 % des commissions d'intermédiation Winelio generees par le professionnel, attribue en Wins selon les conditions affichees dans l'application.
-
-Winelio peut modifier, suspendre ou arreter le programme Rewards, sous reserve des droits deja definitivement acquis.
 
 ## 10. Retraits
 

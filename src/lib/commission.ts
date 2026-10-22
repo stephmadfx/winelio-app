@@ -15,7 +15,7 @@ export interface CompensationPlan {
   level_5_percentage: number;
   platform_percentage: number;
   affiliation_percentage: number;
-  cashback_wins_percentage: number;
+  cashback_wins_percentage?: number;
 }
 
 export function assertValidCompensationPlan(plan: CompensationPlan): void {
@@ -28,7 +28,7 @@ export function assertValidCompensationPlan(plan: CompensationPlan): void {
     plan.level_5_percentage,
     plan.platform_percentage,
     plan.affiliation_percentage,
-    plan.cashback_wins_percentage,
+    plan.cashback_wins_percentage ?? 0,
   ].map(Number);
   const total = percentages.reduce((sum, value) => sum + value, 0);
   if (
@@ -46,7 +46,6 @@ interface CommissionResult {
   level_commissions: { level: number; amount: number }[];
   platform_commission: number;
   affiliation_commission: number;
-  cashback_wins: number;
 }
 
 export function calculateCommissions(
@@ -68,11 +67,12 @@ export function calculateCommissions(
     .map((pct, i) => ({ level: i + 1, amount: baseCommission * (pct / 100) }))
     .filter((lc) => lc.amount > 0);
 
-  const platform_commission   = baseCommission * ((plan.platform_percentage   ?? 23) / 100);
+  // Les anciens instantanés réaffectent aussi leur part cashback à Winelio.
+  const platform_commission = baseCommission *
+    (((plan.platform_percentage ?? 24) + (plan.cashback_wins_percentage ?? 0)) / 100);
   const affiliation_commission = baseCommission * ((plan.affiliation_percentage ?? 1)  / 100);
-  const cashback_wins          = baseCommission * ((plan.cashback_wins_percentage ?? 1) / 100);
 
-  return { referrer_commission, level_commissions, platform_commission, affiliation_commission, cashback_wins };
+  return { referrer_commission, level_commissions, platform_commission, affiliation_commission };
 }
 
 /**
@@ -143,7 +143,7 @@ export async function createCommissions(
   if (!plan) throw new Error("Plan de commission introuvable");
   assertValidCompensationPlan(plan);
 
-  const { referrer_commission, level_commissions, platform_commission, affiliation_commission, cashback_wins } =
+  const { referrer_commission, level_commissions, platform_commission, affiliation_commission } =
     calculateCommissions(amount, plan);
 
   const commissions: Array<{
@@ -163,7 +163,7 @@ export async function createCommissions(
       level: 0,
       status: COMMISSION_STATUS.PENDING,
     },
-    // Cagnotte Winelio (23% sur le plan standard actif)
+    // Cagnotte Winelio (24% sur le plan standard actif)
     {
       recommendation_id: recommendationId,
       user_id: WINELIO_SYSTEM_USER_ID,
@@ -236,18 +236,6 @@ export async function createCommissions(
     if (platformEntry) {
       platformEntry.amount = Math.round((platformEntry.amount + undistributed) * 100) / 100;
     }
-  }
-
-  // Cashback pro (1% en Wins) → le professionnel lui-même
-  if (cashback_wins > 0) {
-    commissions.push({
-      recommendation_id: recommendationId,
-      user_id: professionalId,
-      amount: cashback_wins,
-      type: COMMISSION_TYPE.PROFESSIONAL_CASHBACK,
-      level: 0,
-      status: COMMISSION_STATUS.PENDING,
-    });
   }
 
   const { error: insertError } = await supabaseAdmin

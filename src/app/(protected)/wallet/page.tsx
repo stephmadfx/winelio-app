@@ -49,12 +49,12 @@ export default async function WalletPage() {
 
   const available = wallet?.available ?? 0;
   const pending = wallet?.pending_commissions ?? 0;
-  const totalWins = wallet?.total_wins ?? 0;
 
   // Fetch recent commissions
   const { data: commissions } = await supabase
     .from("commission_transactions")
     .select("id, amount, created_at, status, type, level")
+    .neq("type", "professional_cashback")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(5);
@@ -132,7 +132,7 @@ export default async function WalletPage() {
 
       {/* Balance Cards */}
       <Link href="/wallet/documents" className="inline-block text-sm font-medium text-winelio-orange hover:underline">Mes attestations de versement →</Link>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <WalletCard
           title="Disponible"
           amount={available}
@@ -146,13 +146,6 @@ export default async function WalletPage() {
           currency="EUR"
           color="amber"
           icon="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-        <WalletCard
-          title="Total Wins"
-          amount={totalWins}
-          currency="EUR"
-          color="dark"
-          icon="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
         />
       </div>
 

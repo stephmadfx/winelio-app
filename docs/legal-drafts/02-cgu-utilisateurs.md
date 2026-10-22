@@ -1,6 +1,6 @@
 # Conditions Generales d'Utilisation - Winelio
 
-Version publiee - 2026-06-04
+Version publiee - 2026-10-22
 
 ## 1. Objet
 
@@ -97,7 +97,7 @@ Le programme d'affiliation Winelio repose exclusivement sur des prestations reel
 
 Aucune remuneration n'est due pour la simple inscription d'un utilisateur, la simple invitation d'une personne, la constitution d'une equipe ou la progression du nombre d'inscrits.
 
-Les conditions detaillees du programme d'affiliation figurent dans le Reglement du programme d'affiliation et Winelio Rewards.
+Les conditions detaillees du programme d'affiliation figurent dans le Reglement du programme d'affiliation.
 
 Cette regle vise notamment a eviter tout mecanisme prohibe de type vente pyramidale ou "boule de neige", au sens de l'article L121-15 du Code de la consommation.
 
@@ -109,8 +109,7 @@ Les montants affiches dans le wallet ou la cagnotte peuvent comprendre :
 
 - des commissions d'intermédiation acquises ;
 - des commissions d'intermédiation en attente ;
-- des montants soumis a verification ;
-- des avantages internes en Wins.
+- des montants soumis a verification.
 
 Un montant affiche ne vaut pas necessairement droit immediat, inconditionnel et definitif au paiement. Winelio peut differer, corriger, annuler ou suspendre un montant en cas d'erreur, d'annulation de l'operation, de non-paiement, de remboursement, de litige, de fraude ou de controle.
 

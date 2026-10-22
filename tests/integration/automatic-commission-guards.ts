@@ -20,14 +20,14 @@ const validPlan: CompensationPlan = {
   level_3_percentage: 3,
   level_4_percentage: 3,
   level_5_percentage: 3,
-  platform_percentage: 23,
+  platform_percentage: 24,
   affiliation_percentage: 1,
-  cashback_wins_percentage: 1,
+  cashback_wins_percentage: 0,
 };
 
 assert.doesNotThrow(() => assertValidCompensationPlan(validPlan));
 assert.throws(
-  () => assertValidCompensationPlan({ ...validPlan, platform_percentage: 22 }),
+  () => assertValidCompensationPlan({ ...validPlan, platform_percentage: 23 }),
   /Plan de commission invalide/,
 );
 assert.match(STRIPE_OFF_SESSION_CONSENT_VERSION, /^\d{4}-\d{2}-\d{2}-v\d+$/);

@@ -31,9 +31,10 @@ const main = async () => {
     const level2 = await createTestUser({ email: e2eEmail("commission-l2"), sponsorId: level3.id });
     const level1 = await createTestUser({ email: e2eEmail("commission-l1"), sponsorId: level2.id });
     const referrer = await createTestUser({ email: e2eEmail("commission-referrer"), sponsorId: level1.id });
+    const affiliate = await createTestUser({ email: e2eEmail("commission-affiliate"), sponsorId: root.id });
     const professional = await createTestUser({
       email: e2eEmail("commission-professional"),
-      sponsorId: referrer.id,
+      sponsorId: affiliate.id,
       isProfessional: true,
     });
     const contact = await createTestContact({ userId: referrer.id });
@@ -76,11 +77,20 @@ const main = async () => {
 
     const { data: pending, error: pendingError } = await wn()
       .from("commission_transactions")
-      .select("type, amount, status, is_demo")
+      .select("type, amount, status, is_demo, user_id")
       .eq("recommendation_id", recommendation.id);
     if (pendingError) throw new Error(`Lecture commissions impossible: ${pendingError.message}`);
 
-    assert(pending?.length === 9, `9 commissions attendues, reçu ${pending?.length ?? 0}`);
+    assert(pending?.length === 8, `8 commissions attendues, reçu ${pending?.length ?? 0}`);
+    const affiliation = pending.find((row) => row.type === "affiliation_bonus");
+    assert(affiliation?.user_id === affiliate.id, "Le parrain du pro doit toucher le bonus même s'il ne recommande pas");
+    assert(Number(affiliation.amount) === 1, "Le bonus d'affiliation doit rester à 1 %");
+    assert(!pending.some((row) => row.type === "professional_cashback"), "Aucun nouveau cashback professionnel");
+    await createCommissions(recommendation.id, referrer.id, professional.id, 1000, plan.id);
+    const { count: duplicateCount, error: duplicateError } = await wn().from("commission_transactions")
+      .select("id", { count: "exact", head: true }).eq("recommendation_id", recommendation.id);
+    if (duplicateError) throw duplicateError;
+    assert(duplicateCount === pending.length, "Un second traitement ne doit pas doubler les commissions");
     assert(pending.every((row) => row.status === "PENDING"), "Toutes les commissions doivent démarrer PENDING");
     assert(pending.every((row) => row.is_demo === true), "Une commission de test a fui hors du périmètre démo");
     const total = pending.reduce((sum, row) => sum + Number(row.amount), 0);
@@ -105,7 +115,7 @@ const main = async () => {
     const payout = await unlockRecommendationCommissions(recommendation.id);
     assert(payout.paid, "Le paiement simulé n'a pas été reconnu");
     assert(!payout.reviewed, "Aucun avis ne devait être présent");
-    assert(payout.unlocked === 8, `8 commissions devaient être débloquées, reçu ${payout.unlocked}`);
+    assert(payout.unlocked === 7, `7 commissions devaient être débloquées, reçu ${payout.unlocked}`);
 
     const { data: earned, error: earnedError } = await wn()
       .from("commission_transactions")
@@ -113,8 +123,8 @@ const main = async () => {
       .eq("recommendation_id", recommendation.id);
     if (earnedError) throw new Error(`Contrôle post-paiement impossible: ${earnedError.message}`);
     assert(
-      earned.filter((row) => row.status === "EARNED").length === 8,
-      "Les commissions réseau, plateforme, affiliation et cashback doivent être EARNED"
+      earned.filter((row) => row.status === "EARNED").length === 7,
+      "Les commissions réseau, plateforme et affiliation doivent être EARNED"
     );
     assert(
       earned.find((row) => row.type === "recommendation")?.status === "PENDING",
@@ -124,6 +134,9 @@ const main = async () => {
     testError = error;
   } finally {
     await cleanupE2EAccounts();
+    const { WINELIO_SYSTEM_USER_ID } = await import("../../src/lib/constants");
+    const { recalculateWallet } = await import("../../src/lib/wallet");
+    await recalculateWallet(WINELIO_SYSTEM_USER_ID);
   }
 
   const { count: residualProfiles } = await wn()

@@ -108,7 +108,7 @@
 
 
 [FEATURE] Wallet & Commissions
-├── src/app/(protected)/wallet/         — Page wallet (EUR + Wins)
+├── src/app/(protected)/wallet/         — Page wallet (EUR)
 │   ├── history/                        — Historique transactions
 │   └── withdraw/                       — Formulaire retrait
 ├── src/components/wallet-card.tsx      — Widget solde
@@ -120,7 +120,7 @@
 
 
 [FEATURE] Profile & Onboarding
-├── src/app/(protected)/profile/        — Page profil (avatar, infos, Wins)
+├── src/app/(protected)/profile/        — Page profil (avatar, infos)
 │   └── pro-onboarding/                 — Parcours onboarding pro
 ├── src/components/ProOnboardingWizard.tsx — Wizard 6 étapes (SIRET → CGU → paiement)
 │   [UTILISE] → /api/profile/*, /api/stripe/*, src/lib/siren.ts
@@ -280,7 +280,7 @@
 [CORE] Logique Métier
 ├── src/lib/commission.ts [UTILITY]
 │       calculateCommissions() · createCommissions()
-│       Distribue : 60% referrer · 3%×5 niveaux · 23% plateforme · 1% Wins
+│       Distribue : 60% referrer · 3%×5 niveaux · 24% plateforme · 1% affiliation du professionnel
 ├── src/lib/assign-sponsor.ts [UTILITY]
 │       assignSponsorIfNeeded(userId, sponsorCode?)
 │       Fallback : round-robin is_founder=true via RPC

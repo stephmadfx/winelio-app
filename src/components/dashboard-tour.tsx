@@ -78,7 +78,7 @@ export function DashboardTour() {
             popover: {
               title: "Vos gains et retraits",
               description:
-                "Le récap de vos commissions, la cagnotte Wins et la demande de retrait quand vous êtes prêt.",
+                "Le récap de vos commissions et la demande de retrait quand vous êtes prêt.",
               side: "right",
               align: "start",
             },

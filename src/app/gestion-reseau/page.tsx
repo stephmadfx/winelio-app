@@ -48,7 +48,6 @@ async function getKPIs() {
     pendingRes,
     ongoingRes,
     withdrawalsRes,
-    winsRes,
     newMembersRes,
     prevMembersRes,
     allRecosRes,
@@ -59,16 +58,14 @@ async function getKPIs() {
     // Membres actifs
     supabaseAdmin.from("profiles_real").select("id", { count: "exact", head: true }).eq("is_active", true),
     // Commissions distribuées (EARNED) — hors cagnotte Winelio
-    supabaseAdmin.from("commissions_real").select("amount").eq("status", "EARNED").neq("type", "platform_winelio"),
+    supabaseAdmin.from("commissions_real").select("amount").eq("status", "EARNED").neq("type", "platform_winelio").neq("type", "professional_cashback"),
     // Commissions en attente (PENDING) — hors cagnotte Winelio
-    supabaseAdmin.from("commissions_real").select("amount").eq("status", "PENDING").neq("type", "platform_winelio"),
+    supabaseAdmin.from("commissions_real").select("amount").eq("status", "PENDING").neq("type", "platform_winelio").neq("type", "professional_cashback"),
     // Recommandations en cours
     supabaseAdmin.from("recommendations_real").select("id", { count: "exact", head: true })
       .in("status", ONGOING_RECOMMENDATION_STATUSES),
     // Retraits en attente
     supabaseAdmin.from("withdrawals_real").select("id", { count: "exact", head: true }).eq("status", "PENDING"),
-    // Total Wins distribués
-    supabaseAdmin.from("wallet_summaries_real").select("total_wins"),
     // Nouveaux membres ce mois
     supabaseAdmin.from("profiles_real").select("id", { count: "exact", head: true })
       .gte("created_at", monthStart),
@@ -90,7 +87,6 @@ async function getKPIs() {
 
   const totalEarned    = (earnedRes.data       ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
   const totalPending   = (pendingRes.data      ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
-  const totalWins      = (winsRes.data         ?? []).reduce((s, w) => s + (w.total_wins ?? 0), 0);
   const cagnotteTotal  = (cagnotteAllRes.data  ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
   const cagnotteMois   = (cagnotteMoisRes.data ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
 
@@ -112,7 +108,6 @@ async function getKPIs() {
     totalPending,
     ongoingRecos:      ongoingRes.count ?? 0,
     pendingWithdrawals: withdrawalsRes.count ?? 0,
-    totalWins:         Math.round(totalWins),
     newMembers,
     membersDelta,
     conversionRate,
@@ -241,13 +236,6 @@ export default async function AdminDashboard() {
       sub: "Gains non encore versés",
     },
     {
-      label: "Total Wins distribués",
-      value: kpis.totalWins.toLocaleString("fr-FR"),
-      color: "text-purple-400",
-      bg: "bg-purple-500/10",
-      sub: "Monnaie interne plateforme",
-    },
-    {
       label: "Nouveaux membres ce mois",
       value: kpis.newMembers.toLocaleString("fr-FR"),
       color: "text-sky-400",
@@ -271,7 +259,7 @@ export default async function AdminDashboard() {
       <div className="rounded-xl p-5 bg-gradient-to-r from-amber-500/20 to-winelio-orange/20 border border-winelio-orange/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <p className="text-xs font-semibold text-winelio-orange uppercase tracking-widest mb-1">
-            💰 Cagnotte Winelio (23 %)
+            💰 Cagnotte Winelio (24 %)
           </p>
           <p className="text-3xl font-bold text-white">
             {kpis.cagnotteTotal.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
@@ -294,7 +282,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Row 2 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {row2.map((c) => (
           <KpiCard key={c.label} {...c} />
         ))}

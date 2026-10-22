@@ -41,7 +41,7 @@ export default async function DashboardPage() {
       .gte("created_at", startOfMonth),
     supabase
       .from("user_wallet_summaries")
-      .select("total_earned, available, total_wins, available_wins")
+      .select("total_earned, available")
       .eq("user_id", user.id)
       .single(),
     supabase
@@ -387,7 +387,6 @@ export default async function DashboardPage() {
   const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   const totalEarned = wallet?.total_earned ?? 0;
   const availableBalance = wallet?.available ?? 0;
-  const totalWins = wallet?.total_wins ?? 0;
   const successRate =
     totalRecos && totalRecos > 0
       ? Math.round(((completedRecos ?? 0) / totalRecos) * 100)
@@ -674,12 +673,6 @@ export default async function DashboardPage() {
                   <p className="text-4xl font-extrabold mt-1">
                     {Number(availableBalance).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
                   </p>
-                  <div className="inline-flex items-center gap-1.5 mt-2 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-lg text-sm font-semibold">
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    {Number(totalWins).toLocaleString("fr-FR")} Wins
-                  </div>
                 </div>
 
                 <Link

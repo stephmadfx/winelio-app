@@ -123,7 +123,7 @@ export function ProfessionalPromptModal({
                   </p>
                 </div>
                 <div className="grid gap-3">
-                  {["Contacts qualifiés", "Suivi des 8 étapes", "Commissions et Wins automatiques"].map((item) => (
+                  {["Contacts qualifiés", "Suivi des 8 étapes", "Suivi des commissions"].map((item) => (
                     <div key={item} className="flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold">
                       <CheckCircle2 className="h-5 w-5 text-winelio-amber" aria-hidden="true" />
                       {item}

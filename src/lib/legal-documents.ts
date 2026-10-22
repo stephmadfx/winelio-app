@@ -29,8 +29,8 @@ export const legalDocuments: LegalDocumentMeta[] = [
   },
   {
     slug: "programme-affiliation-rewards",
-    title: "Programme d'affiliation et Winelio Rewards",
-    description: "Répartition des commissions d'intermédiation, réseau MLM, Wins, retraits et règles anti-fraude.",
+    title: "Programme d'affiliation",
+    description: "Répartition des commissions d'intermédiation, réseau MLM, bonus du parrain du professionnel, retraits et règles anti-fraude.",
     fileName: "04-programme-affiliation-et-rewards.md",
   },
   {

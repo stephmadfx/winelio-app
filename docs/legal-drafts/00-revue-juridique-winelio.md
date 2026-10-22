@@ -9,7 +9,7 @@ Document de travail non substitutif a une consultation d'avocat. Les textes ci-d
 1. Mentions legales
 2. Conditions Generales d'Utilisation (CGU)
 3. Conditions Professionnels / CGV de commission d'intermédiation
-4. Reglement du programme d'affiliation et Winelio Rewards
+4. Reglement du programme d'affiliation
 5. Politique de confidentialite
 
 ## References legales utilisees
@@ -60,8 +60,7 @@ Le modele indique :
 - recommandeur : 60 %
 - niveaux 1 a 5 : 3 % chacun = 15 %
 - bonus sponsor du professionnel : 1 %
-- cashback professionnel : 1 %
-- plateforme : 23 %
+- plateforme : 24 %
 
 Total : 100 %.
 
@@ -108,7 +107,7 @@ La codebase contient tracking d'ouverture/clic email. Cela doit etre mentionne d
 1. Quelle est l'entite juridique exacte de Winelio : raison sociale, forme, SIREN/SIRET, adresse, representant legal, email officiel, telephone ?
 2. Le domaine legal principal est-il `winelio.app` et l'email de contact est-il `contact@winelio.app` ?
 3. Le bareme pro est-il bien 10 % jusqu'a 25 000 euros puis 5 % au-dela ? Ce seuil est-il par mission, par client, par annee civile ou par professionnel ?
-4. Confirmer que la repartition officielle a publier est bien : 60 % recommandeur, 3 % par niveau MLM sur 5 niveaux, 1 % affiliation, 1 % cashback Wins, 23 % plateforme.
+4. Confirmer que la repartition officielle a publier est bien : 60 % recommandeur, 3 % par niveau MLM sur 5 niveaux, 1 % affiliation, 24 % plateforme.
 5. Les retraits doivent-ils exiger un minimum de retrait ou seulement appliquer 0,25 euro de frais sous 50 euros ?
 6. Winelio ouvre-t-il aux agents immobiliers des maintenant, ou les exclut-on tant qu'un avocat n'a pas valide le montage Hoguet ?
 7. Les utilisateurs affilies doivent-ils obligatoirement etre majeurs et residents fiscaux francais/UE ?

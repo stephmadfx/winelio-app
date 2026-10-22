@@ -526,7 +526,7 @@ export function RecoFlowchart({ annotations: initialAnnotations }: { annotations
               💰 Commission préparée · crédits créés après règlement Stripe — 5 niveaux MLM
             </text>
             <text x={500} y={1175} textAnchor="middle" fontSize={10} fill="rgba(255,255,255,0.65)">
-              Recommandeur 60% · Niveaux 1–5 : 3% chacun (15%) · Affiliation 1% · Cashback pro 1% (Gains) · Winelio 23%
+              Recommandeur 60% · Niveaux 1–5 : 3% chacun (15%) · Parrain du professionnel 1% · Winelio 24%
             </text>
             {ann.has("commissions") && <Badge x={914} y={1152} />}
           </g>
