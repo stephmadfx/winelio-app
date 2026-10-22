@@ -107,14 +107,22 @@ export const StepContact = ({
         <div className="mt-4 grid gap-2 sm:grid-cols-3">
           <RoleChip title="Vous" subtitle="Recommandeur" />
           <RoleChip title="Cette personne" subtitle="Recommandé" accent />
-          <RoleChip title="Ensuite" subtitle="Professionnel" />
+          <RoleChip title="Déjà choisi" subtitle="Professionnel" />
         </div>
       </div>
 
       {!createContact ? (
         <div className="space-y-3">
+          <button type="button" onClick={() => { setCreateContact(true); setSelectedContactId(null); setThirdPartyConsent(false); }}
+            className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-winelio-orange/40 px-5 py-4 text-sm font-semibold text-winelio-orange hover:border-winelio-orange hover:bg-winelio-orange/5 transition-all cursor-pointer">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            </svg>
+            Ajouter un nouveau recommandé
+          </button>
           {otherContacts.length > 0 && (
             <>
+              <Separator />
               <p className="text-xs font-semibold uppercase tracking-widest text-winelio-gray/60">Recommandés existants</p>
               {otherContacts.map((c) => (
                 <button key={c.id} type="button" onClick={() => { setSelectedContactId(c.id); setThirdPartyConsent(false); }}
@@ -136,17 +144,8 @@ export const StepContact = ({
                   <ThirdPartyConsentCheckbox checked={thirdPartyConsent} onChange={setThirdPartyConsent} />
                 </>
               )}
-              <Separator />
             </>
           )}
-
-          <button type="button" onClick={() => { setCreateContact(true); setSelectedContactId(null); setThirdPartyConsent(false); }}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-winelio-orange/40 px-5 py-4 text-sm font-semibold text-winelio-orange hover:border-winelio-orange hover:bg-winelio-orange/5 transition-all cursor-pointer">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-            Ajouter un recommandé
-          </button>
         </div>
       ) : (
         <div className="rounded-2xl border border-winelio-gray/10 bg-white p-6 shadow-sm space-y-4">

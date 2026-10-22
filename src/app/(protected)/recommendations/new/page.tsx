@@ -81,18 +81,19 @@ export default function NewRecommendationPage() {
         (!ownEmail || contactForm.email.trim().toLowerCase() !== ownEmail)));
 
   const canProceed = (): boolean => {
-    if (step === 1) return contactReady;
-    if (step === 2) return !!selectedProId;
-    return description.length > 0;
+    if (step === 1) return !!selectedProId;
+    if (step === 2) return description.trim().length > 0;
+    return !!selectedProId && description.trim().length > 0 && contactReady;
   };
 
   const handleNext = () => {
-    if (step === 1 && createContact && !validateContact()) return;
     if (!canProceed()) return;
     setStep(step + 1);
   };
 
   const handleSubmit = async () => {
+    if (submitting || !canProceed()) return;
+    if (createContact && !validateContact()) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -135,7 +136,7 @@ export default function NewRecommendationPage() {
         </button>
         <h1 className="text-2xl font-bold text-winelio-dark tracking-tight">Nouvelle recommandation</h1>
         <p className="mt-1 text-sm text-winelio-gray">
-          Trois acteurs distincts : vous (recommandeur), le recommandé, le professionnel.
+          Choisissez un professionnel, décrivez le besoin, puis renseignez le recommandé.
         </p>
       </div>
 
@@ -148,7 +149,10 @@ export default function NewRecommendationPage() {
         </div>
       )}
 
-      {step === 1 && (
+      <div hidden={step !== 1}>
+        <StepProfessional userId={userId} selectedProId={selectedProId} onSelect={(id) => { setSelectedProId(id); setStep(2); }} />
+      </div>
+      {step === 3 && (
         <StepContact contacts={contacts} selfProfile={selfProfile}
           selectedContactId={selectedContactId} setSelectedContactId={setSelectedContactId}
           createContact={createContact} setCreateContact={setCreateContact}
@@ -156,8 +160,7 @@ export default function NewRecommendationPage() {
           contactErrors={contactErrors} setContactErrors={setContactErrors}
           thirdPartyConsent={thirdPartyConsent} setThirdPartyConsent={setThirdPartyConsent} />
       )}
-      {step === 2 && <StepProfessional userId={userId} selectedProId={selectedProId} onSelect={setSelectedProId} />}
-      {step === 3 && <StepProject description={description} urgency={urgency} onDescriptionChange={setDescription} onUrgencyChange={setUrgency} />}
+      {step === 2 && <StepProject description={description} urgency={urgency} onDescriptionChange={setDescription} onUrgencyChange={setUrgency} />}
 
       <StickyFormActions>
         {step > 1 ? (

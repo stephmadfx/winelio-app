@@ -61,9 +61,9 @@ export interface ContactFormData {
 export type Urgency = "urgent" | "normal" | "flexible";
 
 export const STEPS_META = [
-  { number: 1, label: "Recommandé" },
-  { number: 2, label: "Professionnel" },
-  { number: 3, label: "Projet" },
+  { number: 1, label: "Professionnel" },
+  { number: 2, label: "Besoin" },
+  { number: 3, label: "Recommandé" },
 ] as const;
 
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

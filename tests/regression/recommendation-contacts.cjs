@@ -44,6 +44,11 @@ test('self contact remains excluded after trimming and case normalization', () =
   assert.match(html, /Other Test/);
 });
 test('empty list and missing account email still allow adding a contact', () => {
-  assert.match(render([]), /Ajouter un recommandé/);
+  assert.match(render([]), /Ajouter un nouveau recommandé/);
   assert.match(render([contact('Legacy', null)], ''), /Legacy Test/);
+});
+test('adding a new contact is offered before existing contacts', () => {
+  const html = render([contact('Existing', 'existing@example.com')]);
+  assert.ok(html.indexOf('Ajouter un nouveau recommandé') < html.indexOf('Recommandés existants'));
+  assert.ok(html.indexOf('Recommandés existants') < html.indexOf('Existing Test'));
 });
