@@ -44,11 +44,10 @@ export function LandingHero() {
   }, []);
   const handleUnlock = useCallback(() => setUnlocked(true), []);
 
-  const typeParam = searchParams.get("type");
   const invitation = referralFromParams(new URLSearchParams(searchParams.toString()));
   const registerHref = refCode
-    ? `/auth/login?mode=register&ref=${encodeURIComponent(refCode)}${typeParam ? `&type=${encodeURIComponent(typeParam)}` : ""}`
-    : `/auth/login?mode=register${typeParam ? `&type=${encodeURIComponent(typeParam)}` : ""}`;
+    ? `/auth/login?mode=register&ref=${encodeURIComponent(refCode)}`
+    : `/auth/login?mode=register`;
 
   const primaryClass =
     "inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105";
@@ -111,7 +110,7 @@ export function LandingHero() {
       <div className={`flex flex-col gap-3 ${knownUser ? "mt-6" : "mt-4"}`}>
         {unlocked && invitation && (
           <ReferralAppInstall
-            invite={{ ...invitation, videoWatched: true }}
+            invite={{ ...invitation, professional: false, videoWatched: true }}
             className={primaryClass}
           />
         )}

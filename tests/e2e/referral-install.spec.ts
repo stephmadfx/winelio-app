@@ -12,7 +12,7 @@ test("le téléchargement reste derrière la vidéo", async ({ browser }) => {
   await context.close();
 });
 
-test("Android transmet le code et le type pro dans le lien Google Play", async ({ browser }) => {
+test("Android conserve le parrain et neutralise les anciennes invitations pro", async ({ browser }) => {
   const context = await browser.newContext({ userAgent: android, viewport: { width: 390, height: 844 } });
   await context.addInitScript(() => localStorage.setItem("winelio_promo_watched_v2", "1"));
   const page = await context.newPage();
@@ -23,10 +23,10 @@ test("Android transmet le code et le type pro dans le lien Google Play", async (
   const store = new URL((await download.getAttribute("href"))!);
   const referrer = new URLSearchParams(store.searchParams.get("referrer")!);
   expect(referrer.get("ref")).toBe("ABC12345");
-  expect(referrer.get("type")).toBe("pro");
+  expect(referrer.get("type")).toBeNull();
   expect(referrer.get("video")).toBe("1");
   expect(referrer.get("winelio_invite")).toBe("1");
-  await expect(page.getByRole("link", { name: "Déjà installée ? Ouvrir mon invitation" })).toHaveAttribute("href", "winelio://invite?ref=ABC12345&type=pro&video=1");
+  await expect(page.getByRole("link", { name: "Déjà installée ? Ouvrir mon invitation" })).toHaveAttribute("href", "winelio://invite?ref=ABC12345&video=1");
   await page.reload();
   await expect(download).toBeVisible();
   await page.screenshot({ path: "output/referral-install/android.png", fullPage: true });
@@ -46,7 +46,7 @@ test("iPhone copie réellement le lien avant d'ouvrir l'App Store", async ({ bro
   await page.getByRole("button", { name: "Télécharger sur iPhone" }).click();
   await expect(page).toHaveURL(/apps\.apple\.com/);
   await page.goto("http://127.0.0.1:43176/?ref=ABC12345&type=pro");
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("https://winelio.app/?ref=ABC12345&type=pro&video=1");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("https://winelio.app/?ref=ABC12345&video=1");
   await context.close();
 });
 
