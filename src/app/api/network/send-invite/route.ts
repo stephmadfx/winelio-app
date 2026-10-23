@@ -5,16 +5,15 @@ import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 import { queueEmail } from "@/lib/email-queue";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.fr";
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.app";
 
 function buildInviteEmail(
   senderName: string,
   recipientEmail: string,
   referralCode: string,
-  personalMessage?: string,
-  isPro: boolean = false
+  personalMessage?: string
 ): string {
-  const referralUrl = `${SITE_URL}/auth/login?mode=register&ref=${referralCode}&email=${encodeURIComponent(recipientEmail)}${isPro ? "&type=pro" : ""}`;
+  const referralUrl = `${SITE_URL}/auth/login?mode=register&ref=${referralCode}&email=${encodeURIComponent(recipientEmail)}`;
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -69,7 +68,7 @@ function buildInviteEmail(
                     <table cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td align="center" style="width:52px;height:52px;background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:13px;font-size:26px;line-height:52px;text-align:center;vertical-align:middle;">
-                          ${isPro ? "💼" : "🤝"}
+                          🤝
                         </td>
                       </tr>
                     </table>
@@ -79,7 +78,7 @@ function buildInviteEmail(
                 <tr>
                   <td align="center">
                     <h1 style="color:#2D3436;font-size:22px;font-weight:700;margin:0;line-height:1.3;">
-                      {isPro ? "Développez votre activité professionnelle avec Winelio !" : "Vous êtes invité(e) à rejoindre Winelio !"}
+                      Vous êtes invité(e) à rejoindre Winelio !
                     </h1>
                   </td>
                 </tr>
@@ -118,11 +117,9 @@ function buildInviteEmail(
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td>
-                    <p style="color:#2D3436;font-size:15px;font-weight:600;margin:0 0 10px;">${isPro ? "Pourquoi rejoindre Winelio en tant que Pro ?" : "Qu'est-ce que Winelio ?"}</p>
+                    <p style="color:#2D3436;font-size:15px;font-weight:600;margin:0 0 10px;">Qu'est-ce que Winelio ?</p>
                     <p style="color:#636E72;font-size:14px;line-height:1.7;margin:0;">
-                      ${isPro 
-                        ? "Winelio est le premier réseau d'affaires de recommandation rémunérée. Vos clients et contacts vous recommandent directement à leurs proches et reçoivent des commissions, développant ainsi vos ventes et votre visibilité gratuitement."
-                        : "Winelio est la plateforme qui transforme vos recommandations en revenus. Mettez en relation vos proches avec des professionnels de confiance et soyez récompensé à chaque mission validée."
+                      ${"Winelio est la plateforme qui transforme vos recommandations en revenus. Mettez en relation vos proches avec des professionnels de confiance et soyez récompensé à chaque mission validée."
                       }
                     </p>
                   </td>
@@ -148,7 +145,7 @@ function buildInviteEmail(
                         </td>
                         <td style="padding-left:14px;vertical-align:middle;">
                           <span style="color:#2D3436;font-size:14px;line-height:1.5;">
-                            ${isPro ? "Recevez des opportunités d'affaires qualifiées et recommandées" : "Gagnez des commissions d'intermédiation sur chaque recommandation validée"}
+                            Gagnez des commissions d'intermédiation sur chaque recommandation validée
                           </span>
                         </td>
                       </tr>
@@ -171,7 +168,7 @@ function buildInviteEmail(
                         </td>
                         <td style="padding-left:14px;vertical-align:middle;">
                           <span style="color:#2D3436;font-size:14px;line-height:1.5;">
-                            ${isPro ? "Développez un réseau d'apporteurs d'affaires sur 5 niveaux" : "Développez votre réseau sur 5 niveaux de parrainage"}
+                            Développez votre réseau sur 5 niveaux de parrainage
                           </span>
                         </td>
                       </tr>
@@ -194,7 +191,7 @@ function buildInviteEmail(
                         </td>
                         <td style="padding-left:14px;vertical-align:middle;">
                           <span style="color:#2D3436;font-size:14px;line-height:1.5;">
-                            ${isPro ? "Proposez et valorisez vos services auprès de confrères de confiance" : "Accédez à un réseau de professionnels vérifiés"}
+                            Accédez à un réseau de professionnels vérifiés
                           </span>
                         </td>
                       </tr>
@@ -285,7 +282,7 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
 
-    const { to, personalMessage: rawMessage, isProRegistration = false } = await req.json();
+    const { to, personalMessage: rawMessage } = await req.json();
     if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
       return NextResponse.json({ error: "Adresse email invalide" }, { status: 400 });
     }
@@ -305,19 +302,15 @@ export async function POST(req: Request) {
     }
 
     const senderName = formatDisplayName(profile.first_name, profile.last_name, "Un membre Winelio");
-    const referralUrl = `${SITE_URL}/auth/login?mode=register&ref=${profile.sponsor_code}&email=${encodeURIComponent(to)}${isProRegistration ? "&type=pro" : ""}`;
+    const referralUrl = `${SITE_URL}/auth/login?mode=register&ref=${profile.sponsor_code}&email=${encodeURIComponent(to)}`;
 
     // Version texte brut (obligatoire pour éviter les filtres spam)
     const textBody = [
-      isProRegistration 
-        ? `${senderName} vous invite à rejoindre son réseau d'affaires Winelio !`
-        : `${senderName} vous invite à rejoindre Winelio !`,
+      `${senderName} vous invite à rejoindre Winelio !`,
       "",
       personalMessage ? `Message : "${personalMessage}"` : null,
       personalMessage ? "" : null,
-      isProRegistration
-        ? "Winelio est la plateforme de recommandation d'affaires rémunérée pour les professionnels."
-        : "Winelio est la plateforme qui transforme vos recommandations en revenus.",
+      "Winelio est la plateforme qui transforme vos recommandations en revenus.",
       "",
       `Votre code de parrainage : ${profile.sponsor_code.toUpperCase()}`,
       "",
@@ -330,11 +323,9 @@ export async function POST(req: Request) {
     await queueEmail({
       to,
       replyTo: user.email,
-      subject: isProRegistration
-        ? `${senderName} vous invite à rejoindre son réseau d'affaires sur Winelio`
-        : `${senderName} vous invite a rejoindre Winelio`,
+      subject: `${senderName} vous invite a rejoindre Winelio`,
       text: textBody,
-      html: buildInviteEmail(senderName, to, profile.sponsor_code, personalMessage, isProRegistration),
+      html: buildInviteEmail(senderName, to, profile.sponsor_code, personalMessage),
       priority: 5,
     });
 

@@ -44,11 +44,11 @@ function nodes(node, match) {
 }
 const buttons = tree => nodes(tree, node => node.type === 'button');
 
-test('copy uses the complete invitation URL for members and professionals', async () => {
+test('copy always uses the individual invitation URL, including legacy pro props', async () => {
   for (const isPro of [false, true]) {
     const s = setup();
     await s.render('CopyButton', { code: 'ABC12345', isPro }).props.onClick();
-    assert.equal(s.copied[0], `https://winelio.app/auth/login?mode=register&ref=ABC12345${isPro ? '&type=pro' : ''}`);
+    assert.equal(s.copied[0], `https://winelio.app/auth/login?mode=register&ref=ABC12345`);
     assert.equal(s.states[0], 'copied');
   }
 });
@@ -59,7 +59,7 @@ test('share preview, copied message and native share contain the same link and s
     const tree = s.render('ShareButton', { code: 'ABC12345', isPro });
     const message = nodes(tree, node => node.type === 'textarea')[0].props.value;
     assert.match(message, /Mon code parrain : ABC12345/);
-    assert.ok(message.includes(`https://winelio.app/auth/login?mode=register&ref=ABC12345${isPro ? '&type=pro' : ''}`));
+    assert.ok(message.includes(`https://winelio.app/auth/login?mode=register&ref=ABC12345`));
     await buttons(tree).find(node => node.props.children === 'Copier le message').props.onClick();
     assert.equal(s.copied[0], message);
     assert.equal(s.states[1], 'message');
@@ -91,14 +91,14 @@ test('native share cancellation does nothing; an actual failure copies the compl
   }
 });
 
-test('the first registration render preserves URL referral and professional type through the intro gate', () => {
+test('the first registration render preserves URL referral and legacy parameters through the intro gate', () => {
   for (const isPro of [false, true]) {
     const effects = [], redirects = [], storage = new Map();
     const jsx = (type, props) => ({ type, props });
     const { default: LoginPage } = load('src/app/auth/login/page.tsx', {
       react: { useState: value => [value, () => {}], useEffect: effect => effects.push(effect), Suspense: 'suspense' },
       'react/jsx-runtime': { jsx, jsxs: jsx },
-      'next/navigation': { useRouter: () => ({ replace: url => redirects.push(url) }), useSearchParams: () => new URLSearchParams(`mode=register&ref=ABC12345${isPro ? '&type=pro' : ''}`) },
+      'next/navigation': { useRouter: () => ({ replace: url => redirects.push(url) }), useSearchParams: () => new URLSearchParams(`mode=register&ref=ABC12345${isPro ? "&type=pro" : ""}`) },
       '@/components/winelio-logo': {}, '@/components/AppBackground': {},
       '@/components/PromoVideo': { PROMO_WATCHED_KEY: 'watched' },
       '@/lib/safe-fetch': {}, '@/lib/utils': {}, '@/lib/phone': {},
@@ -111,7 +111,7 @@ test('the first registration render preserves URL referral and professional type
     nodes(LoginPage(), node => node.type?.name === 'LoginForm')[0].type();
     effects.forEach(effect => effect());
     assert.equal(storage.get('winelio_ref'), 'ABC12345');
-    assert.equal(redirects.at(-1), `/?ref=ABC12345${isPro ? '&type=pro' : ''}`);
+    assert.equal(redirects.at(-1), `/?ref=ABC12345${isPro ? "&type=pro" : ""}`);
   }
 });
 

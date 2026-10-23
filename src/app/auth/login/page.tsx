@@ -100,7 +100,7 @@ function LoginForm() {
 
   const isRegister = searchParams.get("mode") === "register";
   const returnTo = searchParams.get("returnTo") || "";
-  const isProRegistration = isRegister && (returnTo.startsWith("/claim/") || searchParams.get("type") === "pro");
+  const isProRegistration = isRegister && returnTo.startsWith("/claim/");
   const resolvedProfessionalEmail = usePersonalEmailForCompany
     ? email.trim()
     : professionalEmail.trim();

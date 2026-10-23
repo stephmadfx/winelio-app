@@ -39,11 +39,11 @@ async function copyText(text: string) {
   }
 }
 
-export function CopyButton({ code, isPro = false, label }: { code: string; isPro?: boolean; label?: string }) {
+export function CopyButton({ code, label }: { code: string; label?: string }) {
   const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
 
   const handleCopy = async () => {
-    const url = `${window.location.origin}/auth/login?mode=register&ref=${code}${isPro ? "&type=pro" : ""}`;
+    const url = `${window.location.origin}/auth/login?mode=register&ref=${code}`;
     try {
       await copyText(url);
       setStatus("copied");
@@ -57,7 +57,7 @@ export function CopyButton({ code, isPro = false, label }: { code: string; isPro
     <button
       type="button"
       onClick={handleCopy}
-      className={`inline-flex items-center gap-2 px-5 py-3 ${isPro ? 'bg-gradient-to-r from-winelio-dark to-winelio-gray' : 'bg-gradient-to-r from-winelio-orange to-winelio-amber'} text-white font-semibold rounded-xl hover:opacity-90 transition-opacity cursor-pointer`}
+      className={`inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white font-semibold rounded-xl hover:opacity-90 transition-opacity cursor-pointer`}
     >
       {status === "copied" ? (
         <>
@@ -78,14 +78,14 @@ export function CopyButton({ code, isPro = false, label }: { code: string; isPro
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
-          {label ?? (isPro ? "Copier le lien pro" : "Copier le lien")}
+          {label ?? ("Copier le lien")}
         </>
       )}
     </button>
   );
 }
 
-export function EmailInviteButton({ code, isPro = false }: { code: string; isPro?: boolean }) {
+export function EmailInviteButton({ code }: { code: string }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -101,7 +101,6 @@ export function EmailInviteButton({ code, isPro = false }: { code: string; isPro
         body: JSON.stringify({
           to: email,
           personalMessage: message.trim() || undefined,
-          isProRegistration: isPro,
         }),
       });
       if (res.ok) {
@@ -123,34 +122,34 @@ export function EmailInviteButton({ code, isPro = false }: { code: string; isPro
   };
 
   const referralUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/auth/login?mode=register&ref=${code}${isPro ? "&type=pro" : ""}`
-    : `https://winelio.fr/auth/login?mode=register&ref=${code}${isPro ? "&type=pro" : ""}`;
+    ? `${window.location.origin}/auth/login?mode=register&ref=${code}`
+    : `https://winelio.app/auth/login?mode=register&ref=${code}`;
 
   return (
     <>
       <button
         onClick={() => setOpen(true)}
-        className={`inline-flex items-center gap-2 px-5 py-3 border-2 ${isPro ? 'border-winelio-dark text-winelio-dark hover:bg-winelio-dark' : 'border-winelio-orange text-winelio-orange hover:bg-winelio-orange'} font-semibold rounded-xl hover:text-white transition-colors cursor-pointer`}
+        className={`inline-flex items-center gap-2 px-5 py-3 border-2 border-winelio-orange text-winelio-orange hover:bg-winelio-orange font-semibold rounded-xl hover:text-white transition-colors cursor-pointer`}
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
-        {isPro ? "Inviter un pro" : "Inviter"}
+        {"Inviter"}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="p-0 overflow-hidden rounded-2xl">
           {/* Header gradient */}
-          <div className={`bg-gradient-to-r ${isPro ? 'from-winelio-dark to-winelio-gray' : 'from-winelio-orange to-winelio-amber'} p-6 text-white`}>
+          <div className={`bg-gradient-to-r from-winelio-orange to-winelio-amber p-6 text-white`}>
             <div className="flex items-center gap-3 mb-1">
-              <span className="text-3xl">{isPro ? "💼" : "🤝"}</span>
+              <span className="text-3xl">{"🤝"}</span>
               <div>
                 <DialogHeader>
                   <DialogTitle className="text-white text-lg font-bold leading-tight">
-                    {isPro ? "Inviter un professionnel par email" : "Inviter par email"}
+                    {"Inviter par email"}
                   </DialogTitle>
                   <DialogDescription className="text-white/80 text-sm">
-                    {isPro ? "Envoyez votre lien de parrainage pro" : "Envoyez votre lien de parrainage directement"}
+                    {"Envoyez votre lien de parrainage directement"}
                   </DialogDescription>
                 </DialogHeader>
               </div>
@@ -187,7 +186,7 @@ export function EmailInviteButton({ code, isPro = false }: { code: string; isPro
               <textarea
                 value={message}
                 onChange={e => setMessage(e.target.value)}
-                placeholder={isPro ? "Bonjour ! Je te parraine sur Winelio pour te permettre de recevoir des recommandations clients et de développer ton réseau d'affaires..." : "Bonjour ! Je pense que Winelio peut vraiment t'aider à développer ton activité…"}
+                placeholder={"Bonjour ! Je pense que Winelio peut vraiment t'aider à développer ton activité…"}
                 rows={3}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-winelio-orange focus:ring-2 focus:ring-winelio-orange/20 transition-all resize-none"
               />
@@ -234,15 +233,15 @@ export function EmailInviteButton({ code, isPro = false }: { code: string; isPro
   );
 }
 
-export function ShareButton({ code, isPro = false, label }: { code: string; isPro?: boolean; label?: string }) {
+export function ShareButton({ code, label }: { code: string; label?: string }) {
   const [open, setOpen] = useState(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "link" | "message" | "error">("idle");
 
   const referralUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/auth/login?mode=register&ref=${code}${isPro ? "&type=pro" : ""}`
-    : `https://winelio.app/auth/login?mode=register&ref=${code}${isPro ? "&type=pro" : ""}`;
+    ? `${window.location.origin}/auth/login?mode=register&ref=${code}`
+    : `https://winelio.app/auth/login?mode=register&ref=${code}`;
 
-  const invitationMessage = `${isPro ? "Rejoins Winelio en tant que professionnel" : "Rejoins mon réseau Winelio"} avec mon lien d’invitation :\n${referralUrl}\n\nMon code parrain : ${code}`;
+  const invitationMessage = `Rejoins mon réseau Winelio avec mon lien d’invitation :\n${referralUrl}\n\nMon code parrain : ${code}`;
 
   const handleCopy = async (kind: "link" | "message") => {
     try {
@@ -275,21 +274,21 @@ export function ShareButton({ code, isPro = false, label }: { code: string; isPr
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`inline-flex items-center gap-2 px-5 py-3 border-2 ${isPro ? 'border-winelio-dark text-winelio-dark hover:bg-winelio-dark' : 'border-winelio-orange text-winelio-orange hover:bg-winelio-orange'} font-semibold rounded-xl hover:text-white transition-colors cursor-pointer`}
+        className={`inline-flex items-center gap-2 px-5 py-3 border-2 border-winelio-orange text-winelio-orange hover:bg-winelio-orange font-semibold rounded-xl hover:text-white transition-colors cursor-pointer`}
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
         </svg>
-        {label ?? (isPro ? "Partager le lien pro" : "Partager")}
+        {label ?? ("Partager")}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="p-0 max-h-[90dvh] overflow-y-auto rounded-2xl flex flex-col">
           {/* Header */}
-          <div className={`bg-gradient-to-r ${isPro ? 'from-winelio-dark to-winelio-gray' : 'from-winelio-orange to-winelio-amber'} px-6 pt-6 pb-5 text-white text-center`}>
+          <div className={`bg-gradient-to-r from-winelio-orange to-winelio-amber px-6 pt-6 pb-5 text-white text-center`}>
             <DialogHeader>
               <DialogTitle className="text-white text-lg font-bold">
-                {isPro ? "Partagez le lien pro" : "Partagez votre lien"}
+                {"Partagez votre lien"}
               </DialogTitle>
               <DialogDescription className="text-white/80 text-sm">
                 Scannez ou partagez pour inviter
@@ -311,7 +310,7 @@ export function ShareButton({ code, isPro = false, label }: { code: string; isPr
                 />
               </div>
              {/* Badge code parrain */}
-              <div className={`absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gradient-to-r ${isPro ? 'from-winelio-dark to-winelio-gray' : 'from-winelio-orange to-winelio-amber'} text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-md whitespace-nowrap tracking-wider`}>
+              <div className={`absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-winelio-orange to-winelio-amber text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-md whitespace-nowrap tracking-wider`}>
                 {code.toUpperCase()}
               </div>
             </div>
@@ -338,11 +337,11 @@ export function ShareButton({ code, isPro = false, label }: { code: string; isPr
             </div>
 
             <div className="w-full space-y-3">
-              <label htmlFor={`invitation-message-${isPro ? "pro" : "individual"}`} className="text-sm font-medium text-winelio-dark">
+              <label htmlFor={`invitation-message-individual`} className="text-sm font-medium text-winelio-dark">
                 Message prêt à envoyer
               </label>
               <textarea
-                id={`invitation-message-${isPro ? "pro" : "individual"}`}
+                id={`invitation-message-individual`}
                 readOnly
                 value={invitationMessage}
                 rows={5}
@@ -363,12 +362,12 @@ export function ShareButton({ code, isPro = false, label }: { code: string; isPr
               <button
                 type="button"
                 onClick={handleNativeShare}
-                className={`w-full py-3 rounded-xl border-2 ${isPro ? 'border-winelio-dark text-winelio-dark hover:bg-winelio-dark' : 'border-winelio-orange text-winelio-orange hover:bg-winelio-orange'} font-semibold text-sm flex items-center justify-center gap-2 hover:text-white transition-colors cursor-pointer`}
+                className={`w-full py-3 rounded-xl border-2 border-winelio-orange text-winelio-orange hover:bg-winelio-orange font-semibold text-sm flex items-center justify-center gap-2 hover:text-white transition-colors cursor-pointer`}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
-                {isPro ? "Partager via…" : "Partager via…"}
+                {"Partager via…"}
               </button>
             )}
           </div>

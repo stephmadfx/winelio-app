@@ -6,13 +6,12 @@ import { useRouter } from "next/navigation";
 
 type FormState = {
   firstName: string; lastName: string; email: string; phone: string; birthDate: string;
-  address: string; postalCode: string; city: string; companyName: string;
-  professionalEmail: string; siret: string; nafCode: string;
+  address: string; postalCode: string; city: string;
 };
 
 const EMPTY_FORM: FormState = {
   firstName: "", lastName: "", email: "", phone: "", birthDate: "", address: "",
-  postalCode: "", city: "", companyName: "", professionalEmail: "", siret: "", nafCode: "",
+  postalCode: "", city: "",
 };
 
 const INPUT_CLASS = "w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm text-winelio-dark outline-none transition focus:border-winelio-orange focus:ring-2 focus:ring-winelio-orange/15 dark:border-border dark:bg-background";
@@ -29,11 +28,9 @@ function Field({ label, name, value, onChange, type = "text", placeholder, requi
   );
 }
 
-export function SponsoredReferralForm({ initialType }: { initialType: "individual" | "professional" }) {
+export function SponsoredReferralForm() {
   const router = useRouter();
-  const [type, setType] = useState(initialType);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  const [sameEmail, setSameEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -51,11 +48,7 @@ export function SponsoredReferralForm({ initialType }: { initialType: "individua
       const response = await fetch("/api/network/pre-register-referral", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          professionalEmail: sameEmail ? form.email : form.professionalEmail,
-          isPro: type === "professional",
-        }),
+        body: JSON.stringify(form),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Impossible d’envoyer la préinscription.");
@@ -86,13 +79,7 @@ export function SponsoredReferralForm({ initialType }: { initialType: "individua
 
   return (
     <form onSubmit={submit} className="space-y-6">
-      <div className="grid grid-cols-2 gap-2 rounded-xl bg-winelio-light p-1.5 dark:bg-muted">
-        {(["individual", "professional"] as const).map((option) => (
-          <button key={option} type="button" onClick={() => setType(option)} className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${type === option ? "bg-white text-winelio-orange shadow-sm dark:bg-background" : "text-winelio-gray"}`}>
-            {option === "individual" ? "Particulier" : "Professionnel"}
-          </button>
-        ))}
-      </div>
+      <p className="text-sm text-winelio-gray">Votre filleul rejoint Winelio comme particulier. Il pourra créer sa fiche professionnelle depuis son compte.</p>
 
       <section>
         <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-winelio-dark">Informations personnelles</h2>
@@ -111,27 +98,12 @@ export function SponsoredReferralForm({ initialType }: { initialType: "individua
         </div>
       </section>
 
-      {type === "professional" && (
-        <section className="rounded-2xl border border-winelio-orange/20 bg-winelio-orange/5 p-4 sm:p-5">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-winelio-orange">Informations professionnelles</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2"><Field label="Nom de l’entreprise" name="companyName" value={form.companyName} onChange={update} /></div>
-            <Field label="SIRET (14 chiffres)" name="siret" value={form.siret} onChange={update} inputMode="numeric" />
-            <Field label="Code NAF (ex. 62.01Z)" name="nafCode" value={form.nafCode} onChange={update} />
-            <div className="sm:col-span-2">
-              <Field label="E-mail professionnel" name="professionalEmail" value={sameEmail ? form.email : form.professionalEmail} onChange={update} type="email" inputMode="email" required={!sameEmail} />
-              <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs text-winelio-gray"><input type="checkbox" checked={sameEmail} onChange={(event) => setSameEmail(event.target.checked)} className="h-4 w-4 accent-winelio-orange" />Utiliser l’e-mail personnel</label>
-            </div>
-          </div>
-        </section>
-      )}
-
       <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 text-xs leading-relaxed text-violet-800">
         Le filleul recevra un e-mail de validation. Il acceptera lui-même les <Link href="/documents-legaux" target="_blank" className="font-bold underline">conditions générales</Link> et créera son mot de passe ; celui-ci ne vous sera jamais communiqué.
       </div>
       {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <button disabled={loading} className="flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
-        {loading ? "Envoi en cours…" : `Préinscrire ce ${type === "professional" ? "professionnel" : "particulier"}`}
+        {loading ? "Envoi en cours…" : "Préinscrire ce particulier"}
       </button>
     </form>
   );

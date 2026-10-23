@@ -150,15 +150,15 @@ export default async function NetworkPage() {
               <PromoVideoPreview />
             </div>
             
-            <div className="flex-[2] grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex-[2] grid grid-cols-1 gap-4">
               {/* Canal Particuliers */}
               <div className="bg-winelio-light/50 border border-gray-100 rounded-xl p-4 flex flex-col justify-between gap-3">
                 <div>
-                  <h4 className="text-xs font-bold text-winelio-orange uppercase tracking-wider mb-1">Inviter un Particulier</h4>
-                  <p className="text-xs text-winelio-gray">Parrainez un membre classique pour qu'il recommande des pros.</p>
+                  <h4 className="text-xs font-bold text-winelio-orange uppercase tracking-wider mb-1">Inviter un membre</h4>
+                  <p className="text-xs text-winelio-gray">Votre filleul rejoint Winelio comme particulier. Il pourra ensuite créer sa fiche professionnelle.</p>
                 </div>
                 <div className="grid grid-cols-1 gap-2 [&>button]:w-full [&>button]:justify-center [&>button]:py-2.5">
-                  <Link href="/network/preinscrire?type=individual" className="inline-flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-winelio-orange to-winelio-amber px-3 py-2.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90">
+                  <Link href="/network/preinscrire" className="inline-flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-winelio-orange to-winelio-amber px-3 py-2.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90">
                     Saisir ses informations
                   </Link>
                   <CopyButton code={sponsorCode} />
@@ -167,21 +167,6 @@ export default async function NetworkPage() {
                 </div>
               </div>
 
-              {/* Canal Pros */}
-              <div className="bg-winelio-light/50 border border-gray-100 rounded-xl p-4 flex flex-col justify-between gap-3">
-                <div>
-                  <h4 className="text-xs font-bold text-winelio-dark uppercase tracking-wider mb-1">Inviter un Professionnel</h4>
-                  <p className="text-xs text-winelio-gray">Parrainez un pro pour qu'il reçoive des leads qualifiés.</p>
-                </div>
-                <div className="grid grid-cols-1 gap-2 [&>button]:w-full [&>button]:justify-center [&>button]:py-2.5">
-                  <Link href="/network/preinscrire?type=professional" className="inline-flex w-full items-center justify-center rounded-lg bg-winelio-dark px-3 py-2.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90">
-                    Saisir ses informations
-                  </Link>
-                  <CopyButton code={sponsorCode} isPro={true} />
-                  <EmailInviteButton code={sponsorCode} isPro={true} />
-                  <ShareButton code={sponsorCode} isPro={true} />
-                </div>
-              </div>
             </div>
           </div>
         </CardContent>

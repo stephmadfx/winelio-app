@@ -131,6 +131,10 @@ Toutes les tables ont des politiques RLS actives. Les utilisateurs ne voient que
 ### Inscription obligatoire par parrainage
 **Règle absolue** : impossible de s'inscrire sans code parrain valide. C'est une règle métier fondamentale du MLM. Ne jamais la retirer ni la contourner.
 
+### Invitation des membres — règle du 23 octobre 2026
+- Une seule invitation depuis le réseau : le filleul rejoint Winelio comme particulier, même si un ancien lien ou client demande une invitation pro.
+- Le membre crée ensuite sa fiche professionnelle depuis son propre compte ; son parrain reste inchangé et le bonus d’affiliation de 1 % au parrain du professionnel est préservé.
+
 ### Workflow de recommandation (8 étapes)
 1. Recommandation reçue (auto)
 2. Acceptée par le professionnel

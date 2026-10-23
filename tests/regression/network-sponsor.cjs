@@ -56,11 +56,13 @@ test('network distinguishes the invitation code from the stored sponsor and pres
   assert.match(calls[0], /sponsor_id/);
   assert.equal(calls[1], 'first_name, last_name, sponsor_code');
   assert.match(html, /Mon code d’invitation/);
+  assert.doesNotMatch(html, /Inviter un Professionnel|type=professional|type=individual/);
+  assert.match(html, /Il pourra ensuite créer sa fiche professionnelle/);
   assert.doesNotMatch(html, /Mon code parrain/);
   assert.match(html, /Votre parrain/);
   assert.match(html, /Camille Martin/);
   assert.match(html, /Son code d’invitation.*SPON1234/);
-  assert.equal((html.match(/data-invitation-code="OWN12345"/g) || []).length, 6);
+  assert.equal((html.match(/data-invitation-code="OWN12345"/g) || []).length, 3);
   assert.doesNotMatch(html, /data-invitation-code="SPON1234"/);
 });
 
