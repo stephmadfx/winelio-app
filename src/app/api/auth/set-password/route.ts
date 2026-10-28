@@ -69,7 +69,7 @@ export async function POST(req: Request) {
       }
 
       const { notifyNewReferral } = await import("@/lib/notify-new-referral");
-      notifyNewReferral(user.id).catch((err) =>
+      await notifyNewReferral(user.id).catch((err) =>
         console.error("notify-new-referral in set-password error:", err)
       );
     }

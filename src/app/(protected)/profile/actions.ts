@@ -173,7 +173,7 @@ export async function updateProfile(data: {
   // Envoyer l'email au parrain et à l'admin UNIQUEMENT à la première complétion,
   // pas au moment de l'inscription (un user peut abandonner entre les deux).
   if (firstCompletion) {
-    notifyNewReferral(user.id).catch((err) =>
+    await notifyNewReferral(user.id).catch((err) =>
       console.error("notify-new-referral error:", err)
     );
     notifyAdminNewSignup(user.id).catch((err) =>
@@ -232,6 +232,7 @@ export async function assignSponsor(sponsorCode: string): Promise<{ error?: stri
 
   if (error) return { error: "Erreur lors de l'ajout du parrain." };
 
+  await notifyNewReferral(user.id).catch((error) => console.error("assignSponsor notification:", error));
   return {};
 }
 

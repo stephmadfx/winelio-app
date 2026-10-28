@@ -11,8 +11,9 @@ import { queueEmail } from "@/lib/email-queue";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
+import { isPersonalProfileComplete, PROFILE_COMPLETION_SELECT } from "@/lib/profile-completion";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.fr";
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.app";
 
 type ChainEntry = { name: string; level: number };
 
@@ -219,11 +220,17 @@ function buildReferralEmail(
 }
 
 export async function notifyNewReferral(newUserId: string): Promise<number> {
-  const { data: newProfile } = await supabaseAdmin
+  const { data: newProfile, error: profileError } = await supabaseAdmin
     .from("profiles")
-    .select("first_name, last_name")
+    .select(`${PROFILE_COMPLETION_SELECT}, created_at, onboarding_status, is_demo`)
     .eq("id", newUserId)
     .single();
+  if (profileError) throw profileError;
+  if (!newProfile || newProfile.is_demo || newProfile.onboarding_status !== "active" || !isPersonalProfileComplete(newProfile)) return 0;
+
+  const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserById(newUserId);
+  if (userError) throw userError;
+  if (!user?.email_confirmed_at || user.user_metadata?.requires_password_setup === true) return 0;
 
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
   const newMemberFullName =
@@ -238,15 +245,18 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
 
   // Remonte la chaîne jusqu'à 5 niveaux
   const sponsorChain: Array<{ id: string; level: number }> = [];
+  const visited = new Set([newUserId]);
   let currentId = newUserId;
 
   for (let level = 1; level <= 5; level++) {
-    const { data: profile } = await supabaseAdmin
+    const { data: profile, error } = await supabaseAdmin
       .from("profiles")
       .select("sponsor_id")
       .eq("id", currentId)
       .single();
-    if (!profile?.sponsor_id) break;
+    if (error) throw error;
+    if (!profile?.sponsor_id || visited.has(profile.sponsor_id)) break;
+    visited.add(profile.sponsor_id);
     sponsorChain.push({ id: profile.sponsor_id, level });
     currentId = profile.sponsor_id;
   }
@@ -259,6 +269,8 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
     supabaseAdmin.from("profiles").select("id, first_name, last_name").in("id", sponsorIds),
     Promise.all(sponsorIds.map((id) => supabaseAdmin.auth.admin.getUserById(id))),
   ]);
+  if (profilesResult.error) throw profilesResult.error;
+  for (const result of authResults) if (result.error) throw result.error;
 
   const profileMap = new Map(
     (profilesResult.data ?? []).map((p) => [
@@ -277,9 +289,25 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
     notifications.push({ email, firstName: profileMap.get(id)?.firstName || "Membre", level });
   }
 
+  let inserted = 0;
   for (const { email, firstName, level } of notifications) {
     const memberName = level === 1 ? newMemberFullName : newMemberShortName;
     const levelLabel = level === 1 ? "filleul direct" : `membre niveau ${level}`;
+    const subject = level === 1
+      ? `${newMemberFullName} a rejoint votre réseau Winelio`
+      : `Nouveau membre niveau ${level} dans votre réseau Winelio`;
+    // Les notifications antérieures à la clé de déduplication restent valables.
+    let existingQuery = supabaseAdmin.schema("winelio")
+      .from("email_queue").select("id")
+      .eq("to_email", email).eq("subject", subject)
+      .gte("created_at", newProfile.created_at)
+      .limit(1);
+    if (level > 1) {
+      existingQuery = existingQuery.like("text_body", `%${memberName.replace(/[\\%_]/g, "\\$&")}%`);
+    }
+    const { data: existing, error: existingError } = await existingQuery.maybeSingle();
+    if (existingError) throw existingError;
+    if (existing) continue;
 
     // Chaîne des parrains intermédiaires (niveaux 1 à level-1)
     const chain: ChainEntry[] = sponsorChain
@@ -307,17 +335,17 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
       "© 2026 Winelio · Recommandez. Connectez. Gagnez.",
     ].join("\n");
 
-    await queueEmail({
+    const result = await queueEmail({
       to: email,
-      subject:
-        level === 1
-          ? `${newMemberFullName} a rejoint votre réseau Winelio`
-          : `Nouveau membre niveau ${level} dans votre réseau Winelio`,
+      subject,
       html: buildReferralEmail(firstName, memberName, level, chain),
       text: textBody,
       priority: level === 1 ? 3 : 7,
+      dedupeKey: `new-referral:${newUserId}:${sponsorChain[level - 1].id}`,
+      throwOnError: true,
     });
+    if (result.inserted) inserted++;
   }
 
-  return notifications.length;
+  return inserted;
 }

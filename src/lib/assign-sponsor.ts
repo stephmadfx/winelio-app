@@ -3,10 +3,10 @@
  * Uniquement avec un code valide fourni explicitement, sans attribution automatique.
  * Retourne true si un sponsor a été assigné, false sinon.
  *
- * Note : l'email de notification au parrain N'EST PAS envoyé ici.
- * Il est envoyé lors de la première complétion de profil (voir updateProfile).
+ * Notifie le parrain après rattachement si le compte confirmé est complet.
  */
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { notifyNewReferral } from "@/lib/notify-new-referral";
 
 export async function assignSponsorIfNeeded(
   userId: string,
@@ -41,5 +41,9 @@ export async function assignSponsorIfNeeded(
     .is("sponsor_id", null)
     .select("id");
 
-  return !error && assigned?.length === 1;
+  const didAssign = !error && assigned?.length === 1;
+  if (didAssign) {
+    await notifyNewReferral(userId).catch((error) => console.error("assign-sponsor notification:", error));
+  }
+  return didAssign;
 }

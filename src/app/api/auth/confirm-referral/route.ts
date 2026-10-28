@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { notifyNewReferral } from "@/lib/notify-new-referral";
+import { assignSponsorIfNeeded } from "@/lib/assign-sponsor";
 
 const ALLOWED_OTP_TYPES = new Set(["signup", "magiclink"] as const);
 type AllowedOtpType = "signup" | "magiclink";
@@ -57,6 +59,11 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    await assignSponsorIfNeeded(data.user.id, data.user.user_metadata?.sponsor_code);
+    await notifyNewReferral(data.user.id).catch((error) => {
+      console.error("[auth/confirm-referral] notification parrain:", error);
+    });
 
     return NextResponse.json({
       success: true,
