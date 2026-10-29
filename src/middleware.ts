@@ -1,3 +1,4 @@
+import { claimPath } from "./lib/claim-path";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./lib/supabase/config";
@@ -232,7 +233,8 @@ export async function middleware(request: NextRequest) {
     !isPendingPasswordSetup
   ) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = claimPath(request.nextUrl.searchParams.get("returnTo")) || "/dashboard";
+    url.search = "";
     return NextResponse.redirect(url);
   }
 

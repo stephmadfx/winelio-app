@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { claimPath } from "@/lib/claim-path";
 import { completeProOnboarding } from "@/app/(protected)/profile/actions";
 import { verifySiren, isValidSirenOrSiret, type SirenVerification } from "@/lib/siren";
 import { checkNafCode, type NafCheckResult } from "@/lib/naf-rules";
@@ -19,6 +20,7 @@ interface Category {
 }
 
 interface Props {
+  returnTo?: string | null;
   categories: Category[];
   defaultSiret: string;
   defaultCategoryId: string;
@@ -35,6 +37,7 @@ const WORK_MODES: { value: WorkMode; label: string; sub: string; icon: string }[
 ];
 
 export function ProOnboardingWizard({
+  returnTo,
   categories,
   defaultSiret,
   defaultCategoryId,
@@ -72,6 +75,7 @@ export function ProOnboardingWizard({
     setSaving(true);
     const result = await completeProOnboarding({
       work_mode: workMode!,
+      engagement_accepted: engagementChecked || isHoguet,
       category_id: categoryId,
       siret: siret.trim() || null,
       email: resolvedProEmail,
@@ -82,7 +86,7 @@ export function ProOnboardingWizard({
       setSaving(false);
       return;
     }
-    router.push("/profile?pro=1");
+    router.push(claimPath(returnTo) || "/profile?pro=1");
     router.refresh();
   };
 
@@ -173,6 +177,8 @@ export function ProOnboardingWizard({
       {/* Modale signature CGU Agents Immobiliers */}
       {showSignatureModal && cguAgentsImmoDocumentId && (
         <SignatureModal
+          onSigned={async () => { setShowSignatureModal(false); await handleSubmit(); }}
+          returnTo={claimPath(returnTo)}
           cguDocumentId={cguAgentsImmoDocumentId}
           sections={cguAgentsImmoSections}
           onClose={() => setShowSignatureModal(false)}
@@ -495,16 +501,12 @@ function Step3({
             long terme.
           </div>
           <label className="flex items-start gap-3 cursor-pointer">
-            <div
-              onClick={() => setChecked(!checked)}
-              className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 transition-all ${
-                checked
-                  ? "bg-gradient-to-br from-winelio-orange to-winelio-amber border-winelio-orange"
-                  : "border-gray-300"
-              }`}
-            >
-              {checked && <span className="text-white text-xs font-bold">✓</span>}
-            </div>
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={e => setChecked(e.target.checked)}
+              className="mt-0.5 h-5 w-5 shrink-0 accent-[#FF6B35]"
+            />
             <span className="text-sm text-winelio-dark font-medium">
               J&apos;ai lu et j&apos;accepte cet engagement — je suis prêt à booster mon activité avec Winelio.
             </span>

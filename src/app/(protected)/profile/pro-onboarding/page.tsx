@@ -1,11 +1,13 @@
 // src/app/(protected)/profile/pro-onboarding/page.tsx
+import { claimPath } from "@/lib/claim-path";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { ProOnboardingWizard } from "@/components/ProOnboardingWizard";
 import { ProOnboardingVideoReplayButton } from "@/components/pro-onboarding-video";
 
-export default async function ProOnboardingPage() {
+export default async function ProOnboardingPage({ searchParams }: { searchParams: Promise<{ returnTo?: string }> }) {
+  const returnTo = claimPath((await searchParams).returnTo);
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
@@ -17,7 +19,7 @@ export default async function ProOnboardingPage() {
     .eq("id", user.id)
     .single();
 
-  if (profile?.pro_engagement_accepted) {
+  if (profile?.pro_engagement_accepted && !returnTo) {
     redirect("/profile");
   }
 
@@ -72,6 +74,7 @@ export default async function ProOnboardingPage() {
         </div>
       </div>
       <ProOnboardingWizard
+        returnTo={returnTo}
         categories={categories ?? []}
         defaultSiret={company?.siret ?? ""}
         defaultCategoryId={company?.category_id ?? ""}

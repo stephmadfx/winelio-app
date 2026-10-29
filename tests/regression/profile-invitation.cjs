@@ -8,7 +8,7 @@ function load(file, imports, globals = {}) {
   const module = { exports: {} };
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(file, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
-  }).outputText, { module, exports: module.exports, require: name => imports[name] ?? require(name), ...globals });
+  }).outputText, { module, exports: module.exports, require: name => imports[name] ?? (name === "@/lib/claim-path" ? load("src/lib/claim-path.ts", {}) : require(name)), ...globals });
   return module.exports;
 }
 
@@ -103,6 +103,7 @@ test('the first registration render preserves URL referral and legacy parameters
       '@/components/PromoVideo': { PROMO_WATCHED_KEY: 'watched' },
       '@/lib/safe-fetch': {}, '@/lib/utils': {}, '@/lib/phone': {},
     }, {
+      navigator: { userAgent: "Unit test browser" },
       URLSearchParams,
       window: { location: { search: '' }, localStorage: { getItem: key => storage.get(key) || null } },
       localStorage: { getItem: key => storage.get(key) || null, setItem: (key, value) => storage.set(key, value) },

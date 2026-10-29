@@ -1,5 +1,7 @@
 "use client";
 
+import { claimPath } from "@/lib/claim-path";
+
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -45,9 +47,11 @@ export function LandingHero() {
   const handleUnlock = useCallback(() => setUnlocked(true), []);
 
   const invitation = referralFromParams(new URLSearchParams(searchParams.toString()));
-  const registerHref = refCode
+  const claimReturn = claimPath(searchParams.get("returnTo"));
+  const registerBase = refCode
     ? `/auth/login?mode=register&ref=${encodeURIComponent(refCode)}`
     : `/auth/login?mode=register`;
+  const registerHref = registerBase + (claimReturn ? `&returnTo=${encodeURIComponent(claimReturn)}${searchParams.get("email") ? `&email=${encodeURIComponent(searchParams.get("email")!)}` : ""}` : "");
 
   const primaryClass =
     "inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105";
@@ -73,7 +77,7 @@ export function LandingHero() {
   );
 
   const loginButton = showLoginButton ? (
-    <Link href="/auth/login" className={knownUser ? primaryClass : secondaryClass}>
+    <Link href={claimReturn ? `/auth/login?returnTo=${encodeURIComponent(claimReturn)}` : "/auth/login"} className={knownUser ? primaryClass : secondaryClass}>
       Se connecter
     </Link>
   ) : null;

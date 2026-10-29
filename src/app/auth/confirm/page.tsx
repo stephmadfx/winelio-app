@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { claimPath } from "@/lib/claim-path";
 import { ReferralLinkRenewalForm } from "@/components/referral-link-renewal-form";
 
 export default function ConfirmPage() {
@@ -51,7 +52,7 @@ function ConfirmHandler() {
 
         const redirectTo = needsPasswordSetup || result.requiresPasswordSetup
           ? "/auth/create-password"
-          : "/dashboard";
+          : (claimPath(searchParams.get("next")) || "/dashboard");
         router.replace(redirectTo);
         router.refresh();
       })

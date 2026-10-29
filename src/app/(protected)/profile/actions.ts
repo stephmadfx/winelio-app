@@ -277,6 +277,7 @@ export async function updateCompanyEmail(email: string | null): Promise<{ error?
  */
 export async function completeProOnboarding(data: {
   work_mode: "remote" | "onsite" | "both";
+  engagement_accepted: boolean;
   category_id: string;
   siret: string | null;
   email?: string | null;
@@ -284,6 +285,15 @@ export async function completeProOnboarding(data: {
 }): Promise<{ error?: string }> {
   const user = await getUser();
   if (!user) return { error: "Non authentifié" };
+
+  if (data.engagement_accepted !== true) return { error: "Validez explicitement votre engagement professionnel." };
+  const { data: selectedCategory } = await supabaseAdmin.from("categories").select("is_hoguet").eq("id", data.category_id).maybeSingle();
+  if (!selectedCategory) return { error: "Choisissez une catégorie professionnelle valide." };
+  if (selectedCategory.is_hoguet) {
+    const { data: legal } = await supabaseAdmin.from("legal_documents").select("id").eq("title", "CGU Agents Immobiliers").eq("version", "1.0").maybeSingle();
+    const { data: signed } = legal ? await supabaseAdmin.from("pro_onboarding_events").select("id").eq("user_id", user.id).eq("document_id", legal.id).eq("event_type", "signature_completed").limit(1).maybeSingle() : { data: null };
+    if (!signed) return { error: "Signez d’abord les CGU spécifiques à votre activité." };
+  }
 
   if (!data.siret) {
     return { error: "Un numéro SIRET est obligatoire pour activer un compte professionnel." };
@@ -318,6 +328,9 @@ export async function completeProOnboarding(data: {
     return { error: `L'entreprise "${verification.nom}" (SIRET ${verification.siret}) est radiée. Seules les entreprises actives peuvent s'inscrire.` };
   }
 
+  const verifiedSiret = verification.siret;
+  if (!verifiedSiret || !/^\d{14}$/.test(verifiedSiret)) return { error: "Un SIRET complet est obligatoire." };
+
   const supabase = await createClient();
   const { ip, userAgent } = await getAuditContext();
 
@@ -328,18 +341,6 @@ export async function completeProOnboarding(data: {
     .eq("id", user.id)
     .single();
   const wasAlreadyPro = !!previous?.is_professional;
-
-  // 1. Mettre à jour le profil
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({
-      is_professional: true,
-      work_mode: data.work_mode,
-      pro_engagement_accepted: true,
-    })
-    .eq("id", user.id);
-
-  if (profileError) return { error: "Erreur lors de la mise à jour du profil." };
 
   // 2. Récupérer le profil (nom + catégorie pour l'email)
   const { data: profile } = await supabase
@@ -362,9 +363,9 @@ export async function completeProOnboarding(data: {
     .maybeSingle();
 
   if (existingCompany) {
-    const patch: Record<string, string | null> = {};
+    const patch: Record<string, string | boolean | null> = { source: "owner", is_verified: true, verified_at: new Date().toISOString() };
     if (data.category_id) patch.category_id = data.category_id;
-    if (data.siret !== null) patch.siret = data.siret;
+    patch.siret = verifiedSiret;
     patch.siren = verifiedSiren;
     patch.naf_code = verifiedNafCode;
     patch.email = proEmail;
@@ -381,9 +382,12 @@ export async function completeProOnboarding(data: {
     const alias = await generateUniqueAlias(supabase);
     const { error: companyError } = await supabase.from("companies").insert({
       owner_id: user.id,
-      name: fallbackName,
+      source: "owner",
+      is_verified: true,
+      verified_at: new Date().toISOString(),
+      name: verification.nom || fallbackName,
       category_id: data.category_id || null,
-      siret: data.siret || null,
+      siret: verifiedSiret,
       siren: verifiedSiren,
       naf_code: verifiedNafCode,
       insurance_number: insuranceNumber,
@@ -392,6 +396,18 @@ export async function completeProOnboarding(data: {
     });
     if (companyError) return { error: "Erreur lors de la création de l'entreprise." };
   }
+
+  // 1. Mettre à jour le profil
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({
+      is_professional: true,
+      work_mode: data.work_mode,
+      pro_engagement_accepted: true,
+    })
+    .eq("id", user.id);
+
+  if (profileError) return { error: "Erreur lors de la mise à jour du profil." };
 
   // 4. Email de confirmation (non bloquant)
   if (user.email) {

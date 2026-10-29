@@ -8,7 +8,7 @@ function load(file, imports, globals = {}) {
   const module = { exports: {} };
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(file, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
-  }).outputText, { module, exports: module.exports, require: name => imports[name] ?? require(name), console, process: { env: {} }, ...globals });
+  }).outputText, { module, exports: module.exports, require: name => imports[name] ?? (name === "@/lib/claim-path" ? load("src/lib/claim-path.ts", {}) : require(name)), console, process: { env: {} }, ...globals });
   return module.exports;
 }
 
@@ -78,6 +78,7 @@ test('the server normalizes the code and derives the sponsor ID itself', async (
 
 test('automatic assignment is disabled, including the legacy endpoint', async () => {
   const { assignSponsorIfNeeded } = load('src/lib/assign-sponsor.ts', {
+    '@/lib/notify-new-referral': { notifyNewReferral: async () => {} },
     '@/lib/supabase/admin': { supabaseAdmin: { from() { assert.fail('No automatic sponsor lookup'); } } },
   });
   for (const code of [undefined, null, '', '   ', 42]) assert.equal(await assignSponsorIfNeeded('member', code), false);

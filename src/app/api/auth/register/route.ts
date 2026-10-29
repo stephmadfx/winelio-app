@@ -1,3 +1,4 @@
+import { claimPath } from "@/lib/claim-path";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email-sender";
@@ -8,8 +9,6 @@ import {
 } from "@/lib/phone";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ALIAS_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
 function clean(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -20,30 +19,10 @@ function escapeHtml(value: string) {
   })[character] ?? character);
 }
 
-async function generateCompanyAlias(): Promise<string> {
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const alias = `#${Array.from(
-      { length: 6 },
-      () => ALIAS_CHARS[Math.floor(Math.random() * ALIAS_CHARS.length)]
-    ).join("")}`;
-    const { data, error } = await supabaseAdmin
-      .schema("winelio")
-      .from("companies")
-      .select("id")
-      .eq("alias", alias)
-      .maybeSingle();
-
-    if (error) throw error;
-    if (!data) return alias;
-  }
-
-  throw new Error("Impossible de générer un alias entreprise unique.");
-}
-
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, firstName, lastName, phone, address, city, postalCode, birthDate, termsAccepted, sponsorCode, siret, nafCode, companyName, professionalEmail, isPro = false } = body;
+    const { email, password, firstName, lastName, phone, address, city, postalCode, birthDate, termsAccepted, sponsorCode } = body;
     const sponsorCodeValue = clean(sponsorCode).toUpperCase();
     if (!sponsorCodeValue) {
       return NextResponse.json({ error: "Un code de parrainage valide est obligatoire pour vous inscrire." }, { status: 400 });
@@ -69,11 +48,6 @@ export async function POST(request: Request) {
     const cityValue = clean(city);
     const postalCodeValue = clean(postalCode);
     const birthDateValue = clean(birthDate);
-    const companyNameValue = clean(companyName);
-    const companyEmail = clean(professionalEmail).toLowerCase();
-    const siretValue = clean(siret).replace(/\s/g, "");
-    const nafCodeValue = clean(nafCode).toUpperCase();
-    const isProRegistration = isPro === true;
     const normalizedPhone = normalizePhoneNumber(phoneValue);
     const safeFirstName = escapeHtml(firstNameValue);
 
@@ -89,16 +63,6 @@ export async function POST(request: Request) {
     if (!normalizedPhone) {
       return NextResponse.json({ error: PHONE_INVALID_MESSAGE }, { status: 400 });
     }
-    if (
-      isProRegistration &&
-      (!companyNameValue || !siretValue || !nafCodeValue || !EMAIL_RE.test(companyEmail))
-    ) {
-      return NextResponse.json(
-        { error: "Les informations de l’entreprise et son e-mail professionnel sont obligatoires." },
-        { status: 400 }
-      );
-    }
-
     const { data: accountWithPhone, error: phoneLookupError } = await supabaseAdmin
       .schema("winelio")
       .from("profiles")
@@ -135,8 +99,6 @@ export async function POST(request: Request) {
           terms_accepted: termsAccepted === true,
           sponsor_id: sponsor.id,
           sponsor_code: sponsorCodeValue,
-          siret: siretValue || null,
-          naf_code: nafCodeValue || null,
         },
       },
     });
@@ -161,54 +123,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
 
-    // 1.2 Initialiser le profil et l'entreprise pour le professionnel si applicable
-    const userId = linkData?.user?.id;
-    if (userId && isProRegistration) {
-      try {
-        const alias = await generateCompanyAlias();
-
-        // Créer la fiche entreprise dans companies avant d'activer le statut pro.
-        const { error: companyError } = await supabaseAdmin
-          .schema("winelio")
-          .from("companies")
-          .insert({
-            owner_id: userId,
-            name: companyNameValue,
-            alias,
-            siret: siretValue,
-            siren: siretValue.slice(0, 9),
-            email: companyEmail,
-            phone: normalizedPhone,
-            address: addressValue,
-            city: cityValue,
-            postal_code: postalCodeValue,
-            country: "FR",
-            naf_code: nafCodeValue,
-            source: "owner",
-          });
-
-        if (companyError) throw companyError;
-
-        const { error: profileError } = await supabaseAdmin
-          .schema("winelio")
-          .from("profiles")
-          .update({ is_professional: true })
-          .eq("id", userId);
-
-        if (profileError) throw profileError;
-      } catch (professionalSetupError) {
-        console.error("[auth/register] Initialisation professionnelle impossible:", professionalSetupError);
-        const { error: rollbackError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-        if (rollbackError) {
-          console.error("[auth/register] Nettoyage du compte incomplet:", rollbackError);
-        }
-        return NextResponse.json(
-          { error: "Impossible de créer la fiche entreprise. Veuillez réessayer." },
-          { status: 500 }
-        );
-      }
-    }
-
     const tokenHash = linkData?.properties?.hashed_token;
     if (!tokenHash) {
       return NextResponse.json(
@@ -219,7 +133,8 @@ export async function POST(request: Request) {
 
     // URL-encode le token pour neutraliser les caractères spéciaux (+, =, /)
     // qui peuvent être corrompus par les scanners de sécurité des opérateurs
-    const customConfirmLink = `${appUrl}/auth/confirm?token_hash=${encodeURIComponent(tokenHash)}&type=signup`;
+    const next = claimPath(body.returnTo);
+    const customConfirmLink = `${appUrl}/auth/confirm?token_hash=${encodeURIComponent(tokenHash)}&type=signup${next ? `&next=${encodeURIComponent(next)}` : ""}`;
     // En HTML, le & dans les href doit être &amp; pour éviter que les clients mail
     // (Outlook, Apple Mail, antivirus) tronquent l'URL au niveau du &
     const htmlSafeLink = customConfirmLink.replace(/&/g, "&amp;");

@@ -55,15 +55,10 @@ function LoginForm() {
   const [phone, setPhone] = useState("");
   const [sponsorId, setSponsorId] = useState<string | null>(null);
   const [signUpSuccess, setSignUpSuccess] = useState(false);
-  const [siret, setSiret] = useState("");
-  const [nafCode, setNafCode] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [professionalEmail, setProfessionalEmail] = useState("");
-  const [usePersonalEmailForCompany, setUsePersonalEmailForCompany] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   // Champs étape 2 (et 3 pour les Pros)
-  const [registerStep, setRegisterStep] = useState<1 | 2 | 3>(1);
+  const [registerStep, setRegisterStep] = useState<1 | 2>(1);
   const [address, setAddress] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [city, setCity] = useState("");
@@ -100,10 +95,7 @@ function LoginForm() {
 
   const isRegister = searchParams.get("mode") === "register";
   const returnTo = searchParams.get("returnTo") || "";
-  const isProRegistration = isRegister && returnTo.startsWith("/claim/");
-  const resolvedProfessionalEmail = usePersonalEmailForCompany
-    ? email.trim()
-    : professionalEmail.trim();
+  // Toute inscription crée un compte particulier, y compris depuis un lead.
   const [refCode, setRefCode] = useState<string | null>(null);
   const [checkingPromo, setCheckingPromo] = useState(true);
 
@@ -143,6 +135,9 @@ function LoginForm() {
       const params = new URLSearchParams();
       if (invitationRef) params.set("ref", invitationRef);
       if (typeParam) params.set("type", typeParam);
+      const claimEmail = searchParams.get("email");
+      if (returnTo.startsWith("/claim/") && claimEmail) params.set("email", claimEmail);
+      if (/^\/claim\/[0-9a-f-]{36}$/i.test(returnTo)) params.set("returnTo", returnTo);
       
       const queryStr = params.toString();
       if (queryStr) target += `?${queryStr}`;
@@ -236,20 +231,6 @@ function LoginForm() {
     setRegisterStep(2);
   };
 
-  // Validation étape 2 pour les pros pour passer à l'étape 3
-  const handleNextToStep3 = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    const bdErr = validateBirthDate();
-    if (bdErr) { setBirthDateError(bdErr); return; }
-    if (!termsAccepted) { setError("Vous devez accepter les CGU."); return; }
-    if (!address.trim() || !postalCode.trim() || !city.trim()) {
-      setError("Veuillez compléter votre adresse, code postal et ville.");
-      return;
-    }
-    setRegisterStep(3);
-  };
-
   // Validation date de naissance (18+)
   const validateBirthDate = (): string | null => {
     if (!birthDay || !birthMonth || !birthYear) return "Date de naissance requise.";
@@ -313,7 +294,7 @@ function LoginForm() {
       await applyReferral();
       try { localStorage.setItem("winelio_known_user", "1"); } catch {}
       const returnTo = searchParams.get("returnTo");
-      router.push(returnTo && returnTo.startsWith("/") ? returnTo : "/dashboard");
+      router.push(returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/dashboard");
       return;
     }
 
@@ -348,7 +329,7 @@ function LoginForm() {
       await applyReferral();
       try { localStorage.setItem("winelio_known_user", "1"); } catch {}
       const returnTo = searchParams.get("returnTo");
-      router.push(returnTo && returnTo.startsWith("/") ? returnTo : "/dashboard");
+      router.push(returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/dashboard");
       return;
     }
 
@@ -371,10 +352,6 @@ function LoginForm() {
       setError("Veuillez compléter votre adresse, code postal et ville.");
       return;
     }
-    if (isProRegistration && !EMAIL_RE.test(resolvedProfessionalEmail)) {
-      setError("Veuillez saisir l’adresse e-mail professionnelle de votre entreprise.");
-      return;
-    }
     setLoading(true);
     setError("");
     const birthDate = `${birthYear}-${birthMonth.padStart(2,"0")}-${birthDay.padStart(2,"0")}`;
@@ -394,11 +371,8 @@ function LoginForm() {
           birthDate,
           termsAccepted,
           sponsorCode: refCode || null,
-          isPro: isProRegistration,
-          companyName: isProRegistration ? companyName.trim() : null,
-          professionalEmail: isProRegistration ? resolvedProfessionalEmail : null,
-          siret: isProRegistration ? siret.trim() : null,
-          nafCode: isProRegistration ? nafCode.trim() : null,
+          returnTo,
+          isPro: false,
         }),
       });
       const result = await res.json();
@@ -501,7 +475,7 @@ function LoginForm() {
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-winelio-gray">
               {isRegister
-                  ? `Étape ${registerStep} sur ${isProRegistration ? 3 : 2}`
+                  ? `Étape ${registerStep} sur ${2}`
                   : authMethod === "password"
                   ? "Connexion"
                   : step === "email"
@@ -676,7 +650,7 @@ function LoginForm() {
                 </p>
               </div>
               <button
-                onClick={() => router.push("/auth/login")}
+                onClick={() => router.push(returnTo ? `/auth/login?returnTo=${encodeURIComponent(returnTo)}` : "/auth/login")}
                 className="inline-flex w-full items-center justify-center rounded-2xl border border-gray-200 bg-white px-5 py-3.5 text-sm font-semibold text-winelio-dark transition hover:border-winelio-orange/30 hover:text-winelio-orange"
               >
                 Retourner à la connexion
@@ -690,8 +664,8 @@ function LoginForm() {
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-1 rounded-full bg-winelio-orange" />
                 <div className="flex-1 h-1 rounded-full bg-gray-200" />
-                {isProRegistration && <div className="flex-1 h-1 rounded-full bg-gray-200" />}
-                <span className="text-xs text-winelio-gray ml-1">Étape 1/{isProRegistration ? "3" : "2"}</span>
+
+                <span className="text-xs text-winelio-gray ml-1">Étape 1/{"2"}</span>
               </div>
 
               <div className="space-y-2">
@@ -848,7 +822,7 @@ function LoginForm() {
 
               <button
                 type="button"
-                onClick={() => router.push("/auth/login")}
+                onClick={() => router.push(returnTo ? `/auth/login?returnTo=${encodeURIComponent(returnTo)}` : "/auth/login")}
                 className="mt-2 text-sm font-medium text-winelio-gray transition hover:text-winelio-orange"
               >
                 Déjà un compte ? Se connecter
@@ -858,14 +832,14 @@ function LoginForm() {
 
           {/* ── FORMULAIRE INSCRIPTION ÉTAPE 2 ── */}
           {isRegister && !signUpSuccess && registerStep === 2 && (
-            <form onSubmit={isProRegistration ? handleNextToStep3 : handleRegister} className="mt-6 space-y-5">
+            <form onSubmit={handleRegister} className="mt-6 space-y-5">
               {/* Indicateur d'étape */}
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-1 rounded-full bg-winelio-orange" />
                 <div className="flex-1 h-1 rounded-full bg-winelio-orange" />
-                {isProRegistration && <div className="flex-1 h-1 rounded-full bg-gray-200" />}
+
                 <span className="text-xs text-winelio-gray ml-1">
-                  Étape 2/{isProRegistration ? "3" : "2"}
+                  Étape 2/{"2"}
                 </span>
               </div>
 
@@ -1023,140 +997,7 @@ function LoginForm() {
                 </button>
                 <button
                   type="submit"
-                  disabled={!termsAccepted || (loading && !isProRegistration)}
-                  className="flex-[2] inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isProRegistration ? (
-                    "Continuer →"
-                  ) : loading ? (
-                    <>
-                      <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      Inscription…
-                    </>
-                  ) : (
-                    "Créer mon compte"
-                  )}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* ── FORMULAIRE INSCRIPTION ÉTAPE 3 (PRO) ── */}
-          {isRegister && !signUpSuccess && registerStep === 3 && (
-            <form onSubmit={handleRegister} className="mt-6 space-y-5">
-              {/* Indicateur d'étape */}
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-1 rounded-full bg-winelio-orange" />
-                <div className="flex-1 h-1 rounded-full bg-winelio-orange" />
-                <div className="flex-1 h-1 rounded-full bg-winelio-orange" />
-                <span className="text-xs text-winelio-gray ml-1">Étape 3/3</span>
-              </div>
-
-              {/* Raison sociale */}
-              <div className="space-y-2">
-                <label htmlFor="companyName" className="text-sm font-medium text-winelio-dark">
-                  Raison sociale / Nom de l'entreprise <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="companyName"
-                  type="text"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Ex: Électricité Martin & Fils"
-                  required
-                  className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
-                />
-              </div>
-
-              <div className="rounded-2xl border border-orange-100 bg-orange-50/70 p-4">
-                <div className="space-y-2">
-                  <label htmlFor="professionalEmail" className="text-sm font-semibold text-winelio-dark">
-                    E-mail professionnel <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="professionalEmail"
-                    type="email"
-                    value={usePersonalEmailForCompany ? email : professionalEmail}
-                    onChange={(e) => setProfessionalEmail(e.target.value)}
-                    placeholder="contact@monentreprise.fr"
-                    required={!usePersonalEmailForCompany}
-                    disabled={usePersonalEmailForCompany}
-                    autoComplete="email"
-                    className="w-full rounded-2xl border border-orange-200 bg-white px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15 disabled:cursor-not-allowed disabled:bg-white/60 disabled:text-winelio-gray"
-                  />
-                  <p className="text-xs leading-5 text-winelio-gray">
-                    Les recommandations de cette entreprise seront envoyées à cette adresse.
-                  </p>
-                </div>
-                <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-orange-100 bg-white/80 px-3 py-2.5">
-                  <input
-                    type="checkbox"
-                    checked={usePersonalEmailForCompany}
-                    onChange={(e) => setUsePersonalEmailForCompany(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-[#FF6B35]"
-                  />
-                  <span className="text-xs leading-5 text-winelio-dark">
-                    Utiliser mon e-mail personnel <strong>{email || "renseigné à l’étape 1"}</strong> pour cette entreprise.
-                  </span>
-                </label>
-              </div>
-
-              {/* Numéro SIRET */}
-              <div className="space-y-2">
-                <label htmlFor="siret" className="text-sm font-medium text-winelio-dark">
-                  Numéro SIRET <span className="text-red-500">*</span>
-                  <span className="ml-2 text-xs text-winelio-gray font-normal">(14 chiffres)</span>
-                </label>
-                <input
-                  id="siret"
-                  type="text"
-                  value={siret}
-                  onChange={(e) => setSiret(e.target.value.replace(/\s/g, ""))}
-                  placeholder="12345678901234"
-                  maxLength={14}
-                  required
-                  className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
-                />
-              </div>
-
-              {/* Code APE / NAF */}
-              <div className="space-y-2">
-                <label htmlFor="nafCode" className="text-sm font-medium text-winelio-dark">
-                  Code APE / NAF <span className="text-red-500">*</span>
-                  <span className="ml-2 text-xs text-winelio-gray font-normal">(Ex: 4321A)</span>
-                </label>
-                <input
-                  id="nafCode"
-                  type="text"
-                  value={nafCode}
-                  onChange={(e) => setNafCode(e.target.value.toUpperCase().replace(/\s/g, ""))}
-                  placeholder="4321A"
-                  maxLength={5}
-                  required
-                  className="w-full rounded-2xl border border-gray-200 bg-winelio-light/70 px-4 py-3 text-winelio-dark placeholder:text-winelio-gray/60 focus:border-winelio-orange focus:outline-none focus:ring-4 focus:ring-winelio-orange/15"
-                />
-              </div>
-
-              {error && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-500">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => { setRegisterStep(2); setError(""); }}
-                  className="flex-1 rounded-2xl border border-gray-200 bg-white px-5 py-3.5 text-sm font-semibold text-winelio-dark transition hover:border-winelio-orange/30 hover:text-winelio-orange"
-                >
-                  ← Retour
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || !companyName.trim() || siret.length !== 14 || !nafCode.trim() || !EMAIL_RE.test(resolvedProfessionalEmail)}
+                  disabled={!termsAccepted || loading}
                   className="flex-[2] inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(255,107,53,0.24)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? (
@@ -1168,7 +1009,7 @@ function LoginForm() {
                       Inscription…
                     </>
                   ) : (
-                    "Créer mon compte pro"
+                    "Créer mon compte"
                   )}
                 </button>
               </div>

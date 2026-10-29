@@ -93,42 +93,8 @@ export async function signAgentCGU(params: {
     },
   });
 
-  // 7. Activation profil professionnel — on capture l'état précédent
-  // pour ne notifier le parrain qu'à la 1re activation pro.
-  const { data: previousProfile } = await supabaseAdmin
-    .from("profiles")
-    .select("is_professional, work_mode")
-    .eq("id", user.id)
-    .single();
-  const wasAlreadyPro = !!previousProfile?.is_professional;
-
-  const { error: profileError } = await supabaseAdmin
-    .from("profiles")
-    .update({ is_professional: true, pro_engagement_accepted: true })
-    .eq("id", user.id);
-  if (profileError) throw new Error(`Erreur activation profil : ${profileError.message}`);
-
-  // 7bis. Notifier le parrain niveau 1 (fire & forget) à la première activation pro
-  if (!wasAlreadyPro) {
-    const { data: company } = await supabaseAdmin
-      .from("companies")
-      .select("category:categories(name)")
-      .eq("owner_id", user.id)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    const rawCat = company ? (company as Record<string, unknown>).category : null;
-    const categoryName = Array.isArray(rawCat)
-      ? (rawCat[0] as { name: string } | undefined)?.name ?? null
-      : (rawCat as { name: string } | null)?.name ?? null;
-
-    const { notifyNewProInNetwork } = await import("@/lib/notify-new-pro-in-network");
-    notifyNewProInNetwork(user.id, {
-      categoryName,
-      workMode: previousProfile?.work_mode ?? null,
-    }).catch((err) => console.error("[signAgentCGU] notify-new-pro-in-network error:", err));
-  }
+  // La signature seule n’active pas le statut pro : le wizard finalise ensuite
+  // les informations de la fiche via completeProOnboarding.
 
   // 8. Email de confirmation (fire & forget)
   if (user.email) {

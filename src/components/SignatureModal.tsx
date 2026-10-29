@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import SignaturePad, { type SignaturePadRef } from "@/components/SignaturePad";
+import { claimPath } from "@/lib/claim-path";
 import { signAgentCGU } from "@/app/(protected)/profile/pro-onboarding/sign-action";
 
 type Section = {
@@ -11,12 +12,14 @@ type Section = {
 };
 
 type Props = {
+  returnTo?: string | null;
+  onSigned?: () => Promise<void>;
   cguDocumentId: string;
   sections: Section[];
   onClose: () => void;
 };
 
-export default function SignatureModal({ cguDocumentId, sections, onClose }: Props) {
+export default function SignatureModal({ cguDocumentId, sections, onClose, returnTo, onSigned }: Props) {
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +51,7 @@ export default function SignatureModal({ cguDocumentId, sections, onClose }: Pro
     try {
       const signatureBase64 = padRef.current.toDataURL();
       const result = await signAgentCGU({ signatureBase64, cguDocumentId });
+      if (onSigned) { await onSigned(); return; }
       setPdfUrl(result.pdfUrl);
       // Countdown 5s → /dashboard
       let count = 5;
@@ -57,7 +61,7 @@ export default function SignatureModal({ cguDocumentId, sections, onClose }: Pro
         setCountdown(count);
         if (count <= 0) {
           clearInterval(interval);
-          window.location.href = "/dashboard";
+          window.location.href = claimPath(returnTo) || "/dashboard";
         }
       }, 1000);
     } catch (err) {

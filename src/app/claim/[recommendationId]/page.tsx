@@ -1,3 +1,5 @@
+import { cookies } from "next/headers";
+import { claimCookieName, hasClaimEmail, validClaimProof } from "@/lib/claim-access";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/supabase/get-user";
 import { formatDisplayName, formatMaskedProspectName } from "@/lib/utils";
@@ -25,7 +27,7 @@ export default async function ClaimPage({
     .from("recommendations")
     .select(
       `id, project_description, urgency_level, created_at, professional_id,
-       professional:profiles!recommendations_professional_id_fkey(id, email, companies(id, name, city, email, owner_id, source)),
+       professional:profiles!recommendations_professional_id_fkey(id, email, companies(id, name, city, email, owner_id, source, deleted_at)),
        referrer:profiles!recommendations_referrer_id_fkey(first_name, last_name, sponsor_code),
        contact:contacts(first_name, last_name, city)`
     )
@@ -58,14 +60,14 @@ export default async function ClaimPage({
     Array.isArray(v) ? (v[0] ?? null) : (v as T | null);
 
   const pro = normalize<{ id: string; email: string | null; companies: unknown }>(rec.professional);
-  const company = normalize<{
+  const company = (Array.isArray(pro?.companies) ? pro.companies : pro?.companies ? [pro.companies] : []).find((c: { deleted_at?: string | null }) => !c.deleted_at) as {
     id: string;
     name: string | null;
     city: string | null;
     email: string | null;
     owner_id: string | null;
     source: string | null;
-  }>(pro?.companies);
+  } | undefined;
   const referrer = normalize<{
     first_name: string | null;
     last_name: string | null;
@@ -79,6 +81,14 @@ export default async function ClaimPage({
   if (user && company?.owner_id === user.id && company.source === "owner") {
     redirect(`/recommendations/${recommendationId}`);
   }
+
+  const claimDestination = `/claim/${recommendationId}`;
+  const onboardingHref = `/profile/pro-onboarding?returnTo=${encodeURIComponent(claimDestination)}`;
+  const canAccess = Boolean(user && (validClaimProof(recommendationId, (await cookies()).get(claimCookieName(recommendationId))?.value) || hasClaimEmail(user, [company?.email, pro?.email])));
+  const { data: ownProfile } = user ? await supabaseAdmin.schema("winelio").from("profiles").select("is_professional, pro_engagement_accepted").eq("id", user.id).maybeSingle() : { data: null };
+  const { data: ownCompanies } = user ? await supabaseAdmin.schema("winelio").from("companies").select("id, name, siret, insurance_number, source").eq("owner_id", user.id).is("deleted_at", null) : { data: [] };
+  const readyCompanies = ownProfile?.is_professional && ownProfile?.pro_engagement_accepted
+    ? (ownCompanies || []).filter(c => c.siret?.length === 14 && c.insurance_number && c.source !== "scraped") : [];
 
   const referrerName = formatDisplayName(referrer?.first_name, referrer?.last_name, "Un membre Winelio");
   const contactName = formatMaskedProspectName(
@@ -98,9 +108,9 @@ export default async function ClaimPage({
   // en ignorant les placeholders de seeding.
   const isPlaceholder = (e: string | null | undefined) =>
     !!e && /@(kiparlo-pro\.fr|winelio-scraped\.local|winko)/i.test(e);
-  const prefillEmail = !isPlaceholder(company?.email)
+  const prefillEmail = company?.email && !isPlaceholder(company.email)
     ? company?.email
-    : !isPlaceholder(pro?.email)
+    : pro?.email && !isPlaceholder(pro.email)
     ? pro?.email
     : null;
 
@@ -161,11 +171,14 @@ export default async function ClaimPage({
             </div>
           ) : user ? (
             <div className="mt-6">
-              <ClaimButton recommendationId={recommendationId} />
-              <p className="mt-3 text-center text-xs text-winelio-gray">
-                En cliquant, vous associez cette fiche à votre compte{" "}
-                <strong>{user.email}</strong>.
-              </p>
+              {!canAccess ? (
+                <p role="alert" className="rounded-xl bg-orange-50 p-4 text-sm text-winelio-dark">Ouvrez le lien reçu par e-mail ou connectez-vous avec l’adresse qui a reçu cette recommandation. La récupération est réservée au professionnel destinataire.</p>
+              ) : readyCompanies.length ? (
+                <><ClaimButton recommendationId={recommendationId} companies={readyCompanies} /><p className="mt-3 text-xs text-winelio-gray">Votre parrain reste inchangé. Votre fiche sera utilisée pour les recommandations de cette entreprise.</p></>
+              ) : (
+                <><p className="mb-4 text-sm text-winelio-gray">Votre compte particulier est prêt. Créez ou complétez maintenant votre fiche professionnelle et validez vos engagements. Vous reviendrez ensuite ici pour récupérer votre recommandation.</p>
+                  <Link href={onboardingHref} className="block rounded-2xl bg-winelio-orange py-4 text-center font-bold text-white">Créer ou compléter ma fiche professionnelle →</Link></>
+              )}
             </div>
           ) : (
             <div className="mt-6 space-y-4">
@@ -178,15 +191,15 @@ export default async function ClaimPage({
                 <ul className="text-xs leading-5 text-winelio-gray space-y-1.5">
                   <li className="flex gap-2">
                     <span className="text-winelio-orange font-bold">1.</span>
-                    <span>Créez gratuitement votre compte Winelio en 2 minutes.</span>
+                    <span>Inscrivez-vous gratuitement comme particulier, avec le code parrain prérempli.</span>
                   </li>
                   <li className="flex gap-2">
                     <span className="text-winelio-orange font-bold">2.</span>
-                    <span>Revendiquez votre fiche pro en un clic.</span>
+                    <span>Depuis votre compte, créez votre fiche professionnelle et validez les informations et engagements demandés.</span>
                   </li>
                   <li className="flex gap-2">
                     <span className="text-winelio-orange font-bold">3.</span>
-                    <span>Contactez le client et transformez ce lead en devis.</span>
+                    <span>Revenez récupérer votre recommandation, puis contactez le client.</span>
                   </li>
                 </ul>
                 <p className="mt-3 text-[11px] text-winelio-gray/80 leading-5">
@@ -198,7 +211,7 @@ export default async function ClaimPage({
                 href={registerHref}
                 className="block w-full rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber py-4 text-center text-sm font-bold text-white shadow-md shadow-winelio-orange/25 transition-all hover:-translate-y-0.5"
               >
-                Créer mon compte gratuit →
+                Créer mon compte particulier →
               </Link>
               <p className="text-center text-xs text-winelio-gray">
                 Déjà inscrit ?{" "}

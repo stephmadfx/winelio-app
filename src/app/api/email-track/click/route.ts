@@ -1,3 +1,4 @@
+import { validClaimProof, claimCookieName } from "@/lib/claim-access";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/supabase/get-user";
@@ -78,5 +79,10 @@ export async function GET(req: Request) {
     console.error("[email-track/click] error:", e);
   }
 
-  return NextResponse.redirect(destination, { status: 302 });
+  const response = NextResponse.redirect(destination, { status: 302 });
+  const proof = searchParams.get("claim");
+  if (validClaimProof(rid, proof)) {
+    response.cookies.set(claimCookieName(rid), proof!, { httpOnly: true, secure: new URL(SITE_URL).protocol === "https:", sameSite: "lax", path: "/", maxAge: 30 * 86400 });
+  }
+  return response;
 }
