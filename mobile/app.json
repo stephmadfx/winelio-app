@@ -34,7 +34,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": true,
-      "versionCode": 11
+      "versionCode": 13
     },
     "web": {
       "bundler": "metro",

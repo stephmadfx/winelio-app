@@ -1,6 +1,6 @@
 import * as Linking from "expo-linking";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, BackHandler, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { AppState, BackHandler, Platform, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import WebView, { type WebViewMessageEvent } from "react-native-webview";
 
@@ -18,6 +18,7 @@ import {
   shouldUnmountWebViewOnFailure,
 } from "@/features/webapp/webAppLoadPolicy";
 import { isExternalProtocol, shouldLoadInWebView, webAppEntryUrl } from "@/features/webapp/webAppNavigation";
+import { nativeShareContent, nativeShareResultScript } from "./nativeShare";
 import { useReferralEntry } from "./useReferralEntry";
 
 export const WinelioWebAppScreen = () => {
@@ -26,6 +27,7 @@ export const WinelioWebAppScreen = () => {
   const webView = useRef<WebView>(null);
   const loadTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstPaintDone = useRef(false);
+  const sharing = useRef(false);
   const timeoutPausedInBackground = useRef(false);
   const [canGoBack, setCanGoBack] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -119,6 +121,23 @@ export const WinelioWebAppScreen = () => {
   const handleMessage = (event: WebViewMessageEvent) => {
     const message = parseNativeBridgeMessage(event.nativeEvent.data);
     if (!message) return;
+    if (message.type === "share") {
+      // Only trusted Winelio pages may request a native share.
+      try {
+        if (new URL(event.nativeEvent.url).origin !== new URL(webAppEntryUrl).origin) return;
+      } catch { return; }
+      const requestId = message.requestId!;
+      const respond = (status: "shared" | "dismissed" | "error") => {
+        webView.current?.injectJavaScript(nativeShareResultScript(requestId, status));
+      };
+      if (sharing.current) { respond("error"); return; }
+      sharing.current = true;
+      void Share.share(nativeShareContent(message.payload!)).then(
+        (result) => respond(result.action === Share.dismissedAction ? "dismissed" : "shared"),
+        () => respond("error"),
+      ).finally(() => { sharing.current = false; });
+      return;
+    }
     if (message.type === "pageReady") {
       if (!isHttpDocumentUrl(message.payload?.url)) return;
       markContentVisible();
@@ -169,6 +188,7 @@ export const WinelioWebAppScreen = () => {
             onLoadEnd={(event) => {
               if (!isHttpDocumentUrl(event.nativeEvent.url)) return;
               markContentVisible();
+              webView.current?.injectJavaScript(nativeBridgeScript);
               webView.current?.injectJavaScript(pageHealthCheckScript);
             }}
             onLoadProgress={(event) => {
