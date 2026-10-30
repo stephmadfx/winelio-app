@@ -27,7 +27,7 @@ export function FeedPreferences({ request = fetch }: { request?: typeof fetch } 
     } catch { setMessage("Enregistrement impossible. Vos changements ne sont pas enregistrés. Réessayez."); }
     finally { setBusy(false); }
   }
-  return <Card className="!rounded-2xl mb-4"><CardContent className="p-5 sm:p-6 space-y-4">
+  return <Card id="activity-preferences" className="!rounded-2xl mb-4"><CardContent className="p-5 sm:p-6 space-y-4">
     <h3 className="font-semibold text-winelio-dark">Actualités du réseau et confidentialité</h3>
     <p className="text-sm text-winelio-gray">Le fil est visible par les membres connectés de Winelio dans toute la France. Votre prénom et l’initiale de votre nom restent des données personnelles. Aucun client, dossier ou coordonnée n’est publié.</p>
     <Link href="/documents-legaux/politique-confidentialite" className="text-sm text-winelio-orange underline">Consulter la politique de confidentialité et exercer mes droits</Link>

@@ -1,70 +1,24 @@
-"use client"
+"use client";
+import Link from "next/link";
+import { ArrowRight, Settings } from "lucide-react";
+import type { FeedEvent } from "@/lib/feed-utils";
+import { useActivityEvents } from "@/hooks/use-activity-events";
+import { ActivityEventRow } from "@/components/activity-event-row";
+import { Card, CardContent } from "@/components/ui/card";
 
-import { useEffect, useState } from "react"
-import { FeedEvent, feedEventLabel, feedEventIcon, formatRelativeTime } from "@/lib/feed-utils"
-import { Card, CardContent } from "@/components/ui/card"
-import Link from "next/link"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-
-type Props = { initialEvents: FeedEvent[]; demoMode: boolean; className?: string; initialError?: boolean }
-
-export function ActivityFeed({ initialEvents, demoMode, className, initialError = false }: Props) {
-  const [events, setEvents] = useState(initialEvents)
-  const [failed, setFailed] = useState(initialError)
-  const [loading, setLoading] = useState(false)
-  async function refresh(signal?: AbortSignal) {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/feed", { cache: "no-store", signal })
-      if (!res.ok) throw new Error()
-      const data = await res.json()
-      setEvents(data.events)
-      setFailed(false)
-    } catch (error) {
-      if (!(error instanceof Error && error.name === "AbortError")) {
-        // Clear stale names/amounts when current consent cannot be checked.
-        setEvents([])
-        setFailed(true)
-      }
-    } finally { setLoading(false) }
-  }
-  useEffect(() => {
-    if (demoMode) return
-    const controller = new AbortController()
-    const timer = setInterval(() => { if (!document.hidden) void refresh(controller.signal) }, 30_000)
-    const onFocus = () => { void refresh(controller.signal) }
-    window.addEventListener("focus", onFocus)
-    return () => { controller.abort(); clearInterval(timer); window.removeEventListener("focus", onFocus) }
-  }, [demoMode])
-
-  const rows = (list: FeedEvent[]) => list.map(event => (
-    <div key={event.id} className="feed-item-row flex items-start gap-3 rounded-xl border border-gray-100 px-3 py-3">
-      <span aria-hidden="true" className="shrink-0 rounded-full bg-winelio-orange/10 p-2">{feedEventIcon(event.kind)}</span>
-      <div className="min-w-0">
-        <p className="text-sm text-winelio-dark leading-relaxed break-words">{feedEventLabel(event)}</p>
-        {event.kind === "network_summary" && <p className="text-xs text-winelio-orange font-medium">Bilan collectif · historique</p>}
-        <time dateTime={event.timestamp} title={new Date(event.timestamp).toLocaleString("fr-FR")} className="text-xs text-winelio-gray">{formatRelativeTime(event.timestamp)}</time>
+type Props = { initialEvents: FeedEvent[]; demoMode: boolean; className?: string; initialError?: boolean; initialNow?: string; viewport?: "mobile" | "desktop" };
+export function ActivityFeed({ className, ...options }: Props) {
+  const { events, failed, loading, now, refresh } = useActivityEvents(options);
+  return <Card className={`activity-feed-preview gap-0 rounded-[22px] py-0 shadow-sm ${className ?? ""}`}>
+    <CardContent className="!p-0">
+      <div className="flex items-center justify-between gap-3 border-b border-border/60 px-5 py-4">
+        <div className="min-w-0"><h3 className="text-[18px] font-bold leading-6 tracking-tight text-foreground">Ça bouge sur Winelio</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">Tout le réseau, partout en France{options.demoMode ? " · Démonstration" : ""}</p></div>
+        <Link href="/settings#activity-preferences" aria-label="Gérer la visibilité de mon activité" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-winelio-orange"><Settings size={20} strokeWidth={1.7} /></Link>
       </div>
-    </div>
-  ))
-  return (
-    <Card className={`!rounded-2xl shadow-sm overflow-hidden ${className ?? ""}`}>
-      <CardContent className="p-0 flex flex-col h-[360px]">
-        <div className="flex items-center justify-between gap-2 px-5 py-4 border-b border-gray-100">
-          <div><h3 className="font-bold text-lg text-winelio-dark">Ça bouge sur Winelio</h3><p className="text-xs text-winelio-gray">Tout le réseau, partout en France{demoMode ? " · Démonstration" : ""} · <Link href="/settings" className="underline">Gérer ma visibilité</Link></p></div>
-          <Dialog>
-            <DialogTrigger className="text-winelio-orange font-bold text-sm shrink-0 hover:underline">Voir tout</DialogTrigger>
-            <DialogContent className="sm:max-w-xl max-h-[85dvh] flex flex-col">
-              <DialogHeader><DialogTitle>Les actualités Winelio</DialogTitle><DialogDescription>Les événements des 30 derniers jours, du plus récent au plus ancien.</DialogDescription></DialogHeader>
-              <div className="min-h-0 overflow-y-auto flex flex-col gap-2">{rows(events)}{!events.length && <p>Aucune actualité à afficher.</p>}</div>
-              <Link href="/settings" className="text-sm text-winelio-orange">Gérer ma confidentialité et mes rappels</Link>
-            </DialogContent>
-          </Dialog>
-        </div>
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2" aria-busy={loading}>
-          {failed ? <div role="status"><p className="text-sm">Les actualités sont momentanément indisponibles.</p><button disabled={loading} onClick={() => void refresh()} className="text-winelio-orange text-sm underline">Réessayer</button></div> : events.length ? rows(events.slice(0, 5)) : <p className="text-sm text-winelio-gray py-4">Le réseau prépare ses prochaines actualités. Faites votre première recommandation !</p>}
-        </div>
-      </CardContent>
-    </Card>
-  )
+      <div className="px-5" aria-busy={loading}>
+        {failed ? <div role="status" className="py-5 text-sm"><p>Les actualités sont momentanément indisponibles.</p><button disabled={loading} onClick={() => void refresh()} className="mt-2 min-h-11 text-winelio-orange underline">Réessayer</button></div> : events.length ? <ul aria-label="Dernières actualités du réseau" className="divide-y divide-border/60">{events.slice(0, options.viewport === "desktop" ? 5 : 3).map(event => <ActivityEventRow key={event.id} event={event} referenceTime={now} />)}</ul> : <p className="py-6 text-sm leading-6 text-muted-foreground">Le réseau prépare ses prochaines actualités. Faites votre première recommandation !</p>}
+        <Link href="/activity" className="mb-4 flex min-h-12 items-center justify-center gap-3 rounded-xl bg-winelio-orange/10 px-4 py-3 text-sm font-semibold text-winelio-orange transition-colors hover:bg-winelio-orange/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-winelio-orange">Toute l’activité<ArrowRight size={18} aria-hidden="true" /></Link>
+      </div>
+    </CardContent>
+  </Card>;
 }

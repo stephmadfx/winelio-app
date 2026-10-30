@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { isMemberNavActive } from "@/lib/member-navigation";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 
@@ -45,7 +46,7 @@ export function MobileNav() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-white/80 backdrop-blur-xl border-t border-black/5 shadow-[0_-8px_24px_rgba(255,107,53,0.06)] lg:hidden">
       <div className="flex items-end justify-between px-1.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          const isActive = isMemberNavActive(pathname, item.href);
           const isLoading = loadingHref === item.href;
 
           return (

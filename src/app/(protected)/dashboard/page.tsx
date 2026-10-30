@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { ArrowRight, ClipboardList, Users } from "lucide-react";
 import { DashboardTour } from "@/components/dashboard-tour";
 import { Card, CardContent } from "@/components/ui/card";
 import { MonthlyBarChart } from "@/components/monthly-bar-chart";
@@ -150,79 +151,42 @@ export default async function DashboardPage() {
       {/* ═══ MOBILE (< lg) ═══ */}
       <div className="lg:hidden space-y-5">
 
-        {/* Hero card gradient */}
-        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-winelio-orange to-winelio-amber p-6 text-white shadow-xl">
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
-          <div className="relative z-10 space-y-4">
-            <h2 className="text-xl font-extrabold leading-tight">
-              Recommandez. Gagnez. Grandissez.
-            </h2>
-            <div className="flex flex-col gap-2.5">
-              <Link
-                href="/recommendations/new"
-                className="inline-flex items-center justify-center gap-2 bg-white text-winelio-orange px-5 py-2.5 rounded-full font-bold text-sm shadow-lg active:scale-95 transition-all"
-              >
-                Faire une recommandation
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </Link>
-              <Link
-                href="/recommendations"
-                className="inline-flex items-center justify-center gap-2 bg-white/15 text-white border border-white/30 px-5 py-2.5 rounded-full font-semibold text-sm backdrop-blur-sm active:scale-95 transition-all hover:bg-white/25"
-              >
-                Recommandations en cours
-                {(inProgressRecos ?? 0) > 0 && (
-                  <span
-                    className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-white text-winelio-orange text-xs font-bold tabular-nums"
-                    aria-label={`${inProgressRecos} en cours`}
-                  >
-                    {inProgressRecos}
-                  </span>
-                )}
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            </div>
-          </div>
-        </section>
+        <header className="pt-3">
+          <h2 className="text-[26px] font-bold leading-tight tracking-tight text-foreground">Bonjour{profile?.first_name?.trim() ? ` ${profile.first_name.trim()}` : ""}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Votre réseau avance avec vous.</p>
+        </header>
 
-        {/* Podium des bâtisseurs réseau (mois en cours) */}
-        <section>
-          <NetworkPodiumCarousel
-            monthLabel={monthLabelCapitalized}
-            currentUserId={user.id}
-            topSponsors={topSponsors}
-            topN1Total={topN1Total}
-            myPositions={{
-              sponsors: posSponsors,
-              n1_total: posN1Total,
-            }}
-          />
-        </section>
-
-        {/* Feed d'activité */}
-        <section>
-          <ActivityFeed
-            initialError={feedError} initialEvents={topEvents}
-            demoMode={demoMode}
-            className="!h-[300px]"
-          />
-        </section>
-
-        {/* Grille KPIs 2×2 */}
-        <div className="grid grid-cols-2 gap-3">
-          <KpiCard numValue={recoThisMonth ?? 0} label="Recos ce mois" variant="orange" delay={0}
-            icon="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          <KpiCard numValue={Number(totalEarned)} suffix=" €" label="Gains totaux" variant="amber" delay={80}
-            icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          <KpiCard numValue={networkCount} label="Membres réseau" variant="orange" delay={160}
-            icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-          <KpiCard numValue={successRate} suffix=" %" label="Taux de succès" variant="amber" delay={240}
-            icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <div className="grid grid-cols-2 divide-x divide-border/70 rounded-2xl bg-card shadow-sm ring-1 ring-border/60">
+          <Link href="/recommendations" className="flex items-center gap-3 rounded-l-2xl p-4 transition-colors hover:bg-muted/50">
+            <ClipboardList className="h-5 w-5 shrink-0 text-winelio-orange" aria-hidden="true" />
+            <div className="min-w-0"><p className="text-2xl font-bold leading-none tabular-nums text-foreground">{totalRecos ?? 0}</p><p className="mt-1.5 text-xs leading-4 text-muted-foreground">Mes recommandations</p></div>
+          </Link>
+          <Link href="/network" className="flex items-center gap-3 rounded-r-2xl p-4 transition-colors hover:bg-muted/50">
+            <Users className="h-5 w-5 shrink-0 text-winelio-orange" aria-hidden="true" />
+            <div className="min-w-0"><p className="text-2xl font-bold leading-none tabular-nums text-foreground">{networkCount}</p><p className="mt-1.5 text-xs leading-4 text-muted-foreground">Mon réseau</p></div>
+          </Link>
         </div>
+
+        <section>
+          <ActivityFeed initialError={feedError} initialEvents={topEvents} initialNow={now.toISOString()} demoMode={demoMode} viewport="mobile" />
+        </section>
+
+        <div className="space-y-2">
+          <Link href="/recommendations/new" className="flex min-h-12 items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-winelio-orange to-winelio-amber px-4 py-3.5 text-sm font-semibold text-white shadow-sm active:scale-[0.99]">
+            <ClipboardList size={20} aria-hidden="true" />Faire une recommandation<ArrowRight size={18} aria-hidden="true" />
+          </Link>
+          <Link href="/recommendations" className="flex min-h-11 items-center justify-center gap-2 text-sm font-medium text-winelio-gray">Recommandations en cours{(inProgressRecos ?? 0) > 0 && <span className="rounded-full bg-winelio-orange/10 px-2 py-0.5 text-xs font-semibold tabular-nums text-winelio-orange">{inProgressRecos}</span>}<ArrowRight size={15} aria-hidden="true" /></Link>
+        </div>
+
+        <section>
+          <NetworkPodiumCarousel monthLabel={monthLabelCapitalized} currentUserId={user.id} topSponsors={topSponsors} topN1Total={topN1Total} myPositions={{ sponsors: posSponsors, n1_total: posN1Total }} />
+        </section>
+
+        <dl className="divide-y divide-border/60 rounded-2xl bg-card px-5 shadow-sm ring-1 ring-border/60">
+          <div className="flex items-center justify-between gap-4 py-3.5"><dt className="text-sm text-muted-foreground">Recommandations ce mois</dt><dd className="font-semibold tabular-nums text-foreground">{recoThisMonth ?? 0}</dd></div>
+          <div className="flex items-center justify-between gap-4 py-3.5"><dt className="text-sm text-muted-foreground">Gains totaux</dt><dd className="font-semibold tabular-nums text-foreground">{Number(totalEarned).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}</dd></div>
+          <div className="flex items-center justify-between gap-4 py-3.5"><dt className="text-sm text-muted-foreground">Taux de succès</dt><dd className="font-semibold tabular-nums text-foreground">{successRate} %</dd></div>
+        </dl>
 
         {/* Actions rapides */}
         <section className="space-y-3">
@@ -321,7 +285,7 @@ export default async function DashboardPage() {
 
         {/* Activité récente — pleine largeur */}
         <section>
-          <ActivityFeed initialError={feedError} initialEvents={topEvents} demoMode={demoMode} />
+          <ActivityFeed initialError={feedError} initialEvents={topEvents} initialNow={now.toISOString()} demoMode={demoMode} viewport="desktop" />
         </section>
 
         {/* Grille 7/5 */}
@@ -492,29 +456,6 @@ export default async function DashboardPage() {
 }
 
 /* ── Composants partagés ── */
-
-function KpiCard({ numValue, suffix = "", decimals = 0, label, variant, icon, delay = 0 }: {
-  numValue: number; suffix?: string; decimals?: number; label: string; variant: "orange" | "amber"; icon: string; delay?: number;
-}) {
-  const isOrange = variant === "orange";
-  return (
-    <Card className="animate-fade-up card-lift !rounded-2xl shadow-sm" style={{ animationDelay: `${delay}ms` }}>
-      <CardContent className="p-4 flex flex-col gap-3">
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isOrange ? "bg-winelio-orange/10" : "bg-winelio-amber/10"}`}>
-          <svg className={`w-5 h-5 ${isOrange ? "text-winelio-orange" : "text-winelio-amber"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
-          </svg>
-        </div>
-        <div>
-          <p className="text-[28px] font-extrabold text-winelio-dark leading-none">
-            <AnimatedCounter to={numValue} suffix={suffix} decimals={decimals} delay={delay} />
-          </p>
-          <p className="text-xs text-winelio-gray font-semibold mt-1">{label}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 function DesktopKpiCard({ numValue, suffix = "", decimals = 0, label, sub, trend, sparkline, icon, accentColor, delay = 0 }: {
   numValue: number; suffix?: string; decimals?: number; label: string; sub?: string; trend?: string;

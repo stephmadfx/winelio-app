@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { isMemberNavActive, isActivityPath } from "@/lib/member-navigation";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SignOutButton } from "./sign-out-button";
@@ -105,6 +106,9 @@ export function MobileHeader({
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
+  if (isActivityPath(pathname)) return null;
+  const isHome = pathname === "/dashboard";
+
   return (
     <>
       {/* ── Header bar ── */}
@@ -117,7 +121,7 @@ export function MobileHeader({
             <WinelioLogo variant="color" height={28} gradientId="wGrad-mheader" />
           </Link>
 
-          {/* Centre : avatar + greeting — flex-1 garantit qu'il ne déborde jamais */}
+          {isHome ? <div className="flex-1" /> : (
           <div className="flex-1 flex items-center justify-center gap-2 overflow-hidden">
             <ProfileAvatar
               name={displayName}
@@ -135,17 +139,21 @@ export function MobileHeader({
             </div>
           </div>
 
+          )}
+
           {/* Droite : bug + hamburger */}
           <div className="shrink-0 flex items-center gap-0.5">
             <BugReportButton userId={userId} allBugReports={allBugReports} variant="inline" />
             <button
               onClick={openMenu}
-              className="w-10 h-10 flex items-center justify-center rounded-xl text-winelio-gray active:bg-winelio-orange/10 active:text-winelio-orange transition-colors"
+              className="w-11 h-11 flex items-center justify-center rounded-xl text-winelio-gray active:bg-winelio-orange/10 active:text-winelio-orange transition-colors"
               aria-label="Ouvrir le menu"
             >
+              {isHome ? <ProfileAvatar name={displayName} avatar={avatar} className="h-9 w-9 ring-2 ring-winelio-orange/15" initialsClassName="text-xs font-semibold" /> : (
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
+              )}
             </button>
           </div>
         </div>
@@ -203,7 +211,7 @@ export function MobileHeader({
             <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
               {navItems.map((item) => {
                 const isActive =
-                  pathname === item.href || pathname.startsWith(item.href + "/");
+                  isMemberNavActive(pathname, item.href);
                 return (
                   <Link
                     key={item.href}

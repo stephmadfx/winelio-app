@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { isMemberNavActive } from "@/lib/member-navigation";
 import { WinelioLogo } from "./winelio-logo";
 import { usePathname } from "next/navigation";
 import { SignOutButton } from "./sign-out-button";
@@ -67,7 +68,7 @@ export function Sidebar({ userEmail, isSuperAdmin }: { userEmail: string; isSupe
       {/* Navigation */}
       <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          const isActive = isMemberNavActive(pathname, item.href);
           const tourKey =
             item.href === "/network" ? "sidebar-network" :
             item.href === "/wallet" ? "sidebar-wallet" :
