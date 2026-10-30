@@ -3,6 +3,7 @@ export type FeedEvent = {
   timestamp: string // ISO string
 } & (
   | { kind: "member_joined" | "member_sponsored" | "recommendation_created"; user: string }
+  | { kind: "network_summary"; label: string }
   | { kind: "gain_credited"; user: string; amount: number }
   | { kind: "top_sponsor";         user: string; city: string | null; count: number; period: "week" }
   | { kind: "top_reco";            amount: number; city: string | null }
@@ -40,6 +41,7 @@ export function formatRelativeTime(timestamp: string): string {
 
 export function feedEventIcon(kind: FeedEvent["kind"]): string {
   const icons: Record<FeedEvent["kind"], string> = {
+    network_summary: "🗓️",
     member_joined: "👤",
     member_sponsored: "🌟",
     recommendation_created: "🤝",
@@ -61,6 +63,7 @@ export function feedEventIcon(kind: FeedEvent["kind"]): string {
 
 export function feedEventLabel(event: FeedEvent): string {
   switch (event.kind) {
+    case "network_summary": return event.label
     case "member_joined": return `${event.user} vient de rejoindre Winelio. Bienvenue !`
     case "member_sponsored": return `${event.user} accueille un nouveau filleul dans son réseau.`
     case "recommendation_created": return `${event.user} vient de faire une recommandation.`

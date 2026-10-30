@@ -42,6 +42,7 @@ export function ActivityFeed({ initialEvents, demoMode, className, initialError 
       <span aria-hidden="true" className="shrink-0 rounded-full bg-winelio-orange/10 p-2">{feedEventIcon(event.kind)}</span>
       <div className="min-w-0">
         <p className="text-sm text-winelio-dark leading-relaxed break-words">{feedEventLabel(event)}</p>
+        {event.kind === "network_summary" && <p className="text-xs text-winelio-orange font-medium">Bilan collectif · historique</p>}
         <time dateTime={event.timestamp} title={new Date(event.timestamp).toLocaleString("fr-FR")} className="text-xs text-winelio-gray">{formatRelativeTime(event.timestamp)}</time>
       </div>
     </div>

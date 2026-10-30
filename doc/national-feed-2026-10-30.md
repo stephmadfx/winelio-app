@@ -44,3 +44,11 @@ Le choix du demandeur est **résumé visible dans l’application**, sans push n
 Résultats vérifiés : 6 tests unitaires/API réussis, tests PostgreSQL réussis, contrôle UI réel 1280/390 px réussi (API simulées), build final réussi. Avertissements existants de bundling MJML/cosmiconfig ; aucune erreur de build. Les fixtures UI et le cluster PostgreSQL temporaire sont supprimés.
 
 Contrôle renforcé pour l’instance Supabase partagée : `20261030b_feed_member_access.sql` réserve aussi la projection aux profils Winelio actifs. Une session authentifiée d’un autre projet et un profil désactivé ne donnent aucun accès au fil. Tests PostgreSQL dédiés réussis.
+
+## Reprise historique demandée après livraison
+
+Migration `20261030c_feed_history_summaries.sql` : instantané collectif sur les 30 jours complets précédant la migration, heure de Paris. Comptes actifs, confirmés, hors démo et hors système ; métriques publiées seulement à partir de cinq observations (choix de minimisation, sans valeur de seuil légal). Aucun nom, lien vers un compte, ville, dossier ni montant. Les recommandations trop peu nombreuses sont omises. Les consentements existants restent inchangés : aucun événement nominatif ni gain ancien n’est publié.
+
+Les bilans ont leur période et date historiques, la mention « Bilan collectif · historique », la même durée d’affichage et de purge que le fil. Le digest ignore ces bilans : leur ajout ne crée pas une notification de nouvelle activité. Une étape de publication différée via `is_published` permet de n’activer les bilans qu’une fois les deux frontends compatibles déployés.
+
+Tests dédiés dans `tests/integration/national-feed-history.sql` et test de projection du résumé. Préflight de production en transaction annulée avant application réelle. Voir `doc/chat-vps-capacity-2026-10-30.md` pour la demande distincte sur le dimensionnement de messagerie ; aucune messagerie n’est ajoutée par cette livraison.

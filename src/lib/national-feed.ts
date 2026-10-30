@@ -5,7 +5,9 @@ import type { FeedEvent } from "@/lib/feed-utils";
 export async function getNationalFeed(client: SupabaseClient): Promise<FeedEvent[]> {
   const { data, error } = await client.rpc("get_national_feed", { p_limit: 100 });
   if (error) throw new Error("Le fil national est momentanément indisponible.");
-  return (data ?? []).map((row: { id: string; kind: "member_joined" | "member_sponsored" | "recommendation_created" | "gain_credited"; display_name: string; amount: number | null; occurred_at: string }) => ({
+  return (data ?? []).map((row: { id: string; kind: "member_joined" | "member_sponsored" | "recommendation_created" | "gain_credited" | "network_summary"; display_name: string; amount: number | null; occurred_at: string }) => row.kind === "network_summary" ? {
+    id: row.id, kind: row.kind, label: row.display_name, timestamp: row.occurred_at,
+  } : ({
     id: row.id, kind: row.kind, user: row.display_name,
     ...(row.kind === "gain_credited" ? { amount: Number(row.amount) } : {}),
     timestamp: row.occurred_at,

@@ -67,3 +67,10 @@ test('digest: authenticated access and dismiss errors handled without false succ
  assert.equal(response.status,503); assert.doesNotMatch(await response.text(),/private detail/);
  assert.equal((await route.GET()).status,503);
 });
+test('history: collective label is rendered without a member identity or amount',async()=>{
+ const {getNationalFeed}=load('src/lib/national-feed.ts');
+ const label='Du 30/09 au 29/10/2026 : 11 nouveaux membres confirmés ont rejoint Winelio.';
+ const events=await getNationalFeed({rpc:async()=>({data:[{id:'summary',kind:'network_summary',display_name:label,amount:null,occurred_at:'2026-10-29T22:59:59Z',source_id:'private'}]})});
+ assert.deepEqual(events,[{id:'summary',kind:'network_summary',label,timestamp:'2026-10-29T22:59:59Z'}]);
+ assert.equal(load('src/lib/feed-utils.ts').feedEventLabel(events[0]),label);
+});
