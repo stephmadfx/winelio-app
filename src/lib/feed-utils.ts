@@ -2,6 +2,8 @@ export type FeedEvent = {
   id: string        // identifiant unique pour la key React
   timestamp: string // ISO string
 } & (
+  | { kind: "member_joined" | "member_sponsored" | "recommendation_created"; user: string }
+  | { kind: "gain_credited"; user: string; amount: number }
   | { kind: "top_sponsor";         user: string; city: string | null; count: number; period: "week" }
   | { kind: "top_reco";            amount: number; city: string | null }
   | { kind: "big_commission";      user: string; city: string | null; amount: number }
@@ -19,7 +21,7 @@ export function formatUserName(
   firstName: string | null,
   lastName: string | null
 ): string {
-  if (!firstName && !lastName) return "Un membre"
+  if (!firstName?.trim()) return "Un membre"
   const f = firstName ? firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase() : null
   if (!lastName) return f || "Un membre"
   return `${f} ${lastName.charAt(0).toUpperCase()}.`
@@ -38,6 +40,10 @@ export function formatRelativeTime(timestamp: string): string {
 
 export function feedEventIcon(kind: FeedEvent["kind"]): string {
   const icons: Record<FeedEvent["kind"], string> = {
+    member_joined: "👤",
+    member_sponsored: "🌟",
+    recommendation_created: "🤝",
+    gain_credited: "🎉",
     top_sponsor:         "🏆",
     top_reco:            "💰",
     big_commission:      "⚡",
@@ -55,6 +61,10 @@ export function feedEventIcon(kind: FeedEvent["kind"]): string {
 
 export function feedEventLabel(event: FeedEvent): string {
   switch (event.kind) {
+    case "member_joined": return `${event.user} vient de rejoindre Winelio. Bienvenue !`
+    case "member_sponsored": return `${event.user} accueille un nouveau filleul dans son réseau.`
+    case "recommendation_created": return `${event.user} vient de faire une recommandation.`
+    case "gain_credited": return `${event.user} a reçu ${new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(event.amount)} dans sa cagnotte !`
     case "top_sponsor":
       return `${event.user}${event.city ? ` (${event.city})` : ""} — top parrain · ${event.count} filleuls`
     case "top_reco":

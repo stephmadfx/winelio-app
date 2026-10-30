@@ -6,7 +6,8 @@ import { DashboardTour } from "@/components/dashboard-tour";
 import { Card, CardContent } from "@/components/ui/card";
 import { MonthlyBarChart } from "@/components/monthly-bar-chart";
 import { AnimatedCounter } from "@/components/animated-counter";
-import { FeedEvent, formatUserName } from "@/lib/feed-utils";
+import { getNationalFeed } from "@/lib/national-feed";
+import { NetworkDigest } from "@/components/network-digest";
 import { ActivityFeed } from "@/components/activity-feed";
 import { NetworkPodiumCarousel } from "@/components/network-podium-carousel";
 import {
@@ -100,276 +101,8 @@ export default async function DashboardPage() {
     .eq("sponsor_id", user.id)
     .limit(3);
 
-  // ── Événements d'activité réseau (11 types) ──────────────────────
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const activityEvents: FeedEvent[] = [];
-
-  // Filleuls directs récents (niv. 1)
-  const { data: newDirectReferrals } = await supabase
-    .from("profiles")
-    .select("id, first_name, last_name, city, created_at")
-    .eq("sponsor_id", user.id)
-    .gte("created_at", sevenDaysAgo)
-    .order("created_at", { ascending: false })
-    .limit(3);
-
-  newDirectReferrals?.forEach((p) => {
-    activityEvents.push({
-      id: `nr1-${p.id}`,
-      kind: "new_referral",
-      user: formatUserName(p.first_name, p.last_name),
-      city: p.city,
-      level: 1,
-      timestamp: p.created_at,
-    });
-  });
-
-  if (allNetworkIds.length > 0) {
-    // Filleuls niv. 2-5 récents
-    const directIds = (newDirectReferrals ?? []).map((p) => p.id);
-    const networkIdsDeep = allNetworkIds.filter((id) => !directIds.includes(id) && id !== user.id);
-
-    const [
-      { data: deepReferrals },
-      { data: sponsoredMembers },
-      { data: validatedRecos },
-      { data: bigCommissions },
-      { data: recentSteps },
-      { data: ownCommissions },
-      { data: completedWithdrawals },
-      { data: completedRecosFull },
-    ] = await Promise.all([
-      // Niv. 2-5 récents
-      networkIdsDeep.length > 0
-        ? supabase
-            .from("profiles")
-            .select("id, first_name, last_name, city, created_at, sponsor_id")
-            .in("id", networkIdsDeep)
-            .gte("created_at", sevenDaysAgo)
-            .order("created_at", { ascending: false })
-            .limit(3)
-        : Promise.resolve({ data: [] }),
-
-      // Membres du réseau ayant parrainé quelqu'un (referral_sponsored)
-      allNetworkIds.length > 0
-        ? supabase
-            .from("profiles")
-            .select("id, first_name, last_name, city, created_at, sponsor_id")
-            .in("sponsor_id", allNetworkIds)
-            .gte("created_at", sevenDaysAgo)
-            .order("created_at", { ascending: false })
-            .limit(3)
-        : Promise.resolve({ data: [] }),
-
-      // Recos validées dans le réseau (reco_validated)
-      supabase
-        .from("recommendations")
-        .select("id, referrer_id, amount, created_at")
-        .in("referrer_id", allNetworkIds)
-        .eq("status", "COMPLETED")
-        .gte("created_at", sevenDaysAgo)
-        .order("created_at", { ascending: false })
-        .limit(3),
-
-      // Grosses commissions réseau (big_commission)
-      supabase
-        .from("commission_transactions")
-        .select("id, user_id, amount, created_at")
-        .in("user_id", allNetworkIds)
-        .gt("amount", 50)
-        .eq("status", "EARNED")
-        .gte("created_at", sevenDaysAgo)
-        .order("created_at", { ascending: false })
-        .limit(3),
-
-      // Étapes récentes sur les recos de l'utilisateur (step_advanced)
-      supabase
-        .from("recommendation_steps")
-        .select("id, completed_at, recommendation_id, step:steps(name, order_index), recommendation:recommendations!inner(referrer_id)")
-        .eq("recommendation.referrer_id", user.id)
-        .not("completed_at", "is", null)
-        .gte("completed_at", sevenDaysAgo)
-        .order("completed_at", { ascending: false })
-        .limit(5),
-
-      // Commissions propres de l'utilisateur (commission_received)
-      supabase
-        .from("commission_transactions")
-        .select("id, amount, created_at")
-        .eq("user_id", user.id)
-        .eq("status", "EARNED")
-        .gte("created_at", sevenDaysAgo)
-        .order("created_at", { ascending: false })
-        .limit(3),
-
-      // Retraits traités (withdrawal_done)
-      supabase
-        .from("withdrawals")
-        .select("id, amount, updated_at")
-        .eq("user_id", user.id)
-        .eq("status", "COMPLETED")
-        .gte("updated_at", sevenDaysAgo)
-        .order("updated_at", { ascending: false })
-        .limit(2),
-
-      // Recos de l'utilisateur terminées avec montant (reco_completed)
-      supabase
-        .from("recommendations")
-        .select("id, amount, created_at, referrer_id")
-        .eq("referrer_id", user.id)
-        .eq("status", "COMPLETED")
-        .gt("amount", 0)
-        .gte("created_at", sevenDaysAgo)
-        .order("created_at", { ascending: false })
-        .limit(3),
-    ]);
-
-    // Enrichir les profils manquants
-    const referrerIds = [
-      ...(validatedRecos?.map((r) => r.referrer_id) ?? []),
-      ...(bigCommissions?.map((c) => c.user_id) ?? []),
-      ...(sponsoredMembers?.map((p) => p.sponsor_id).filter(Boolean) ?? []),
-      ...(deepReferrals?.map((p) => p.sponsor_id).filter(Boolean) ?? []),
-    ];
-    const profilesMap: Record<string, { first_name: string | null; last_name: string | null; city: string | null }> = {};
-    if (referrerIds.length > 0) {
-      const { data: refProfiles } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name, city")
-        .in("id", [...new Set(referrerIds)]);
-      refProfiles?.forEach((p) => { profilesMap[p.id] = p; });
-    }
-
-    // Map member_id → depth depuis le résultat RPC
-    const networkDepthMap = new Map<string, number>(
-      (networkRows ?? []).map((r: { member_id: string; depth: number }) => [r.member_id, r.depth])
-    );
-
-    // Niv. 2-5
-    deepReferrals?.forEach((p) => {
-      const level = networkDepthMap.get(p.id) ?? 2;
-      activityEvents.push({
-        id: `nr2-${p.id}`,
-        kind: "new_referral",
-        user: formatUserName(p.first_name, p.last_name),
-        city: p.city,
-        level,
-        timestamp: p.created_at,
-      });
-    });
-
-    // referral_sponsored
-    sponsoredMembers?.forEach((p) => {
-      const sponsor = p.sponsor_id ? profilesMap[p.sponsor_id] : null;
-      if (sponsor) {
-        activityEvents.push({
-          id: `rs-${p.id}`,
-          kind: "referral_sponsored",
-          user: formatUserName(sponsor.first_name, sponsor.last_name),
-          city: sponsor.city,
-          timestamp: p.created_at,
-        });
-      }
-    });
-
-    // reco_validated
-    validatedRecos?.forEach((r) => {
-      const prof = profilesMap[r.referrer_id];
-      activityEvents.push({
-        id: `rv-${r.id}`,
-        kind: "reco_validated",
-        user: formatUserName(prof?.first_name ?? null, prof?.last_name ?? null),
-        city: prof?.city ?? null,
-        amount: r.amount ?? undefined,
-        timestamp: r.created_at,
-      });
-    });
-
-    // big_commission
-    bigCommissions?.forEach((c) => {
-      const prof = profilesMap[c.user_id];
-      activityEvents.push({
-        id: `cr-${c.id}`,
-        kind: "big_commission",
-        user: formatUserName(prof?.first_name ?? null, prof?.last_name ?? null),
-        city: prof?.city ?? null,
-        amount: c.amount,
-        timestamp: c.created_at,
-      });
-    });
-
-    // step_advanced (filtrer les étapes trivielles : ne pas inclure étape 1)
-    recentSteps?.forEach((s) => {
-      const rawStep = s.step as unknown;
-      const step: { name: string; order_index: number } | null = Array.isArray(rawStep)
-        ? (rawStep[0] ?? null)
-        : (rawStep as { name: string; order_index: number } | null);
-      if (!step || step.order_index <= 1) return;
-      activityEvents.push({
-        id: `sa-${s.id}`,
-        kind: "step_advanced",
-        user: formatUserName(profile?.first_name ?? null, profile?.last_name ?? null),
-        city: null,
-        stepLabel: step.name,
-        stepIndex: step.order_index,
-        timestamp: s.completed_at!,
-      });
-    });
-
-    // commission_received (propres à l'utilisateur)
-    ownCommissions?.forEach((c) => {
-      activityEvents.push({
-        id: `ci-${c.id}`,
-        kind: "commission_received",
-        user: formatUserName(profile?.first_name ?? null, profile?.last_name ?? null),
-        city: null,
-        amount: c.amount,
-        timestamp: c.created_at,
-      });
-    });
-
-    // withdrawal_done
-    completedWithdrawals?.forEach((w) => {
-      activityEvents.push({
-        id: `wd-${w.id}`,
-        kind: "withdrawal_done",
-        amount: w.amount,
-        timestamp: w.updated_at,
-      });
-    });
-
-    // reco_completed (recos de l'utilisateur terminées)
-    completedRecosFull?.forEach((r) => {
-      activityEvents.push({
-        id: `rc-${r.id}`,
-        kind: "reco_completed",
-        user: formatUserName(profile?.first_name ?? null, profile?.last_name ?? null),
-        city: null,
-        amount: r.amount ?? 0,
-        timestamp: r.created_at,
-      });
-    });
-
-    // milestone réseau
-    const milestones = [5, 10, 25, 50, 100];
-    const reached = milestones.filter((m) => networkCount >= m);
-    if (reached.length > 0) {
-      const top = reached[reached.length - 1];
-      activityEvents.push({
-        id: `ms-${top}`,
-        kind: "milestone",
-        count: networkCount,
-        label: `Votre réseau a atteint ${top} membres !`,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
-
-  activityEvents.sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
-
-  const topEvents = activityEvents.slice(0, 20); // 20 pour alimenter la rotation démo
+  let feedError = false;
+  const topEvents = await getNationalFeed(supabase).catch(() => { feedError = true; return []; });
 
   // Podium des bâtisseurs réseau (mois en cours, top 3)
   const periodStart = startOfCurrentMonthUTC();
@@ -412,6 +145,7 @@ export default async function DashboardPage() {
   return (
     <>
       {showTour && <DashboardTour />}
+      <NetworkDigest />
 
       {/* ═══ MOBILE (< lg) ═══ */}
       <div className="lg:hidden space-y-5">
@@ -472,7 +206,7 @@ export default async function DashboardPage() {
         {/* Feed d'activité */}
         <section>
           <ActivityFeed
-            initialEvents={topEvents}
+            initialError={feedError} initialEvents={topEvents}
             demoMode={demoMode}
             className="!h-[300px]"
           />
@@ -587,7 +321,7 @@ export default async function DashboardPage() {
 
         {/* Activité récente — pleine largeur */}
         <section>
-          <ActivityFeed initialEvents={topEvents} demoMode={demoMode} />
+          <ActivityFeed initialError={feedError} initialEvents={topEvents} demoMode={demoMode} />
         </section>
 
         {/* Grille 7/5 */}

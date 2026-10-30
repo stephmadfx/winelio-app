@@ -2,6 +2,8 @@
 
 Version publiee - 2026-06-04
 
+Ajout préparé le 30 octobre 2026 : fil national d’actualité (section 7.1).
+
 Certaines informations administratives et certains prestataires sont en attente de validation et seront completes apres confirmation definitive.
 
 ## 1. Objet
@@ -101,6 +103,23 @@ Les durees ci-dessous sont publiees en attente de validation finale.
 | Securite et prevention de la fraude | Detecter les abus, proteger les comptes, tracer les incidents, auditer les operations sensibles | Interet legitime et obligations legales | Logs jusqu'a 12 mois, sauf incident, fraude ou obligation plus longue |
 | Obligations legales et contentieux | Tenir la comptabilite, repondre aux autorites, gerer les litiges et conserver les preuves | Obligation legale, interet legitime, exercice ou defense de droits en justice | Selon les delais legaux applicables, notamment 10 ans pour les pieces comptables |
 | Cookies et preferences | Maintenir la session, securiser le service, memoriser les preferences, mesurer l'audience si activee | Interet legitime pour les traceurs necessaires, consentement pour les autres | Jusqu'a 13 mois pour les traceurs soumis a consentement, sauf duree plus courte |
+
+### 7.1. Fil national d’actualité — fonctionnalité du 30 octobre 2026
+
+Le fil permet aux membres connectés de découvrir l’activité de Winelio dans toute la France et encourage la participation au réseau. La diffusion repose sur un consentement facultatif, distinct de l’acceptation des conditions du service. Le refus n’empêche pas d’utiliser Winelio, de recommander ou de recevoir ses gains.
+
+Deux choix séparés, désactivés par défaut, sont proposés dans **Paramètres → Actualités du réseau et confidentialité** :
+
+- publier son arrivée, ses parrainages et ses recommandations avec le prénom, l’initiale du nom et l’heure de l’événement ;
+- publier également le montant exact des commissions directes de recommandation réellement créditées dans sa cagnotte. Les gains en attente, chiffres d’affaires, montants de devis, coordonnées et informations des clients ou des dossiers ne figurent pas dans le fil.
+
+Le prénom et l’initiale restent des données personnelles. Les destinataires sont les membres authentifiés de Winelio à l’échelle nationale. Les événements sont affichés pendant 30 jours puis retirés et purgés du stockage du fil par le traitement de maintenance. Les écritures comptables sources restent soumises à leurs propres obligations de conservation.
+
+Le consentement peut être retiré depuis les mêmes paramètres. Les publications concernées sont supprimées du fil ; elles ne sont pas restaurées par une nouvelle autorisation. Le retrait ne remet pas en cause les traitements effectués licitement avant celui-ci. Seuls les nouveaux événements sont publiés après autorisation, à l’exception de l’arrivée d’un nouveau membre autorisée dans les 24 heures suivant sa création de compte.
+
+Les rappels sont des résumés visibles dans l’application, sans email ni notification push. Ils sont désactivables et plafonnés au choix à un ou deux par jour, selon le jour civil en heure de Paris. Ils sont générés à l’ouverture ou au retour dans l’application uniquement en présence d’actualités récentes ; ils ne sont pas envoyés pour chaque événement. Un résumé peut être fermé, et ce choix est conservé sur les autres appareils. Les traces des résumés sont conservées 30 jours.
+
+Les choix, la date et la version de la notice sont enregistrés pour prouver le consentement, jusqu’à la suppression du compte. Les données propres au fil et à ces choix sont supprimées avec le compte. Les droits et modalités de contact sont décrits à la section 11.
 
 ## 8. Destinataires
 

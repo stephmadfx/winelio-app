@@ -1,5 +1,6 @@
 "use client";
 
+import { FeedPreferences } from "@/components/feed-preferences";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -124,6 +125,8 @@ export default function SettingsPage() {
         <h2 className="text-xl sm:text-2xl font-bold text-winelio-dark">Paramètres</h2>
         <p className="text-sm text-winelio-gray mt-1">Personnalisez votre expérience</p>
       </div>
+
+      <FeedPreferences />
 
       {/* Apparence */}
       <Card className="!rounded-2xl mb-4">
