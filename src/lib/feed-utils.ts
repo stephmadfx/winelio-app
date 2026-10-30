@@ -64,9 +64,9 @@ export function feedEventIcon(kind: FeedEvent["kind"]): string {
 export function feedEventLabel(event: FeedEvent): string {
   switch (event.kind) {
     case "network_summary": return event.label
-    case "member_joined": return `${event.user} vient de rejoindre Winelio. Bienvenue !`
-    case "member_sponsored": return `${event.user} accueille un nouveau filleul dans son réseau.`
-    case "recommendation_created": return `${event.user} vient de faire une recommandation.`
+    case "member_joined": return `${event.user} a rejoint Winelio. Bienvenue !`
+    case "member_sponsored": return `${event.user} a accueilli un nouveau filleul dans son réseau.`
+    case "recommendation_created": return `${event.user} a fait une recommandation.`
     case "gain_credited": return `${event.user} a reçu ${new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(event.amount)} dans sa cagnotte !`
     case "top_sponsor":
       return `${event.user}${event.city ? ` (${event.city})` : ""} — top parrain · ${event.count} filleuls`

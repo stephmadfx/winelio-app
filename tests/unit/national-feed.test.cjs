@@ -48,7 +48,7 @@ test('feed: browser only receives sanitized projection fields and preserves cent
  assert.deepEqual(events,[{id:'public',kind:'gain_credited',user:'Julie M.',amount:300.25,timestamp:'2026-10-30T09:00:00Z'}]);
  const utils=load('src/lib/feed-utils.ts');
  assert.match(utils.feedEventLabel(events[0]),/300,25/);
- assert.match(utils.feedEventLabel({...events[0],kind:'member_joined'}),/rejoindre Winelio/);
+ assert.match(utils.feedEventLabel({...events[0],kind:'member_joined'}),/rejoint Winelio/);
 });
 test('digest: authenticated access and dismiss errors handled without false success',async()=>{
  let user=null; const calls=[];

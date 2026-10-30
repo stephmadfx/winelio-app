@@ -52,3 +52,11 @@ Migration `20261030c_feed_history_summaries.sql` : instantané collectif sur les
 Les bilans ont leur période et date historiques, la mention « Bilan collectif · historique », la même durée d’affichage et de purge que le fil. Le digest ignore ces bilans : leur ajout ne crée pas une notification de nouvelle activité. Une étape de publication différée via `is_published` permet de n’activer les bilans qu’une fois les deux frontends compatibles déployés.
 
 Tests dédiés dans `tests/integration/national-feed-history.sql` et test de projection du résumé. Préflight de production en transaction annulée avant application réelle. Voir `doc/chat-vps-capacity-2026-10-30.md` pour la demande distincte sur le dimensionnement de messagerie ; aucune messagerie n’est ajoutée par cette livraison.
+
+## Correction demandée : historique événement par événement
+
+Le demandeur a précisé que le bilan collectif ne correspondait pas à sa demande. Il est désactivé et remplacé par les arrivées, parrainages et recommandations passés, chacun avec son identifiant d’événement et sa date source, sans regrouper les personnes en un bilan.
+
+Migration `20261030d_individual_feed_history.sql` : reprise des 30 jours complets précédents, sources réelles hors démo et comptes confirmés. Les événements rétrospectifs sont affichés sous « Un membre », sans nom, client, coordonnées ni gain. Un accord ultérieur ne révèle pas rétroactivement ces identités. Les refus explicites sont respectés ; le retrait d’accord supprime aussi les publications historiques concernées. Aucune commission ancienne n’est reprise. Les nouveaux événements conservent le fonctionnement consenti existant.
+
+Publication des lignes historiques seulement après vérification des deux conteneurs sur le nouveau commit. Les événements historiques sont exclus des rappels de nouvelle activité, même s’ils sont récents. Le plafond de 100 événements et la purge à 30 jours restent actifs. Scénarios PostgreSQL dédiés dans `national-feed-individual-history.sql` : dates, événements séparés, consentement, absence de gain, coexistence avec le flux nouveau, retrait et nettoyage.

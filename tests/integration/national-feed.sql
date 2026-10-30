@@ -98,3 +98,5 @@ SELECT check_test((SELECT count(*)=0 FROM winelio.feed_consent_history),'account
 SELECT check_test((SELECT count(*)=0 FROM winelio.feed_digest_receipts),'account deletion purges digest receipts');
 
 \ir national-feed-history.sql
+
+\ir national-feed-individual-history.sql
