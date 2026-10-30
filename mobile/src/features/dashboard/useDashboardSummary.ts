@@ -46,7 +46,7 @@ export const useDashboardSummary = () => {
         supabase.from("recommendations").select("id", { count: "exact", head: true }).eq("referrer_id", userId).gte("created_at", startOfMonth.toISOString()),
         supabase.from("recommendations").select("id", { count: "exact", head: true }).eq("referrer_id", userId),
         supabase.from("recommendations").select("id", { count: "exact", head: true }).eq("referrer_id", userId).eq("status", "COMPLETED"),
-        supabase.rpc("get_network_ids", { p_user_id: userId, p_max_depth: 5 }),
+        supabase.rpc("get_display_network_ids", { p_user_id: userId, p_max_depth: 5 }),
         supabase.from("recommendations").select("id", { count: "exact", head: true }).or(`referrer_id.eq.${userId},professional_id.eq.${userId}`).in("status", ["PENDING", "ACCEPTED", "CONTACT_MADE", "MEETING_SCHEDULED", "QUOTE_SUBMITTED", "QUOTE_VALIDATED", "PAYMENT_RECEIVED"]),
       ]);
       if (!active) return;

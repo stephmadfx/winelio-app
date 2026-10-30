@@ -1,3 +1,4 @@
+import { getNetworkScope, scopeNetworkProfiles } from "@/lib/network-visibility";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -11,10 +12,12 @@ export const GET = async (request: Request) => {
   const referralId = new URL(request.url).searchParams.get("referralId");
   if (!referralId) return NextResponse.json({ error: "Filleul manquant." }, { status: 400 });
 
-  const { data: referral, error } = await supabaseAdmin
+  const scope = await getNetworkScope(supabase, user.id);
+
+  const { data: referral, error } = await scopeNetworkProfiles(supabaseAdmin
     .from("profiles")
     .select("id, sponsor_id, first_name, last_name, email, phone, onboarding_status")
-    .eq("id", referralId)
+    .eq("id", referralId), scope)
     .maybeSingle();
 
   if (error) {

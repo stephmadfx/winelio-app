@@ -1,3 +1,4 @@
+import { getNetworkScope, scopeNetworkProfiles, scopeNetworkData } from "@/lib/network-visibility";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -18,6 +19,8 @@ export default async function NetworkPage() {
     redirect("/auth/login");
   }
 
+  const scope = await getNetworkScope(supabase, user.id);
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, first_name, last_name, avatar, sponsor_code, sponsor_id, is_founder")
@@ -25,20 +28,20 @@ export default async function NetworkPage() {
     .single();
 
   const { data: sponsor } = profile?.sponsor_id
-    ? await supabase.from("profiles").select("first_name, last_name, sponsor_code").eq("id", profile.sponsor_id).maybeSingle()
+    ? await scopeNetworkProfiles(supabase.from("profiles").select("first_name, last_name, sponsor_code").eq("id", profile.sponsor_id), scope).maybeSingle()
     : { data: null };
 
-  const { data: referrals, count: totalReferrals } = await supabase
+  const { data: referrals, count: totalReferrals } = await scopeNetworkProfiles(supabase
     .from("profiles")
     .select("id, first_name, last_name, email, phone, city, created_at, avatar, is_professional, is_demo, onboarding_status, companies!owner_id(city, category:categories(name))", { count: "exact" })
-    .eq("sponsor_id", user.id);
+    .eq("sponsor_id", user.id), scope);
 
   // Batch les requêtes pour éviter le N+1 : 2 requêtes au lieu de 2×N
   const referralIds = (referrals ?? []).map((r) => r.id);
   const [subReferralRows, allCommData] = referralIds.length > 0
     ? await Promise.all([
-        supabase.from("profiles").select("sponsor_id").in("sponsor_id", referralIds),
-        supabase.from("commission_transactions").select("source_user_id, amount").in("source_user_id", referralIds),
+        scopeNetworkProfiles(supabase.from("profiles").select("sponsor_id").in("sponsor_id", referralIds), scope),
+        scopeNetworkData(supabase.from("commission_transactions").select("source_user_id, amount").in("source_user_id", referralIds), scope),
       ])
     : [{ data: [] }, { data: [] }];
 
@@ -70,22 +73,15 @@ export default async function NetworkPage() {
     })(),
   }));
 
-  let totalNetworkMembers = 0;
-  let currentLevelIds = [user.id];
-  for (let lvl = 1; lvl <= 5; lvl++) {
-    if (currentLevelIds.length === 0) break;
-    const { data: lvlMembers } = await supabase
-      .from("profiles").select("id").in("sponsor_id", currentLevelIds);
-    if (!lvlMembers || lvlMembers.length === 0) break;
-    totalNetworkMembers += lvlMembers.length;
-    currentLevelIds = lvlMembers.map((m) => m.id);
-  }
+  const { data: networkRows, error: networkError } = await supabase.rpc("get_display_network_ids", { p_user_id: user.id, p_max_depth: 5 });
+  if (networkError) throw new Error("Réseau momentanément indisponible.");
+  const totalNetworkMembers = networkRows?.length ?? 0;
 
-  const { data: networkCommissions } = await supabase
+  const { data: networkCommissions } = await scopeNetworkData(supabase
     .from("commission_transactions")
     .select("amount, level, created_at")
     .eq("user_id", user.id)
-    .not("level", "is", null);
+    .not("level", "is", null), scope);
 
   const totalNetworkGains = (networkCommissions ?? []).reduce((sum, c) => sum + (c.amount ?? 0), 0);
 
@@ -235,6 +231,7 @@ export default async function NetworkPage() {
         <CardContent className="p-4 sm:p-6">
           <NetworkListTabs
             userId={user.id}
+            demoOwnerId={scope.demoOwnerId}
             totalMembers={totalNetworkMembers}
             directReferrals={referralsWithStats.map((referral) => ({
               id: referral.id,

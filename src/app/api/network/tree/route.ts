@@ -1,3 +1,4 @@
+import { getNetworkScope, scopeNetworkProfiles, scopeNetworkData } from "@/lib/network-visibility";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -9,16 +10,19 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get("userId") ?? user.id;
-  const maxLevel = parseInt(searchParams.get("maxLevel") ?? "5", 10);
+  const requestedLevel = Number(searchParams.get("maxLevel") ?? 5);
+  const maxLevel = Number.isInteger(requestedLevel) ? Math.max(1, Math.min(requestedLevel, user.app_metadata?.role === "super_admin" ? 999 : 5)) : 5;
   const realOnly = searchParams.get("scope") === "real";
 
   if (realOnly && user.app_metadata?.role !== "super_admin") {
     return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
   }
 
+  const scope = await getNetworkScope(supabase, user.id, realOnly);
+
   // Anti-IDOR check
   if (userId !== user.id && user.app_metadata?.role !== "super_admin") {
-    const { data: networkIds } = await supabaseAdmin.rpc("get_network_ids", {
+    const { data: networkIds } = await supabaseAdmin.rpc("get_display_network_ids", {
       p_user_id: user.id, p_max_depth: 5,
     });
     const validIds = new Set((networkIds ?? []).map((r: { member_id: string }) => r.member_id));
@@ -39,12 +43,8 @@ export async function GET(request: Request) {
       .select("id, sponsor_id, first_name, last_name, email, phone, avatar, city, is_professional, is_demo, onboarding_status, companies!owner_id(category:categories(name))")
       .in("sponsor_id", currentParentIds);
 
-    if (realOnly) {
-      kidsQuery = kidsQuery
-        .eq("is_demo", false)
-        .not("email", "ilike", "%@winelio-e2e.local")
-        .not("email", "ilike", "%@winelio-scraped.local");
-    }
+    kidsQuery = scopeNetworkProfiles(kidsQuery, scope);
+    if (realOnly) kidsQuery = kidsQuery.not("email", "ilike", "%@winelio-e2e.local").not("email", "ilike", "%@winelio-scraped.local");
 
     const { data: kids } = await kidsQuery;
 

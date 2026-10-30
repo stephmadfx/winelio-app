@@ -1,3 +1,4 @@
+import { getNetworkScope, scopeNetworkProfiles, scopeNetworkData } from "@/lib/network-visibility";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
@@ -81,6 +82,8 @@ export default async function DashboardPage() {
     .eq("id", user.id)
     .single();
 
+  const scope = await getNetworkScope(supabase, user.id);
+
   const isSuperAdmin = user.app_metadata?.role === "super_admin";
   // Visite guidée : uniquement après que le profil soit complet (l'onboarding réel
   // se fait via /profile + ProfileIncompleteModal, et le WelcomeModal s'affiche
@@ -88,19 +91,20 @@ export default async function DashboardPage() {
   const showTour = !!profile?.first_name && !profile?.tour_completed_at;
 
   // Réseau MLM (5 niveaux) — une seule requête récursive via RPC
-  const { data: networkRows } = await supabase.rpc("get_network_ids", {
+  const { data: networkRows, error: networkError } = await supabase.rpc("get_display_network_ids", {
     p_user_id: user.id,
     p_max_depth: 5,
   });
+  if (networkError) throw new Error("Réseau momentanément indisponible.");
   const allNetworkIds: string[] = (networkRows ?? []).map((r: { member_id: string }) => r.member_id);
   const networkCount = allNetworkIds.length;
 
   // Filleuls directs pour l'arbre réseau desktop
-  const { data: directReferrals } = await supabase
+  const { data: directReferrals, count: directReferralCount } = await scopeNetworkProfiles(supabase
     .from("profiles")
-    .select("id, first_name, last_name")
+    .select("id, first_name, last_name", { count: "exact" })
     .eq("sponsor_id", user.id)
-    .limit(3);
+    .limit(3), scope);
 
   let feedError = false;
   const topEvents = await getNationalFeed(supabase).catch(() => { feedError = true; return []; });
@@ -252,7 +256,7 @@ export default async function DashboardPage() {
           <DesktopKpiCard
             numValue={networkCount}
             label="Membres réseau"
-            sub={`${directReferrals?.length ?? 0} filleuls directs`}
+            sub={`${directReferralCount ?? 0} filleuls directs`}
             icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
             accentColor="orange"
             delay={160}

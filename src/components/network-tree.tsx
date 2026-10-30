@@ -1,5 +1,7 @@
 "use client";
 
+import { scopeNetworkProfiles, scopeNetworkData } from "@/lib/network-visibility";
+
 import { useState, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile-avatar";
@@ -46,12 +48,14 @@ export function NetworkTree({
   maxLevel = 5,
   showRealNames = false,
   realOnly = false,
+  demoOwnerId = null,
 }: {
   userId: string;
   totalMembers: number;
   maxLevel?: number;
   showRealNames?: boolean;
   realOnly?: boolean;
+  demoOwnerId?: string | null;
 }) {
   const [roots, setRoots] = useState<TreeNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,12 +71,9 @@ export function NetworkTree({
         .select("id, first_name, last_name, avatar, city, is_professional, is_demo, onboarding_status, companies!owner_id(category:categories(name))")
         .eq("sponsor_id", parentId);
 
-      if (realOnly) {
-        childrenQuery = childrenQuery
-          .eq("is_demo", false)
-          .not("email", "ilike", "%@winelio-e2e.local")
-          .not("email", "ilike", "%@winelio-scraped.local");
-      }
+      const scope = { demoOwnerId: realOnly ? null : demoOwnerId };
+      childrenQuery = scopeNetworkProfiles(childrenQuery, scope);
+      if (realOnly) childrenQuery = childrenQuery.not("email", "ilike", "%@winelio-e2e.local").not("email", "ilike", "%@winelio-scraped.local");
 
       const { data: children } = await childrenQuery;
 
@@ -88,13 +89,10 @@ export function NetworkTree({
         .select("user_id, amount, status, is_demo")
         .in("user_id", childIds);
 
-      if (realOnly) {
-        subReferralsQuery = subReferralsQuery
-          .eq("is_demo", false)
-          .not("email", "ilike", "%@winelio-e2e.local")
-          .not("email", "ilike", "%@winelio-scraped.local");
-        commissionsQuery = commissionsQuery.eq("is_demo", false).eq("status", "EARNED");
-      }
+      subReferralsQuery = scopeNetworkProfiles(subReferralsQuery, scope);
+      if (realOnly) subReferralsQuery = subReferralsQuery.not("email", "ilike", "%@winelio-e2e.local").not("email", "ilike", "%@winelio-scraped.local");
+      commissionsQuery = scopeNetworkData(commissionsQuery, scope);
+      if (realOnly) commissionsQuery = commissionsQuery.eq("status", "EARNED");
 
       const [{ data: subReferrals }, { data: commissions }, directContactsResult] = await Promise.all([
         subReferralsQuery,
@@ -146,7 +144,7 @@ export function NetworkTree({
 
       return nodes;
     },
-    [supabase, realOnly, userId]
+    [supabase, realOnly, userId, demoOwnerId]
   );
 
   // Auto-load on mount

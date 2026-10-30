@@ -1,3 +1,4 @@
+import { getNetworkScope, scopeNetworkProfiles, scopeNetworkData } from "@/lib/network-visibility";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -55,13 +56,15 @@ export default async function NetworkStatsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
+  const scope = await getNetworkScope(supabase, user.id);
+
   // 1. Toutes les commissions du user en une seule requête (level 1-5)
-  const { data: commissionsRaw } = await supabase
+  const { data: commissionsRaw } = await scopeNetworkData(supabase
     .from("commission_transactions")
     .select("id, amount, level, status, created_at, description")
     .eq("user_id", user.id)
     .not("level", "is", null)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false }), scope);
 
   const allCommissions: CommissionRecord[] = (commissionsRaw ?? []).map((c) => ({
     id: c.id,
@@ -73,13 +76,11 @@ export default async function NetworkStatsPage() {
   }));
 
   // 2. Vrais filleuls par niveau (recursive CTE côté DB)
-  const { data: networkRows } = await supabase.rpc("network_members_by_level", {
-    p_user_id: user.id,
-    p_max_level: 5,
-  });
+  const { data: networkRows, error: networkError } = await supabase.rpc("get_display_network_ids", { p_user_id: user.id, p_max_depth: 5 });
+  if (networkError) throw new Error("Statistiques réseau momentanément indisponibles.");
   const filleulsByLevel = new Map<number, number>();
-  for (const row of (networkRows ?? []) as Array<{ level: number; member_count: number }>) {
-    filleulsByLevel.set(row.level, row.member_count);
+  for (const row of (networkRows ?? []) as Array<{ depth: number }>) {
+    filleulsByLevel.set(row.depth, (filleulsByLevel.get(row.depth) ?? 0) + 1);
   }
 
   // 3. Agrégation par niveau (en JS, pas de N+1)

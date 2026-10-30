@@ -1,3 +1,4 @@
+import { getNetworkScope, scopeNetworkProfiles } from "@/lib/network-visibility";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -17,9 +18,11 @@ export async function POST(request: Request) {
   const referralId = typeof body.referralId === "string" ? body.referralId : "";
   if (!referralId) return NextResponse.json({ error: "Filleul manquant." }, { status: 400 });
 
-  const { data: referral } = await supabaseAdmin.from("profiles")
+  const scope = await getNetworkScope(supabase, user.id);
+
+  const { data: referral } = await scopeNetworkProfiles(supabaseAdmin.from("profiles")
     .select("id, email, first_name, last_name, sponsor_id, onboarding_status")
-    .eq("id", referralId)
+    .eq("id", referralId), scope)
     .maybeSingle();
 
   if (!referral || referral.sponsor_id !== user.id) {

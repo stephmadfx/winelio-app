@@ -11,6 +11,7 @@ async function render(profile, sponsor = null) {
   const calls = [];
   const supabase = {
     auth: { getUser: async () => ({ data: { user: { id: 'member' } } }) },
+    rpc: async () => ({ data: [], error: null }),
     from(table) {
       let selectedId;
       const query = {
@@ -36,6 +37,7 @@ async function render(profile, sponsor = null) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   vm.runInNewContext(code, { module, exports: module.exports, require(name) {
+    if (name === '@/lib/network-visibility') return { getNetworkScope: async () => ({ demoOwnerId: null }), scopeNetworkProfiles: query => query, scopeNetworkData: query => query };
     if (name === '@/lib/supabase/server') return { createClient: async () => supabase };
     if (name === 'next/navigation') return { redirect: () => { throw new Error('Unexpected redirect'); } };
     if (name === 'next/link') return { default: ({ children, ...props }) => React.createElement('a', props, children) };

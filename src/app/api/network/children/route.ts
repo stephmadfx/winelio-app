@@ -1,3 +1,4 @@
+import { getNetworkScope, scopeNetworkProfiles, scopeNetworkData } from "@/lib/network-visibility";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -12,6 +13,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
+  const scope = await getNetworkScope(supabase, user.id);
+
   const { searchParams } = new URL(request.url);
   const parentId = searchParams.get("parentId");
 
@@ -22,7 +25,7 @@ export async function GET(request: Request) {
   // Vérifie que parentId appartient bien au réseau de l'utilisateur connecté (anti-IDOR)
   // Exception : les super_admin peuvent consulter n'importe quel réseau
   if (parentId !== user.id && user.app_metadata?.role !== "super_admin") {
-    const { data: networkIds } = await supabaseAdmin.rpc("get_network_ids", {
+    const { data: networkIds } = await supabaseAdmin.rpc("get_display_network_ids", {
       p_user_id: user.id,
       p_max_depth: 5,
     });
@@ -32,10 +35,10 @@ export async function GET(request: Request) {
     }
   }
 
-  const { data: children } = await supabaseAdmin
+  const { data: children } = await scopeNetworkProfiles(supabaseAdmin
     .from("profiles")
     .select("id, first_name, last_name, avatar, city, is_professional, is_demo, companies!owner_id(category:categories(name))")
-    .eq("sponsor_id", parentId);
+    .eq("sponsor_id", parentId), scope);
 
   if (!children) {
     return NextResponse.json({ children: [] });
@@ -53,20 +56,20 @@ export async function GET(request: Request) {
         { count: activeRecos },
         { count: completedRecos },
       ] = await Promise.all([
-        supabaseAdmin
+        scopeNetworkProfiles(supabaseAdmin
           .from("profiles")
           .select("id", { count: "exact", head: true })
-          .eq("sponsor_id", child.id),
-        supabaseAdmin
+          .eq("sponsor_id", child.id), scope),
+        scopeNetworkData(supabaseAdmin
           .from("recommendations")
           .select("id", { count: "exact", head: true })
           .eq("referrer_id", child.id)
-          .in("status", ACTIVE_STATUSES),
-        supabaseAdmin
+          .in("status", ACTIVE_STATUSES), scope),
+        scopeNetworkData(supabaseAdmin
           .from("recommendations")
           .select("id", { count: "exact", head: true })
           .eq("referrer_id", child.id)
-          .eq("status", "COMPLETED"),
+          .eq("status", "COMPLETED"), scope),
       ]);
 
       const rawCompany = Array.isArray(child.companies) ? child.companies[0] ?? null : (child.companies ?? null);

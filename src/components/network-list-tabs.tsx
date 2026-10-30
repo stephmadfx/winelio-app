@@ -10,8 +10,10 @@ export const NetworkListTabs = ({
   userId,
   totalMembers,
   directReferrals,
+  demoOwnerId,
 }: {
   userId: string;
+  demoOwnerId: string | null;
   totalMembers: number;
   directReferrals: DirectReferralListItem[];
 }) => {
@@ -46,7 +48,7 @@ export const NetworkListTabs = ({
 
       <div role="tabpanel" id={`network-panel-${activeTab}`} aria-labelledby={`network-tab-${activeTab}`}>
         {activeTab === "details" ? (
-          <NetworkTree userId={userId} totalMembers={totalMembers} />
+          <NetworkTree userId={userId} totalMembers={totalMembers} demoOwnerId={demoOwnerId} />
         ) : (
           <DirectReferralsList referrals={directReferrals} />
         )}
