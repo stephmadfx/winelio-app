@@ -10,6 +10,8 @@ CREATE TABLE winelio.profiles(id uuid PRIMARY KEY,first_name text,last_name text
 CREATE TABLE winelio.recommendations(id uuid PRIMARY KEY,referrer_id uuid,is_demo boolean DEFAULT false);
 CREATE TABLE winelio.commission_transactions(id uuid PRIMARY KEY,user_id uuid,recommendation_id uuid,amount numeric,type text,status text,is_demo boolean DEFAULT false,earned_at timestamptz);
 \ir ../../supabase/migrations/20261030_national_activity_feed.sql
+\ir ../../supabase/migrations/20261030b_feed_member_access.sql
+\ir ../../supabase/migrations/20261030b_feed_member_access.sql
 CREATE FUNCTION public.check_test(ok boolean, label text) RETURNS void LANGUAGE plpgsql AS $$ BEGIN IF ok IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'FAIL: %',label; END IF; RAISE NOTICE 'PASS: %',label; END $$;
 INSERT INTO winelio.profiles(id,first_name,last_name) VALUES
  ('10000000-0000-0000-0000-000000000001','Julie','Martin'),
@@ -60,6 +62,18 @@ SELECT check_test((SELECT count(*)=0 FROM winelio.get_national_feed()),'withdraw
 SELECT set_config('test.uid','10000000-0000-0000-0000-000000000002',false);
 SELECT winelio.set_feed_preferences(true,true,1);
 SELECT check_test((SELECT count(*)=1 FROM winelio.get_national_feed()),'any member sees national activity independent of sponsor tree');
+SELECT set_config('test.uid','90000000-0000-0000-0000-000000000001',false);
+SELECT check_test((SELECT count(*)=0 FROM winelio.get_national_feed()),'shared auth account without Winelio membership cannot read feed');
+SELECT set_config('test.uid','10000000-0000-0000-0000-000000000002',false);
+UPDATE winelio.profiles SET is_active=false WHERE id='10000000-0000-0000-0000-000000000002';
+SELECT check_test((SELECT count(*)=0 FROM winelio.get_national_feed()),'inactive Winelio viewer cannot read feed');
+UPDATE winelio.profiles SET is_active=true WHERE id='10000000-0000-0000-0000-000000000002';
+SELECT set_config('test.uid','90000000-0000-0000-0000-000000000001',false);
+SELECT check_test((SELECT count(*)=0 FROM winelio.get_national_feed()),'shared auth account without Winelio membership cannot read feed');
+SELECT set_config('test.uid','10000000-0000-0000-0000-000000000002',false);
+UPDATE winelio.profiles SET is_active=false WHERE id='10000000-0000-0000-0000-000000000002';
+SELECT check_test((SELECT count(*)=0 FROM winelio.get_national_feed()),'inactive Winelio viewer cannot read feed');
+UPDATE winelio.profiles SET is_active=true WHERE id='10000000-0000-0000-0000-000000000002';
 SET ROLE authenticated;
 SELECT check_test((SELECT count(*)=1 FROM winelio.feed_preferences),'RLS sees only own preferences');
 DO $$ BEGIN

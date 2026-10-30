@@ -42,3 +42,5 @@ Le choix du demandeur est **résumé visible dans l’application**, sans push n
 - Contrôle UI sur fixture temporaire avec les vrais composants et réponses API simulées ; il ne remplace pas une validation authentifiée après migration.
 
 Résultats vérifiés : 6 tests unitaires/API réussis, tests PostgreSQL réussis, contrôle UI réel 1280/390 px réussi (API simulées), build final réussi. Avertissements existants de bundling MJML/cosmiconfig ; aucune erreur de build. Les fixtures UI et le cluster PostgreSQL temporaire sont supprimés.
+
+Contrôle renforcé pour l’instance Supabase partagée : `20261030b_feed_member_access.sql` réserve aussi la projection aux profils Winelio actifs. Une session authentifiée d’un autre projet et un profil désactivé ne donnent aucun accès au fil. Tests PostgreSQL dédiés réussis.
