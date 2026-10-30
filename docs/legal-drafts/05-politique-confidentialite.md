@@ -104,22 +104,22 @@ Les durees ci-dessous sont publiees en attente de validation finale.
 | Obligations legales et contentieux | Tenir la comptabilite, repondre aux autorites, gerer les litiges et conserver les preuves | Obligation legale, interet legitime, exercice ou defense de droits en justice | Selon les delais legaux applicables, notamment 10 ans pour les pieces comptables |
 | Cookies et preferences | Maintenir la session, securiser le service, memoriser les preferences, mesurer l'audience si activee | Interet legitime pour les traceurs necessaires, consentement pour les autres | Jusqu'a 13 mois pour les traceurs soumis a consentement, sauf duree plus courte |
 
-### 7.1. Fil national d’actualité — fonctionnalité du 30 octobre 2026
+### 7.1. Fil national d’actualité — mise à jour du 30 octobre 2026
 
-Le fil permet aux membres connectés de découvrir l’activité de Winelio dans toute la France et encourage la participation au réseau. La diffusion repose sur un consentement facultatif, distinct de l’acceptation des conditions du service. Le refus n’empêche pas d’utiliser Winelio, de recommander ou de recevoir ses gains.
+Le fil permet aux membres connectés de découvrir l’activité de Winelio dans toute la France et encourage la participation au réseau. L’activité ordinaire (arrivée, parrainages, recommandations créées) est visible par défaut avec le prénom, l’initiale du nom et la date de l’événement, y compris pour les événements récents déjà survenus. Elle poursuit l’intérêt de Winelio à animer le réseau professionnel et reste soumise à une possibilité simple de masquer son activité, sans justification ni conséquence sur l’accès au service.
 
-Deux choix séparés, désactivés par défaut, sont proposés dans **Paramètres → Actualités du réseau et confidentialité** :
+Dans **Paramètres → Actualités du réseau et confidentialité**, chaque membre peut :
 
-- publier son arrivée, ses parrainages et ses recommandations avec le prénom, l’initiale du nom et l’heure de l’événement ;
-- publier également le montant exact des commissions directes de recommandation réellement créditées dans sa cagnotte. Les gains en attente, chiffres d’affaires, montants de devis, coordonnées et informations des clients ou des dossiers ne figurent pas dans le fil.
+- masquer son activité : ses publications sont alors retirées du fil et les nouvelles ne sont plus publiées tant que ce choix reste désactivé ; tout refus explicite déjà enregistré est conservé ;
+- autoriser séparément la publication du montant des commissions directes de recommandation réellement créditées. Cette autorisation de gains est désactivée par défaut et nécessite un acte positif. Aucun accord n’est déduit de la visibilité de l’activité ni de l’acceptation des conditions du service.
 
-Le prénom et l’initiale restent des données personnelles. Les destinataires sont les membres authentifiés de Winelio à l’échelle nationale. Les événements sont affichés pendant 30 jours puis retirés et purgés du stockage du fil par le traitement de maintenance. Les écritures comptables sources restent soumises à leurs propres obligations de conservation.
+Le prénom et l’initiale restent des données personnelles. Les destinataires sont les membres authentifiés de Winelio à l’échelle nationale. Aucun nom de famille complet, coordonnée, identité client, détail de dossier, montant de devis ou gain en attente n’est diffusé. Les événements restent affichés et conservés dans le fil pendant 30 jours, puis sont purgés quotidiennement ; les écritures comptables sources ont leurs propres obligations de conservation.
 
-Le consentement peut être retiré depuis les mêmes paramètres. Les publications concernées sont supprimées du fil ; elles ne sont pas restaurées par une nouvelle autorisation. Le retrait ne remet pas en cause les traitements effectués licitement avant celui-ci. Seuls les nouveaux événements sont publiés après autorisation, à l’exception de l’arrivée d’un nouveau membre autorisée dans les 24 heures suivant sa création de compte.
+Le lien « Gérer ma visibilité » dans le fil conduit aux paramètres. Le masquage de l’activité et le retrait de l’accord de publication des gains sont possibles à tout moment depuis ces mêmes paramètres. Ils suppriment les publications concernées ; une réactivation ne recrée pas les événements supprimés. Le retrait de l’accord sur les gains ne remet pas en cause les traitements effectués licitement avant celui-ci.
 
-Les rappels sont des résumés visibles dans l’application, sans email ni notification push. Ils sont désactivables et plafonnés au choix à un ou deux par jour, selon le jour civil en heure de Paris. Ils sont générés à l’ouverture ou au retour dans l’application uniquement en présence d’actualités récentes ; ils ne sont pas envoyés pour chaque événement. Un résumé peut être fermé, et ce choix est conservé sur les autres appareils. Les traces des résumés sont conservées 30 jours.
+Les rappels sont des résumés visibles dans l’application, sans email ni notification push. Ils sont désactivés par défaut et plafonnés au choix à un ou deux par jour, selon le jour civil en heure de Paris. Ils ne sont générés qu’en présence de nouvelles actualités ; la reprise d’un historique ne déclenche pas de rappel. Un résumé peut être fermé ; ce choix est conservé sur les autres appareils. Les reçus sont conservés 30 jours.
 
-Les choix, la date et la version de la notice sont enregistrés pour prouver le consentement, jusqu’à la suppression du compte. Les données propres au fil et à ces choix sont supprimées avec le compte. Les droits et modalités de contact sont décrits à la section 11.
+Les choix, leur date et la version de la notice sont enregistrés pour respecter la visibilité demandée et prouver un éventuel consentement de publication des gains, jusqu’à la suppression du compte. Les données propres au fil et à ces choix sont supprimées avec le compte. Les droits et modalités de contact sont décrits à la section 11. Les éléments administratifs signalés comme restant à valider dans cette politique demeurent à compléter ; cette mise à jour n’est pas une certification juridique globale.
 
 ## 8. Destinataires
 

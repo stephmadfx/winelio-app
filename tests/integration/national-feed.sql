@@ -100,3 +100,5 @@ SELECT check_test((SELECT count(*)=0 FROM winelio.feed_digest_receipts),'account
 \ir national-feed-history.sql
 
 \ir national-feed-individual-history.sql
+
+\ir national-feed-default-names.sql

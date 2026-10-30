@@ -60,3 +60,13 @@ Le demandeur a précisé que le bilan collectif ne correspondait pas à sa deman
 Migration `20261030d_individual_feed_history.sql` : reprise des 30 jours complets précédents, sources réelles hors démo et comptes confirmés. Les événements rétrospectifs sont affichés sous « Un membre », sans nom, client, coordonnées ni gain. Un accord ultérieur ne révèle pas rétroactivement ces identités. Les refus explicites sont respectés ; le retrait d’accord supprime aussi les publications historiques concernées. Aucune commission ancienne n’est reprise. Les nouveaux événements conservent le fonctionnement consenti existant.
 
 Publication des lignes historiques seulement après vérification des deux conteneurs sur le nouveau commit. Les événements historiques sont exclus des rappels de nouvelle activité, même s’ils sont récents. Le plafond de 100 événements et la purge à 30 jours restent actifs. Scénarios PostgreSQL dédiés dans `national-feed-individual-history.sql` : dates, événements séparés, consentement, absence de gain, coexistence avec le flux nouveau, retrait et nettoyage.
+
+## Décision explicite : prénom et initiale par défaut
+
+Le 30 octobre, le demandeur a confirmé : activité ordinaire nommée par défaut, possibilité de masquer son activité, gains toujours soumis à un accord distinct. Cette décision remplace le masquage systématique des événements historiques et l’ancien opt-in pour l’activité ordinaire.
+
+Migration `20261030e_feed_default_display_names.sql` : projection prénom + initiale pour chaque événement (y compris historique), sauf masquage explicite. Aucun choix existant n’est réécrit ; aucune préférence ni preuve de consentement n’est fabriquée. L’absence de réglage signifie activité visible et gains privés. Paramètres et notice affichent cette distinction. Les choix ultérieurs sont audités avec la version `2026-10-30-default-activity`.
+
+Les nouvelles inscriptions doivent être confirmées et leur profil actif avant capture : la confirmation Auth et la complétion du profil utilisent le même helper, avec déduplication sur le type/source. Les comptes d’autres projets de l’instance partagée ne créent aucun événement Winelio. Le masquage supprime les publications concernées ; la réactivation ne recrée pas les événements supprimés. Gains EARNED positifs et accord explicite restent nécessaires, et aucun gain historique n’est repris.
+
+Validation : tests SQL dédiés `national-feed-default-names.sql` (noms historiques, refus, confirmation, absence de faux accord, gains/attente, retrait, déduplication, isolation), test API des valeurs par défaut et des choix existants, TypeScript et build. La migration de visibilité est appliquée après livraison des deux interfaces et de la notice cohérentes.

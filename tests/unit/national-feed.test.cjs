@@ -74,3 +74,9 @@ test('history: collective label is rendered without a member identity or amount'
  assert.deepEqual(events,[{id:'summary',kind:'network_summary',label,timestamp:'2026-10-29T22:59:59Z'}]);
  assert.equal(load('src/lib/feed-utils.ts').feedEventLabel(events[0]),label);
 });
+test('preferences: ordinary activity is on by default, gains and reminders stay off',async()=>{
+ const f=fixture();f.client.from=()=>({select(){return this},eq(){return this},async maybeSingle(){return {data:null,error:null}}});
+ assert.deepEqual(await (await f.GET()).json(),{share_activity:true,share_gains:false,daily_digest_frequency:0});
+ f.client.from=()=>({select(){return this},eq(){return this},async maybeSingle(){return {data:{share_activity:false,share_gains:false,daily_digest_frequency:1},error:null}}});
+ assert.deepEqual(await (await f.GET()).json(),{share_activity:false,share_gains:false,daily_digest_frequency:1});
+});

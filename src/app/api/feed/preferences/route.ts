@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-const defaults = { share_activity: false, share_gains: false, daily_digest_frequency: 0 };
+const defaults = { share_activity: true, share_gains: false, daily_digest_frequency: 0 };
 export async function GET() {
   const client = await createClient();
   const { data: { user } } = await client.auth.getUser();

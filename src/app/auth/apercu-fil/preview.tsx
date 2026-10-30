@@ -14,7 +14,7 @@ const previewRequest: typeof fetch = async (input, options) => {
       localStorage.setItem("winelio-feed-preview-preferences", String(options.body));
       return Response.json({ saved: true });
     }
-    return Response.json(JSON.parse(localStorage.getItem("winelio-feed-preview-preferences") || '{"share_activity":false,"share_gains":false,"daily_digest_frequency":0}'));
+    return Response.json(JSON.parse(localStorage.getItem("winelio-feed-preview-preferences") || '{"share_activity":true,"share_gains":false,"daily_digest_frequency":0}'));
   }
   if (url === "/api/feed/digest") {
     if (options?.method === "DELETE") {

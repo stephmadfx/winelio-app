@@ -51,7 +51,7 @@ export function ActivityFeed({ initialEvents, demoMode, className, initialError 
     <Card className={`!rounded-2xl shadow-sm overflow-hidden ${className ?? ""}`}>
       <CardContent className="p-0 flex flex-col h-[360px]">
         <div className="flex items-center justify-between gap-2 px-5 py-4 border-b border-gray-100">
-          <div><h3 className="font-bold text-lg text-winelio-dark">Ça bouge sur Winelio</h3><p className="text-xs text-winelio-gray">Tout le réseau, partout en France{demoMode ? " · Démonstration" : ""}</p></div>
+          <div><h3 className="font-bold text-lg text-winelio-dark">Ça bouge sur Winelio</h3><p className="text-xs text-winelio-gray">Tout le réseau, partout en France{demoMode ? " · Démonstration" : ""} · <Link href="/settings" className="underline">Gérer ma visibilité</Link></p></div>
           <Dialog>
             <DialogTrigger className="text-winelio-orange font-bold text-sm shrink-0 hover:underline">Voir tout</DialogTrigger>
             <DialogContent className="sm:max-w-xl max-h-[85dvh] flex flex-col">
