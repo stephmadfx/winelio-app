@@ -112,8 +112,8 @@ export function WinelioLogoWithTagline({ variant = "color", height = 64, classNa
           whiteSpace: "nowrap",
         }}
       >
-        Recommandez. Connectez.{" "}
-        <strong style={{ color: accentColor, fontWeight: 700 }}>Développez.</strong>
+        Recommandez.{" "}
+        <strong style={{ color: accentColor, fontWeight: 700 }}>Gagnez.</strong>
       </span>
     </span>
   );
