@@ -164,7 +164,7 @@ export function LegalDocument({
     <div className="relative min-h-dvh overflow-hidden bg-winelio-light">
       <AppBackground />
       <main
-        className={`relative z-10 mx-auto grid w-full max-w-6xl gap-6 px-4 lg:grid-cols-[240px_minmax(0,1fr)] lg:px-8 ${
+        className={`relative z-10 mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 px-4 lg:grid-cols-[240px_minmax(0,1fr)] lg:px-8 ${
           inApp ? "pb-28 pt-24 lg:py-8" : "py-8"
         }`}
       >
@@ -202,7 +202,7 @@ export function LegalDocument({
           </nav>
         </aside>
 
-        <article className="rounded-3xl border border-black/5 bg-white/90 p-6 shadow-sm sm:p-8 lg:p-10">
+        <article className="min-w-0 break-words rounded-3xl border border-black/5 bg-white/90 p-6 shadow-sm sm:p-8 lg:p-10">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-winelio-orange">
             Documents légaux Winelio
           </p>
@@ -244,7 +244,7 @@ export function LegalDocument({
 
               if (block.type === "table") {
                 return (
-                  <div key={index} className="overflow-x-auto rounded-2xl border border-black/5">
+                  <div key={index} className="max-w-full overflow-x-auto rounded-2xl border border-black/5">
                     <table className="min-w-full divide-y divide-black/5 text-left text-sm">
                       <thead className="bg-winelio-light">
                         <tr>
