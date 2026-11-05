@@ -156,7 +156,7 @@ export async function notifyProFollowup(ctx: FollowupContext): Promise<string | 
           <tr><td align="center"><a href="${abandonUrl}" style="color:#B2BAC0;font-size:13px;text-decoration:underline;">Je ne peux pas donner suite</a></td></tr>
         </table>
       </td></tr>
-      <tr><td align="center" style="padding:24px 0;"><p style="margin:0;color:#B2BAC0;font-size:12px;">© 2026 Winelio · La plateforme française de recommandations</p><p style="margin:4px 0 0;color:#FF6B35;font-size:12px;font-weight:600;">Recommandez. Gagnez.</p></td></tr>
+      <tr><td align="center" style="padding:24px 0;"><p style="margin:0;color:#B2BAC0;font-size:12px;">© 2026 Winelio · Recommandez, gagnez</p><p style="margin:4px 0 0;color:#FF6B35;font-size:12px;font-weight:600;">Recommandez. Gagnez.</p></td></tr>
     </table>
   </td></tr></table>
 </body></html>`;

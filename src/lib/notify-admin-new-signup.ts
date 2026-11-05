@@ -106,7 +106,7 @@ export async function notifyAdminNewSignup(newUserId: string): Promise<void> {
         </table>
       </td></tr>
       <tr><td style="height:18px;font-size:0;line-height:0;">&nbsp;</td></tr>
-      <tr><td style="text-align:center;color:#B2BAC0;font-size:11px;">© 2026 Winelio · <span style="color:#FF6B35;">Recommandez. Connectez. Gagnez.</span></td></tr>
+      <tr><td style="text-align:center;color:#B2BAC0;font-size:11px;">© 2026 Winelio · <span style="color:#FF6B35;">Recommandez, gagnez</span></td></tr>
     </table>
   </td></tr>
 </table>

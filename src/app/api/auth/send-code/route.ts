@@ -61,7 +61,7 @@ function buildEmailHtml(code: string): string {
     </p>
   </td></tr>
   <tr><td style="text-align:center;padding:16px 0;">
-    <p style="color:#B2BAC0;font-size:11px;margin:0;">© 2026 Winelio · Recommandez. Connectez. Gagnez.</p>
+    <p style="color:#B2BAC0;font-size:11px;margin:0;">© 2026 Winelio · Recommandez, gagnez</p>
   </td></tr>
 </table>
 </td></tr>
@@ -148,7 +148,7 @@ export async function POST(req: Request) {
       const result = await sendEmail({
         to: normalizedEmail,
         subject: "Votre code de connexion Winelio",
-        text: `Votre code de connexion Winelio : ${code}\n\nCe code est valable ${CODE_TTL_MINUTES} minutes et à usage unique.\nSi vous n'avez pas fait cette demande, ignorez cet email.\n\n---\n© 2026 Winelio · Recommandez. Connectez. Gagnez.`,
+        text: `Votre code de connexion Winelio : ${code}\n\nCe code est valable ${CODE_TTL_MINUTES} minutes et à usage unique.\nSi vous n'avez pas fait cette demande, ignorez cet email.\n\n---\n© 2026 Winelio · Recommandez, gagnez`,
         html: buildEmailHtml(code),
       });
       if (!result.ok) {

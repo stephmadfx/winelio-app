@@ -73,7 +73,7 @@ export async function notifyPendingReminder(recommendationId: string): Promise<b
           <tr><td align="center"><p style="margin:0;color:#B2BAC0;font-size:12px;line-height:1.5;">Ce rappel est envoyé une seule fois pour cette recommandation.</p></td></tr>
         </table>
       </td></tr>
-      <tr><td align="center" style="padding:24px 0;"><p style="margin:0;color:#B2BAC0;font-size:12px;">© 2026 Winelio · La plateforme française de recommandations</p><p style="margin:4px 0 0;color:#FF6B35;font-size:12px;font-weight:600;">Recommandez. Gagnez.</p></td></tr>
+      <tr><td align="center" style="padding:24px 0;"><p style="margin:0;color:#B2BAC0;font-size:12px;">© 2026 Winelio · Recommandez, gagnez</p><p style="margin:4px 0 0;color:#FF6B35;font-size:12px;font-weight:600;">Recommandez. Gagnez.</p></td></tr>
     </table>
   </td></tr></table>
 </body></html>`;

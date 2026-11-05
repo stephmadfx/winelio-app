@@ -260,7 +260,7 @@ ${trackingPixel}
 </td></tr>
 <tr><td style="text-align:center;padding:16px 0;">
 <p style="color:#B2BAC0;font-size:11px;margin:0;">© 2026 Winelio</p>
-<p style="color:#FF6B35;font-size:11px;margin:4px 0 0;">Recommandez. Connectez. Gagnez.</p>
+<p style="color:#FF6B35;font-size:11px;margin:4px 0 0;">Recommandez, gagnez</p>
 </td></tr>
 </table>
 </td></tr>

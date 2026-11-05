@@ -220,10 +220,10 @@ function buildSupportEmail(p: CompanyModificationRequestParams): string {
           <tr>
             <td align="center" style="padding-top:24px;">
               <p style="color:#B2BAC0;font-size:12px;margin:0 0 4px;">
-                © 2026 Winelio · Plateforme de recommandation professionnelle
+                © 2026 Winelio · Recommandez, gagnez
               </p>
               <p style="color:#FF6B35;font-size:11px;margin:0;">
-                Recommandez. Connectez. Gagnez.
+                Recommandez, gagnez
               </p>
             </td>
           </tr>

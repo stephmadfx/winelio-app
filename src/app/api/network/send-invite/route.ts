@@ -45,7 +45,7 @@ function buildInviteEmail(
                 <tr>
                   <td align="center" style="padding-bottom:20px;">
                     <span style="font-size:11px;color:#FF6B35;font-weight:600;letter-spacing:1px;">
-                      Recommandez. Connectez. Gagnez.
+                      Recommandez, gagnez
                     </span>
                   </td>
                 </tr>
@@ -259,10 +259,10 @@ function buildInviteEmail(
           <tr>
             <td align="center" style="padding-top:24px;">
               <p style="color:#B2BAC0;font-size:12px;margin:0 0 4px;">
-                © 2026 Winelio · Plateforme de recommandation professionnelle
+                © 2026 Winelio · Recommandez, gagnez
               </p>
               <p style="color:#FF6B35;font-size:11px;margin:0;">
-                Recommandez. Connectez. Gagnez.
+                Recommandez, gagnez
               </p>
             </td>
           </tr>
@@ -317,7 +317,7 @@ export async function POST(req: Request) {
       `Rejoindre Winelio : ${referralUrl}`,
       "",
       "---",
-      "© 2026 Winelio · Recommandez. Connectez. Gagnez.",
+      "© 2026 Winelio · Recommandez, gagnez",
     ].filter((l) => l !== null).join("\n");
 
     await queueEmail({

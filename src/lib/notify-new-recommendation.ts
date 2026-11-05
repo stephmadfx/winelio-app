@@ -178,7 +178,7 @@ function buildScrapedEmail(companyName: string, referrerName: string, contactNam
       
       <!-- Footer de l'email -->
       <tr><td align="center" style="padding:24px 0;">
-        <p style="margin:0;color:#B2BAC0;font-size:12px;">© 2026 Winelio · La plateforme française de recommandations</p>
+        <p style="margin:0;color:#B2BAC0;font-size:12px;">© 2026 Winelio · Recommandez, gagnez</p>
         <p style="margin:4px 0 0;color:#FF6B35;font-size:12px;font-weight:600;">Recommandez. Gagnez.</p>
       </td></tr>
     </table>
@@ -364,8 +364,8 @@ function buildSponsorRecoEmail(
         </table>
       </td></tr>
       <tr><td align="center" style="padding:24px 0;">
-        <p style="margin:0;color:#B2BAC0;font-size:12px;">© 2026 Winelio · Plateforme de recommandation professionnelle</p>
-        <p style="margin:4px 0 0;color:#FF6B35;font-size:11px;font-weight:600;">Recommandez. Connectez. Gagnez.</p>
+        <p style="margin:0;color:#B2BAC0;font-size:12px;">© 2026 Winelio · Recommandez, gagnez</p>
+        <p style="margin:4px 0 0;color:#FF6B35;font-size:11px;font-weight:600;">Recommandez, gagnez</p>
       </td></tr>
     </table>
   </td></tr></table>
@@ -446,7 +446,7 @@ async function notifyReferrerSponsorChain(
       `Voir mon réseau : ${SITE_URL}/network`,
       "",
       "---",
-      "© 2026 Winelio · Recommandez. Connectez. Gagnez.",
+      "© 2026 Winelio · Recommandez, gagnez",
     ].join("\n");
 
     await queueEmail({

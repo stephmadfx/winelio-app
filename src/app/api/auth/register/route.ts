@@ -214,7 +214,7 @@ export async function POST(request: Request) {
           <!-- Footer -->
           <tr>
             <td style="text-align:center;padding:24px 0 0 0;">
-              <p style="color:#B2BAC0;font-size:11px;margin:0 0 4px;">© 2026 Winelio · Recommandez. Connectez. Gagnez.</p>
+              <p style="color:#B2BAC0;font-size:11px;margin:0 0 4px;">© 2026 Winelio · Recommandez, gagnez</p>
               <p style="color:#FF6B35;font-size:11px;font-weight:bold;margin:0;">Winelio</p>
             </td>
           </tr>

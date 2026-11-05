@@ -203,10 +203,10 @@ function buildReferralEmail(
           <tr>
             <td align="center" style="padding-top:24px;">
               <p style="color:#B2BAC0;font-size:12px;margin:0 0 4px;">
-                © 2026 Winelio · Plateforme de recommandation professionnelle
+                © 2026 Winelio · Recommandez, gagnez
               </p>
               <p style="color:#FF6B35;font-size:11px;margin:0;">
-                Recommandez. Connectez. Gagnez.
+                Recommandez, gagnez
               </p>
             </td>
           </tr>
@@ -332,7 +332,7 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
       `Voir mon réseau : ${SITE_URL}/network`,
       "",
       "---",
-      "© 2026 Winelio · Recommandez. Connectez. Gagnez.",
+      "© 2026 Winelio · Recommandez, gagnez",
     ].join("\n");
 
     const result = await queueEmail({

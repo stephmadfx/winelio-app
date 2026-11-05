@@ -36,7 +36,7 @@ export function buildPaymentMethodResetEmail(firstName: string): string {
           <tr><td align="center"><p style="color:#636E72;font-size:12px;line-height:1.5;margin:0;">L'enregistrement de la carte ne déclenche aucun paiement immédiat.</p></td></tr>
         </table>
       </td></tr>
-      <tr><td align="center" style="padding-top:24px;"><p style="color:#B2BAC0;font-size:12px;margin:0 0 4px;">© 2026 Winelio · Plateforme de recommandation professionnelle</p><p style="color:#FF6B35;font-size:11px;margin:0;">Recommandez. Connectez. Gagnez.</p></td></tr>
+      <tr><td align="center" style="padding-top:24px;"><p style="color:#B2BAC0;font-size:12px;margin:0 0 4px;">© 2026 Winelio · Recommandez, gagnez</p><p style="color:#FF6B35;font-size:11px;margin:0;">Recommandez, gagnez</p></td></tr>
     </table>
   </td></tr>
 </table>
