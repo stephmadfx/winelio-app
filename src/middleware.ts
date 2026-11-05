@@ -36,6 +36,8 @@ function isPublicApiPath(path: string): boolean {
     path.startsWith("/api/stripe/cron-reminders") ||
     path.startsWith("/api/recommendations/process-followups") ||
     path.startsWith("/api/recommendations/cron-scraped-reminder") ||
+    path.startsWith("/api/recommendations/cron-pending-reminder") ||
+    path.startsWith("/api/recommendations/reminder-action") ||
     path.startsWith("/api/recommendations/followup-action") ||
     path.startsWith("/api/recommendations/client-action") ||
     path === "/api/recommendations/client-review" ||
@@ -57,6 +59,7 @@ function isPublicPagePath(path: string): boolean {
     path.startsWith("/suppression-compte") ||
     path.startsWith("/plan-remuneration") ||
     path.startsWith("/recommendations/followup/") ||
+    path.startsWith("/recommendations/reminder/") ||
     path.startsWith("/recommendations/client/") ||
     path.startsWith("/recommendations/client-review/") ||
     /^\/professionnels\/[^/]+\/avis$/.test(path) ||
@@ -96,6 +99,7 @@ export async function middleware(request: NextRequest) {
     const isCronApi =
       isPublicApiPath(path) ||
       path.startsWith("/recommendations/followup/") ||
+      path.startsWith("/recommendations/reminder/") ||
       path.startsWith("/recommendations/client/") ||
       path.startsWith("/recommendations/client-review/") ||
       path.startsWith("/api/video/");
