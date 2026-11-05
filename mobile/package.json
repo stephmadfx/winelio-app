@@ -1,6 +1,6 @@
 {
   "name": "winelio-mobile",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "main": "expo-router/entry",
   "packageManager": "pnpm@10.16.1",
