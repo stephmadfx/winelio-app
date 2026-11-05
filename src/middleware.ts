@@ -48,6 +48,7 @@ function isPublicApiPath(path: string): boolean {
 
 function isPublicPagePath(path: string): boolean {
   return (
+    path.startsWith("/.well-known/") ||
     path.startsWith("/auth") ||
     path.startsWith("/api/auth") ||
     path.startsWith("/staging-login") ||

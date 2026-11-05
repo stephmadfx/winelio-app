@@ -99,7 +99,6 @@ L’inscription (`POST /api/auth/register`) exige un `sponsorCode` non vide corr
 | Méthode | URL | Auth | Logique |
 |---|---|---|---|
 | POST | `/api/email/process-queue` | Bearer CRON_SECRET | Dépile email_queue par lots de 10. Skip @winelio-e2e.local (status = test_skipped). Retry delays : 5/30/120 min. |
-| POST | `/api/email/welcome` | user | Enqueue email de bienvenue pour le user connecté. |
 | GET | `/api/email-template` | public | Retourne HTML du template email OTP (utilisé dans email client preview). |
 | GET | `/api/email-template/preview` | public | Preview de template paramétré. |
 | GET | `/api/email-track/open` | public | Pixel 1x1 — MAJ `email_opened_at` si null (premier clic uniquement). Retourne pixel transparent. |

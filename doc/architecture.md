@@ -127,7 +127,6 @@
 ├── src/components/SignatureModal.tsx   — Modal CGU
 ├── src/components/SignaturePad.tsx     — Canvas HTML5 signature
 ├── src/components/profile-form.tsx     — Formulaire profil
-├── src/components/onboarding-modal.tsx — Onboarding user standard (bienvenue)
 ├── src/components/profile-incomplete-modal.tsx — Rappel profil incomplet
 ├── src/lib/siren.ts                    — API SIRENE (vérification SIRET)
 ├── src/lib/geocode.ts                  — Géocodage adresse → lat/lng
@@ -187,7 +186,6 @@
 ├── src/lib/email-transporter.ts        — sendMailWithTimeout() (Nodemailer SMTP)
 ├── src/lib/email-logo.ts              — LOGO_IMG_HTML (constante HTML)
 ├── /api/email/process-queue            — POST cron (Bearer CRON_SECRET) : dépile email_queue, skip @winelio-e2e.local → test_skipped
-├── /api/email/welcome                  — POST : enqueue email bienvenue
 ├── /api/email-template/               — GET : template email paramétré (preview admin)
 ├── /api/email-template/preview/        — GET : preview template
 ├── /api/email-track/open               — GET : pixel tracking (met à jour email_opened_at)

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { shouldLoadInWebView, webAppOrigin } from "./webAppNavigation.ts";
+import { appLinkEntryUrl, shouldLoadInWebView, webAppOrigin } from "./webAppNavigation.ts";
 
 test("la fiche recommandation reste dans Winelio", () => {
   assert.equal(shouldLoadInWebView(`${webAppOrigin}/recommendations/example`, true), true);
@@ -22,4 +22,12 @@ test("une vérification bancaire embarquée reste intégrée mais les vrais lien
   assert.equal(shouldLoadInWebView("https://external.example", true), false);
   assert.equal(shouldLoadInWebView("https://stripe.com.external.example", true), false);
   assert.equal(shouldLoadInWebView("https://notstripe.com", true), false);
+});
+
+test("les liens universels ouvrent le réseau mais pas les pages publiques à jeton", () => {
+  assert.equal(appLinkEntryUrl(`${webAppOrigin}/network`), `${webAppOrigin}/network`);
+  assert.equal(appLinkEntryUrl(`${webAppOrigin}/network/stats?x=1`), `${webAppOrigin}/network/stats?x=1`);
+  assert.equal(appLinkEntryUrl(`${webAppOrigin}/networking`), null);
+  assert.equal(appLinkEntryUrl(`${webAppOrigin}/recommendations/followup/abc/abandon`), null);
+  assert.equal(appLinkEntryUrl("https://evil.example/network"), null);
 });

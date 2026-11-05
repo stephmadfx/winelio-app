@@ -1,11 +1,15 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+/**
+ * Mail de bienvenue envoyé une seule fois, à la confirmation de l'inscription
+ * (le lien de confirmation est à usage unique, donc pas de doublon possible).
+ */
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 import { queueEmail } from "@/lib/email-queue";
+import { scheduleFollowupCtaEmails } from "@/lib/notify-followup-cta";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
-  const dashboardUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.fr";
+  const dashboardUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
   const networkUrl = `${dashboardUrl}/network`;
 
   return `<!DOCTYPE html>
@@ -38,7 +42,7 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
                 <tr>
                   <td align="center" style="padding-bottom:20px;">
                     <span style="font-size:11px;color:#FF6B35;font-weight:600;letter-spacing:1px;">
-                      Recommandez. Connectez. Gagnez.
+                      Recommandez, gagnez
                     </span>
                   </td>
                 </tr>
@@ -223,10 +227,10 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
           <tr>
             <td align="center" style="padding-top:24px;">
               <p style="color:#B2BAC0;font-size:12px;margin:0 0 4px;">
-                © 2026 Winelio · Plateforme de recommandation professionnelle
+                © 2026 Winelio · Recommandez, gagnez
               </p>
               <p style="color:#FF6B35;font-size:11px;margin:0;">
-                Recommandez. Connectez. Gagnez.
+                Recommandez, gagnez
               </p>
             </td>
           </tr>
@@ -239,41 +243,22 @@ function buildWelcomeEmail(firstName: string, sponsorCode: string): string {
 </html>`;
 }
 
-export async function POST() {
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("first_name, last_name, sponsor_code")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.sponsor_code) {
-      return NextResponse.json({ error: "Profil incomplet" }, { status: 400 });
-    }
-
-    const firstName = profile.first_name || profile.last_name || "Nouveau membre";
-
-    if (!user.email) {
-      return NextResponse.json({ error: "Email utilisateur introuvable" }, { status: 400 });
-    }
-
-    await queueEmail({
-      to: user.email,
-      subject: `Bienvenue sur Winelio, ${firstName} !`,
-      html: buildWelcomeEmail(firstName, profile.sponsor_code),
-      priority: 5,
-    });
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("welcome email error:", err);
-    return NextResponse.json({ error: "Erreur envoi email" }, { status: 500 });
-  }
+export async function sendWelcomeEmail(userId: string): Promise<void> {
+  const { data: profile } = await supabaseAdmin
+    .schema("winelio")
+    .from("profiles")
+    .select("first_name, last_name, sponsor_code")
+    .eq("id", userId)
+    .single();
+  const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
+  const to = authUser.user?.email;
+  if (!to || !profile?.sponsor_code) return;
+  const firstName = profile.first_name || profile.last_name || "Nouveau membre";
+  await queueEmail({
+    to,
+    subject: `Bienvenue sur Winelio, ${firstName} !`,
+    html: buildWelcomeEmail(firstName, profile.sponsor_code),
+    priority: 5,
+  });
+  await scheduleFollowupCtaEmails(userId, to, firstName, profile.sponsor_code);
 }

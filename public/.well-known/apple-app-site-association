@@ -1,0 +1,26 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "QTG533MH6L.app.winelio.mobile"
+        ],
+        "components": [
+          {
+            "/": "/network",
+            "comment": "R\u00e9seau"
+          },
+          {
+            "/": "/network/*"
+          },
+          {
+            "/": "/dashboard"
+          },
+          {
+            "/": "/wallet"
+          }
+        ]
+      }
+    ]
+  }
+}

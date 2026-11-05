@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.winelio.mobile",
+      "sha256_cert_fingerprints": [
+        "48:36:DB:FB:B7:9A:17:B0:AB:52:57:C4:5B:97:82:A1:A2:CD:0E:BF:90:D1:A2:67:2C:A9:74:70:0A:AF:9E:E9"
+      ]
+    }
+  }
+]

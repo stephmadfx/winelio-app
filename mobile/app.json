@@ -19,7 +19,10 @@
         "NSPhotoLibraryUsageDescription": "Winelio accède à vos photos uniquement lorsque vous choisissez une image à joindre.",
         "NSLocationWhenInUseUsageDescription": "Winelio utilise votre position pour proposer les professionnels pertinents autour de vous."
       },
-      "buildNumber": "8"
+      "buildNumber": "8",
+      "associatedDomains": [
+        "applinks:winelio.app"
+      ]
     },
     "android": {
       "package": "app.winelio.mobile",
@@ -34,7 +37,34 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": true,
-      "versionCode": 13
+      "versionCode": 13,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "winelio.app",
+              "pathPrefix": "/network"
+            },
+            {
+              "scheme": "https",
+              "host": "winelio.app",
+              "pathPrefix": "/dashboard"
+            },
+            {
+              "scheme": "https",
+              "host": "winelio.app",
+              "pathPrefix": "/wallet"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",

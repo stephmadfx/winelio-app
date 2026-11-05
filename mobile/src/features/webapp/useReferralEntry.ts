@@ -3,7 +3,7 @@ import * as Linking from "expo-linking";
 import { useEffect, useRef, useState } from "react";
 import { Alert, AppState, Platform } from "react-native";
 import { parseInstallReferrer, parseReferralLink, referralClipboardLink, referralRegistrationPath, type ReferralInvite } from "../../../../src/lib/referral-install";
-import { webAppEntryUrl, webAppOrigin } from "./webAppNavigation";
+import { appLinkEntryUrl, webAppEntryUrl, webAppOrigin } from "./webAppNavigation";
 
 type ReferralModule = {
   getItem(key: string): string | null;
@@ -47,7 +47,9 @@ export function useReferralEntry() {
     const startRevision = revision.current;
     const subscription = Linking.addEventListener("url", ({ url }) => {
       const next = parseReferralLink(url);
-      if (next) accept(next);
+      if (next) { accept(next); return; }
+      const page = appLinkEntryUrl(url);
+      if (page && mounted.current) { revision.current++; setEntryUrl(page); }
     });
     const bootstrap = async () => {
       try {
@@ -55,6 +57,8 @@ export function useReferralEntry() {
         if (!active || revision.current !== startRevision) return;
         const direct = initial ? parseReferralLink(initial) : null;
         if (direct) { accept(direct); return; }
+        const page = initial ? appLinkEntryUrl(initial) : null;
+        if (page) { setEntryUrl(page); return; }
         const pending = native?.getItem("pending");
         if (pending) {
           try {

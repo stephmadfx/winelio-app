@@ -43,3 +43,17 @@ export const shouldLoadInWebView = (url: string, isTopFrame?: boolean) => {
 };
 
 export const isExternalProtocol = (url: string) => /^(mailto:|tel:|sms:|maps:)/i.test(url);
+
+// Chemins ouverts dans l'app via liens universels / App Links (garder aligné avec
+// public/.well-known/apple-app-site-association et l'intent-filter Android).
+const APP_LINK_PATH = /^\/(network|dashboard|wallet)(\/|$)/;
+
+export const appLinkEntryUrl = (value: string): string | null => {
+  try {
+    const url = new URL(value.trim());
+    if (url.origin !== new URL(webAppOrigin).origin || !APP_LINK_PATH.test(url.pathname)) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+};
