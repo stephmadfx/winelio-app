@@ -235,7 +235,7 @@ export function NetworkGraph({
   const rawTreeRef = useRef<any>(null);
 
   function materializeNode(apiNode: any, level: number): GraphNode {
-    const expanded = level <= 1; // only N1 expanded by default
+    const expanded = level < maxLevel; // tout déployé par défaut jusqu'à maxLevel (5)
     return {
       id: apiNode.id,
       first_name: apiNode.first_name,
