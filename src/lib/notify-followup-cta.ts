@@ -36,12 +36,13 @@ ${sp}
 </table></td></tr></table></body></html>`;
 }
 
-export async function scheduleFollowupCtaEmails(userId: string, to: string, firstName: string, sponsorCode: string): Promise<void> {
+/** shiftMs : décale les deux envois (ex. -1 jour = J+1 envoyé tout de suite, pour un rattrapage). */
+export async function scheduleFollowupCtaEmails(userId: string, to: string, firstName: string, sponsorCode: string, shiftMs = 0): Promise<void> {
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
   const url = `${appUrl}/network`;
   const name = he(firstName);
   const code = he(sponsorCode);
-  const now = Date.now();
+  const now = Date.now() + shiftMs;
 
   await queueEmail({
     to,
