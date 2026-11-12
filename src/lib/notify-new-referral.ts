@@ -12,6 +12,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { he } from "@/lib/html-escape";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 import { isPersonalProfileComplete, PROFILE_COMPLETION_SELECT } from "@/lib/profile-completion";
+import { dispatchNewReferralPush } from "@/lib/push-notifications";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://winelio.app";
 
@@ -265,12 +266,20 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
 
   const sponsorIds = sponsorChain.map((s) => s.id);
 
-  const [profilesResult, authResults] = await Promise.all([
+  const [profilesResult, prefsResult, authResults] = await Promise.all([
     supabaseAdmin.from("profiles").select("id, first_name, last_name").in("id", sponsorIds),
+    supabaseAdmin
+      .from("messaging_preferences")
+      .select("user_id, notify_new_referral")
+      .in("user_id", sponsorIds),
     Promise.all(sponsorIds.map((id) => supabaseAdmin.auth.admin.getUserById(id))),
   ]);
   if (profilesResult.error) throw profilesResult.error;
   for (const result of authResults) if (result.error) throw result.error;
+
+  const referralPrefMap = new Map<string, boolean>(
+    (prefsResult.data ?? []).map((row) => [row.user_id, row.notify_new_referral !== false]),
+  );
 
   const profileMap = new Map(
     (profilesResult.data ?? []).map((p) => [
@@ -282,15 +291,30 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
     sponsorIds.map((id, i) => [id, authResults[i].data?.user?.email ?? null])
   );
 
-  const notifications: Array<{ email: string; firstName: string; level: number }> = [];
+  // Notification Push téléphone (iPhone / Android / Web Push) pour les parrains qui l'ont gardée active (activée par défaut)
   for (const { id, level } of sponsorChain) {
+    if (referralPrefMap.get(id) === false) continue;
+    const memberName = level === 1 ? newMemberFullName : newMemberShortName;
+    await dispatchNewReferralPush({
+      newUserId,
+      sponsorId: id,
+      level,
+      memberName,
+    }).catch((err) => {
+      console.error("[notify-new-referral] push warning:", err);
+    });
+  }
+
+  const notifications: Array<{ sponsorId: string; email: string; firstName: string; level: number }> = [];
+  for (const { id, level } of sponsorChain) {
+    if (referralPrefMap.get(id) === false) continue;
     const email = emailMap.get(id);
     if (!email || email.endsWith("@winelio-pro.fr") || email.endsWith("@winelio-demo.internal")) continue;
-    notifications.push({ email, firstName: profileMap.get(id)?.firstName || "Membre", level });
+    notifications.push({ sponsorId: id, email, firstName: profileMap.get(id)?.firstName || "Membre", level });
   }
 
   let inserted = 0;
-  for (const { email, firstName, level } of notifications) {
+  for (const { sponsorId, email, firstName, level } of notifications) {
     const memberName = level === 1 ? newMemberFullName : newMemberShortName;
     const levelLabel = level === 1 ? "filleul direct" : `membre niveau ${level}`;
     const subject = level === 1
@@ -341,7 +365,7 @@ export async function notifyNewReferral(newUserId: string): Promise<number> {
       html: buildReferralEmail(firstName, memberName, level, chain),
       text: textBody,
       priority: level === 1 ? 3 : 7,
-      dedupeKey: `new-referral:${newUserId}:${sponsorChain[level - 1].id}`,
+      dedupeKey: `new-referral:${newUserId}:${sponsorId}`,
       throwOnError: true,
     });
     if (result.inserted) inserted++;

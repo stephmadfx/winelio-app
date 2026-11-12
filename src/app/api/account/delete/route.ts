@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { deleteAvatar } from "@/lib/r2-avatars";
 
 export async function POST() {
   try {
@@ -49,7 +50,29 @@ export async function POST() {
         .upsert({ sponsor_code: profile.sponsor_code });
     }
 
-    // 5. Supprimer les données personnelles du compte
+    // 5. Purger les photos personnelles postées dans la messagerie (RGPD)
+    const { data: userMediaMessages } = await supabaseAdmin
+      .from("messaging_messages")
+      .select("id, attachments")
+      .eq("author_id", userId);
+
+    if (userMediaMessages && userMediaMessages.length > 0) {
+      for (const m of userMediaMessages) {
+        if (Array.isArray(m.attachments) && m.attachments.length > 0) {
+          for (const att of m.attachments as { key?: string }[]) {
+            if (typeof att?.key === "string" && att.key.startsWith("messaging/")) {
+              await deleteAvatar(att.key).catch(() => {});
+            }
+          }
+          await supabaseAdmin
+            .from("messaging_messages")
+            .update({ attachments: [] })
+            .eq("id", m.id);
+        }
+      }
+    }
+
+    // 6. Supprimer les données personnelles du compte
     //    (dans l'ordre pour éviter les violations de clés étrangères)
     await Promise.all([
       // Contacts personnels

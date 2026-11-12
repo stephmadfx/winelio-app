@@ -7,5 +7,7 @@ web-build/
 .env.local
 /ios/
 /android/
+google-services.json
+GoogleService-Info.plist
 modules/*/android/build/
 modules/*/android/.gradle/

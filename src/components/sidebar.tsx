@@ -5,6 +5,7 @@ import { isMemberNavActive } from "@/lib/member-navigation";
 import { WinelioLogo } from "./winelio-logo";
 import { usePathname } from "next/navigation";
 import { SignOutButton } from "./sign-out-button";
+import { useMessagingUnread } from "./messaging/use-messaging-unread";
 
 const navItems = [
   {
@@ -21,6 +22,11 @@ const navItems = [
     label: "Réseau",
     href: "/network",
     icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z",
+  },
+  {
+    label: "Messagerie",
+    href: "/messages",
+    icon: "M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4v-4z",
   },
   {
     label: "Gains",
@@ -51,6 +57,7 @@ const navItems = [
 
 export function Sidebar({ userEmail, isSuperAdmin }: { userEmail: string; isSuperAdmin?: boolean }) {
   const pathname = usePathname();
+  const unreadMessages = useMessagingUnread();
 
   return (
     <aside
@@ -93,7 +100,12 @@ export function Sidebar({ userEmail, isSuperAdmin }: { userEmail: string; isSupe
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
               </svg>
-              {item.label}
+              <span className="flex-1 truncate">{item.label}</span>
+              {item.href === "/messages" && unreadMessages > 0 && (
+                <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-winelio-orange text-white text-[11px] font-bold">
+                  {unreadMessages > 99 ? "99+" : unreadMessages}
+                </span>
+              )}
             </Link>
           );
         })}

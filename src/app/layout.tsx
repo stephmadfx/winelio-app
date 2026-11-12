@@ -30,6 +30,15 @@ export const metadata: Metadata = {
   title: "Winelio - Recommandez. Gagnez.",
   description:
     "Plateforme de recommandations professionnelles avec réseau de parrainage.",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    apple: "/icon-192.png",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Winelio",
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({

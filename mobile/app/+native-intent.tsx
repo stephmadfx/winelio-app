@@ -1,4 +1,6 @@
+import { isWebAppEntryPath } from "@/features/webapp/webAppNavigation";
+
 export function redirectSystemPath({ path }: { path: string; initial: boolean }) {
-  // Linking conserve l'invitation originale ; la WebView gère son parcours d'inscription.
-  return /^winelio:\/\/invite(?:[/?]|$)/i.test(path) ? "/" : path;
+  // Linking conserve le lien original ; la WebView gère l'invitation et charge la page demandée.
+  return isWebAppEntryPath(path) ? "/" : path;
 }

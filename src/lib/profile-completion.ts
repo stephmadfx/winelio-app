@@ -54,6 +54,7 @@ const ALWAYS_ALLOWED_PREFIXES = ["/profile", "/companies"];
 const GATED_PREFIXES = [
   "/dashboard",
   "/activity",
+  "/messages",
   "/recommendations",
   "/network",
   "/wallet",

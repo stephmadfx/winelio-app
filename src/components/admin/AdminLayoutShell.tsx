@@ -26,6 +26,11 @@ const navItems: NavItem[] = [
     icon: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-18 8h18a2 2 0 002-2V6a2 2 0 00-2-2H3a2 2 0 00-2 2v8a2 2 0 002 2z",
   },
   {
+    label: "Messagerie",
+    href: "/gestion-reseau/messagerie",
+    icon: "M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4v-4z",
+  },
+  {
     label: "Recommandations",
     href: "/gestion-reseau/recommandations",
     icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
@@ -82,12 +87,14 @@ export function AdminLayoutShell({
   userEmail,
   documents = [],
   bugCount = 0,
+  messagingReportCount = 0,
   bugDeleteAllowed = false,
 }: {
   children: React.ReactNode;
   userEmail: string;
   documents?: { id: string; title: string; status: string }[];
   bugCount?: number;
+  messagingReportCount?: number;
   bugDeleteAllowed?: boolean;
 }) {
   const pathname = usePathname();
@@ -231,6 +238,11 @@ export function AdminLayoutShell({
               {item.href === "/gestion-reseau/bugs" && bugCount > 0 && (!collapsed || mobile) && (
                 <span className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-winelio-orange text-white text-[10px] font-bold">
                   {bugCount > 99 ? "99+" : bugCount}
+                </span>
+              )}
+              {item.href === "/gestion-reseau/messagerie" && messagingReportCount > 0 && (!collapsed || mobile) && (
+                <span className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-winelio-orange text-white text-[10px] font-bold">
+                  {messagingReportCount > 99 ? "99+" : messagingReportCount}
                 </span>
               )}
             </Link>

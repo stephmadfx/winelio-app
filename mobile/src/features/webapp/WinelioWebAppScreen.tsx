@@ -19,6 +19,7 @@ import {
 } from "@/features/webapp/webAppLoadPolicy";
 import { isExternalProtocol, shouldLoadInWebView, webAppEntryUrl } from "@/features/webapp/webAppNavigation";
 import { nativeShareContent, nativeShareResultScript } from "./nativeShare";
+import { nativePushResultScript, requestNativePushToken, subscribePushNotificationClicks } from "./nativePush";
 import { useReferralEntry } from "./useReferralEntry";
 
 export const WinelioWebAppScreen = () => {
@@ -35,6 +36,7 @@ export const WinelioWebAppScreen = () => {
   const [loaded, setLoaded] = useState(false);
   const [progress, setProgress] = useState(0);
   const [webViewKey, setWebViewKey] = useState(0);
+  const [pushEntryOverride, setPushEntryOverride] = useState<string | null>(null);
 
   const clearLoadTimeout = useCallback(() => {
     if (!loadTimeout.current) return;
@@ -98,6 +100,16 @@ export const WinelioWebAppScreen = () => {
   }, [armLoadTimeout, clearLoadTimeout, failed]);
 
   useEffect(() => {
+    return subscribePushNotificationClicks((targetUrl) => {
+      if (firstPaintDone.current && webView.current) {
+        webView.current.injectJavaScript(`window.location.assign(${JSON.stringify(targetUrl)}); true;`);
+      } else {
+        setPushEntryOverride(targetUrl);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
     if (Platform.OS !== "android") return;
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
       if (!canGoBack) return false;
@@ -136,6 +148,17 @@ export const WinelioWebAppScreen = () => {
         (result) => respond(result.action === Share.dismissedAction ? "dismissed" : "shared"),
         () => respond("error"),
       ).finally(() => { sharing.current = false; });
+      return;
+    }
+    if (message.type === "pushToken") {
+      try {
+        if (new URL(event.nativeEvent.url).origin !== new URL(webAppEntryUrl).origin) return;
+      } catch { return; }
+      const requestId = message.requestId!;
+      const prompt = Boolean(message.payload?.prompt);
+      void requestNativePushToken(prompt).then((result) => {
+        webView.current?.injectJavaScript(nativePushResultScript(requestId, result));
+      });
       return;
     }
     if (message.type === "pageReady") {
@@ -220,7 +243,7 @@ export const WinelioWebAppScreen = () => {
             pullToRefreshEnabled
             setSupportMultipleWindows={false}
             sharedCookiesEnabled
-            source={{ uri: referral.entryUrl }}
+            source={{ uri: pushEntryOverride ?? referral.entryUrl }}
             startInLoadingState={false}
             style={styles.webView}
             thirdPartyCookiesEnabled

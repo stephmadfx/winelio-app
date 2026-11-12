@@ -18,10 +18,15 @@ import {
 
 type Bucket = { count: number; resetAt: number };
 
-// Bucket générique : 60 req/min/IP toutes routes /api confondues
+// Bucket générique : 60 req/min/IP toutes routes /api confondues (hors messagerie)
 const rateMap = new Map<string, Bucket>();
 const RATE_LIMIT = 60;
 const RATE_WINDOW_MS = 60_000;
+
+// Bucket dédié messagerie (lectures, réactions, streaming médias privés) : 180 req/min/IP
+// L'anti-flood d'écriture strict par utilisateur est appliqué dans src/lib/messaging.ts.
+const messagingRateMap = new Map<string, Bucket>();
+const MESSAGING_RATE_LIMIT = 180;
 
 function isPublicApiPath(path: string): boolean {
   return (
@@ -48,6 +53,8 @@ function isPublicApiPath(path: string): boolean {
 
 function isPublicPagePath(path: string): boolean {
   return (
+    path === "/sw.js" ||
+    path === "/manifest.webmanifest" ||
     path.startsWith("/.well-known/") ||
     path.startsWith("/auth") ||
     path.startsWith("/api/auth") ||
@@ -68,15 +75,17 @@ function isPublicPagePath(path: string): boolean {
   );
 }
 
-function isRateLimited(ip: string): boolean {
+function isRateLimited(ip: string, isMessagingPath = false): boolean {
   const now = Date.now();
-  const entry = rateMap.get(ip);
+  const map = isMessagingPath ? messagingRateMap : rateMap;
+  const limit = isMessagingPath ? MESSAGING_RATE_LIMIT : RATE_LIMIT;
+  const entry = map.get(ip);
   if (!entry || now > entry.resetAt) {
-    rateMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    map.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
     return false;
   }
   entry.count++;
-  return entry.count > RATE_LIMIT;
+  return entry.count > limit;
 }
 
 // Nettoyage périodique des entrées expirées
@@ -84,6 +93,7 @@ if (typeof globalThis !== "undefined") {
   const timer = setInterval(() => {
     const now = Date.now();
     for (const [key, val] of rateMap) if (now > val.resetAt) rateMap.delete(key);
+    for (const [key, val] of messagingRateMap) if (now > val.resetAt) messagingRateMap.delete(key);
   }, 5 * 60_000);
   if (typeof timer === "object" && "unref" in timer) timer.unref();
 }
@@ -141,7 +151,12 @@ export async function middleware(request: NextRequest) {
       !!process.env.E2E_BYPASS_TOKEN &&
       bypassToken === process.env.E2E_BYPASS_TOKEN;
 
-    if (!isPublicNewsletterPath(request.nextUrl.pathname) && !isE2EBypass && isRateLimited(ip)) {
+    const isMessagingApi = request.nextUrl.pathname.startsWith("/api/messaging/");
+    if (
+      !isPublicNewsletterPath(request.nextUrl.pathname) &&
+      !isE2EBypass &&
+      isRateLimited(ip, isMessagingApi)
+    ) {
       return new NextResponse("Too Many Requests", { status: 429 });
     }
     // Note : rate-limit dédié OTP (5/heure/IP) est appliqué dans
@@ -309,6 +324,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|ogg)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|ogg)$).*)",
   ],
 };

@@ -2,7 +2,7 @@ import { Platform } from "react-native";
 
 export type NativeBridgeMessage = {
   requestId?: string;
-  type: "share" | "webError" | "pageReady" | "pageBlank";
+  type: "share" | "pushToken" | "webError" | "pageReady" | "pageBlank";
   payload?: {
     message?: string;
     source?: string;
@@ -10,6 +10,7 @@ export type NativeBridgeMessage = {
     title?: string;
     text?: string;
     url?: string;
+    prompt?: boolean;
   };
 };
 
@@ -117,6 +118,37 @@ export const nativeBridgeScript = `
         }));
       } catch (_) {}
     });
+    var pendingPushRequests = {};
+    var pushSequence = 0;
+    window.__WINELIO_NATIVE_PUSH_RESULT__ = function (id, result) {
+      var resolve = pendingPushRequests[id];
+      if (!resolve) return;
+      delete pendingPushRequests[id];
+      resolve(result || { status: "error" });
+    };
+    window.__WINELIO_REQUEST_PUSH_TOKEN__ = function (prompt) {
+      return new Promise(function (resolve) {
+        var id = "push-" + String(Date.now()) + "-" + String(++pushSequence);
+        pendingPushRequests[id] = resolve;
+        window.setTimeout(function () {
+          if (pendingPushRequests[id]) {
+            delete pendingPushRequests[id];
+            resolve({ status: "error", message: "Délai dépassé" });
+          }
+        }, 12000);
+        try {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: "pushToken",
+            requestId: id,
+            payload: { prompt: Boolean(prompt) }
+          }));
+        } catch (_) {
+          delete pendingPushRequests[id];
+          resolve({ status: "unavailable" });
+        }
+      });
+    };
+
     window.__WINELIO_NATIVE_APP__ = { platform: "${Platform.OS}" };
     window.dispatchEvent(new CustomEvent("winelio:native-ready"));
     return true;
@@ -171,7 +203,11 @@ export const parseNativeBridgeMessage = (value: string): NativeBridgeMessage | n
       if (!payload.text && !payload.url) return null;
       if (payload.url && !/^https?:\/\//i.test(payload.url)) return null;
     }
-    return ["share", "webError", "pageReady", "pageBlank"].includes(message.type) ? message : null;
+    if (message.type === "pushToken") {
+      if (typeof message.requestId !== "string" || message.requestId.length > 100) return null;
+      return message;
+    }
+    return ["share", "pushToken", "webError", "pageReady", "pageBlank"].includes(message.type) ? message : null;
   } catch {
     return null;
   }

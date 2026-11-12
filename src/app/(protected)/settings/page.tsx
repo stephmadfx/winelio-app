@@ -1,6 +1,7 @@
 "use client";
 
 import { FeedPreferences } from "@/components/feed-preferences";
+import { MessagingPreferencesCard } from "@/components/messaging/messaging-preferences-card";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -127,6 +128,7 @@ export default function SettingsPage() {
       </div>
 
       <FeedPreferences />
+      <MessagingPreferencesCard />
 
       {/* Apparence */}
       <Card className="!rounded-2xl mb-4">

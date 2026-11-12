@@ -453,3 +453,187 @@ html[data-winelio-native="android"] .animate-fade-up {
 html[data-winelio-native="android"] {
   scroll-behavior: auto !important;
 }
+
+/* ── Messagerie communautaire — scroll initial & popovers ancrés ── */
+.msg-scroll-target {
+  scroll-initial-target: nearest;
+}
+
+.msg-reaction-tray {
+  transform-origin: bottom left;
+  animation: msg-tray-fade 140ms ease-out both;
+}
+
+/* Palette d'insertion d'émoticônes (grille horizontale compacte mobile & desktop) */
+.msg-emoji-popover {
+  container: emoji-picker / inline-size;
+  max-block-size: min(14.5rem, 45dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-shadow: 0 12px 32px -6px rgba(15, 23, 42, 0.16), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+  animation: msg-tray-fade 130ms ease-out both;
+}
+
+.msg-emoji-popover--floating {
+  inline-size: min(22rem, calc(100dvw - 2.5rem));
+}
+
+.msg-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.25rem;
+  place-items: center;
+}
+
+@container emoji-picker (inline-size >= 20rem) {
+  .msg-emoji-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+
+.msg-emoji-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 100%;
+  min-block-size: 2.375rem;
+  border-radius: 0.75rem;
+  font-size: 1.35rem;
+  line-height: 1;
+  user-select: none;
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+
+@media (pointer: coarse) {
+  .msg-emoji-btn {
+    min-block-size: 2.75rem;
+    font-size: 1.45rem;
+  }
+}
+
+.msg-emoji-btn:hover {
+  background-color: rgba(255, 107, 53, 0.12);
+  transform: scale(1.15);
+}
+
+.msg-emoji-btn:active {
+  background-color: rgba(255, 107, 53, 0.2);
+  transform: scale(0.92);
+}
+
+.dark .msg-emoji-btn:hover {
+  background-color: rgba(255, 107, 53, 0.22);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .msg-reaction-tray {
+    animation:
+      msg-tray-grow 280ms linear(0, 0.45 15%, 1.08 35%, 0.97 55%, 1.01 75%, 1) both,
+      msg-tray-fade 140ms ease-out both;
+  }
+}
+
+@keyframes msg-tray-grow {
+  from {
+    scale: 0.86;
+  }
+}
+
+@keyframes msg-tray-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@supports (position-area: block-end) {
+  [popover].msg-anchored-popover {
+    inset: auto;
+    margin: 0;
+    margin-block-start: 0.375rem;
+    position-area: block-end span-inline-start;
+    position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+  }
+}
+
+@supports not (position-area: block-end) {
+  [popover].msg-anchored-popover {
+    position: fixed;
+    inset: auto 0 0 0;
+    width: auto;
+    margin: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}
+
+/* ── Cases à cocher Notifications (accessibles, contraste ≥ 3:1, Safari/Android safe) ── */
+.winelio-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-block-size: 44px;
+  cursor: pointer;
+}
+
+.winelio-checkbox {
+  --checkbox-size: 1.25em;
+  --checkbox-icon-size: 0.72em;
+  --checkbox-check-svg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'></polyline></svg>");
+
+  appearance: none;
+  flex-shrink: 0;
+  display: inline-grid;
+  place-content: center;
+  inline-size: var(--checkbox-size);
+  aspect-ratio: 1;
+  margin-block-start: 0.15rem;
+  border: 2px solid #636e72;
+  border-radius: 0.35rem;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+.dark .winelio-checkbox {
+  border-color: #94a3b8;
+  background-color: #0f172a;
+}
+
+.winelio-checkbox::before {
+  content: "";
+  inline-size: var(--checkbox-icon-size);
+  aspect-ratio: 1;
+  background-color: #ffffff;
+  mask: var(--checkbox-check-svg) no-repeat center / contain;
+  scale: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .winelio-checkbox::before {
+    transition: scale 150ms ease;
+  }
+}
+
+@media (forced-colors: active) {
+  .winelio-checkbox::before {
+    background-color: CanvasText;
+  }
+}
+
+.winelio-checkbox:checked {
+  background-color: #d94e1f;
+  border-color: #d94e1f;
+}
+
+.winelio-checkbox:checked::before {
+  scale: 1;
+}
+
+.winelio-checkbox:focus-visible {
+  outline: 2px solid CanvasText;
+  outline-offset: 2px;
+}
+
+.winelio-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

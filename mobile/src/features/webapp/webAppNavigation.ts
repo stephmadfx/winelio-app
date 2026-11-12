@@ -46,7 +46,7 @@ export const isExternalProtocol = (url: string) => /^(mailto:|tel:|sms:|maps:)/i
 
 // Chemins ouverts dans l'app via liens universels / App Links (garder aligné avec
 // public/.well-known/apple-app-site-association et l'intent-filter Android).
-const APP_LINK_PATH = /^\/(network|dashboard|wallet)(\/|$)/;
+const APP_LINK_PATH = /^\/(network|dashboard|wallet|messages)(\/|$)/;
 
 export const appLinkEntryUrl = (value: string): string | null => {
   try {
@@ -57,3 +57,26 @@ export const appLinkEntryUrl = (value: string): string | null => {
     return null;
   }
 };
+
+/**
+ * Valide la destination interne reçue dans le payload d'une notification Push.
+ */
+export const resolveNotificationTargetUrl = (rawTarget: unknown): string | null => {
+  if (typeof rawTarget !== "string") return null;
+  const trimmed = rawTarget.trim();
+  if (!trimmed) return null;
+
+  try {
+    const candidate = trimmed.startsWith("/")
+      ? new URL(trimmed, webAppOrigin)
+      : new URL(trimmed);
+    if (candidate.origin !== new URL(webAppOrigin).origin) return null;
+    return candidate.toString();
+  } catch {
+    return null;
+  }
+};
+
+// Liens que l'app doit confier à la WebView (invitation winelio:// ou lien universel du site) :
+// sans cela, expo-router les envoie vers les écrans natifs provisoires de app/(tabs).
+export const isWebAppEntryPath = (path: string) => /^winelio:\/\/invite(?:[/?]|$)/i.test(path) || appLinkEntryUrl(path) !== null;

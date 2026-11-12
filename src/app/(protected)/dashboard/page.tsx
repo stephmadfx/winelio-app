@@ -1,4 +1,4 @@
-import { getNetworkScope, scopeNetworkProfiles, scopeNetworkData } from "@/lib/network-visibility";
+import { getNetworkScope, scopeNetworkProfiles } from "@/lib/network-visibility";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
@@ -8,9 +8,8 @@ import { DashboardTour } from "@/components/dashboard-tour";
 import { Card, CardContent } from "@/components/ui/card";
 import { MonthlyBarChart } from "@/components/monthly-bar-chart";
 import { AnimatedCounter } from "@/components/animated-counter";
-import { getNationalFeed } from "@/lib/national-feed";
 import { NetworkDigest } from "@/components/network-digest";
-import { ActivityFeed } from "@/components/activity-feed";
+import { DashboardCommunityFeed } from "@/components/messaging/DashboardCommunityFeed";
 import { NetworkPodiumCarousel } from "@/components/network-podium-carousel";
 import {
   fetchTopSponsors,
@@ -84,7 +83,6 @@ export default async function DashboardPage() {
 
   const scope = await getNetworkScope(supabase, user.id);
 
-  const isSuperAdmin = user.app_metadata?.role === "super_admin";
   // Visite guidée : uniquement après que le profil soit complet (l'onboarding réel
   // se fait via /profile + ProfileIncompleteModal, et le WelcomeModal s'affiche
   // depuis ProfileForm à la première complétion)
@@ -106,9 +104,6 @@ export default async function DashboardPage() {
     .eq("sponsor_id", user.id)
     .limit(3), scope);
 
-  let feedError = false;
-  const topEvents = await getNationalFeed(supabase).catch(() => { feedError = true; return []; });
-
   // Podium des bâtisseurs réseau (mois en cours, top 3)
   const periodStart = startOfCurrentMonthUTC();
   const monthLabel = periodStart.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
@@ -122,7 +117,6 @@ export default async function DashboardPage() {
     fetchMyPosition(supabase, user.id, "n1_total", allTime),
   ]);
 
-  const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   const totalEarned = wallet?.total_earned ?? 0;
   const availableBalance = wallet?.available ?? 0;
   const successRate =
@@ -172,7 +166,7 @@ export default async function DashboardPage() {
         </div>
 
         <section>
-          <ActivityFeed initialError={feedError} initialEvents={topEvents} initialNow={now.toISOString()} demoMode={demoMode} viewport="mobile" />
+          <DashboardCommunityFeed viewport="mobile" />
         </section>
 
         <div className="space-y-2">
@@ -287,9 +281,9 @@ export default async function DashboardPage() {
           />
         </section>
 
-        {/* Activité récente — pleine largeur */}
+        {/* Communauté Winelio — pleine largeur (remplace "Ça bouge sur Winelio") */}
         <section>
-          <ActivityFeed initialError={feedError} initialEvents={topEvents} initialNow={now.toISOString()} demoMode={demoMode} viewport="desktop" />
+          <DashboardCommunityFeed viewport="desktop" />
         </section>
 
         {/* Grille 7/5 */}

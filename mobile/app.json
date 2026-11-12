@@ -2,7 +2,7 @@
   "expo": {
     "name": "Winelio",
     "slug": "winelio",
-    "version": "1.0.2",
+    "version": "1.0.5",
     "icon": "./assets/images/icon.png",
     "orientation": "portrait",
     "scheme": "winelio",
@@ -17,9 +17,15 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Winelio utilise l’appareil photo pour joindre une image ou mettre à jour votre profil.",
         "NSPhotoLibraryUsageDescription": "Winelio accède à vos photos uniquement lorsque vous choisissez une image à joindre.",
-        "NSLocationWhenInUseUsageDescription": "Winelio utilise votre position pour proposer les professionnels pertinents autour de vous."
+        "NSLocationWhenInUseUsageDescription": "Winelio utilise votre position pour proposer les professionnels pertinents autour de vous.",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       },
-      "buildNumber": "9",
+      "entitlements": {
+        "aps-environment": "production"
+      },
+      "buildNumber": "12",
       "associatedDomains": [
         "applinks:winelio.app"
       ],
@@ -27,10 +33,12 @@
     },
     "android": {
       "package": "app.winelio.mobile",
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "CAMERA",
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "POST_NOTIFICATIONS"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -38,7 +46,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": true,
-      "versionCode": 14,
+      "versionCode": 16,
       "intentFilters": [
         {
           "action": "VIEW",
@@ -58,6 +66,11 @@
               "scheme": "https",
               "host": "winelio.app",
               "pathPrefix": "/wallet"
+            },
+            {
+              "scheme": "https",
+              "host": "winelio.app",
+              "pathPrefix": "/messages"
             }
           ],
           "category": [
@@ -75,6 +88,13 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/adaptive-icon.png",
+          "color": "#FF6B35"
+        }
+      ],
       [
         "expo-splash-screen",
         {

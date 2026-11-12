@@ -22,10 +22,16 @@ export default async function AdminLayout({
     .select("id, title, status")
     .order("created_at", { ascending: true });
 
-  const { count: openBugCount } = await supabaseAdmin
-    .from("bug_reports")
-    .select("id", { count: "exact", head: true })
-    .neq("tracking_status", "done");
+  const [{ count: openBugCount }, { count: openReportCount }] = await Promise.all([
+    supabaseAdmin
+      .from("bug_reports")
+      .select("id", { count: "exact", head: true })
+      .neq("tracking_status", "done"),
+    supabaseAdmin
+      .from("messaging_reports")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+  ]);
 
   const { data: profile } = await supabaseAdmin
     .from("profiles")
@@ -40,6 +46,7 @@ export default async function AdminLayout({
       userEmail={user.email ?? ""}
       documents={documents ?? []}
       bugCount={openBugCount ?? 0}
+      messagingReportCount={openReportCount ?? 0}
       bugDeleteAllowed={bugDeleteAllowed}
     >
       {children}
