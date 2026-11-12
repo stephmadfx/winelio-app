@@ -23,7 +23,11 @@ import {
   uploadMessagingPhoto,
   type UploadedMessagingAttachment,
 } from "./image-upload-client";
-import { notifyMessagingSync } from "./use-messaging-unread";
+import {
+  ensureCommunityPresence,
+  notifyMessagingSync,
+  useCommunityOnlineCount,
+} from "./use-messaging-unread";
 
 const MESSENGER_EMOJIS = ["👍", "❤️", "😂", "😮", "👏", "🔥"] as const;
 
@@ -172,6 +176,23 @@ type MessageItem = {
   reactions: { emoji: string; count: number; reacted: boolean }[];
   myReaction?: string | null;
   totalReactions?: number;
+  reactorPreview?: string[];
+};
+
+type ReactorItem = {
+  userId: string;
+  displayName: string;
+  avatar: string | null;
+  badge: string;
+  emoji: string;
+  isViewer: boolean;
+  createdAt: string;
+};
+
+type ReactionsDetailState = {
+  total: number;
+  counts: { emoji: string; count: number }[];
+  reactors: ReactorItem[];
 };
 
 type PreferencesState = {
@@ -285,13 +306,32 @@ function applyOptimisticSingleReaction(msg: MessageItem, clickedEmoji: string): 
 
   const nextReactions = Array.from(map.values()).sort((a, b) => b.count - a.count);
   const nextTotal = nextReactions.reduce((acc, item) => acc + item.count, 0);
+  const otherNames = (msg.reactorPreview ?? []).filter((n) => n !== "Vous");
+  const nextPreview = nextMyReaction
+    ? ["Vous", ...otherNames].slice(0, 3)
+    : otherNames.slice(0, 3);
 
   return {
     ...msg,
     reactions: nextReactions,
     myReaction: nextMyReaction,
     totalReactions: nextTotal,
+    reactorPreview: nextPreview,
   };
+}
+
+function formatReactionSummaryText(msg: MessageItem, total: number, compact: boolean): string {
+  if (compact || total <= 0) return String(total);
+  const names = (msg.reactorPreview ?? []).filter(Boolean);
+  if (names.length === 0) return String(total);
+  if (total === 1) return names[0];
+  if (total === 2) {
+    return names.length >= 2 ? `${names[0]} et ${names[1]}` : `${names[0]} et 1 autre`;
+  }
+  const shown = names.slice(0, 2);
+  const remaining = total - shown.length;
+  if (remaining <= 0) return shown.join(", ");
+  return `${shown.join(", ")} et ${remaining} autre${remaining > 1 ? "s" : ""}`;
 }
 
 export interface MessagingWorkspaceProps {
@@ -311,6 +351,7 @@ export function MessagingWorkspace({
   const reportDetailsId = `msg-report-details-${instanceId}`;
 
   const isDashboard = variant === "dashboard";
+  const onlineCount = useCommunityOnlineCount();
 
   const [loadingChannels, setLoadingChannels] = useState(true);
   const [eligible, setEligible] = useState(true);
@@ -387,6 +428,13 @@ export function MessagingWorkspace({
   const [submittingReport, setSubmittingReport] = useState(false);
   const [toastBanner, setToastBanner] = useState("");
 
+  // Modale « Qui a réagi » style Facebook / Messenger
+  const [reactionsModalTarget, setReactionsModalTarget] = useState<MessageItem | null>(null);
+  const [reactionsDetail, setReactionsDetail] = useState<ReactionsDetailState | null>(null);
+  const [loadingReactionsDetail, setLoadingReactionsDetail] = useState(false);
+  const [activeReactionTab, setActiveReactionTab] = useState<string>("all");
+  const reactionTabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const replyInputRef = useRef<HTMLInputElement | null>(null);
   const composerTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -440,6 +488,7 @@ export function MessagingWorkspace({
       if (!res.ok) return;
       const data = (await res.json()) as {
         eligible: boolean;
+        currentUserId?: string;
         groupsEnabled?: boolean;
         isSuperAdmin?: boolean;
         pendingReportCount?: number;
@@ -447,6 +496,9 @@ export function MessagingWorkspace({
         preferences: PreferencesState | null;
       };
       setEligible(data.eligible);
+      if (data.eligible && data.currentUserId) {
+        ensureCommunityPresence(data.currentUserId);
+      }
       setGroupsEnabled(Boolean(data.groupsEnabled));
       const superAdminFlag = Boolean(data.isSuperAdmin);
       setIsSuperAdmin(superAdminFlag);
@@ -863,6 +915,77 @@ export function MessagingWorkspace({
     }
   }
 
+  async function openReactionsModal(msg: MessageItem, initialTab = "all") {
+    setOpenReactionForId(null);
+    setOpenMenuForId(null);
+    setReactionsModalTarget(msg);
+    setActiveReactionTab(initialTab);
+    setReactionsDetail(null);
+    setLoadingReactionsDetail(true);
+
+    try {
+      const res = await fetch(`/api/messaging/messages/${msg.id}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as ReactionsDetailState;
+      setReactionsDetail(data);
+    } finally {
+      setLoadingReactionsDetail(false);
+    }
+  }
+
+  async function handleRemoveOwnReactionFromModal(emoji: string) {
+    if (!reactionsModalTarget) return;
+    const targetMsg = reactionsModalTarget;
+
+    // Mise à jour optimiste immédiate dans la modale
+    setReactionsDetail((prev) => {
+      if (!prev) return prev;
+      const nextReactors = prev.reactors.filter((r) => !r.isViewer);
+      const nextCounts = prev.counts
+        .map((c) => (c.emoji === emoji ? { ...c, count: c.count - 1 } : c))
+        .filter((c) => c.count > 0);
+      if (nextReactors.length === 0) {
+        setReactionsModalTarget(null);
+      } else if (
+        activeReactionTab !== "all" &&
+        !nextCounts.some((c) => c.emoji === activeReactionTab)
+      ) {
+        setActiveReactionTab("all");
+      }
+      return {
+        total: nextReactors.length,
+        counts: nextCounts,
+        reactors: nextReactors,
+      };
+    });
+
+    await handleSetReaction(targetMsg, emoji);
+  }
+
+  function handleReactionTabKeyDown(
+    e: React.KeyboardEvent<HTMLDivElement>,
+    tabKeys: string[],
+  ) {
+    if (tabKeys.length <= 1) return;
+    const idx = Math.max(0, tabKeys.indexOf(activeReactionTab));
+    let nextIdx: number | null = null;
+
+    if (e.key === "ArrowRight") nextIdx = (idx + 1) % tabKeys.length;
+    else if (e.key === "ArrowLeft") nextIdx = (idx - 1 + tabKeys.length) % tabKeys.length;
+    else if (e.key === "Home") nextIdx = 0;
+    else if (e.key === "End") nextIdx = tabKeys.length - 1;
+
+    if (nextIdx === null) return;
+    e.preventDefault();
+    const nextKey = tabKeys[nextIdx];
+    setActiveReactionTab(nextKey);
+    const btn = reactionTabRefs.current[nextKey];
+    btn?.focus();
+    btn?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+
   async function handleTogglePin(msg: MessageItem) {
     setOpenMenuForId(null);
     const res = await fetch(`/api/messaging/messages/${msg.id}`, {
@@ -1245,29 +1368,43 @@ export function MessagingWorkspace({
           </div>
         </div>
 
-        {/* Compteur groupé style Messenger (bulles d'emojis empilées + total) */}
-        {total > 0 && (
-          <button
-            type="button"
-            onClick={() =>
-              setOpenReactionForId((prev) => (prev === msg.id ? null : msg.id))
-            }
-            aria-label={`${total} réaction${total > 1 ? "s" : ""}`}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100/90 hover:bg-gray-200/70 text-xs font-semibold text-winelio-dark transition"
-          >
-            <span className="inline-flex items-center -space-x-1" aria-hidden="true">
-              {msg.reactions.slice(0, 3).map((r) => (
-                <span
-                  key={r.emoji}
-                  className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white ring-1 ring-gray-100 text-[11px]"
-                >
-                  {r.emoji}
-                </span>
-              ))}
-            </span>
-            <span className="tabular-nums">{total}</span>
-          </button>
-        )}
+        {/* Pilule « Voir qui a réagi » style Facebook / Messenger (emojis empilés + noms + clic détail) */}
+        {total > 0 && (() => {
+          const summaryLabel = formatReactionSummaryText(msg, total, compact);
+          return (
+            <button
+              type="button"
+              onClick={() => void openReactionsModal(msg)}
+              title={`${summaryLabel} — Cliquez pour voir qui a réagi`}
+              aria-label={`Voir qui a réagi (${total} réaction${total > 1 ? "s" : ""} : ${summaryLabel})`}
+              className={`group/reactpill inline-flex items-center gap-1.5 rounded-full border border-gray-200/85 bg-gray-50/95 hover:border-winelio-orange/35 hover:bg-orange-50/60 dark:bg-slate-800/80 dark:border-slate-700 text-xs font-medium text-winelio-dark dark:text-slate-100 shadow-2xs transition cursor-pointer ${
+                compact ? "px-2 py-0.5" : "px-2.5 py-1 min-h-8"
+              }`}
+            >
+              <span className="inline-flex items-center -space-x-1 shrink-0" aria-hidden="true">
+                {msg.reactions.slice(0, 3).map((r) => (
+                  <span
+                    key={r.emoji}
+                    className={`inline-flex items-center justify-center rounded-full bg-white dark:bg-slate-900 ring-1 ring-gray-200/90 dark:ring-slate-700 shadow-2xs ${
+                      compact ? "w-4 h-4 text-[10px]" : "w-4.5 h-4.5 text-[11px]"
+                    }`}
+                  >
+                    {r.emoji}
+                  </span>
+                ))}
+              </span>
+              <span
+                className={`truncate group-hover/reactpill:text-winelio-orange group-hover/reactpill:underline underline-offset-2 ${
+                  compact
+                    ? "tabular-nums font-semibold"
+                    : "max-w-[205px] sm:max-w-[300px]"
+                }`}
+              >
+                {summaryLabel}
+              </span>
+            </button>
+          );
+        })()}
       </div>
     );
   }
@@ -1485,9 +1622,28 @@ export function MessagingWorkspace({
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-winelio-gray truncate">
-                      {activeChannel.memberCount} membre{activeChannel.memberCount > 1 ? "s" : ""} · Messages du réseau, annonces officielles & nouveaux inscrits
-                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-winelio-gray">
+                      {activeChannel.kind === "announcements" && onlineCount > 0 && (
+                        <span
+                          aria-live="polite"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/85 text-emerald-700 dark:bg-emerald-950/45 dark:border-emerald-800/80 dark:text-emerald-300 text-[11px] font-semibold shrink-0"
+                        >
+                          <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
+                            <span className="animate-ping motion-reduce:animate-none absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                          </span>
+                          <span className="tabular-nums">
+                            {onlineCount} {onlineCount > 1 ? "personnes en ligne" : "personne en ligne"}
+                          </span>
+                        </span>
+                      )}
+                      <span>
+                        {activeChannel.memberCount} membre{activeChannel.memberCount > 1 ? "s" : ""}
+                        <span className="hidden sm:inline">
+                          {" "}· Messages du réseau, annonces officielles & nouveaux inscrits
+                        </span>
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -2526,6 +2682,227 @@ export function MessagingWorkspace({
               {acceptingCharter ? "Validation…" : "J’accepte la charte et je participe"}
             </button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog : Qui a réagi (style Facebook / Messenger avec onglets par émotion) ── */}
+      <Dialog
+        open={Boolean(reactionsModalTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setReactionsModalTarget(null);
+            setReactionsDetail(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md rounded-2xl p-0 gap-0 overflow-hidden">
+          {(() => {
+            const countsSource =
+              reactionsDetail?.counts ??
+              (reactionsModalTarget?.reactions.map((r) => ({
+                emoji: r.emoji,
+                count: r.count,
+              })) ??
+                []);
+            const totalCount =
+              reactionsDetail?.total ??
+              reactionsModalTarget?.totalReactions ??
+              countsSource.reduce((acc, c) => acc + c.count, 0);
+            const tabItems = [
+              { key: "all", emoji: null as string | null, label: "Tout", count: totalCount },
+              ...countsSource.map((c) => ({
+                key: c.emoji,
+                emoji: c.emoji,
+                label: REACTION_META[c.emoji]?.label ?? c.emoji,
+                count: c.count,
+              })),
+            ];
+            const tabKeys = tabItems.map((t) => t.key);
+            const effectiveTab = tabKeys.includes(activeReactionTab) ? activeReactionTab : "all";
+
+            return (
+              <>
+                <DialogHeader className="px-5 pt-4 pb-3 bg-gradient-to-b from-orange-50/45 to-transparent dark:from-slate-800/50">
+                  <div className="flex items-center gap-2 pr-7">
+                    <span className="inline-flex items-center -space-x-1" aria-hidden="true">
+                      {countsSource.slice(0, 3).map((c) => (
+                        <span
+                          key={c.emoji}
+                          className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-slate-900 ring-2 ring-white dark:ring-slate-900 shadow-xs text-sm"
+                        >
+                          {c.emoji}
+                        </span>
+                      ))}
+                    </span>
+                    <DialogTitle className="text-base font-bold text-winelio-dark dark:text-white">
+                      Réactions
+                    </DialogTitle>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-orange-100/90 text-winelio-orange tabular-nums">
+                      {totalCount}
+                    </span>
+                  </div>
+                  <DialogDescription className="text-xs text-winelio-gray truncate">
+                    {reactionsModalTarget?.messageType === "welcome"
+                      ? `Mot de bienvenue · ${reactionsModalTarget.author.displayName}`
+                      : `Publication de ${reactionsModalTarget?.author.displayName ?? "Membre"}`}
+                  </DialogDescription>
+                </DialogHeader>
+
+                {/* Barre d'onglets par émotion (tablist accessible, sélection au focus clavier) */}
+                <div
+                  role="tablist"
+                  aria-label="Filtrer les membres par réaction"
+                  onKeyDown={(e) => handleReactionTabKeyDown(e, tabKeys)}
+                  className="msg-reactions-tablist px-3 border-b border-gray-100 dark:border-slate-800"
+                >
+                  {tabItems.map((t) => {
+                    const selected = effectiveTab === t.key;
+                    const tabDomId = `react-tab-${instanceId}-${
+                      t.key === "all" ? "all" : encodeURIComponent(t.key)
+                    }`;
+                    return (
+                      <button
+                        key={t.key}
+                        ref={(el) => {
+                          reactionTabRefs.current[t.key] = el;
+                        }}
+                        id={tabDomId}
+                        type="button"
+                        role="tab"
+                        aria-selected={selected}
+                        tabIndex={selected ? 0 : -1}
+                        onClick={() => setActiveReactionTab(t.key)}
+                        className="msg-reactions-tab focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-winelio-orange"
+                      >
+                        {t.emoji && (
+                          <span aria-hidden="true" className="text-sm leading-none">
+                            {t.emoji}
+                          </span>
+                        )}
+                        <span>{t.label}</span>
+                        <span className="tabular-nums text-[11px] opacity-75">{t.count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Panneaux de liste des membres ayant réagi */}
+                {tabItems.map((t) => {
+                  const selected = effectiveTab === t.key;
+                  const tabDomId = `react-tab-${instanceId}-${
+                    t.key === "all" ? "all" : encodeURIComponent(t.key)
+                  }`;
+                  const filteredReactors = (reactionsDetail?.reactors ?? []).filter((r) =>
+                    t.key === "all" ? true : r.emoji === t.key,
+                  );
+
+                  return (
+                    <div
+                      key={t.key}
+                      role="tabpanel"
+                      aria-labelledby={tabDomId}
+                      hidden={!selected}
+                      tabIndex={selected ? 0 : undefined}
+                      className="outline-none"
+                    >
+                      <div className="max-h-[56dvh] overflow-y-auto overscroll-contain px-2.5 py-2">
+                        {loadingReactionsDetail && !reactionsDetail ? (
+                          <div className="space-y-1.5 py-1" aria-live="polite">
+                            {[0, 1, 2].map((idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center justify-between gap-3 px-2.5 py-2 rounded-xl animate-pulse"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-slate-800" />
+                                  <div className="space-y-1.5">
+                                    <div className="h-3.5 w-28 rounded bg-gray-200 dark:bg-slate-800" />
+                                    <div className="h-2.5 w-16 rounded bg-gray-100 dark:bg-slate-800/70" />
+                                  </div>
+                                </div>
+                                <div className="h-6 w-16 rounded-full bg-gray-100 dark:bg-slate-800" />
+                              </div>
+                            ))}
+                          </div>
+                        ) : filteredReactors.length === 0 ? (
+                          <p className="py-8 text-center text-xs text-winelio-gray">
+                            Aucune réaction dans cette catégorie pour le moment.
+                          </p>
+                        ) : (
+                          <ul className="divide-y divide-gray-100/80 dark:divide-slate-800/70">
+                            {filteredReactors.map((r) => {
+                              const meta = REACTION_META[r.emoji];
+                              return (
+                                <li
+                                  key={`${r.userId}-${r.emoji}`}
+                                  className="flex items-center justify-between gap-3 px-2.5 py-2.5 rounded-xl hover:bg-gray-50/90 dark:hover:bg-slate-800/50 transition"
+                                >
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    {/* Avatar + macaron d'émoticône en coin style Messenger / Facebook */}
+                                    <div className="relative shrink-0">
+                                      <ProfileAvatar
+                                        name={r.displayName}
+                                        avatar={r.avatar}
+                                        className="h-10 w-10"
+                                      />
+                                      <span
+                                        aria-hidden="true"
+                                        className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-white dark:bg-slate-900 ring-2 ring-white dark:ring-slate-900 shadow-xs flex items-center justify-center text-[11px] leading-none"
+                                      >
+                                        {r.emoji}
+                                      </span>
+                                    </div>
+
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-sm font-semibold text-winelio-dark dark:text-white truncate">
+                                          {r.displayName}
+                                        </span>
+                                        {r.isViewer && (
+                                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-winelio-orange">
+                                            Vous
+                                          </span>
+                                        )}
+                                        {renderRoleBadge(r.badge)}
+                                      </div>
+                                      <p className="text-[11px] text-winelio-gray">
+                                        {meta?.label ?? "Réaction"} · {formatShortTime(r.createdAt)}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {r.isViewer ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleRemoveOwnReactionFromModal(r.emoji)}
+                                      className="shrink-0 px-2.5 py-1 rounded-full border border-gray-200 dark:border-slate-700 text-[11px] font-semibold text-winelio-gray hover:text-red-600 hover:border-red-200 hover:bg-red-50/60 transition"
+                                      title="Retirer votre réaction"
+                                    >
+                                      Retirer
+                                    </button>
+                                  ) : (
+                                    <span
+                                      className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-semibold ${
+                                        meta?.activeClass ??
+                                        "bg-gray-50 text-winelio-dark border-gray-200"
+                                      }`}
+                                    >
+                                      <span aria-hidden="true">{r.emoji}</span>
+                                      <span>{meta?.label ?? "Réaction"}</span>
+                                    </span>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 

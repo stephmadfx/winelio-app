@@ -103,8 +103,9 @@ async function enrichMessages(
           }),
       supabaseAdmin
         .from("messaging_reactions")
-        .select("message_id, user_id, emoji")
-        .in("message_id", messageIds),
+        .select("message_id, user_id, emoji, created_at")
+        .in("message_id", messageIds)
+        .order("created_at", { ascending: false }),
       parentIds.length > 0
         ? supabaseAdmin
             .from("messaging_messages")
@@ -128,8 +129,13 @@ async function enrichMessages(
         : Promise.resolve({ data: [] as { message_id: string }[] }),
     ]);
 
-  const parentAuthorIds = Array.from(
-    new Set((parents ?? []).map((p) => p.author_id).filter((id): id is string => Boolean(id))),
+  const extraProfileIds = Array.from(
+    new Set(
+      [
+        ...(parents ?? []).map((p) => p.author_id),
+        ...(reactions ?? []).map((r) => r.user_id),
+      ].filter((id): id is string => Boolean(id)),
+    ),
   ).filter((id) => !authorIds.includes(id));
 
   let extraParentProfiles: {
@@ -140,11 +146,11 @@ async function enrichMessages(
     avatar_visible_to_network: boolean | null;
   }[] = [];
 
-  if (parentAuthorIds.length > 0) {
+  if (extraProfileIds.length > 0) {
     const { data } = await supabaseAdmin
       .from("profiles")
       .select("id, first_name, last_name, avatar, avatar_visible_to_network")
-      .in("id", parentAuthorIds);
+      .in("id", extraProfileIds);
     extraParentProfiles = data ?? [];
   }
 
@@ -167,13 +173,14 @@ async function enrichMessages(
       byEmoji: Map<string, { count: number; reacted: boolean }>;
       myReaction: AllowedEmoji | null;
       total: number;
+      otherUserIds: string[];
     }
   >();
 
   for (const r of reactions ?? []) {
     let bucket = reactionsByMsg.get(r.message_id);
     if (!bucket) {
-      bucket = { byEmoji: new Map(), myReaction: null, total: 0 };
+      bucket = { byEmoji: new Map(), myReaction: null, total: 0, otherUserIds: [] };
       reactionsByMsg.set(r.message_id, bucket);
     }
     const prev = bucket.byEmoji.get(r.emoji) ?? { count: 0, reacted: false };
@@ -184,6 +191,8 @@ async function enrichMessages(
       if (ALLOWED_EMOJIS.includes(r.emoji as AllowedEmoji)) {
         bucket.myReaction = r.emoji as AllowedEmoji;
       }
+    } else if (bucket.otherUserIds.length < 3 && !bucket.otherUserIds.includes(r.user_id)) {
+      bucket.otherUserIds.push(r.user_id);
     }
     bucket.byEmoji.set(r.emoji, prev);
   }
@@ -289,6 +298,15 @@ async function enrichMessages(
       reactions: reactionSummary,
       myReaction: isHidden ? null : reactionBucket?.myReaction ?? null,
       totalReactions: isHidden ? 0 : reactionBucket?.total ?? 0,
+      reactorPreview: isHidden
+        ? []
+        : [
+            ...(reactionBucket?.myReaction ? ["Vous"] : []),
+            ...(reactionBucket?.otherUserIds ?? []).map((uid) => {
+              const rp = profileMap.get(uid);
+              return formatMemberDisplayName(rp?.first_name, rp?.last_name);
+            }),
+          ].slice(0, 3),
     };
   });
 }

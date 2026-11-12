@@ -106,6 +106,7 @@ export async function GET(req: NextRequest) {
     if (summaryOnly) {
       return NextResponse.json({
         eligible: true,
+        currentUserId: actor.userId,
         unreadCount,
         inAppBadges: preferences.inAppBadges,
       });

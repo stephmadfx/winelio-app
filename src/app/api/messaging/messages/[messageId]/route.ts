@@ -5,6 +5,7 @@ import {
   ALLOWED_EMOJIS,
   broadcastChannelUpdate,
   EDIT_WINDOW_MS,
+  formatMemberDisplayName,
   getChannelAccess,
   getMessagingActor,
   logMessagingAudit,
@@ -12,12 +13,133 @@ import {
   MAX_PINS_PER_CHANNEL,
   MAX_TITLE_LENGTH,
   REPORT_REASONS,
+  resolveAuthorBadge,
+  sanitizeAuthorAvatar,
   type AllowedEmoji,
+  type MembershipRole,
   type ModerationState,
   type ReportReason,
 } from "@/lib/messaging";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ messageId: string }> },
+) {
+  try {
+    const { messageId } = await params;
+    if (!UUID_RE.test(messageId)) {
+      return NextResponse.json({ error: "Message invalide" }, { status: 400 });
+    }
+
+    const actor = await getMessagingActor();
+    if (!actor) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    }
+
+    const { data: msg } = await supabaseAdmin
+      .from("messaging_messages")
+      .select("id, channel_id, deleted_at, moderation_state")
+      .eq("id", messageId)
+      .maybeSingle();
+
+    if (!msg) {
+      return NextResponse.json({ error: "Message introuvable" }, { status: 404 });
+    }
+
+    const access = await getChannelAccess(actor, msg.channel_id);
+    if (!access) {
+      return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+    }
+
+    const currentModState = (msg.moderation_state || "active") as ModerationState;
+    if (msg.deleted_at || currentModState !== "active") {
+      return NextResponse.json({ total: 0, counts: [], reactors: [] });
+    }
+
+    const { data: rows } = await supabaseAdmin
+      .from("messaging_reactions")
+      .select("user_id, emoji, created_at")
+      .eq("message_id", messageId)
+      .order("created_at", { ascending: false });
+
+    const validRows = (rows ?? []).filter((r) =>
+      ALLOWED_EMOJIS.includes(r.emoji as AllowedEmoji),
+    );
+
+    if (validRows.length === 0) {
+      return NextResponse.json({ total: 0, counts: [], reactors: [] });
+    }
+
+    const userIds = Array.from(new Set(validRows.map((r) => r.user_id)));
+
+    const [{ data: profiles }, { data: memberships }] = await Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .select(
+          "id, first_name, last_name, avatar, avatar_visible_to_network, is_founder, is_professional",
+        )
+        .in("id", userIds),
+      supabaseAdmin
+        .from("messaging_memberships")
+        .select("user_id, role")
+        .eq("channel_id", msg.channel_id)
+        .in("user_id", userIds),
+    ]);
+
+    const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+    const roleMap = new Map(
+      (memberships ?? []).map((m) => [m.user_id, m.role as MembershipRole]),
+    );
+
+    const countByEmoji = new Map<AllowedEmoji, number>();
+    for (const r of validRows) {
+      const emoji = r.emoji as AllowedEmoji;
+      countByEmoji.set(emoji, (countByEmoji.get(emoji) ?? 0) + 1);
+    }
+
+    const counts = Array.from(countByEmoji.entries())
+      .map(([emoji, count]) => ({ emoji, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const reactors = validRows
+      .map((r) => {
+        const prof = profileMap.get(r.user_id);
+        const channelRole = roleMap.get(r.user_id) ?? null;
+        const isViewer = r.user_id === actor.userId;
+        return {
+          userId: r.user_id,
+          displayName: prof
+            ? formatMemberDisplayName(prof.first_name, prof.last_name)
+            : "Membre",
+          avatar: prof
+            ? sanitizeAuthorAvatar(prof.avatar, prof.avatar_visible_to_network)
+            : null,
+          badge: resolveAuthorBadge({
+            isSuperAdmin:
+              (isViewer && actor.isSuperAdmin) || channelRole === "moderator",
+            isFounder: Boolean(prof?.is_founder),
+            channelRole,
+            isProfessional: Boolean(prof?.is_professional),
+          }),
+          emoji: r.emoji as AllowedEmoji,
+          isViewer,
+          createdAt: r.created_at,
+        };
+      })
+      .sort((a, b) => Number(b.isViewer) - Number(a.isViewer));
+
+    return NextResponse.json({
+      total: reactors.length,
+      counts,
+      reactors,
+    });
+  } catch (err) {
+    console.error("[messaging/messages/id] GET reactions error:", err);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
+}
 
 async function refreshParentReplyCount(parentMessageId: string | null) {
   if (!parentMessageId) return;
