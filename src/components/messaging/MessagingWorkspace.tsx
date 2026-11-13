@@ -420,6 +420,7 @@ export function MessagingWorkspace({
   // Charte communautaire
   const [charterOpen, setCharterOpen] = useState(false);
   const [acceptingCharter, setAcceptingCharter] = useState(false);
+  const [charterError, setCharterError] = useState("");
 
   // Signalement non conforme (étudié par les 3 Super Admins)
   const [reportTarget, setReportTarget] = useState<MessageItem | null>(null);
@@ -726,25 +727,31 @@ export function MessagingWorkspace({
 
   async function handleAcceptCharter() {
     setAcceptingCharter(true);
+    setCharterError("");
     try {
       const res = await fetch("/api/messaging/preferences", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ acceptCharter: true }),
       });
-      if (res.ok) {
-        const nowIso = new Date().toISOString();
-        setPreferences((prev) =>
-          prev
-            ? { ...prev, charterAcceptedAt: nowIso }
-            : { inAppBadges: true, emailMajorAnnouncements: true, charterAcceptedAt: nowIso },
-        );
-        setCharterOpen(false);
-        if (pendingOpenComposerAfterCharter) {
-          setPendingOpenComposerAfterCharter(false);
-          setShowComposer(true);
-        }
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setCharterError(data.error || "Impossible de valider la charte. Réessayez.");
+        return;
       }
+      const nowIso = new Date().toISOString();
+      setPreferences((prev) =>
+        prev
+          ? { ...prev, charterAcceptedAt: nowIso }
+          : { inAppBadges: true, emailMajorAnnouncements: true, charterAcceptedAt: nowIso },
+      );
+      setCharterOpen(false);
+      if (pendingOpenComposerAfterCharter) {
+        setPendingOpenComposerAfterCharter(false);
+        setShowComposer(true);
+      }
+    } catch {
+      setCharterError("Connexion indisponible. Veuillez réessayer.");
     } finally {
       setAcceptingCharter(false);
     }
@@ -2672,6 +2679,11 @@ export function MessagingWorkspace({
               </span>
             </li>
           </ul>
+          {charterError && (
+            <p role="alert" className="text-xs font-medium text-red-600">
+              {charterError}
+            </p>
+          )}
           <DialogFooter>
             <button
               type="button"
