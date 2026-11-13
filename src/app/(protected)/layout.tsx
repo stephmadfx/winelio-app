@@ -14,6 +14,7 @@ import { isAtLeastAge } from "@/lib/age";
 import { ProfessionalPromptModal } from "@/components/professional-prompt-modal";
 import { ProfileGraceTimer } from "@/components/ProfileGraceTimer";
 import { PushDeviceBootstrap } from "@/components/messaging/push-client";
+import { NativeAppUpdateBanner } from "@/components/NativeAppUpdateBanner";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 const PRO_PROMPT_DELAY_ROLLOUT_AT = new Date("2026-06-03T20:40:00.000Z");
@@ -185,6 +186,7 @@ export default async function ProtectedLayout({
       <main
         className="relative z-10 pb-24 px-4 lg:pb-8 lg:ml-64 lg:px-8 pt-16 lg:pt-[5.5rem]"
       >
+        <NativeAppUpdateBanner />
         {children}
       </main>
     </div>

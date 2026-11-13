@@ -2,6 +2,7 @@ export type ReferralInvite = { code: string; professional: boolean; videoWatched
 
 export const APP_STORE_URL = "https://apps.apple.com/fr/app/winelio/id6792769653";
 export const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=app.winelio.mobile";
+export const LATEST_MOBILE_APP_VERSION = "1.0.5";
 
 export function referralFromParams(params: URLSearchParams): ReferralInvite | null {
   if (["ref", "type", "video"].some((key) => params.getAll(key).length > 1)) return null;

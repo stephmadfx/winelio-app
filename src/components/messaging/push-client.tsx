@@ -11,7 +11,7 @@ export type NativePushBridgeResult = {
 
 declare global {
   interface Window {
-    __WINELIO_NATIVE_APP__?: { platform: "ios" | "android" };
+    __WINELIO_NATIVE_APP__?: { platform: "ios" | "android"; version?: string };
     __WINELIO_REQUEST_PUSH_TOKEN__?: (prompt: boolean) => Promise<NativePushBridgeResult>;
   }
 }

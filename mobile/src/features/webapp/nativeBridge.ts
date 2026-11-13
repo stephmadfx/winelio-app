@@ -1,4 +1,7 @@
+import Constants from "expo-constants";
 import { Platform } from "react-native";
+
+const nativeAppVersion = Constants.expoConfig?.version ?? "";
 
 export type NativeBridgeMessage = {
   requestId?: string;
@@ -149,7 +152,7 @@ export const nativeBridgeScript = `
       });
     };
 
-    window.__WINELIO_NATIVE_APP__ = { platform: "${Platform.OS}" };
+    window.__WINELIO_NATIVE_APP__ = { platform: "${Platform.OS}", version: ${JSON.stringify(nativeAppVersion)} };
     window.dispatchEvent(new CustomEvent("winelio:native-ready"));
     return true;
   })();
