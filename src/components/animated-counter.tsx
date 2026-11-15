@@ -16,9 +16,17 @@ export function AnimatedCounter({
   delay?: number;
 }) {
   const [current, setCurrent] = useState(0);
+  const currentRef = useRef(0);
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
+    if (duration <= 0) {
+      currentRef.current = to;
+      setCurrent(to);
+      return;
+    }
+
+    const from = currentRef.current;
     const startAt = performance.now() + delay;
 
     const tick = (now: number) => {
@@ -30,11 +38,11 @@ export function AnimatedCounter({
       const progress = Math.min(elapsed / duration, 1);
       // ease-out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
-      setCurrent(eased * to);
+      const next = progress < 1 ? from + (to - from) * eased : to;
+      currentRef.current = next;
+      setCurrent(next);
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(tick);
-      } else {
-        setCurrent(to);
       }
     };
 

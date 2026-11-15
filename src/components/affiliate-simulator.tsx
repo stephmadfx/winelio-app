@@ -173,7 +173,6 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
           height: 8px;
           border-radius: 9999px;
           outline: none;
-          transition: background 0.15s ease-in-out;
         }
         .winelio-range-input::-webkit-slider-thumb {
           -webkit-appearance: none;
@@ -279,8 +278,8 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
                   Gain perso
                 </span>
               </div>
-              <span className="text-lg font-black text-winelio-orange">
-                <AnimatedCounter to={results.personalGain} suffix=" €" decimals={2} />
+              <span className="text-lg font-black text-winelio-orange tabular-nums">
+                <AnimatedCounter to={results.personalGain} suffix=" €" decimals={2} duration={0} />
               </span>
             </div>
           </div>
@@ -296,8 +295,8 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
                   Montant mensuel
                 </span>
               </div>
-              <span className="text-2xl sm:text-3xl font-black text-white">
-                <AnimatedCounter to={results.totalMonthly} suffix=" €" decimals={2} />
+              <span className="text-2xl sm:text-3xl font-black text-white tabular-nums">
+                <AnimatedCounter to={results.totalMonthly} suffix=" €" decimals={2} duration={0} />
               </span>
             </div>
           </div>
@@ -427,8 +426,8 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
                 Gain réseau
               </span>
             </div>
-            <span className="text-lg font-black text-winelio-orange">
-              <AnimatedCounter to={results.networkGain} suffix=" €" decimals={2} />
+            <span className="text-lg font-black text-winelio-orange tabular-nums">
+              <AnimatedCounter to={results.networkGain} suffix=" €" decimals={2} duration={0} />
             </span>
           </div>
         </div>
@@ -497,6 +496,11 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
             </div>
 
             {/* Total Downlines Summary */}
+            {level1 === 0 && (
+              <p className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/60 px-3 py-2 text-[11px] leading-snug text-amber-800 dark:text-amber-200">
+                Avec 0 filleul au niveau 1, les niveaux suivants ne peuvent pas être alimentés (gain réseau à 0 €).
+              </p>
+            )}
             <div className="border-t border-winelio-gray/10 dark:border-white/10 pt-3 mt-2">
               <div className="flex items-center justify-between text-xs text-winelio-gray dark:text-white/70">
                 <span>Total filleuls</span>
