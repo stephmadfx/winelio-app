@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { NewCompanyForm } from "@/components/new-company-form";
+import { CATEGORY_SELECT } from "@/components/category-options";
 
 export default async function NewCompanyPage() {
   const supabase = await createClient();
@@ -14,7 +15,7 @@ export default async function NewCompanyPage() {
 
   const { data: categories } = await supabase
     .from("categories")
-    .select("id, name")
+    .select(CATEGORY_SELECT)
     .order("name");
 
   return (

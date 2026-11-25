@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { CategoryOptions } from "@/components/category-options";
 import { verifySiren, isValidSirenOrSiret, type SirenVerification } from "@/lib/siren";
 import { checkNafCode, type NafCheckResult } from "@/lib/naf-rules";
 import { createCompany } from "@/lib/company-actions";
@@ -375,11 +376,7 @@ export function NewCompanyForm({
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white"
             >
               <option value="">Sélectionner une catégorie</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
+              <CategoryOptions categories={categories} />
             </select>
           </div>
 

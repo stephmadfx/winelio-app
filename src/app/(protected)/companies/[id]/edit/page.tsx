@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import { EditCompanyForm } from "@/components/edit-company-form";
+import { CATEGORY_SELECT } from "@/components/category-options";
 
 export default async function EditCompanyPage({
   params,
@@ -29,7 +30,7 @@ export default async function EditCompanyPage({
 
   const { data: categories } = await supabase
     .from("categories")
-    .select("id, name")
+    .select(CATEGORY_SELECT)
     .order("name");
 
   return (

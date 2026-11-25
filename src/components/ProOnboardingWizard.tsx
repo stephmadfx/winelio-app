@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { CategoryOptions } from "@/components/category-options";
 import dynamic from "next/dynamic";
 import { claimPath } from "@/lib/claim-path";
 import { completeProOnboarding } from "@/app/(protected)/profile/actions";
@@ -333,9 +334,7 @@ function Step2({
             className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-winelio-dark focus:outline-none focus:ring-2 focus:ring-winelio-orange/50 focus:border-winelio-orange bg-white"
           >
             <option value="">Sélectionner une catégorie…</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
+            <CategoryOptions categories={categories} />
           </select>
         </div>
         <div>

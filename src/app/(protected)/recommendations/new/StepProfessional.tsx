@@ -5,6 +5,7 @@ import { Professional, Category } from "./types";
 import { ProfessionalList } from "./ProfessionalList";
 import { GeoStatusBanner, GeoStatus } from "./GeoStatusBanner";
 import { fakeLastActive } from "@/lib/fake-last-active";
+import { CategoryOptions } from "@/components/category-options";
 
 interface StepProfessionalProps {
   userId: string | null;
@@ -206,7 +207,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
           disabled={!userLocation}
           className="rounded-xl border border-winelio-gray/20 px-4 py-3 text-sm text-winelio-dark focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15 bg-white cursor-pointer disabled:opacity-50 disabled:bg-gray-50">
           <option value="all">Toutes les catégories</option>
-          {categories.map((cat) => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
+          <CategoryOptions categories={categories} valueKey="name" />
         </select>
       </div>
 

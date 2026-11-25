@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { ProOnboardingWizard } from "@/components/ProOnboardingWizard";
 import { ProOnboardingVideoReplayButton } from "@/components/pro-onboarding-video";
+import { CATEGORY_SELECT } from "@/components/category-options";
 
 export default async function ProOnboardingPage({ searchParams }: { searchParams: Promise<{ returnTo?: string }> }) {
   const returnTo = claimPath((await searchParams).returnTo);
@@ -31,7 +32,7 @@ export default async function ProOnboardingPage({ searchParams }: { searchParams
   ] = await Promise.all([
     supabase
       .from("categories")
-      .select("id, name, is_hoguet")
+      .select(`${CATEGORY_SELECT}, is_hoguet`)
       .order("name"),
     supabase
       .from("companies")
