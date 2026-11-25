@@ -197,7 +197,7 @@ function LoginForm() {
     if (val.length === 5) {
       postalTimeoutRef.current = setTimeout(async () => {
         try {
-          const res = await fetch(`https://geo.api.gouv.fr/communes?codePostal=${val}&fields=nom&limit=8`);
+          const res = await fetch(`https://geo.api.gouv.fr/communes?codePostal=${val}&fields=nom`);
           const data: { nom: string }[] = await res.json();
           const cities = data.map((d) => d.nom);
           setCitySuggestions(cities);

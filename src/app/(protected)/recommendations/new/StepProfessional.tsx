@@ -128,8 +128,10 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
     const timer = setTimeout(async () => {
       setLocationLoading(true);
       try {
-        const params = new URLSearchParams({ fields: "nom,code,codesPostaux,departement,centre", limit: "10" });
-        params.set(/^\d{5}$/.test(query) ? "codePostal" : "nom", query);
+        // Un code postal peut couvrir une vingtaine de communes (40090 : 17) : toutes les afficher.
+        const isPostal = /^\d{5}$/.test(query);
+        const params = new URLSearchParams({ fields: "nom,code,codesPostaux,departement,centre" });
+        if (isPostal) params.set("codePostal", query); else { params.set("nom", query); params.set("limit", "10"); }
         const response = await fetch(`https://geo.api.gouv.fr/communes?${params}`, { signal: controller.signal });
         if (!response.ok) throw new Error();
         const data = await response.json();
@@ -179,7 +181,7 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
         <p id="professional-location-status" role="status" className="mt-1 text-xs text-winelio-gray">
           {locationLoading ? "Recherche des villes…" : locationError || (locationSelected ? `Recherche autour de ${selectedCommune}` : "Saisissez une ville ou un code postal, puis choisissez une proposition.")}
         </p>
-        {communes.length > 0 && <ul id="professional-location-results" aria-label="Villes proposées" className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-winelio-gray/20 bg-white">
+        {communes.length > 0 && <ul id="professional-location-results" aria-label="Villes proposées" className="mt-2 rounded-xl border border-winelio-gray/20 bg-white">
           {communes.map(commune => <li key={commune.code}>
             <button type="button" className="w-full px-4 py-3 text-left text-sm hover:bg-orange-50 focus:bg-orange-50 focus:outline-none"
               onClick={() => {
