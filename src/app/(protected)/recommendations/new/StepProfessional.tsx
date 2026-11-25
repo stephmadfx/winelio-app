@@ -138,6 +138,8 @@ export const StepProfessional = ({ userId, selectedProId, onSelect }: StepProfes
         if (!Array.isArray(data)) throw new Error();
         if (!controller.signal.aborted) {
           setCommunes(data.filter(c => c.centre?.coordinates?.length === 2));
+          // Code postal complet : fermer le clavier mobile, sinon il masque presque toute la liste.
+          if (isPostal) (document.getElementById("professional-location") as HTMLInputElement | null)?.blur();
           if (!data.some(c => c.centre?.coordinates?.length === 2)) setLocationError("Aucune ville trouvée. Vérifiez la saisie.");
         }
       } catch {
