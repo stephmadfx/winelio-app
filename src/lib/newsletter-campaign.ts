@@ -119,5 +119,5 @@ export const sendNewsletterTemplateCampaign = async ({
   }).eq("id", campaign.id);
 
   if (sent === 0) throw new Error(`Aucun email envoyé (${failed} échec${failed > 1 ? "s" : ""})`);
-  return { campaignId: campaign.id, sent, failed, suppressed, total: resolved.length, provider: "resend", subject: he(template.subject) };
+  return { campaignId: campaign.id, sent, failed, suppressed, total: resolved.length, provider: "ses", subject: he(template.subject) };
 };

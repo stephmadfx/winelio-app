@@ -17,7 +17,9 @@ export const transporter = nodemailer.createTransport({
   },
 });
 
-export const SMTP_FROM = `"${process.env.SMTP_SENDER_NAME || "Winelio"}" <${process.env.SMTP_USER || "support@winelio.app"}>`;
+// Avec SES, SMTP_USER est une clé d'accès, pas une adresse : l'expéditeur vient de SMTP_FROM_EMAIL.
+const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || "support@winelio.app";
+export const SMTP_FROM = `"${process.env.SMTP_SENDER_NAME || "Winelio"}" <${fromEmail}>`;
 
 export const SEND_TIMEOUT_MS = 10_000;
 

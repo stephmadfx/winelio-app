@@ -51,5 +51,5 @@ export async function sendTrackedNewsletterTest({ deliveries, userId, templateId
   }
   checked(await supabaseAdmin.from("newsletters").update({ status: sent ? "sent" : "failed", sent_at: new Date().toISOString(), sent_count: sent, failed_count: failed }).eq("id", campaignId));
   if (templateId) checked(await supabaseAdmin.from("newsletter_templates").update({ last_test_campaign_id: campaignId, ...(sent ? { test_sent_at: new Date().toISOString() } : {}) }).eq("id", templateId).eq("user_id", userId));
-  return { success: sent > 0, sent, failed, campaignId, messageIds, provider: "resend" };
+  return { success: sent > 0, sent, failed, campaignId, messageIds, provider: "ses" };
 }

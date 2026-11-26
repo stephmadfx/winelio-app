@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
-import nodemailer from "nodemailer";
+import { transporter, SMTP_FROM } from "@/lib/email-transporter";
 import { LOGO_IMG_HTML } from "@/lib/email-logo";
 
 export const dynamic = "force-dynamic";
@@ -100,16 +100,9 @@ export async function GET(req: Request) {
     const hasIssue = ghosts.length > 0 || missing.length > 0;
 
     if (hasIssue) {
-      const smtpPort = Number(process.env.SMTP_PORT) || 465;
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || "ssl0.ovh.net",
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: { user: process.env.SMTP_USER || "", pass: process.env.SMTP_PASS || "" },
-      });
       await transporter
         .sendMail({
-          from: `"${process.env.SMTP_SENDER_NAME || "Winelio"}" <${process.env.SMTP_USER || "support@winelio.app"}>`,
+          from: SMTP_FROM,
           to: process.env.AUTH_HEALTH_ALERT_EMAIL || "support@winelio.app",
           subject: `⚠️ Auth health — ${ghosts.length} fantôme(s), ${missing.length} sans profil`,
           html: buildAlertHtml(ghosts, missing),

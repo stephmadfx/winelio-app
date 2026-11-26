@@ -1,4 +1,4 @@
-import { SMTP_FROM } from "@/lib/email-transporter";
+import { transporter, SMTP_FROM } from "@/lib/email-transporter";
 
 type SendNewsletterEmailParams = {
   to: string;
@@ -10,44 +10,24 @@ type SendNewsletterEmailParams = {
   campaignId?: string;
 };
 
-type ResendResponse = { id?: string; message?: string; name?: string };
-
+/** Envoi newsletter via le SMTP Amazon SES (même transport que les mails transactionnels). */
 export const sendNewsletterEmail = async ({
   to, subject, html, text, test = false, headers, campaignId,
 }: SendNewsletterEmailParams) => {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) throw new Error("Resend n'est pas configuré pour Winelio");
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15_000);
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      signal: controller.signal,
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: process.env.RESEND_FROM?.trim() || SMTP_FROM,
-        to: [to],
-        subject: test ? `[TEST] ${subject || "Newsletter Winelio"}` : subject,
-        html,
-        text,
-        headers,
-        tags: campaignId ? [{ name: "campaign_id", value: campaignId }] : undefined,
-      }),
-    });
-    const payload = await res.json().catch(() => ({})) as ResendResponse;
-    if (!res.ok || !payload.id) {
-      throw new Error(`Resend ${res.status} : ${payload.message || payload.name || "envoi refusé"}`);
-    }
-    return { provider: "resend" as const, messageId: payload.id };
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("Resend n'a pas répondu dans le délai prévu");
-    }
-    throw error;
-  } finally {
-    clearTimeout(timeout);
-  }
+  const info = await transporter.sendMail({
+    from: SMTP_FROM,
+    to,
+    subject: test ? `[TEST] ${subject || "Newsletter Winelio"}` : subject,
+    html,
+    text,
+    headers: {
+      ...headers,
+      ...(campaignId ? { "X-SES-MESSAGE-TAGS": `campaign_id=${campaignId}` } : {}),
+    },
+  });
+  // SES répond « 250 Ok <message-id SES> » : c'est cet id qui sert aux rebonds/plaintes.
+  const sesId = info.response?.match(/^250 Ok (\S+)/)?.[1];
+  return { provider: "ses" as const, messageId: sesId ?? info.messageId };
 };
 
 export const sendNewsletterTestEmail = async ({ to, subject, html, preheader }: {
