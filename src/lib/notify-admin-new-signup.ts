@@ -134,5 +134,7 @@ export async function notifyAdminNewSignup(newUserId: string): Promise<void> {
     html,
     text,
     priority: 10,
+    // Plusieurs chemins (confirmation, mot de passe, profil) l'appellent : un seul mail par membre.
+    dedupeKey: `admin-new-signup-${profile.id}`,
   });
 }
