@@ -100,7 +100,7 @@ export function FollowupDoneConfirmation({
               Confirmez uniquement si les travaux sont terminés et si le règlement du client a réellement été encaissé.
             </p>
             <p className="rounded-xl border-l-4 border-winelio-orange bg-[#FFF5F0] p-4">
-              Après votre confirmation, Winelio débitera automatiquement la commission variable autorisée sur votre carte enregistrée : 10 % jusqu’à 25 000 € TTC, ou 5 % sur la totalité de l’affaire au-delà.
+              Après votre confirmation, Winelio débitera automatiquement la commission variable autorisée sur votre carte enregistrée : 10 % sur la part jusqu’à 25 000 € TTC, puis 5 % sur la seule part au-delà de 25 000 € TTC.
             </p>
             <p>
               Si la banque refuse le débit ou demande une authentification, un lien Stripe sécurisé sera immédiatement proposé et envoyé par email.

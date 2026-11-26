@@ -36,7 +36,10 @@ assert.match(STRIPE_OFF_SESSION_CONSENT_TEXT, /montant est variable/);
 assert.match(STRIPE_OFF_SESSION_CONSENT_TEXT, /avoir encaissé le règlement de mon client/);
 assert.match(STRIPE_OFF_SESSION_CONSENT_TEXT, /choisir une autre carte/);
 assert.deepEqual(calculateCommissionBaseAmount(25_000, validPlan), { rate: 10, amount: 2_500 });
-assert.deepEqual(calculateCommissionBaseAmount(25_000.01, validPlan), { rate: 5, amount: 1_250 });
-assert.deepEqual(calculateCommissionBaseAmount(30_000, validPlan), { rate: 5, amount: 1_500 });
+assert.deepEqual(calculateCommissionBaseAmount(24_000, validPlan), { rate: 10, amount: 2_400 });
+assert.deepEqual(calculateCommissionBaseAmount(30_000, validPlan), { rate: 9.17, amount: 2_750 });
+assert.deepEqual(calculateCommissionBaseAmount(100_000, validPlan), { rate: 6.25, amount: 6_250 });
+// La commission ne baisse jamais quand le montant monte (plus d'effet de seuil).
+assert.ok(calculateCommissionBaseAmount(25_100, validPlan).amount > calculateCommissionBaseAmount(25_000, validPlan).amount);
 
 console.log("automatic-commission-guards: OK");

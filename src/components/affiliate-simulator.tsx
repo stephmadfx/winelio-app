@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { User, Network, Trophy, TrendingUp } from "lucide-react";
 import { AnimatedCounter } from "@/components/animated-counter";
+import { calculateCommissionBaseAmount } from "@/lib/commission-rate";
 
 const F_FACTOR = 0.704; // Factor of downline deal activity/success to match illustration
 
@@ -57,18 +58,9 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
   // Calculations
   const results = useMemo(() => {
     // 1. Resolve commission rate for personal dealAmount
-    let personalCommRate = planBaseRate;
-    if (highAmountCommissionRate !== null && dealAmount > highAmountThreshold) {
-      personalCommRate = highAmountCommissionRate;
-    }
-    const personalBaseCommission = dealAmount * (personalCommRate / 100);
+    const ratePlan = { commission_rate: planBaseRate, high_amount_threshold: highAmountThreshold, high_amount_commission_rate: highAmountCommissionRate };
+    const personalBaseCommission = calculateCommissionBaseAmount(dealAmount, ratePlan).amount;
     const personalGain = personalBaseCommission * (planReferrerPct / 100);
-
-    // 2. Resolve commission rate for average network deal amount
-    let networkCommRate = planBaseRate;
-    if (highAmountCommissionRate !== null && avgDealAmount > highAmountThreshold) {
-      networkCommRate = highAmountCommissionRate;
-    }
 
     let networkGain = 0;
     let actL1 = 0, actL2 = 0, actL3 = 0, actL4 = 0, actL5 = 0;
@@ -77,7 +69,7 @@ export function AffiliateSimulator({ plan }: AffiliateSimulatorProps) {
     let totalActiveDownlines = 0;
 
     if (networkEnabled) {
-      const baseCommNetwork = avgDealAmount * (networkCommRate / 100);
+      const baseCommNetwork = calculateCommissionBaseAmount(avgDealAmount, ratePlan).amount;
       const paretoFactor = pareto / 100;
 
       // Active members calculation per level

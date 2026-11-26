@@ -1,6 +1,6 @@
 # Conditions Professionnels / CGV de commission d'intermédiation - Winelio
 
-Version publiee - 2026-09-03
+Version publiee - 2026-11-26
 
 ## 1. Objet
 
@@ -81,12 +81,16 @@ Si le Professionnel n'est pas assujetti a la TVA, la commission d'intermédiatio
 
 ### 6.3 Taux
 
-Le taux est determine pour chaque affaire prise individuellement :
+La commission est calculee pour chaque affaire prise individuellement, par tranches successives du montant TTC de l'affaire :
 
-- 10 % du montant TTC total de l'affaire lorsque celui-ci est inferieur ou egal a 25 000 euros TTC ;
-- 5 % du montant TTC total de l'affaire lorsque celui-ci est strictement superieur a 25 000 euros TTC.
+- 10 % sur la tranche du montant TTC comprise entre 0 et 25 000 euros TTC inclus ;
+- 5 % sur la seule tranche du montant TTC excedant 25 000 euros TTC.
 
-Le taux de 5 % s'applique donc a la totalite du montant TTC de l'affaire concernee, et non a la seule fraction depassant 25 000 euros TTC.
+Le taux de 5 % s'applique donc uniquement a la fraction du montant TTC depassant 25 000 euros TTC. La tranche jusqu'a 25 000 euros TTC reste toujours soumise au taux de 10 %.
+
+Exemple : pour une affaire de 30 000 euros TTC, la commission est de 10 % x 25 000 euros, soit 2 500 euros, plus 5 % x 5 000 euros, soit 250 euros, pour un total de 2 750 euros.
+
+Ce bareme s'applique a toute commission d'intermediation calculee a compter de l'entree en vigueur de la presente version.
 
 ### 6.4 Fait generateur
 
@@ -111,7 +115,7 @@ Winelio emet ou fait emettre une facture correspondant a la commission d'interm�
 
 Lorsqu'il enregistre sa carte et coche la case d'autorisation correspondante, le Professionnel autorise expressement Winelio a initier, sans nouvelle validation de sa part, un debit automatique par carte pour chaque commission d'intermediation devenue exigible.
 
-Le montant de chaque debit est variable. Il correspond au montant TTC de chaque affaire, multiplie par le taux applicable : 10 % lorsque le montant est inferieur ou egal a 25 000 euros TTC, ou 5 % sur la totalite du montant lorsque l'affaire depasse 25 000 euros TTC. Le fait generateur du debit est la declaration par le Professionnel, dans le workflow Winelio, qu'il a effectivement encaisse le paiement de son Client final.
+Le montant de chaque debit est variable. Il correspond au montant TTC de chaque affaire, calcule selon le bareme par tranches de l'article 6.3 : 10 % sur la tranche jusqu'a 25 000 euros TTC, puis 5 % sur la seule tranche excedant 25 000 euros TTC. Le fait generateur du debit est la declaration par le Professionnel, dans le workflow Winelio, qu'il a effectivement encaisse le paiement de son Client final.
 
 Aucun montant n'est debite lors du seul enregistrement de la carte. L'autorisation porte sur des paiements futurs ponctuels, lies aux recommandations effectivement abouties, et non sur un abonnement.
 

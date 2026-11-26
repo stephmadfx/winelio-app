@@ -12,7 +12,14 @@ const asFinitePositiveNumber = (value: unknown) => {
   return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : null;
 };
 
-export const resolveCommissionRateForAmount = (
+const round2 = (value: number) => Math.round(value * 100) / 100;
+
+/**
+ * Barème par tranches : taux de base jusqu'au seuil inclus, puis taux réduit
+ * sur la seule fraction au-delà du seuil. Ex. 30 000 € → 10 % × 25 000 + 5 % × 5 000.
+ * `rate` renvoyé = taux effectif sur la totalité (pour affichage et métadonnées).
+ */
+export const calculateCommissionBaseAmount = (
   dealAmount: number,
   plan?: CommissionRatePlan | null
 ) => {
@@ -21,24 +28,17 @@ export const resolveCommissionRateForAmount = (
   const threshold =
     asFinitePositiveNumber(plan?.high_amount_threshold) ??
     DEFAULT_HIGH_AMOUNT_THRESHOLD;
-  const highAmountRate = asFinitePositiveNumber(
-    plan?.high_amount_commission_rate
+  const highAmountRate =
+    asFinitePositiveNumber(plan?.high_amount_commission_rate) ?? baseRate;
+
+  const baseTranche = Math.min(dealAmount, threshold);
+  const upperTranche = Math.max(dealAmount - threshold, 0);
+  const amount = round2(
+    baseTranche * (baseRate / 100) + upperTranche * (highAmountRate / 100)
   );
 
-  if (dealAmount > threshold && highAmountRate) {
-    return highAmountRate;
-  }
-
-  return baseRate;
-};
-
-export const calculateCommissionBaseAmount = (
-  dealAmount: number,
-  plan?: CommissionRatePlan | null
-) => {
-  const rate = resolveCommissionRateForAmount(dealAmount, plan);
   return {
-    rate,
-    amount: Math.round(dealAmount * (rate / 100) * 100) / 100,
+    rate: dealAmount > 0 ? round2((amount / dealAmount) * 100) : baseRate,
+    amount,
   };
 };
