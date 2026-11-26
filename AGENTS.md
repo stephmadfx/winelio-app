@@ -10,7 +10,7 @@ Winelio (nom de marque) / Winelio (nom technique du repo) est une plateforme de 
 - **Base de données** : PostgreSQL via Supabase (self-hosted)
 - **Déploiement** : Coolify sur VPS Hostinger (31.97.152.195)
 - **Repo** : https://github.com/stephmadfx/winelio-app.git
-- **Branche de travail de référence** : `main` → https://winelio.app ; `dev2` → https://dev2.winelio.app reste en secours (consigne du 22 octobre 2026).
+- **Branche unique** : `main` → https://winelio.app. `dev2` est arrêtée depuis le 26 novembre 2026 (conteneur stoppé) : ne plus y pousser.
 
 ## Couleurs Winelio
 - Orange : #FF6B35 (`winelio-orange`)
@@ -213,8 +213,8 @@ Fichiers de reference dans `/doc/` :
 - Les operations financieres (retraits) passent par l'API Route serveur `/api/wallet/withdraw`
 - Les headers de securite sont configures dans `next.config.ts`
 - **Après chaque `git push`, relancer le serveur dev local** (voir commande ci-dessus)
-- **Règles de push (Prioritaire)** : Tous les pushs doivent être appliqués et envoyés de manière synchrone sur les branches `dev2` et `main`.
-- **Déploiement sur les deux environnements — règle absolue** : Toute demande de déploiement pour Winelio implique obligatoirement un déploiement sur les branches `dev2` et `main`, vers `https://dev2.winelio.app` et `https://winelio.app`. Ne jamais limiter un déploiement à un seul de ces environnements. Vérifier la réussite des deux déploiements avant de déclarer la livraison terminée. Si l'un échoue ou reste en attente, poursuivre le traitement et signaler explicitement son état ; un push réussi ne constitue pas une preuve de déploiement.
+- **Règles de push (Prioritaire, 26/11/2026)** : les pushs se font uniquement sur `main`.
+- **Déploiement** : uniquement `main` → https://winelio.app. Vérifier la réussite du déploiement Coolify avant de déclarer la livraison terminée ; un push réussi ne constitue pas une preuve de déploiement.
 
 ### Tailwind CSS v4 — IMPORTANT
 - **Ne jamais construire des classes dynamiques partielles** : Tailwind JIT scanne statiquement le code.

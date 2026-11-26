@@ -6,15 +6,15 @@ Winelio (nom de marque) / Winelio (nom technique du repo) est une plateforme de 
 ## Stack technique
 - **Frontend** : Next.js 15 (App Router, Server Components, React 19)
 - **Styling** : Tailwind CSS v4 avec @theme (couleurs dans src/app/globals.css)
-- **Auth** : Supabase Auth (code OTP à 6 chiffres envoyé par email SMTP o2switch)
+- **Auth** : Supabase Auth (code OTP à 6 chiffres envoyé par email via Amazon SES)
 - **Base de données** : PostgreSQL via Supabase (self-hosted VPS)
 - **Paiements** : Stripe (SetupIntent + webhooks pour les commissions pro)
 - **Stockage** : Cloudflare R2 (logos, avatars) + Supabase Storage (PDF signés)
 - **Déploiement** : Coolify sur VPS Hostinger (31.97.152.195)
 - **Repo** : https://github.com/stephmadfx/winelio-app.git
 - **Branche production** : `main` → déployée sur https://winelio.app (app Coolify UUID `e13u8cq02wlio12lfj7a165h`)
-- **Branche staging** : `dev2` → déployée sur https://dev2.winelio.app (app Coolify UUID `eo5jc02jc760apovne577bln`)
-- **Workflow** : développer sur `dev2`, puis `git push origin dev2:main --force` pour mettre en production
+- **Branche staging** : `dev2` **arrêtée le 2026-11-26** (conteneur Coolify `eo5jc02jc760apovne577bln` stoppé, auto-deploy coupé). Ne plus pousser sur `dev2`.
+- **Workflow** : travailler sur `main` et pousser uniquement sur `main` (`git push origin main`)
 
 ## Couleurs Winelio
 - Orange : #FF6B35 (`winelio-orange`)
@@ -148,7 +148,7 @@ sshpass -p '04660466aA@@@' ssh root@31.97.152.195 \
 - `NEXT_PUBLIC_DEMO_MODE` — `"true"` pour afficher le bandeau démo
 - `STAGING_AUTH_PASSWORD` — Mot de passe basique pour dev2.winelio.app
 
-**Email (SMTP o2switch)**
+**Email (Amazon SES eu-west-3, depuis le 2026-11-26)** — transactionnels ET newsletters passent par le SMTP SES (`email-smtp.eu-west-3.amazonaws.com:465`). `SMTP_USER` = clé SES (pas une adresse) ; l'expéditeur vient de `SMTP_FROM_EMAIL` (support@winelio.app). Domaine winelio.app vérifié (Easy DKIM, CNAME Cloudflare). Retour arrière : variables `OVH_SMTP_*` dans Coolify.
 - `SMTP_HOST`, `SMTP_PORT` (465 SSL), `SMTP_USER`, `SMTP_PASS`, `SMTP_SENDER_NAME`
 - `IMAP_HOST`, `IMAP_PORT`, `IMAP_USER`, `IMAP_PASS` — Polling réponses support
 
@@ -367,7 +367,7 @@ Une recommandation a toujours 3 personnes distinctes : le **recommandeur** (comp
 - **IP** : 31.97.152.195
 - **SSH** : root / 04660466aA@@@
 - **Coolify** : http://31.97.152.195:8000 (contact@aide-multimedia.fr / 04660466aA@@@)
-- **SMTP** : ssl0.ovh.net port **465 SSL** (support@winelio.app) — guillemets obligatoires si le mot de passe contient `#`
+- **SMTP** : Amazon SES (voir section Email). Ancien SMTP OVH ssl0.ovh.net conservé en secours (`OVH_SMTP_*` dans Coolify)
 
 ## Serveur de développement local
 - Port : **3002** fixe (`http://localhost:3002`) — défini via `--port 3002` dans `package.json`.
