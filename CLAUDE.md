@@ -407,6 +407,13 @@ Fichiers de référence dans `/doc/` :
 
 ## Règles
 
+### Boutons des newsletters = liens profonds (règle absolue et prioritaire, 2026-11-26)
+- Tout bouton ou lien d'une newsletter qui envoie vers l'espace Winelio doit être un **lien profond** qui ouvre l'application si elle est installée, et le site sinon.
+- Chemins qui ouvrent l'app (les seuls) : `https://winelio.app/dashboard`, `/network`, `/wallet`, `/messages`. Source : `public/.well-known/apple-app-site-association` et `mobile/app.json` (`intentFilters`), à garder alignés.
+- Jamais `https://winelio.app` seul (page d'accueil) ni un autre chemin pour un bouton « ouvrir mon espace / recommander » : ils ne s'ouvrent que dans le navigateur. Par défaut → `https://winelio.app/dashboard`.
+- Ces liens ne passent pas par le suivi des clics (`isAppDeepLink` dans `src/lib/newsletter-campaign.ts`), sinon la redirection empêche l'ouverture de l'app. Ne pas retirer cette exception.
+- Pour ajouter une page ouvrable dans l'app : l'ajouter aux deux fichiers ci-dessus **et** à `APP_DEEP_LINK_PATHS`.
+
 ### Général
 - Ne jamais commiter de credentials dans le code (utiliser les env vars Coolify)
 - Les `NEXT_PUBLIC_*` doivent être des "Build Variables" dans Coolify

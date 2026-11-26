@@ -7,11 +7,28 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://winelio.app").replace(/\/$/, "");
 
+// Chemins qui ouvrent l'application mobile (liens profonds). À garder aligné avec
+// public/.well-known/apple-app-site-association et mobile/app.json (intentFilters).
+const APP_DEEP_LINK_PATHS = ["/network", "/dashboard", "/wallet", "/messages"];
+
+// Un lien profond ne doit pas passer par la redirection de suivi : iOS/Android n'ouvrent
+// l'app que si le lien tapé est lui-même un lien profond. ponytail: pas de comptage de clic
+// sur ces liens ; à revoir si l'app sait un jour enregistrer le clic à l'ouverture.
+export const isAppDeepLink = (url: string) => {
+  try {
+    const { protocol, host, pathname } = new URL(url);
+    return protocol === "https:" && host === "winelio.app" &&
+      APP_DEEP_LINK_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+  } catch {
+    return false;
+  }
+};
+
 export const addCampaignTracking = (html: string, recipientId: string, unsubscribeToken: string) => {
   const unsubscribeUrl = `${APP_URL}/api/newsletter/unsubscribe/${unsubscribeToken}`;
   const withUnsubscribe = html.replace(/https?:\/\/[^"']*\/newsletter\/unsubscribe\?email=[^"']*/gi, unsubscribeUrl);
   const withLinks = withUnsubscribe.replace(/href=("|')(https?:\/\/[^"']+)\1/gi, (match, quote: string, url: string) => {
-    if (url === unsubscribeUrl) return match;
+    if (url === unsubscribeUrl || isAppDeepLink(url)) return match;
     return `href=${quote}${APP_URL}/api/newsletter/track/click/${recipientId}?u=${encodeURIComponent(url)}${quote}`;
   });
   const pixel = `<img src="${APP_URL}/api/newsletter/track/open/${recipientId}" width="1" height="1" alt="" style="display:none;border:0;width:1px;height:1px;" />`;
