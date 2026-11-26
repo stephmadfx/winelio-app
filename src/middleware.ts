@@ -36,6 +36,7 @@ function isPublicApiPath(path: string): boolean {
     path.startsWith("/api/bugs/imap-poll") ||
     path.startsWith("/api/bugs/imap-debug") ||
     path.startsWith("/api/email/process-queue") ||
+    path === "/api/ses/notifications" ||
     path.startsWith("/api/email-track/") ||
     path.startsWith("/api/stripe/webhook") ||
     path.startsWith("/api/stripe/cron-reminders") ||

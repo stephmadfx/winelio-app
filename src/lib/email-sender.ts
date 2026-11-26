@@ -85,6 +85,20 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
     return { provider: "smtp", ok: false, error: disabledReason };
   }
 
+  // Rebond permanent signalé par SES (/api/ses/notifications) : on n'insiste pas, ça nuit à la réputation d'envoi.
+  const { data: bounced } = await supabaseAdmin
+    .schema("winelio")
+    .from("newsletter_suppressions")
+    .select("email")
+    .eq("email", params.to.trim().toLowerCase())
+    .eq("reason", "bounce")
+    .maybeSingle();
+  if (bounced) {
+    const error = "adresse en rebond permanent (SES)";
+    await logEmail("smtp", params.to, params.subject, false, undefined, error);
+    return { provider: "smtp", ok: false, error };
+  }
+
   const result = await trySendSmtp(params);
   await logEmail(result.provider, params.to, params.subject, result.ok, result.providerId, result.error);
   return result;
