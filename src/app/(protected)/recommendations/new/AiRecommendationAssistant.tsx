@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { computeConversationStage } from "@/lib/ai-recommendation-guardrails";
 import {
   type ImportedPhoneContact,
   canOpenWinelioAppSettings,
@@ -59,7 +60,7 @@ const INITIAL_GREETING =
 const QUICK_PROMPTS = [
   "Mon voisin cherche un plombier rapidement",
   "Un ami veut vendre sa maison",
-  "Je cherche un DJ pour un mariage",
+  "Ma sœur cherche un DJ pour son mariage",
 ];
 
 const MIC_ANIM_CSS = `
@@ -595,12 +596,13 @@ export function AiRecommendationAssistant({
             .filter((m) => m.id !== "welcome")
             .map((m) => ({ role: m.role, content: m.content })),
           userLocation: snap.userLocation,
-          draft: {
+                  draft: {
             selectedProId: snap.selectedProId,
             selectedProLabel: snap.selectedProMeta
               ? snap.selectedProMeta.company_name ??
                 `${snap.selectedProMeta.first_name ?? ""} ${snap.selectedProMeta.last_name ?? ""}`.trim()
               : null,
+            selectedProCategory: snap.selectedProMeta?.category_name ?? null,
             recentProfessionals,
             description: snap.description,
             urgency: snap.urgency,
@@ -937,17 +939,73 @@ export function AiRecommendationAssistant({
   };
 
   const handleSelectProFromChat = (pro: Professional) => {
+    stopAudioPlayback();
+    setAssistantError(null);
     onSelectPro(pro.id, pro);
     setExpandedProMsgIds({});
-    const proLabel = pro.company_name ?? `${pro.first_name ?? ""} ${pro.last_name ?? ""}`.trim();
-    void sendUserMessage(`Je choisis ${proLabel}.`);
+    const snap = stateSnapRef.current;
+    stateSnapRef.current = {
+      ...snap,
+      selectedProId: pro.id,
+      selectedProMeta: pro,
+    };
+
+    const proLabel =
+      pro.company_name ?? (`${pro.first_name ?? ""} ${pro.last_name ?? ""}`.trim() || "ce professionnel");
+    const nextStage = computeConversationStage({
+      selectedProId: pro.id,
+      selectedProCategory: pro.category_name,
+      description: snap.description,
+      urgency: snap.urgency,
+      selectedContactId: snap.selectedContactId,
+      contactForm: snap.contactForm,
+    });
+
+    const cleanFollowUp = nextStage.suggestedQuestion.replace(/^C'est (?:bien )?noté\s*!\s*/i, "");
+    const nextReply = `C'est noté pour ${proLabel} ! ${cleanFollowUp}`;
+
+    const now = Date.now();
+    setMessages((prev) => [
+      ...prev,
+      { id: `u-${now}`, role: "user", content: `Je choisis ${proLabel}.` },
+      { id: `a-${now + 1}`, role: "assistant", content: nextReply },
+    ]);
+    if (snap.voiceEnabled) {
+      void speakText(nextReply);
+    }
   };
 
   const handleSelectContactFromChat = (c: Contact) => {
+    stopAudioPlayback();
+    setAssistantError(null);
     setSelectedContactId(c.id);
     setCreateContact(false);
     setThirdPartyConsent(false);
-    void sendUserMessage(`C'est bien pour ${c.first_name} ${c.last_name}.`);
+    const snap = stateSnapRef.current;
+    stateSnapRef.current = {
+      ...snap,
+      selectedContactId: c.id,
+      createContact: false,
+    };
+
+    const nextStage = computeConversationStage({
+      selectedProId: snap.selectedProId,
+      description: snap.description,
+      urgency: snap.urgency,
+      selectedContactId: c.id,
+      contactForm: snap.contactForm,
+    });
+
+    const nextReply = `C'est bien noté pour ${c.first_name} ${c.last_name} ! ${nextStage.suggestedQuestion}`;
+    const now = Date.now();
+    setMessages((prev) => [
+      ...prev,
+      { id: `u-${now}`, role: "user", content: `C'est bien pour ${c.first_name} ${c.last_name}.` },
+      { id: `a-${now + 1}`, role: "assistant", content: nextReply },
+    ]);
+    if (snap.voiceEnabled) {
+      void speakText(nextReply);
+    }
   };
 
   const applyImportedPhoneContact = async (raw: ImportedPhoneContact, announceInChat: boolean) => {

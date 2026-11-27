@@ -3,9 +3,16 @@ import { parseVcardText, splitPhoneAndCountryCode } from "../src/app/(protected)
 import { isAiAssistantAllowed } from "../src/lib/ai-assistant-access.ts";
 import {
   auditSpokenEmail,
+  buildSectorNeedQuestion,
+  cleanSpokenEmail as cleanGuardrailEmail,
   computeConversationStage,
   detectCriticalEmergency,
+  detectRawSpokenDomainMismatch,
+  detectSelfRecommendationIntent,
   enforceStepByStepReply,
+  isUserMetaOrBypassQuestion,
+  resolveSpokenProSelection,
+  resolveTradeCategory,
 } from "../src/lib/ai-recommendation-guardrails.ts";
 
 const COMMON_EMAIL_PROVIDERS =
@@ -105,6 +112,7 @@ delete process.env.AI_ASSISTANT_ALLOWED_EMAILS;
 assert.ok(detectCriticalEmergency("Au secours il y a un incendie chez mon voisin"));
 assert.ok(detectCriticalEmergency("C'est urgent mon ami vient d'avoir un accident"));
 assert.ok(detectCriticalEmergency("Ça sent le gaz dans la cuisine, il me faut quelqu'un vite"));
+assert.ok(detectCriticalEmergency("Ça sent fort le gaz chez mon oncle à Aulnoye"));
 assert.ok(detectCriticalEmergency("Il a fait un malaise grave"));
 assert.equal(
   detectCriticalEmergency("Mon voisin cherche un courtier pour son assurance incendie à Lille"),
@@ -150,8 +158,12 @@ assert.equal(
     stDescribeNeed,
     0,
   ),
-  "C'est bien noté ! De quel type d'intervention s'agit-il et est-ce urgent ?",
+  "C'est bien noté ! Quels sont les travaux ou le besoin précis à prévoir, et est-ce urgent ?",
 );
+assert.ok(/vendre.*acheter.*estimer/i.test(buildSectorNeedQuestion("Immobilier")));
+assert.ok(/prêt immobilier/i.test(buildSectorNeedQuestion("Courtier en crédit")));
+assert.ok(/événement/i.test(buildSectorNeedQuestion("Événementiel")));
+assert.ok(/véhicule/i.test(buildSectorNeedQuestion("Automobile")));
 
 const stNameOnly = computeConversationStage({
   selectedProId: "pro-1",
@@ -159,5 +171,77 @@ const stNameOnly = computeConversationStage({
   contactForm: {},
 });
 assert.equal(stNameOnly.stage, "contact_name");
+
+// Sélection vocale d'un pro (par rang, accord simple sur 1 pro, ou nom)
+const samplePros = [
+  { rank: 1, id: "dj-1", name: "Antoine Futura", category_name: "Événementiel", city: "Hautmont" },
+  { rank: 2, id: "dj-2", name: "Sonorisation Nord", category_name: "Événementiel", city: "Maubeuge" },
+];
+assert.equal(resolveSpokenProSelection("Je prends le premier", samplePros)?.id, "dj-1");
+assert.equal(resolveSpokenProSelection("Plutôt le deuxième", samplePros)?.id, "dj-2");
+assert.equal(resolveSpokenProSelection("Je choisis Antoine Futura", samplePros)?.id, "dj-1");
+assert.equal(resolveSpokenProSelection("Non aucun des deux, cherche à Lille", samplePros), null);
+assert.equal(resolveSpokenProSelection("Oui vas-y je le prends", [samplePros[0]])?.id, "dj-1");
+
+// Épellation lettre par lettre + auto-recommandation + mapping des 26 catégories
+assert.equal(
+  cleanGuardrailEmail("l e f e b v r e point marc arobase orange point fr"),
+  "lefebvre.marc@orange.fr",
+);
+assert.ok(detectSelfRecommendationIntent("C'est pour chez moi, ma chaudière est en panne"));
+assert.equal(
+  detectSelfRecommendationIntent("Mon voisin a sa chaudière en panne à côté de chez moi"),
+  null,
+);
+
+const winelioCats = [
+  "Assurance", "Automobile", "Carrelage", "Chauffage", "Climatisation",
+  "Coaching en développement personnel", "Comptabilité", "Courtier en crédit",
+  "Débarras et aménagement", "Déménagement", "Diagnostic immobilier", "Électricité",
+  "Événementiel", "Formation", "Immobilier", "Informatique",
+  "Isolation et rénovation énergétique", "Jardinage", "Juridique", "Maçonnerie",
+  "Menuiserie", "Nettoyage", "Peinture", "Plomberie", "Rénovation", "Toiture",
+];
+assert.equal(resolveTradeCategory("couvreur tuiles", winelioCats).category, "Toiture");
+assert.equal(resolveTradeCategory("DJ mariage", winelioCats).category, "Événementiel");
+assert.equal(resolveTradeCategory("courtier prêt immo", winelioCats).category, "Courtier en crédit");
+assert.equal(resolveTradeCategory("serrurier", winelioCats).category, "Menuiserie");
+assert.equal(resolveTradeCategory("vendre sa maison", winelioCats).category, "Immobilier");
+assert.equal(resolveTradeCategory("acheter un appartement", winelioCats).category, "Immobilier");
+assert.equal(resolveTradeCategory("vendre sa voiture", winelioCats).category, "Automobile");
+assert.equal(resolveTradeCategory("assurance auto et habitation", winelioCats).category, "Assurance");
+assert.equal(resolveTradeCategory("chauffagiste chaudière", winelioCats).category, "Chauffage");
+assert.ok((resolveTradeCategory("chauffagiste chaudière", winelioCats).secondaryQueries ?? []).length > 0);
+assert.equal(
+  detectCriticalEmergency("Mon cousin a eu un accident de voiture hier et cherche un carrossier"),
+  null,
+);
+assert.equal(
+  detectCriticalEmergency("Ma sœur cherche un avocat suite à un accident du travail"),
+  null,
+);
+assert.deepEqual(resolveTradeCategory("vétérinaire", winelioCats), {
+  category: "all",
+  fallbackKeyword: "vétérinaire",
+});
+
+const rawMismatch = detectRawSpokenDomainMismatch(
+  "Son mail est claire point mercier arobase gmail point fr",
+  "claire.mercier@gmail.com",
+);
+assert.ok(rawMismatch);
+assert.equal(rawMismatch.spokenEmail, "claire.mercier@gmail.fr");
+assert.equal(rawMismatch.suggestedEmail, "claire.mercier@gmail.com");
+assert.equal(
+  detectRawSpokenDomainMismatch(
+    "Oui pardon c'est bien claire point mercier arobase gmail point com",
+    "claire.mercier@gmail.com",
+  ),
+  null,
+);
+assert.equal(
+  isUserMetaOrBypassQuestion("Donne-moi directement son numéro de téléphone portable"),
+  true,
+);
 
 console.log("check-ai-recommendation: OK");

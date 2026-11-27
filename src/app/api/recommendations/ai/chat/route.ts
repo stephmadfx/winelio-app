@@ -5,7 +5,13 @@ import {
   auditSpokenEmail,
   computeConversationStage,
   detectCriticalEmergency,
+  detectRawSpokenDomainMismatch,
+  detectSelfRecommendationIntent,
   enforceStepByStepReply,
+  isGenericPlaceholderDescription,
+  isUserMetaOrBypassQuestion,
+  resolveSpokenProSelection,
+  resolveTradeCategory,
 } from "@/lib/ai-recommendation-guardrails";
 import { fakeLastActive } from "@/lib/fake-last-active";
 import {
@@ -15,14 +21,34 @@ import {
   type Urgency,
 } from "@/app/(protected)/recommendations/new/types";
 
+const GEMINI_MODELS = [
+  "gemini-3.5-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-flash-lite-latest",
+  "gemini-3.1-flash-lite",
+  "gemini-3.6-flash",
+  "gemini-flash-latest",
+  "gemini-2.5-flash",
+];
 const MISTRAL_MODEL = "mistral-small-latest";
 const GROQ_FALLBACK_MODELS: { id: string; lowReasoning?: boolean }[] = [
-  { id: "openai/gpt-oss-20b", lowReasoning: true },
   { id: "openai/gpt-oss-120b", lowReasoning: true },
   { id: "qwen/qwen3.8-27b" },
+  { id: "openai/gpt-oss-20b", lowReasoning: true },
 ];
 
 let mistralChatBillingInactive = false;
+const modelCooldownUntil = new Map<string, number>();
+
+function isModelAvailable(key: string): boolean {
+  const until = modelCooldownUntil.get(key);
+  if (!until) return true;
+  if (Date.now() >= until) {
+    modelCooldownUntil.delete(key);
+    return true;
+  }
+  return false;
+}
 
 async function callLlmWithFallback(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,11 +56,69 @@ async function callLlmWithFallback(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tools: any[],
   round: number,
+  requireFirstRoundTool: boolean,
+  geminiKey?: string,
   mistralKey?: string,
   groqKey?: string,
-) {
-  if (mistralKey && !mistralChatBillingInactive) {
-    const mistralToolChoice = round === 0 ? "any" : round >= 4 ? "none" : "auto";
+  retriedAfterSaturation = false,
+): Promise<Response | null> {
+  const allowTools = round < 4;
+
+  if (geminiKey) {
+    const geminiToolChoice = round === 0 && requireFirstRoundTool ? "required" : "auto";
+    for (const model of GEMINI_MODELS) {
+      const cacheKey = `gemini:${model}`;
+      if (!isModelAvailable(cacheKey)) continue;
+      const res = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${geminiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages: apiMessages,
+            ...(allowTools ? { tools, tool_choice: geminiToolChoice } : {}),
+            temperature: 0.2,
+            max_tokens: 800,
+          }),
+          signal: AbortSignal.timeout(5500),
+        },
+      ).catch(() => null);
+
+      if (res && res.ok) return res;
+      if (!res || res.status === 429 || res.status === 404 || res.status >= 500) {
+        modelCooldownUntil.set(cacheKey, Date.now() + (res?.status === 404 ? 600_000 : 25_000));
+      } else if (res.status === 400 && round === 0 && requireFirstRoundTool) {
+        // Si le modèle refuse légitimement d'appeler un outil (ex: garde-fou ou question), retenter en auto
+        const retryAuto = await fetch(
+          "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${geminiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model,
+              messages: apiMessages,
+              tools,
+              tool_choice: "auto",
+              temperature: 0.2,
+              max_tokens: 800,
+            }),
+            signal: AbortSignal.timeout(5500),
+          },
+        ).catch(() => null);
+        if (retryAuto && retryAuto.ok) return retryAuto;
+      }
+    }
+  }
+
+  if (mistralKey && !mistralChatBillingInactive && isModelAvailable("mistral")) {
+    const mistralToolChoice = round === 0 && requireFirstRoundTool ? "any" : "auto";
     const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -44,11 +128,11 @@ async function callLlmWithFallback(
       body: JSON.stringify({
         model: MISTRAL_MODEL,
         messages: apiMessages,
-        tools,
-        tool_choice: mistralToolChoice,
+        ...(allowTools ? { tools, tool_choice: mistralToolChoice } : {}),
         temperature: 0.2,
-        max_tokens: 400,
+        max_tokens: 500,
       }),
+      signal: AbortSignal.timeout(10000),
     }).catch(() => null);
 
     if (res && res.ok) {
@@ -56,13 +140,17 @@ async function callLlmWithFallback(
     }
     if (res?.status === 402) {
       mistralChatBillingInactive = true;
+    } else if (res?.status === 429) {
+      modelCooldownUntil.set("mistral", Date.now() + 25_000);
     }
   }
 
   if (groqKey) {
-    const groqToolChoice = round === 0 ? "required" : round >= 4 ? "none" : "auto";
+    const groqToolChoice = round === 0 && requireFirstRoundTool ? "required" : "auto";
     let lastRes: Response | null = null;
     for (const m of GROQ_FALLBACK_MODELS) {
+      const cacheKey = `groq:${m.id}`;
+      if (!isModelAvailable(cacheKey)) continue;
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -73,17 +161,56 @@ async function callLlmWithFallback(
           model: m.id,
           ...(m.lowReasoning ? { reasoning_effort: "low" } : {}),
           messages: apiMessages,
-          tools,
-          tool_choice: groqToolChoice,
+          ...(allowTools ? { tools, tool_choice: groqToolChoice } : {}),
           temperature: 0.2,
-          max_completion_tokens: 260,
+          max_completion_tokens: 700,
         }),
+        signal: AbortSignal.timeout(10000),
       }).catch(() => null);
 
       if (res && res.ok) return res;
+      if (!res || res.status === 429 || res.status === 404 || res.status >= 500) {
+        modelCooldownUntil.set(cacheKey, Date.now() + (res?.status === 404 ? 600_000 : 20_000));
+      } else if (res.status === 400 && round === 0 && requireFirstRoundTool) {
+        const retryAuto = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${groqKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: m.id,
+            ...(m.lowReasoning ? { reasoning_effort: "low" } : {}),
+            messages: apiMessages,
+            tools,
+            tool_choice: "auto",
+            temperature: 0.2,
+            max_completion_tokens: 700,
+          }),
+          signal: AbortSignal.timeout(8000),
+        }).catch(() => null);
+        if (retryAuto && retryAuto.ok) return retryAuto;
+      }
       lastRes = res;
     }
-    return lastRes;
+    if (lastRes && lastRes.ok) return lastRes;
+  }
+
+  if (!retriedAfterSaturation && modelCooldownUntil.size > 0) {
+    await new Promise((r) => setTimeout(r, 3000));
+    for (const [k, until] of modelCooldownUntil.entries()) {
+      if (until - Date.now() < 60_000) modelCooldownUntil.delete(k);
+    }
+    return callLlmWithFallback(
+      apiMessages,
+      tools,
+      round,
+      requireFirstRoundTool,
+      geminiKey,
+      mistralKey,
+      groqKey,
+      true,
+    );
   }
 
   return null;
@@ -102,6 +229,7 @@ type RecentProSummary = {
 type DraftInput = {
   selectedProId: string | null;
   selectedProLabel?: string | null;
+  selectedProCategory?: string | null;
   recentProfessionals?: RecentProSummary[];
   description: string;
   urgency: Urgency;
@@ -128,29 +256,7 @@ const fold = (s: string) =>
     .toLowerCase()
     .trim();
 
-const COMMON_EMAIL_PROVIDERS =
-  "(gmail\\.com|orange\\.fr|wanadoo\\.fr|outlook\\.fr|outlook\\.com|hotmail\\.fr|hotmail\\.com|yahoo\\.fr|yahoo\\.com|free\\.fr|sfr\\.fr|laposte\\.net|icloud\\.com|bbox\\.fr|live\\.fr)";
-
-function cleanSpokenEmail(raw: string): string {
-  let cleaned = raw
-    .trim()
-    .toLowerCase()
-    .replace(/[;,]+$/g, "")
-    .replace(/\s+(arobase|arrobe|at|chez)\s+/gi, "@")
-    .replace(/\s+point\s+/gi, ".")
-    .replace(/\s+tiret\s+du\s+bas\s+/gi, "_")
-    .replace(/\s+tiret\s+/gi, "-")
-    .replace(/\s+/g, "");
-
-  if (!cleaned.includes("@")) {
-    const providerRe = new RegExp(`^(.+)[.\\-]${COMMON_EMAIL_PROVIDERS}$`, "i");
-    const m = cleaned.match(providerRe);
-    if (m) {
-      cleaned = `${m[1]}@${m[2]}`;
-    }
-  }
-  return cleaned;
-}
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const BYPASS_PATTERNS = [
   /pages?\s*jaunes/i,
@@ -163,6 +269,8 @@ const BYPASS_PATTERNS = [
 
 function sanitizeAssistantReply(reply: string): string {
   const trimmed = reply
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,!?:;]|$)/g, "$1$2")
     .trim()
     .replace(/\bvous recontact(era|er|e)\b/gi, (_, suffix: string) =>
       suffix.toLowerCase() === "er" ? "recontacter votre proche" : `recontact${suffix.toLowerCase()} votre proche`,
@@ -192,9 +300,18 @@ function computeMissingState(
   patch: DraftPatch,
   surfacedProsCount = 0,
 ) {
+  const effectiveProId =
+    patch.selectedProId !== undefined ? patch.selectedProId : draft?.selectedProId;
+  const effectiveProCategory = effectiveProId
+    ? patch.selectedPro?.category_name ??
+      draft?.recentProfessionals?.find((rp) => rp.id === effectiveProId)?.category_name ??
+      draft?.selectedProCategory ??
+      null
+    : null;
   return computeConversationStage(
     {
-      selectedProId: patch.selectedProId !== undefined ? patch.selectedProId : draft?.selectedProId,
+      selectedProId: effectiveProId,
+      selectedProCategory: effectiveProCategory,
       recentProfessionalsCount: draft?.recentProfessionals?.length ?? 0,
       description: patch.description ?? draft?.description ?? "",
       urgency: patch.urgency ?? draft?.urgency,
@@ -217,58 +334,6 @@ function cleanSpokenPhone(raw: string): string {
   return raw.trim();
 }
 
-const TRADE_SYNONYMS: Record<string, string> = {
-  plombier: "plomberie",
-  sanitaire: "plomberie",
-  chauffe: "chauffage",
-  chauffagiste: "chauffage",
-  pac: "chauffage",
-  clim: "climatisation",
-  electricien: "electricite",
-  immo: "immobilier",
-  agence: "immobilier",
-  maison: "immobilier",
-  appartement: "immobilier",
-  dj: "evenementiel",
-  degie: "evenementiel",
-  mariage: "evenementiel",
-  soiree: "evenementiel",
-  animateur: "evenementiel",
-  animation: "evenementiel",
-  sono: "evenementiel",
-  toit: "couverture",
-  toiture: "couverture",
-  couvreur: "couverture",
-  serrurier: "serrurerie",
-  peintre: "peinture",
-  menuisier: "menuiserie",
-  fenetre: "menuiserie",
-  macon: "maconnerie",
-  jardin: "jardinage",
-  paysagiste: "espaces verts",
-};
-
-function resolveCategoryName(input: string | undefined, categoryNames: string[]): string {
-  if (!input || fold(input) === "all" || fold(input) === "toutes") return "all";
-  const target = fold(input);
-
-  const exact = categoryNames.find((c) => fold(c) === target);
-  if (exact) return exact;
-
-  const partial = categoryNames.find(
-    (c) => fold(c).includes(target) || target.includes(fold(c)),
-  );
-  if (partial) return partial;
-
-  for (const [syn, canonical] of Object.entries(TRADE_SYNONYMS)) {
-    if (target.includes(syn)) {
-      const mapped = categoryNames.find((c) => fold(c).includes(canonical));
-      if (mapped) return mapped;
-    }
-  }
-  return "all";
-}
-
 async function geocodeCommune(
   query: string,
 ): Promise<{ lat: number; lng: number; nom: string; postalCode: string | null } | null> {
@@ -276,9 +341,9 @@ async function geocodeCommune(
   if (trimmed.length < 2) return null;
   const isPostal = /^\d{5}$/.test(trimmed);
   const params = new URLSearchParams({
-    fields: "nom,codesPostaux,centre",
+    fields: "nom,codesPostaux,centre,population",
     boost: "population",
-    limit: "5",
+    limit: "15",
   });
   if (isPostal) params.set("codePostal", trimmed);
   else params.set("nom", trimmed);
@@ -288,9 +353,18 @@ async function geocodeCommune(
   }).catch(() => null);
   if (res && res.ok) {
     const data = (await res.json().catch(() => null)) as
-      | { nom: string; codesPostaux?: string[]; centre?: { coordinates?: [number, number] } }[]
+      | {
+          nom: string;
+          population?: number;
+          codesPostaux?: string[];
+          centre?: { coordinates?: [number, number] };
+        }[]
       | null;
-    const hit = data?.find((c) => c.centre?.coordinates?.length === 2);
+    const valid = (data ?? []).filter((c) => c.centre?.coordinates?.length === 2);
+    if (isPostal && valid.length > 1) {
+      valid.sort((a, b) => (b.population ?? 0) - (a.population ?? 0));
+    }
+    const hit = valid[0];
     if (hit?.centre?.coordinates) {
       const [lng, lat] = hit.centre.coordinates;
       return {
@@ -341,11 +415,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Fonctionnalité réservée aux comptes pilotes." }, { status: 403 });
   }
 
+  const geminiKey = process.env.GEMINI_API_KEY?.trim();
   const mistralKey = process.env.MISTRAL_API_KEY?.trim();
   const groqKey = process.env.GROQ_API_KEY?.trim();
-  if (!mistralKey && !groqKey) {
+  if (!geminiKey && !mistralKey && !groqKey) {
     return NextResponse.json(
-      { error: "Assistant IA non configuré côté serveur (MISTRAL_API_KEY / GROQ_API_KEY)." },
+      { error: "Assistant IA non configuré côté serveur (GEMINI_API_KEY / MISTRAL_API_KEY / GROQ_API_KEY)." },
       { status: 503 },
     );
   }
@@ -358,8 +433,8 @@ export async function POST(req: Request) {
 
   const incomingMessages = (body?.messages ?? [])
     .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
-    .slice(-20)
-    .map((m) => ({ role: m.role, content: m.content.slice(0, 1500) }));
+    .slice(-10)
+    .map((m) => ({ role: m.role, content: m.content.slice(0, 1200) }));
 
   if (incomingMessages.length === 0) {
     return NextResponse.json({ error: "Aucun message fourni." }, { status: 400 });
@@ -372,6 +447,14 @@ export async function POST(req: Request) {
   if (emergencyReply) {
     return NextResponse.json(
       { reply: emergencyReply },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
+  const selfReferralReply = detectSelfRecommendationIntent(latestUserMessage);
+  if (selfReferralReply) {
+    return NextResponse.json(
+      { reply: selfReferralReply },
       { headers: { "Cache-Control": "no-store" } },
     );
   }
@@ -392,6 +475,7 @@ export async function POST(req: Request) {
   let deviceContactSearchQuery: string | undefined;
   let justCapturedSpokenEmail: string | undefined;
   let justCapturedSpokenName: string | undefined;
+  let rejectedEmailFallback: { suggested?: string; message: string } | undefined;
   const lastSearchedPros = new Map<string, Professional>();
   for (const rp of draft?.recentProfessionals ?? []) {
     if (rp.id) {
@@ -413,12 +497,51 @@ export async function POST(req: Request) {
     }
   }
 
+  // Résolution déterministe immédiate si le membre désigne un pro proposé récemment ("le premier", "oui", ou son nom)
+  const preSelectedPro = !draft?.selectedProId
+    ? resolveSpokenProSelection(latestUserMessage, draft?.recentProfessionals)
+    : null;
+  if (preSelectedPro) {
+    patch.selectedProId = preSelectedPro.id;
+    if (lastSearchedPros.has(preSelectedPro.id)) {
+      patch.selectedPro = lastSearchedPros.get(preSelectedPro.id)!;
+    }
+    // Court-circuit instantané (0 appel LLM) si le message ne contient que le choix du professionnel
+    const strippedChoice = fold(latestUserMessage)
+      .replace(fold(preSelectedPro.name), "")
+      .replace(
+        /\b(je|le|la|les|choisis|prends|selectionne|retenir|opte|pour|plutot|premier|1er|deuxieme|second|2e|2eme|troisieme|3e|3eme|quatrieme|cinquieme|sixieme|dernier|numero|oui|ok|d['’\s]*accord|parfait|tres\s+bien|vas[\s-]y|celui[\s-]la|ca\s+me\s+va|c['’\s]*est\s+bon|valide|[1-6])\b/g,
+        " ",
+      )
+      .replace(/[^a-z0-9]/g, "")
+      .trim();
+    if (strippedChoice.length <= 3 && !isUserMetaOrBypassQuestion(latestUserMessage)) {
+      const afterPick = computeMissingState(draft, patch, 0);
+      const cleanQuestion = afterPick.suggestedQuestion.replace(
+        /^(?:Parfait|Merci|C'est (?:bien )?noté(?:\s+pour\s+[^!]+)?)\s*!\s*/i,
+        "",
+      );
+      return NextResponse.json(
+        {
+          reply: `C'est bien noté pour ${preSelectedPro.name} ! ${cleanQuestion}`,
+          patch,
+        },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    }
+  }
+
   const initialStatus = computeMissingState(draft, patch);
+
+  const effectiveSelectedProId = patch.selectedProId ?? draft?.selectedProId ?? null;
+  const effectiveSelectedProLabel = preSelectedPro
+    ? preSelectedPro.name
+    : draft?.selectedProLabel || "Sélectionné";
 
   const draftSummary = draft
     ? JSON.stringify({
-        pro_choisi: draft.selectedProId
-          ? `${draft.selectedProLabel || "Sélectionné"} (${draft.selectedProId})`
+        pro_choisi: effectiveSelectedProId
+          ? `${effectiveSelectedProLabel} (${effectiveSelectedProId})`
           : null,
         pros_proposes_recemment: (draft.recentProfessionals ?? []).slice(0, 6),
         besoin: draft.description || null,
@@ -436,18 +559,25 @@ export async function POST(req: Request) {
   const systemPrompt = `Assistant Winelio. Aide ${memberFirstName || "le membre"} à préparer une recommandation pour un TIERS (c'est la personne recommandée que le professionnel recontactera, jamais le membre lui-même : ne dis jamais "vous recontacter", dis "recontacter votre proche").
 GARDE-FOU ABSOLU URGENCES & SÉCURITÉ : Si le membre évoque un incendie, un départ de feu, une fuite de gaz, une électrocution, un accident corporel, un malaise grave, une agression ou un danger immédiat, N'APPELLE AUCUN OUTIL (ni search_professionals ni update_draft) : indique fermement que Winelio n'est pas conçue pour les urgences et qu'il faut appeler immédiatement le 18 (Pompiers), le 15 (SAMU), le 17 (Police) ou le 112.
 RÈGLE ABSOLUE DE MISE EN RELATION CACHÉE : Ne donne ni n'invente JAMAIS les coordonnées d'un professionnel (téléphone, e-mail, adresse postale exacte, site web) et ne suggère JAMAIS de chercher ou contacter le pro en direct hors Winelio (ni Google, ni Pages Jaunes, ni appel direct). Si on te les demande, explique que toute mise en relation passe exclusivement par l'envoi de la recommandation sur Winelio pour que le pro recontacte le proche et que la commission du membre soit protégée.
+CONNAISSANCES WINELIO (si le membre pose une question) :
+- C'est 100 % gratuit et sans engagement pour le proche recommandé.
+- Le recommandeur touche 60 % de la commission encaissée par Winelio lorsque l'affaire aboutit et est réglée.
+- On ne peut jamais se recommander soi-même (uniquement un tiers : ami, voisin, famille, client).
+- Le nom, le téléphone, l'adresse postale et surtout une adresse e-mail exacte du proche sont obligatoires pour valider la recommandation et déclencher le suivi.
+- En immobilier (vente, achat, estimation, location), si le bien concerné n'est pas à la même adresse que le domicile actuel du proche, l'adresse postale de la fiche contact est celle où habite le proche et l'emplacement du bien va dans la description du projet.
+ADAPTATION INTELLIGENTE À TOUS LES CORPS DE MÉTIER :
+Adapte toujours ton vocabulaire au secteur concerné : en Immobilier, parle de projet de vente, d'achat, d'estimation ou de location (jamais de "dépannage") ; en Courtage/Assurance/Comptabilité/Juridique, parle de dossier, contrat ou accompagnement ; en Événementiel, parle d'événement et de date ; en Bâtiment/Auto/Informatique, parle de travaux, d'entretien ou de dépannage.
 VÉRIFICATION CRITIQUE DU NOM ET DE L'E-MAIL : Une erreur sur le nom ou surtout sur l'adresse e-mail du proche rend la recommandation non valable. Dès que le membre dicte un nom ou une adresse e-mail :
 - répète explicitement dans ta réponse l'adresse e-mail (et le nom) que tu as comprise pour qu'il la vérifie à l'écran ;
 - s'il y a la moindre ambiguïté phonétique, homophonie ou erreur signalée par update_draft, demande-lui de l'épeler lettre par lettre, de la corriger au clavier, ou d'utiliser le bouton « Répertoire ».
 RYTHME CONVERSATIONNEL STRICT — UNE SEULE ÉTAPE À LA FOIS (INTERDICTION ABSOLUE DE TOUT DEMANDER D'UN COUP) :
 Respecte impérativement cet ordre naturel, en ne posant QU'UNE SEULE question courte par message :
-- Étape 1 (Professionnel) : cherche avec search_professionals dès que tu as un métier + une ville (ou gps=true), puis laisse le membre choisir un professionnel. TANT QU'AUCUN PRO N'EST CHOISI, NE DEMANDE JAMAIS le nom, le prénom, l'e-mail, le téléphone ou l'adresse du proche !
-- Étape 2 (Type d'intervention & Urgence) : une fois le pro choisi, demande UNIQUEMENT le type d'intervention précis et si c'est urgent ("urgent", "normal" ou "flexible"). NE DEMANDE PAS ENCORE les coordonnées du proche !
-- Étape 3 (Prénom & Nom du proche) : une fois le pro ET le type d'intervention connus, demande d'abord UNIQUEMENT le prénom et le nom de la personne recommandée (et appelle find_existing_contacts dès qu'un nom est cité).
+- Étape 1 (Professionnel) : cherche avec search_professionals dès que tu as un métier + une ville (ou gps=true). Si le membre mentionne déjà le besoin ("DJ pour un mariage", "fuite d'eau urgente") ou des infos sur le proche (prénom, nom, téléphone, e-mail, rue) dans sa phrase, enregistre-les AUSSI tout de suite via update_draft pour ne jamais les redemander plus tard ! Si sa demande est trop vague (pas de métier clair ou pas de ville), aide-le gentiment à préciser le métier et la ville. Quand un pro est choisi dans pro_choisi, NE REDEMANDE JAMAIS de choisir un pro et N'APPELLE PLUS search_professionals sauf si le membre demande explicitement de changer de ville, de métier ou de professionnel !
+- Étape 2 (Type d'intervention & Urgence) : une fois pro_choisi rempli, si besoin est vide, demande UNIQUEMENT le type d'intervention précis et si c'est urgent ("urgent", "normal" ou "flexible"). NE DEMANDE PAS ENCORE les coordonnées du proche !
+- Étape 3 (Prénom & Nom du proche) : une fois pro_choisi ET besoin remplis, demande d'abord UNIQUEMENT le prénom et le nom de la personne recommandée (et appelle find_existing_contacts dès qu'un nom est cité).
 - Étape 4 (Coordonnées restantes du proche, petit à petit) : demande ensuite seulement son téléphone et son e-mail, PUIS dans un dernier échange son adresse postale (numéro, rue et ville).
 INTERDICTION ABSOLUE d'inviter à cocher le consentement RGPD ou de cliquer sur "Envoyer la recommandation" tant que tous les champs (pro, besoin, prénom, nom, téléphone, e-mail, rue, ville, code postal) ne sont pas remplis.
-Appelle TOUJOURS update_draft dès qu'une info est donnée spontanément par le membre, même s'il anticipe une étape.
-STYLE VOCAL FLUIDE ET COURT : réponds en 1 ou 2 phrases naturelles (maximum 28 mots) et pose UNIQUEMENT la question correspondant à l'étape en cours. Quand des fiches pros s'affichent, dis simplement combien tu en as trouvé et invite à en choisir un.
+STYLE VOCAL FLUIDE ET COURT : réponds en 1 ou 2 phrases naturelles (maximum 28 mots) et pose UNIQUEMENT la question correspondant à l'étape en cours.
 Catégories : ${categoryNames.join(", ")}.
 Brouillon : ${draftSummary}`;
 
@@ -467,7 +597,8 @@ Brouillon : ${draftSummary}`;
             },
             category: {
               type: "string",
-              description: "Nom de la catégorie officielle Winelio (ex: 'Plomberie', 'Immobilier', 'Événementiel') ou 'all'.",
+              description:
+                "Catégorie officielle Winelio OU nom exact du métier demandé par le membre (ex: 'Immobilier', 'Plomberie', 'Chauffagiste', 'Vétérinaire'). Ne mets JAMAIS 'all' lorsqu'un métier précis est demandé !",
             },
             company_or_person_name: {
               type: "string",
@@ -521,11 +652,27 @@ Brouillon : ${draftSummary}`;
     },
   ];
 
+  const isConversationalOrMeta =
+    isUserMetaOrBypassQuestion(latestUserMessage) ||
+    /^(bonjour|bonsoir|salut|coucou|merci|ok|d['’\s]*accord)\b/i.test(latestUserMessage.trim()) ||
+    /\b(je\s+(ne\s+)?sais\s+pas\s+trop|j['’\s]*hesite|comment\s+faire)\b/.test(
+      fold(latestUserMessage),
+    );
+  const requireFirstRoundTool = !preSelectedPro && !isConversationalOrMeta;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const apiMessages: any[] = [{ role: "system", content: systemPrompt }, ...incomingMessages];
 
   for (let round = 0; round < 5; round++) {
-    const res = await callLlmWithFallback(apiMessages, tools, round, mistralKey, groqKey);
+    const res = await callLlmWithFallback(
+      apiMessages,
+      tools,
+      round,
+      requireFirstRoundTool,
+      geminiKey,
+      mistralKey,
+      groqKey,
+    );
 
     if (!res || !res.ok) {
       const errText = res ? await res.text().catch(() => "") : "";
@@ -554,8 +701,25 @@ Brouillon : ${draftSummary}`;
       if (currentStatus.missingFields.length > 0 && PREMATURE_COMPLETION_RE.test(reply)) {
         reply = currentStatus.suggestedQuestion;
       }
-      reply = enforceStepByStepReply(reply, currentStatus, surfacedPros?.length ?? 0);
-      if (justCapturedSpokenEmail && !reply.toLowerCase().includes(justCapturedSpokenEmail)) {
+      reply = enforceStepByStepReply(
+        reply,
+        currentStatus,
+        surfacedPros?.length ?? 0,
+        latestUserMessage,
+      );
+      if (surfacedPros !== undefined && surfacedPros.length === 0) {
+        if (!/\b(aucun|pas\s+trouv[ée]|introuvable|pas\s+de\s+professionnel|autre\s+ville|ville\s+voisine)\b/i.test(reply)) {
+          reply =
+            "Je n'ai trouvé aucun professionnel correspondant dans ce secteur sur Winelio. Souhaitez-vous chercher autour d'une ville voisine ou dans une autre catégorie ?";
+        }
+      } else if (rejectedEmailFallback) {
+        const mustContain = rejectedEmailFallback.suggested?.toLowerCase();
+        if (mustContain && !reply.toLowerCase().includes(mustContain)) {
+          reply = rejectedEmailFallback.message;
+        } else if (!mustContain && !/propre|membre|autre\s+personne|[ée]peler|clavier/i.test(reply)) {
+          reply = rejectedEmailFallback.message;
+        }
+      } else if (justCapturedSpokenEmail && !reply.toLowerCase().includes(justCapturedSpokenEmail)) {
         reply = `${reply ? `${reply} ` : ""}J'ai noté l'e-mail ${justCapturedSpokenEmail}${
           justCapturedSpokenName ? ` pour ${justCapturedSpokenName}` : ""
         } : vérifiez bien son orthographe sur la fiche (ou épelez-la / corrigez-la au clavier), car une erreur empêcherait de valider la recommandation.`.trim();
@@ -584,6 +748,22 @@ Brouillon : ${draftSummary}`;
       let toolResult: unknown = { ok: true };
 
       if (fnName === "search_professionals") {
+        // Si un pro proposé récemment vient d'être sélectionné dans ce même message ("Je choisis X"), ne pas relancer une recherche parasite
+        if (preSelectedPro) {
+          const afterPickStatus = computeMissingState(draft, patch, 0);
+          toolResult = {
+            already_selected: preSelectedPro.name,
+            selected_pro_id: preSelectedPro.id,
+            consigne_reponse: `Le professionnel "${preSelectedPro.name}" est déjà sélectionné ! Ne redemande surtout pas de choisir un pro. Pose uniquement : "${afterPickStatus.suggestedQuestion}"`,
+          };
+          apiMessages.push({
+            role: "tool",
+            tool_call_id: tc.id,
+            content: JSON.stringify(toolResult),
+          });
+          continue;
+        }
+
         const locStr = typeof args.location === "string" ? args.location.trim() : "";
         const catStr = typeof args.category === "string" ? args.category : "all";
         const nameStr =
@@ -608,24 +788,106 @@ Brouillon : ${draftSummary}`;
           toolResult = {
             found: 0,
             error:
-              "Ville introuvable ou manquante. Demande la ville ou le code postal au membre pour lancer la recherche.",
+              "Ville introuvable ou manquante. Si le membre a déjà indiqué le projet précis (ex: vendre une maison, mariage, fuite), enregistre-le via update_draft(description), puis demande uniquement autour de quelle ville ou quel code postal chercher.",
           };
         } else {
-          const resolvedCategory = resolveCategoryName(catStr, categoryNames);
+          // Si le membre relance une nouvelle recherche (nouvelle ville ou nouveau métier), libérer l'ancien pro sélectionné
+          if (draft?.selectedProId && patch.selectedProId === undefined) {
+            patch.selectedProId = null;
+            patch.selectedPro = null;
+          }
+
+          const rawNameCheck = nameStr ? resolveTradeCategory(nameStr, categoryNames) : null;
+          const sanitizedNameStr =
+            nameStr && rawNameCheck && rawNameCheck.fallbackKeyword === null ? null : nameStr;
+          const effectiveCatInput =
+            (!catStr || catStr === "all") && rawNameCheck && rawNameCheck.fallbackKeyword === null
+              ? nameStr!
+              : catStr;
+
+          let { category: resolvedCategory, fallbackKeyword, secondaryQueries } =
+            resolveTradeCategory(effectiveCatInput, categoryNames);
+
+          // Si le LLM a passé category="all" alors que le membre demandait un métier précis, récupérer le métier depuis la phrase du membre
+          if (
+            resolvedCategory === "all" &&
+            !fallbackKeyword &&
+            !sanitizedNameStr &&
+            !/\btous\s+les\s+(?:pros?|professionnels?|artisans?)\b/.test(fold(latestUserMessage))
+          ) {
+            const fromMsg = resolveTradeCategory(latestUserMessage, categoryNames);
+            const allUserText = incomingMessages
+              .filter((m) => m.role === "user")
+              .map((m) => m.content)
+              .join(" ");
+            const fromHistory =
+              fromMsg.category !== "all" ? fromMsg : resolveTradeCategory(allUserText, categoryNames);
+            if (fromHistory.category !== "all") {
+              resolvedCategory = fromHistory.category;
+              secondaryQueries = fromHistory.secondaryQueries;
+            } else {
+              const unlistedMatch = latestUserMessage.match(
+                /\b(?:cherche\w*|besoin\s+d['’\s]*|trouver|recommander|faut|pour)\s+(?:un|une|des)\s+([a-zA-ZÀ-ÿ-]{3,})/i,
+              );
+              if (unlistedMatch?.[1]) {
+                fallbackKeyword = unlistedMatch[1].trim();
+              }
+            }
+          }
+
+          const effectiveSearch = sanitizedNameStr ?? fallbackKeyword;
+          const MAX_SEARCH_DISTANCE_KM = 80;
+          const targetCommuneNorm = coords.nom ? fold(coords.nom) : "";
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const filterLocalRows = (rawRows: any[] | null | undefined) => {
+            const candidates = (rawRows ?? []).filter(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (r: any) => {
+                if (r.profile_id === user.id) return false;
+                if (r.distance_km != null) return Number(r.distance_km) <= MAX_SEARCH_DISTANCE_KM;
+                return Boolean(targetCommuneNorm && fold(r.city ?? "") === targetCommuneNorm);
+              },
+            );
+            const close45 = candidates.filter(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (r: any) => r.distance_km != null && Number(r.distance_km) <= 45,
+            );
+            return (close45.length >= 3 ? close45 : candidates).slice(0, 6);
+          };
+
           const { data: rows, error } = await db.rpc("search_professionals_by_distance", {
             p_latitude: coords.lat,
             p_longitude: coords.lng,
             p_category_name: resolvedCategory,
             p_commune: coords.nom,
-            p_search: nameStr,
-            p_limit: 12,
+            p_search: effectiveSearch,
+            p_limit: 50,
           });
 
           if (error) {
             toolResult = { found: 0, error: "Erreur technique lors de la recherche." };
           } else {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const filtered = (rows ?? []).filter((r: any) => r.profile_id !== user.id).slice(0, 6);
+            let filtered = filterLocalRows(rows);
+
+            // Repli intelligent si la catégorie officielle est vide localement mais que ses artisans sont classés dans une catégorie voisine (ex: Chauffagiste -> Plomberie, Rénovation -> Maçonnerie/Peinture)
+            if (filtered.length === 0 && !sanitizedNameStr && secondaryQueries?.length) {
+              for (const sq of secondaryQueries) {
+                const { data: secRows } = await db.rpc("search_professionals_by_distance", {
+                  p_latitude: coords.lat,
+                  p_longitude: coords.lng,
+                  p_category_name: sq.category,
+                  p_commune: coords.nom,
+                  p_search: sq.search || null,
+                  p_limit: 50,
+                });
+                const secFiltered = filterLocalRows(secRows);
+                if (secFiltered.length > 0) {
+                  filtered = secFiltered;
+                  break;
+                }
+              }
+            }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const ids = filtered.map((r: any) => r.profile_id as string);
             const ratingsMap = new Map<string, { avg_rating: number | null; review_count: number }>();
@@ -683,7 +945,7 @@ Brouillon : ${draftSummary}`;
               consigne_reponse:
                 mapped.length > 0
                   ? `Annonce simplement en 1 phrase courte que tu as trouvé ${mapped.length} professionnel(s) et invite le membre à en choisir un. NE DEMANDE SURTOUT PAS le nom, prénom, e-mail, téléphone ou adresse maintenant.`
-                  : "Aucun professionnel trouvé autour de cette zone : propose d'essayer une ville voisine ou une autre catégorie.",
+                  : "Aucun professionnel correspondant trouvé sur Winelio : N'APPELLE PLUS d'outil, annonce-le tout de suite au membre et propose d'essayer une ville voisine ou une autre catégorie.",
             };
           }
         }
@@ -727,11 +989,21 @@ Brouillon : ${draftSummary}`;
       } else if (fnName === "update_draft") {
         const warnings: string[] = [];
 
-        if (typeof args.selected_pro_id === "string" && args.selected_pro_id.trim()) {
+        if (typeof args.selected_pro_id === "string") {
           const proId = args.selected_pro_id.trim();
-          if (proId === user.id) {
+          if (!proId || /^(null|none|aucun|clear)$/i.test(proId)) {
+            patch.selectedProId = null;
+            patch.selectedPro = null;
+          } else if (proId === user.id) {
             warnings.push("Interdit : le membre ne peut pas se recommander lui-même.");
-          } else {
+          } else if (surfacedPros !== undefined && !preSelectedPro) {
+            // Interdit d'auto-sélectionner un pro dans le même tour qu'une recherche : le membre doit voir la liste et choisir lui-même
+            patch.selectedProId = null;
+            patch.selectedPro = null;
+            warnings.push(
+              "Ne sélectionne pas de professionnel toi-même après une recherche : invite simplement le membre à choisir dans la liste.",
+            );
+          } else if (UUID_RE.test(proId) || lastSearchedPros.has(proId)) {
             patch.selectedProId = proId;
             if (lastSearchedPros.has(proId)) {
               patch.selectedPro = lastSearchedPros.get(proId)!;
@@ -739,7 +1011,11 @@ Brouillon : ${draftSummary}`;
           }
         }
 
-        if (typeof args.description === "string" && args.description.trim()) {
+        if (
+          typeof args.description === "string" &&
+          args.description.trim() &&
+          !isGenericPlaceholderDescription(args.description)
+        ) {
           patch.description = args.description.trim();
         }
 
@@ -747,7 +1023,10 @@ Brouillon : ${draftSummary}`;
           patch.urgency = args.urgency;
         }
 
-        if (typeof args.selected_contact_id === "string" && args.selected_contact_id.trim()) {
+        if (
+          typeof args.selected_contact_id === "string" &&
+          UUID_RE.test(args.selected_contact_id.trim())
+        ) {
           patch.selectedContactId = args.selected_contact_id.trim();
           patch.createContact = false;
         } else {
@@ -787,12 +1066,31 @@ Brouillon : ${draftSummary}`;
           }
           if (typeof args.email === "string" && args.email.trim()) {
             const auditedEmail = auditSpokenEmail(args.email);
+            const rawSpokenMismatch = auditedEmail.ok
+              ? detectRawSpokenDomainMismatch(latestUserMessage, auditedEmail.email)
+              : null;
             if (!auditedEmail.ok) {
               warnings.push(auditedEmail.reason);
+              rejectedEmailFallback = {
+                suggested: auditedEmail.suggestedEmail,
+                message: auditedEmail.suggestedEmail
+                  ? `J'ai entendu « ${auditedEmail.cleaned} » : vouliez-vous plutôt dire ${auditedEmail.suggestedEmail} ? Vous pouvez me le confirmer ou l'épeler.`
+                  : `Je n'ai pas bien saisi l'adresse e-mail (« ${auditedEmail.cleaned || args.email.trim()} »). Pouvez-vous me l'épeler lettre par lettre ou l'écrire au clavier ?`,
+              };
+            } else if (rawSpokenMismatch) {
+              warnings.push(rawSpokenMismatch.reason);
+              rejectedEmailFallback = {
+                suggested: rawSpokenMismatch.suggestedEmail,
+                message: `J'ai entendu « ${rawSpokenMismatch.spokenEmail} » : vouliez-vous plutôt dire ${rawSpokenMismatch.suggestedEmail} ? Vous pouvez me le confirmer ou l'épeler.`,
+              };
             } else if (accountEmail && auditedEmail.email === accountEmail) {
               warnings.push(
                 "Interdit : l'adresse e-mail donnée est celle du membre connecté. Le recommandé doit être une autre personne.",
               );
+              rejectedEmailFallback = {
+                message:
+                  "Cette adresse e-mail est celle de votre propre compte Winelio : merci d'indiquer l'adresse e-mail personnelle de votre proche.",
+              };
             } else {
               cf.email = auditedEmail.email;
               justCapturedSpokenEmail = auditedEmail.email;
@@ -835,6 +1133,10 @@ Brouillon : ${draftSummary}`;
         }
 
         const nextStatus = computeMissingState(draft, patch, surfacedPros?.length ?? 0);
+        const needInitialProSearch =
+          nextStatus.stage === "search_pro" &&
+          surfacedPros === undefined &&
+          (draft?.recentProfessionals?.length ?? 0) === 0;
         toolResult = {
           ok: warnings.length === 0,
           applied: Object.keys(patch),
@@ -842,9 +1144,15 @@ Brouillon : ${draftSummary}`;
           ready_to_submit: nextStatus.missingFields.length === 0,
           etape_suivante: nextStatus.stage,
           consigne_suite:
-            nextStatus.missingFields.length > 0
-              ? `Pose UNIQUEMENT cette prochaine question courte (ne demande RIEN d'autre en avance, et ne parle pas encore du consentement RGPD) : "${nextStatus.suggestedQuestion}"`
-              : "COMPLET : tous les champs sont remplis, invite le membre à cocher le consentement RGPD et cliquer sur Envoyer la recommandation.",
+            warnings.length > 0
+              ? `ATTENTION : signale clairement cet avertissement au membre en 1-2 phrases courtes et demande-lui de confirmer ou corriger : ${warnings.join(" ")}`
+              : surfacedPros !== undefined && surfacedPros.length === 0
+                ? "Aucun professionnel n'a été trouvé lors de la recherche : annonce-le clairement et propose d'essayer une ville voisine ou une autre catégorie (ne demande PAS le type d'intervention)."
+                : needInitialProSearch
+                  ? `Aucun professionnel n'a encore été cherché : si le membre a mentionné un métier et une ville (ou code postal / gps=true), appelle IMMÉDIATEMENT search_professionals maintenant ! Sinon seulement, pose : "${nextStatus.suggestedQuestion}"`
+                  : nextStatus.missingFields.length > 0
+                    ? `Pose UNIQUEMENT cette prochaine question courte (ne demande RIEN d'autre en avance, et ne parle pas encore du consentement RGPD) : "${nextStatus.suggestedQuestion}"`
+                    : "COMPLET : tous les champs sont remplis, invite le membre à cocher le consentement RGPD et cliquer sur Envoyer la recommandation.",
         };
       }
 
@@ -854,12 +1162,81 @@ Brouillon : ${draftSummary}`;
         content: JSON.stringify(toolResult),
       });
     }
+
+    // Réponse directe après exécution des outils si aucune relance d'outil ni réponse libre n'est requise (divise la latence et les tokens par 2)
+    if (!isConversationalOrMeta) {
+      if (rejectedEmailFallback) {
+        return NextResponse.json(
+          {
+            reply: rejectedEmailFallback.message,
+            professionals: surfacedPros,
+            matchedContacts: surfacedContacts,
+            deviceContactSearchQuery,
+            patch: Object.keys(patch).length > 0 ? patch : undefined,
+          },
+          { headers: { "Cache-Control": "no-store" } },
+        );
+      }
+
+      if (surfacedPros !== undefined) {
+        const afterSearchStatus = computeMissingState(draft, patch, surfacedPros.length);
+        let searchReply: string;
+        if (surfacedPros.length === 0) {
+          searchReply =
+            "Je n'ai trouvé aucun professionnel correspondant dans ce secteur sur Winelio. Souhaitez-vous chercher autour d'une ville voisine ou dans une autre catégorie ?";
+        } else if (surfacedPros.length === 1) {
+          const onlyName =
+            surfacedPros[0].company_name ??
+            `${surfacedPros[0].first_name ?? ""} ${surfacedPros[0].last_name ?? ""}`.trim();
+          searchReply = `J'ai trouvé 1 professionnel correspondant (${onlyName}). Souhaitez-vous le choisir ?`;
+        } else {
+          searchReply = afterSearchStatus.suggestedQuestion;
+        }
+        return NextResponse.json(
+          {
+            reply: searchReply,
+            professionals: surfacedPros,
+            matchedContacts: surfacedContacts,
+            deviceContactSearchQuery,
+            patch: Object.keys(patch).length > 0 ? patch : undefined,
+          },
+          { headers: { "Cache-Control": "no-store" } },
+        );
+      }
+
+      const postToolStatus = computeMissingState(draft, patch, 0);
+      if (
+        Object.keys(patch).length > 0 &&
+        postToolStatus.stage !== "search_pro" &&
+        !surfacedContacts?.length
+      ) {
+        let directReply = postToolStatus.suggestedQuestion;
+        if (justCapturedSpokenEmail && !directReply.toLowerCase().includes(justCapturedSpokenEmail)) {
+          directReply = `J'ai bien noté l'e-mail ${justCapturedSpokenEmail}${
+            justCapturedSpokenName ? ` pour ${justCapturedSpokenName}` : ""
+          } (vérifiez bien son orthographe sur la fiche). ${directReply}`;
+        }
+        return NextResponse.json(
+          {
+            reply: directReply,
+            matchedContacts: surfacedContacts,
+            deviceContactSearchQuery,
+            patch,
+          },
+          { headers: { "Cache-Control": "no-store" } },
+        );
+      }
+    }
   }
 
-  const endStatus = computeMissingState(draft, patch);
+  const endStatus = computeMissingState(draft, patch, surfacedPros?.length ?? 0);
+  const fallbackReply =
+    surfacedPros !== undefined && surfacedPros.length === 0
+      ? "Je n'ai trouvé aucun professionnel correspondant dans ce secteur sur Winelio. Souhaitez-vous chercher autour d'une ville voisine ou dans une autre catégorie ?"
+      : endStatus.suggestedQuestion;
   return NextResponse.json(
     {
-      reply: endStatus.suggestedQuestion,
+      reply: fallbackReply,
       professionals: surfacedPros,
       matchedContacts: surfacedContacts,
       patch: Object.keys(patch).length > 0 ? patch : undefined,
