@@ -36,10 +36,22 @@ type WebContactEntry = {
   address?: WebContactAddress[];
 };
 
+export type NativeAssistantPermissionsResponse = {
+  status: string;
+  microphone: "granted" | "denied" | "undetermined";
+  contacts: "granted" | "denied" | "undetermined";
+  canOpenSettings?: boolean;
+};
+
 declare global {
   interface Window {
     __WINELIO_PICK_CONTACT__?: () => Promise<NativePickResponse>;
     __WINELIO_SEARCH_CONTACTS__?: (query: string) => Promise<NativeSearchResponse>;
+    __WINELIO_PREPARE_ASSISTANT_PERMISSIONS__?: (options?: {
+      includeContacts?: boolean;
+      promptSettings?: boolean;
+    }) => Promise<NativeAssistantPermissionsResponse>;
+    __WINELIO_OPEN_APP_SETTINGS__?: () => void;
   }
   interface Navigator {
     contacts?: {
@@ -336,4 +348,31 @@ export async function searchDeviceContactsByName(
   const res = await window.__WINELIO_SEARCH_CONTACTS__!(query);
   if (res.status !== "ok" || !Array.isArray(res.contacts)) return [];
   return res.contacts;
+}
+
+export function canOpenWinelioAppSettings(): boolean {
+  return typeof window !== "undefined" && typeof window.__WINELIO_OPEN_APP_SETTINGS__ === "function";
+}
+
+export function openWinelioAppSettings(): void {
+  if (canOpenWinelioAppSettings()) {
+    window.__WINELIO_OPEN_APP_SETTINGS__!();
+  }
+}
+
+export async function prepareAssistantNativePermissions(options?: {
+  includeContacts?: boolean;
+  promptSettings?: boolean;
+}): Promise<NativeAssistantPermissionsResponse | null> {
+  if (
+    typeof window === "undefined" ||
+    typeof window.__WINELIO_PREPARE_ASSISTANT_PERMISSIONS__ !== "function"
+  ) {
+    return null;
+  }
+  try {
+    return await window.__WINELIO_PREPARE_ASSISTANT_PERMISSIONS__(options);
+  } catch {
+    return null;
+  }
 }

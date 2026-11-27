@@ -5,7 +5,16 @@ const nativeAppVersion = Constants.expoConfig?.version ?? "";
 
 export type NativeBridgeMessage = {
   requestId?: string;
-  type: "share" | "pushToken" | "pickContact" | "searchContacts" | "webError" | "pageReady" | "pageBlank";
+  type:
+    | "share"
+    | "pushToken"
+    | "pickContact"
+    | "searchContacts"
+    | "assistantPermissions"
+    | "openAppSettings"
+    | "webError"
+    | "pageReady"
+    | "pageBlank";
   payload?: {
     message?: string;
     source?: string;
@@ -15,6 +24,8 @@ export type NativeBridgeMessage = {
     url?: string;
     prompt?: boolean;
     query?: string;
+    includeContacts?: boolean;
+    promptSettings?: boolean;
   };
 };
 
@@ -205,6 +216,46 @@ export const nativeBridgeScript = `
           resolve({ status: "unavailable" });
         }
       });
+    };
+
+    var pendingPermissionRequests = {};
+    var permissionSequence = 0;
+    window.__WINELIO_NATIVE_PERMISSIONS_RESULT__ = function (id, result) {
+      var resolve = pendingPermissionRequests[id];
+      if (!resolve) return;
+      delete pendingPermissionRequests[id];
+      resolve(result || { status: "error" });
+    };
+    window.__WINELIO_PREPARE_ASSISTANT_PERMISSIONS__ = function (options) {
+      return new Promise(function (resolve) {
+        var opts = options || {};
+        var id = "perm-" + String(Date.now()) + "-" + String(++permissionSequence);
+        pendingPermissionRequests[id] = resolve;
+        window.setTimeout(function () {
+          if (pendingPermissionRequests[id]) {
+            delete pendingPermissionRequests[id];
+            resolve({ status: "timeout", microphone: "undetermined", contacts: "undetermined", canOpenSettings: true });
+          }
+        }, 45000);
+        try {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: "assistantPermissions",
+            requestId: id,
+            payload: {
+              includeContacts: opts.includeContacts !== false,
+              promptSettings: Boolean(opts.promptSettings)
+            }
+          }));
+        } catch (_) {
+          delete pendingPermissionRequests[id];
+          resolve({ status: "unavailable", microphone: "undetermined", contacts: "undetermined", canOpenSettings: false });
+        }
+      });
+    };
+    window.__WINELIO_OPEN_APP_SETTINGS__ = function () {
+      try {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: "openAppSettings" }));
+      } catch (_) {}
     };
 
     window.__WINELIO_NATIVE_APP__ = {

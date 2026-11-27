@@ -27,7 +27,7 @@
       "entitlements": {
         "aps-environment": "production"
       },
-      "buildNumber": "13",
+      "buildNumber": "14",
       "associatedDomains": [
         "applinks:winelio.app"
       ],
@@ -51,7 +51,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": true,
-      "versionCode": 17,
+      "versionCode": 18,
       "intentFilters": [
         {
           "action": "VIEW",

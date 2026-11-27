@@ -3,11 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import {
   type ImportedPhoneContact,
+  canOpenWinelioAppSettings,
   canSearchDeviceContacts,
   enrichContactMunicipality,
   mergePhoneContactIntoForm,
+  openWinelioAppSettings,
   parseVcardText,
   pickPhoneContactInteractive,
+  prepareAssistantNativePermissions,
   searchDeviceContactsByName,
 } from "./phone-contacts";
 import { Contact, ContactFormData, Professional, SelfProfile, Urgency, inputCls } from "./types";
@@ -173,6 +176,7 @@ export function AiRecommendationAssistant({
   const [speaking, setSpeaking] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [assistantError, setAssistantError] = useState<string | null>(null);
+  const [showSettingsCta, setShowSettingsCta] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [geoShared, setGeoShared] = useState(false);
   const [editingContactDetails, setEditingContactDetails] = useState(false);
@@ -292,7 +296,16 @@ export function AiRecommendationAssistant({
   };
 
   useEffect(() => {
+    const requestInitialNativePermissions = () => {
+      void prepareAssistantNativePermissions({
+        includeContacts: true,
+        promptSettings: false,
+      });
+    };
+    requestInitialNativePermissions();
+    window.addEventListener("winelio:native-ready", requestInitialNativePermissions);
     return () => {
+      window.removeEventListener("winelio:native-ready", requestInitialNativePermissions);
       stopAudioPlayback();
       cleanupMediaStream();
       if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
@@ -690,9 +703,22 @@ export function AiRecommendationAssistant({
     unlockAudioContext();
     stopAudioPlayback();
     setAssistantError(null);
+    setShowSettingsCta(false);
+
+    const nativePerm = await prepareAssistantNativePermissions({
+      includeContacts: true,
+      promptSettings: true,
+    });
+    if (nativePerm && nativePerm.microphone === "denied") {
+      setShowSettingsCta(Boolean(nativePerm.canOpenSettings));
+      setAssistantError(
+        "Autorisez l'accès au microphone et au répertoire dans les réglages de Winelio, ou écrivez votre message ci-dessous.",
+      );
+      return;
+    }
 
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-      setAssistantError("Votre navigateur ne permet pas l'accès au microphone sur cette page.");
+      setAssistantError("Votre appareil ne permet pas l'accès au microphone sur cette page.");
       return;
     }
 
@@ -759,9 +785,17 @@ export function AiRecommendationAssistant({
       }, 1000);
     } catch {
       cleanupMediaStream();
-      setAssistantError(
-        "Accès au microphone refusé. Autorisez le micro dans votre navigateur ou écrivez votre message ci-dessous.",
-      );
+      if (canOpenWinelioAppSettings()) {
+        void prepareAssistantNativePermissions({ includeContacts: true, promptSettings: true });
+        setShowSettingsCta(true);
+        setAssistantError(
+          "Autorisez l'accès au microphone et au répertoire dans les réglages de Winelio, ou écrivez votre message ci-dessous.",
+        );
+      } else {
+        setAssistantError(
+          "Accès au microphone refusé. Autorisez le micro dans votre navigateur ou écrivez votre message ci-dessous.",
+        );
+      }
     }
   };
 
@@ -854,6 +888,7 @@ export function AiRecommendationAssistant({
     } else if (res.status === "needs-vcard") {
       vcardInputRef.current?.click();
     } else if (res.status === "denied") {
+      setShowSettingsCta(canOpenWinelioAppSettings());
       setAssistantError("Accès au répertoire refusé dans les réglages du téléphone.");
     } else if (res.status === "error") {
       setAssistantError(res.message);
@@ -1162,8 +1197,20 @@ export function AiRecommendationAssistant({
 
         {/* Message d'erreur éventuel */}
         {assistantError && (
-          <div role="alert" className="mx-4 mb-3 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs text-red-700">
-            {assistantError}
+          <div
+            role="alert"
+            className="mx-4 mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs text-red-700"
+          >
+            <span>{assistantError}</span>
+            {showSettingsCta && canOpenWinelioAppSettings() && (
+              <button
+                type="button"
+                onClick={openWinelioAppSettings}
+                className="shrink-0 rounded-lg bg-winelio-orange px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-winelio-amber transition-colors cursor-pointer"
+              >
+                Ouvrir les réglages
+              </button>
+            )}
           </div>
         )}
 

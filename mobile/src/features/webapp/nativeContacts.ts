@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import { promptContactsSettingsAlert } from "./nativePermissions";
 
 export type NormalizedDeviceContact = {
   first_name: string;
@@ -138,11 +139,20 @@ export async function pickNativeContact(): Promise<NativeContactPickResult> {
     if (Platform.OS === "android") {
       const existing = await Contacts.getPermissionsAsync();
       let granted = existing.granted;
+      let blocked = false;
       if (!granted) {
-        const req = await Contacts.requestPermissionsAsync();
-        granted = req.granted;
+        if (existing.canAskAgain === false) {
+          blocked = true;
+        } else {
+          const req = await Contacts.requestPermissionsAsync();
+          granted = req.granted;
+          blocked = !req.granted && req.canAskAgain === false;
+        }
       }
-      if (!granted) return { status: "denied" };
+      if (!granted) {
+        if (blocked) promptContactsSettingsAlert();
+        return { status: "denied" };
+      }
     }
 
     const picked = await Contacts.presentContactPickerAsync();

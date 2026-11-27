@@ -20,6 +20,11 @@ import {
 import { isExternalProtocol, shouldLoadInWebView, webAppEntryUrl } from "@/features/webapp/webAppNavigation";
 import { nativeShareContent, nativeShareResultScript } from "./nativeShare";
 import { nativeContactsResultScript, pickNativeContact, searchNativeContacts } from "./nativeContacts";
+import {
+  ensureAssistantPermissions,
+  nativePermissionsResultScript,
+  openNativeAppSettings,
+} from "./nativePermissions";
 import { nativePushResultScript, requestNativePushToken, subscribePushNotificationClicks } from "./nativePush";
 import { useReferralEntry } from "./useReferralEntry";
 
@@ -183,6 +188,26 @@ export const WinelioWebAppScreen = () => {
       });
       return;
     }
+    if (message.type === "assistantPermissions") {
+      try {
+        if (new URL(event.nativeEvent.url).origin !== new URL(webAppEntryUrl).origin) return;
+      } catch { return; }
+      const requestId = message.requestId!;
+      void ensureAssistantPermissions({
+        includeContacts: message.payload?.includeContacts !== false,
+        promptSettings: Boolean(message.payload?.promptSettings),
+      }).then((result) => {
+        webView.current?.injectJavaScript(nativePermissionsResultScript(requestId, result));
+      });
+      return;
+    }
+    if (message.type === "openAppSettings") {
+      try {
+        if (new URL(event.nativeEvent.url).origin !== new URL(webAppEntryUrl).origin) return;
+      } catch { return; }
+      openNativeAppSettings();
+      return;
+    }
     if (message.type === "pageReady") {
       if (!isHttpDocumentUrl(message.payload?.url)) return;
       markContentVisible();
@@ -216,6 +241,7 @@ export const WinelioWebAppScreen = () => {
             allowsBackForwardNavigationGestures
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
+            mediaCapturePermissionGrantType="grantIfSameHostElseDeny"
             androidLayerType="hardware"
             cacheEnabled
             domStorageEnabled

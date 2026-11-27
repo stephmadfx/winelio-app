@@ -1,3 +1,4 @@
+import AVFAudio
 import ExpoModulesCore
 import UIKit
 
@@ -10,6 +11,36 @@ public class WinelioReferralModule: Module {
     }
     Function("setItem") { (key: String, value: String?) in
       UserDefaults.standard.set(value, forKey: "winelio.referral." + key)
+    }
+
+    AsyncFunction("getMicrophonePermissionStatus") { () -> String in
+      if #available(iOS 17.0, *) {
+        switch AVAudioApplication.shared.recordPermission {
+        case .granted: return "granted"
+        case .denied: return "denied"
+        case .undetermined: return "undetermined"
+        @unknown default: return "undetermined"
+        }
+      } else {
+        switch AVAudioSession.sharedInstance().recordPermission {
+        case .granted: return "granted"
+        case .denied: return "denied"
+        case .undetermined: return "undetermined"
+        @unknown default: return "undetermined"
+        }
+      }
+    }
+
+    AsyncFunction("requestMicrophonePermission") { (promise: Promise) in
+      if #available(iOS 17.0, *) {
+        AVAudioApplication.requestRecordPermission { granted in
+          promise.resolve(granted ? "granted" : "denied")
+        }
+      } else {
+        AVAudioSession.sharedInstance().requestRecordPermission { granted in
+          promise.resolve(granted ? "granted" : "denied")
+        }
+      }
     }
 
     AsyncFunction("hasClipboardLink") { (promise: Promise) in
