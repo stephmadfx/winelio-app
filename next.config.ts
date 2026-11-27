@@ -40,7 +40,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(self), payment=(self)",
+            value: "camera=(), microphone=(self), geolocation=(self), payment=(self)",
           },
           {
             key: "Content-Security-Policy",
@@ -49,7 +49,7 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.js.stripe.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev https://supabase.aide-multimedia.fr https://*.supabase.co https://*.stripe.com",
-              "media-src 'self' https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev https://supabase.aide-multimedia.fr https://*.supabase.co",
+              "media-src 'self' blob: https://pub-e56c979d6a904d1ea7337ebd66a974a5.r2.dev https://supabase.aide-multimedia.fr https://*.supabase.co",
               "font-src 'self'",
               "connect-src 'self' https://supabase.aide-multimedia.fr wss://supabase.aide-multimedia.fr https://geo.api.gouv.fr https://recherche-entreprises.api.gouv.fr https://api.stripe.com https://*.stripe.com https://m.stripe.network",
               "frame-src 'self' https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com https://*.stripe.com https://checkout.stripe.com https://m.stripe.network",
