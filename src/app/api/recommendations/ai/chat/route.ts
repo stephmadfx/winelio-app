@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isAiAssistantAllowed } from "@/lib/ai-assistant-access";
+import {
+  auditSpokenEmail,
+  detectCriticalEmergency,
+} from "@/lib/ai-recommendation-guardrails";
 import { fakeLastActive } from "@/lib/fake-last-active";
 import {
-  EMAIL_REGEX,
   type Contact,
   type ContactFormData,
   type Professional,
@@ -394,6 +397,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Aucun message fourni." }, { status: 400 });
   }
 
+  // Garde-fou déterministe prioritaire : urgences vitales / incendie / accident / fuite de gaz
+  const latestUserMessage =
+    [...incomingMessages].reverse().find((m) => m.role === "user")?.content ?? "";
+  const emergencyReply = detectCriticalEmergency(latestUserMessage);
+  if (emergencyReply) {
+    return NextResponse.json(
+      { reply: emergencyReply },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const [categoriesRes, profileRes] = await Promise.all([
     db.from("categories").select("name").order("name"),
     db.from("profiles").select("first_name").eq("id", user.id).maybeSingle(),
@@ -408,6 +422,8 @@ export async function POST(req: Request) {
   let surfacedPros: Professional[] | undefined;
   let surfacedContacts: Contact[] | undefined;
   let deviceContactSearchQuery: string | undefined;
+  let justCapturedSpokenEmail: string | undefined;
+  let justCapturedSpokenName: string | undefined;
   const lastSearchedPros = new Map<string, Professional>();
   for (const rp of draft?.recentProfessionals ?? []) {
     if (rp.id) {
@@ -449,14 +465,18 @@ export async function POST(req: Request) {
     : "{}";
 
   const systemPrompt = `Assistant Winelio. Aide ${memberFirstName || "le membre"} à préparer une recommandation pour un TIERS (c'est la personne recommandée que le professionnel recontactera, jamais le membre lui-même : ne dis jamais "vous recontacter", dis "recontacter votre proche").
+GARDE-FOU ABSOLU URGENCES & SÉCURITÉ : Si le membre évoque un incendie, un départ de feu, une fuite de gaz, une électrocution, un accident corporel, un malaise grave, une agression ou un danger immédiat, N'APPELLE AUCUN OUTIL (ni search_professionals ni update_draft) : indique fermement que Winelio n'est pas conçue pour les urgences et qu'il faut appeler immédiatement le 18 (Pompiers), le 15 (SAMU), le 17 (Police) ou le 112.
 RÈGLE ABSOLUE DE MISE EN RELATION CACHÉE : Ne donne ni n'invente JAMAIS les coordonnées d'un professionnel (téléphone, e-mail, adresse postale exacte, site web) et ne suggère JAMAIS de chercher ou contacter le pro en direct hors Winelio (ni Google, ni Pages Jaunes, ni appel direct). Si on te les demande, explique que toute mise en relation passe exclusivement par l'envoi de la recommandation sur Winelio pour que le pro recontacte le proche et que la commission du membre soit protégée.
+VÉRIFICATION CRITIQUE DU NOM ET DE L'E-MAIL : Une erreur sur le nom ou surtout sur l'adresse e-mail du proche rend la recommandation non valable. Dès que le membre dicte un nom ou une adresse e-mail :
+- répète explicitement dans ta réponse l'adresse e-mail (et le nom) que tu as comprise pour qu'il la vérifie à l'écran ;
+- s'il y a la moindre ambiguïté phonétique, homophonie ou erreur signalée par update_draft, demande-lui de l'épeler lettre par lettre, de la corriger au clavier, ou d'utiliser le bouton « Répertoire ».
 Éléments requis TOUS OBLIGATOIRES avant la fin :
 1) Professionnel Winelio : utilise search_professionals dès que tu connais le métier/besoin + une ville/code postal (ou gps=true). Si le membre choisit un pro parmi pros_proposes_recemment ("le premier", numéro ou nom), passe son id exact dans update_draft.selected_pro_id.
 2) Besoin + urgence ("urgent", "normal", "flexible").
 3) Recommandé : cherche d'abord avec find_existing_contacts si un nom est cité ; s'il n'existe pas dans le carnet, il faut OBLIGATOIREMENT demander et remplir TOUS ces 7 champs via update_draft : prénom, nom, téléphone, e-mail, numéro et rue (address), ville et code postal.
 INTERDICTION ABSOLUE d'inviter à cocher le consentement RGPD ou de cliquer sur "Envoyer la recommandation" tant que champs_encore_manquants n'est pas vide ([]). Regroupe naturellement les questions (ex: téléphone + e-mail ensemble, puis adresse complète rue + ville).
 Appelle TOUJOURS update_draft dès qu'une info est donnée, même partielle. Si le membre cite dans une même phrase un besoin/métier ET le nom de son proche, appelle à la fois search_professionals, find_existing_contacts et update_draft avant ta réponse finale pour ne jamais redemander ce qu'il vient de dire.
-STYLE VOCAL FLUIDE ET RAPIDE : réponds en 1 ou 2 phrases naturelles et chaleureuses (20 à 30 mots maximum). Quand des fiches pros s'affichent sous ton message, ne récite pas toute la liste : dis simplement combien tu en as trouvé et invite à en choisir un.
+STYLE VOCAL FLUIDE ET RAPIDE : réponds en 1 ou 2 phrases naturelles et chaleureuses (20 à 35 mots maximum). Quand des fiches pros s'affichent sous ton message, ne récite pas toute la liste : dis simplement combien tu en as trouvé et invite à en choisir un.
 Catégories : ${categoryNames.join(", ")}.
 Brouillon : ${draftSummary}`;
 
@@ -562,6 +582,11 @@ Brouillon : ${draftSummary}`;
       const currentStatus = computeMissingState(draft, patch);
       if (currentStatus.missingFields.length > 0 && PREMATURE_COMPLETION_RE.test(reply)) {
         reply = currentStatus.suggestedQuestion;
+      }
+      if (justCapturedSpokenEmail && !reply.toLowerCase().includes(justCapturedSpokenEmail)) {
+        reply = `${reply ? `${reply} ` : ""}J'ai noté l'e-mail ${justCapturedSpokenEmail}${
+          justCapturedSpokenName ? ` pour ${justCapturedSpokenName}` : ""
+        } : vérifiez bien son orthographe sur la fiche (ou épelez-la / corrigez-la au clavier), car une erreur empêcherait de valider la recommandation.`.trim();
       }
       return NextResponse.json(
         {
@@ -761,6 +786,15 @@ Brouillon : ${draftSummary}`;
             cf.last_name = args.last_name.trim();
             touchedContact = true;
           }
+          if (cf.first_name || cf.last_name) {
+            justCapturedSpokenName = [
+              cf.first_name ?? draft?.contactForm?.first_name,
+              cf.last_name ?? draft?.contactForm?.last_name,
+            ]
+              .filter(Boolean)
+              .join(" ")
+              .trim();
+          }
           if (
             !deviceContactSearchQuery &&
             (cf.first_name || cf.last_name) &&
@@ -776,17 +810,16 @@ Brouillon : ${draftSummary}`;
               .trim();
           }
           if (typeof args.email === "string" && args.email.trim()) {
-            const cleanedEmail = cleanSpokenEmail(args.email);
-            if (accountEmail && cleanedEmail === accountEmail) {
+            const auditedEmail = auditSpokenEmail(args.email);
+            if (!auditedEmail.ok) {
+              warnings.push(auditedEmail.reason);
+            } else if (accountEmail && auditedEmail.email === accountEmail) {
               warnings.push(
                 "Interdit : l'adresse e-mail donnée est celle du membre connecté. Le recommandé doit être une autre personne.",
               );
-            } else if (!EMAIL_REGEX.test(cleanedEmail)) {
-              warnings.push(
-                `Format d'e-mail incomplet ("${cleanedEmail}") : demande au membre de confirmer l'adresse e-mail exacte avec le domaine.`,
-              );
             } else {
-              cf.email = cleanedEmail;
+              cf.email = auditedEmail.email;
+              justCapturedSpokenEmail = auditedEmail.email;
               touchedContact = true;
             }
           }

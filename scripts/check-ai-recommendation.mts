@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { parseVcardText, splitPhoneAndCountryCode } from "../src/app/(protected)/recommendations/new/phone-contacts.ts";
 import { isAiAssistantAllowed } from "../src/lib/ai-assistant-access.ts";
+import {
+  auditSpokenEmail,
+  detectCriticalEmergency,
+} from "../src/lib/ai-recommendation-guardrails.ts";
 
 const COMMON_EMAIL_PROVIDERS =
   "(gmail\\.com|orange\\.fr|wanadoo\\.fr|outlook\\.fr|outlook\\.com|hotmail\\.fr|hotmail\\.com|yahoo\\.fr|yahoo\\.com|free\\.fr|sfr\\.fr|laposte\\.net|icloud\\.com|bbox\\.fr|live\\.fr)";
@@ -94,5 +98,35 @@ assert.equal(isAiAssistantAllowed(null), false);
 process.env.AI_ASSISTANT_ALLOWED_EMAILS = "*";
 assert.equal(isAiAssistantAllowed({ email: "autre.membre@gmail.com" }), true);
 delete process.env.AI_ASSISTANT_ALLOWED_EMAILS;
+
+// Garde-fous urgences vitales / incendie / accident / gaz
+assert.ok(detectCriticalEmergency("Au secours il y a un incendie chez mon voisin"));
+assert.ok(detectCriticalEmergency("C'est urgent mon ami vient d'avoir un accident"));
+assert.ok(detectCriticalEmergency("Ça sent le gaz dans la cuisine, il me faut quelqu'un vite"));
+assert.ok(detectCriticalEmergency("Il a fait un malaise grave"));
+assert.equal(
+  detectCriticalEmergency("Mon voisin cherche un courtier pour son assurance incendie à Lille"),
+  null,
+);
+assert.equal(
+  detectCriticalEmergency("Fuite d'eau urgente sous l'évier à Maubeuge"),
+  null,
+);
+
+// Vérification et détection des erreurs de transcription d'adresses e-mail dictées
+const badDomainFr = auditSpokenEmail("jean point dupont arobase gmail point fr");
+assert.equal(badDomainFr.ok, false);
+if (!badDomainFr.ok) {
+  assert.equal(badDomainFr.suggestedEmail, "jean.dupont@gmail.com");
+}
+
+const typoGmial = auditSpokenEmail("marc.martin@gmial.com");
+assert.equal(typoGmial.ok, false);
+if (!typoGmial.ok) {
+  assert.equal(typoGmial.suggestedEmail, "marc.martin@gmail.com");
+}
+
+const validOrange = auditSpokenEmail("claire tiret martin arobase orange point fr");
+assert.deepEqual(validOrange, { ok: true, email: "claire-martin@orange.fr" });
 
 console.log("check-ai-recommendation: OK");

@@ -180,6 +180,7 @@ export function AiRecommendationAssistant({
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [geoShared, setGeoShared] = useState(false);
   const [editingContactDetails, setEditingContactDetails] = useState(false);
+  const [contactFromDirectory, setContactFromDirectory] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -628,6 +629,7 @@ export function AiRecommendationAssistant({
           setContactForm(nextContactForm);
           setCreateContact(true);
           setSelectedContactId(null);
+          setContactFromDirectory(false);
           nextSelectedContactId = null;
         }
       }
@@ -654,6 +656,7 @@ export function AiRecommendationAssistant({
           setContactForm(nextContactForm);
           setCreateContact(true);
           setSelectedContactId(null);
+          setContactFromDirectory(true);
 
           const stillMissing: string[] = [];
           if (!nextContactForm.first_name.trim()) stillMissing.push("son prénom");
@@ -849,6 +852,7 @@ export function AiRecommendationAssistant({
     setContactErrors({});
     setCreateContact(true);
     setSelectedContactId(null);
+    setContactFromDirectory(true);
     setThirdPartyConsent(false);
     setAssistantError(null);
 
@@ -1548,6 +1552,22 @@ export function AiRecommendationAssistant({
                   <p className="text-red-600 font-medium">
                     Le recommandé ne peut pas utiliser votre propre adresse e-mail.
                   </p>
+                )}
+                {!contactFromDirectory && (contactForm.email || contactForm.first_name || contactForm.last_name) && (
+                  <div className="mt-2 rounded-lg border border-amber-300/80 bg-amber-50/90 px-3 py-2 text-[11px] leading-relaxed text-amber-900 flex flex-wrap items-center justify-between gap-2">
+                    <span>
+                      <strong>Vérification importante :</strong> contrôlez l&apos;orthographe exacte du nom et surtout de l&apos;adresse e-mail{contactForm.email ? ` (${contactForm.email})` : ""} avant l&apos;envoi, sinon la recommandation ne sera pas valable.
+                    </span>
+                    {!editingContactDetails && (
+                      <button
+                        type="button"
+                        onClick={() => setEditingContactDetails(true)}
+                        className="shrink-0 rounded-md border border-amber-400 bg-white px-2.5 py-1 text-[11px] font-semibold text-amber-900 hover:bg-amber-100 transition-colors cursor-pointer"
+                      >
+                        Vérifier / Corriger
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
 

@@ -66,6 +66,11 @@ async function resolveGradiumFrenchVoiceId(baseUrl: string, apiKey: string): Pro
 
 function normalizeForSpeech(raw: string): string {
   return raw
+    .replace(
+      /([a-zA-Z0-9._+-]+)@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,
+      (_, local: string, domain: string) =>
+        `${local.replace(/\./g, " point ").replace(/_/g, " tiret bas ").replace(/-/g, " tiret ")} arobase ${domain.replace(/\./g, " point ")}`,
+    )
     .replace(/[*_`#>]/g, "")
     .replace(/1️⃣/g, "Premier choix :")
     .replace(/2️⃣/g, "Deuxième choix :")
