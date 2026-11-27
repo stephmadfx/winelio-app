@@ -41,6 +41,7 @@ export type NativeAssistantPermissionsResponse = {
   microphone: "granted" | "denied" | "undetermined";
   contacts: "granted" | "denied" | "undetermined";
   canOpenSettings?: boolean;
+  blockedInSettings?: boolean;
 };
 
 declare global {
@@ -350,6 +351,38 @@ export async function searchDeviceContactsByName(
   return res.contacts;
 }
 
+type WinelioNativeAppMeta = {
+  platform?: string;
+  version?: string;
+  build?: number | null;
+  capabilities?: { contacts?: boolean; microphone?: boolean };
+};
+
+function readNativeAppMeta(): WinelioNativeAppMeta | undefined {
+  if (typeof window === "undefined") return undefined;
+  return (window as Window & { __WINELIO_NATIVE_APP__?: WinelioNativeAppMeta }).__WINELIO_NATIVE_APP__;
+}
+
+export function getWinelioNativePlatform(): "ios" | "android" | null {
+  if (typeof window === "undefined") return null;
+  const fromBridge = readNativeAppMeta()?.platform;
+  if (fromBridge === "ios" || fromBridge === "android") return fromBridge;
+  const fromAttr = document.documentElement?.getAttribute("data-winelio-native");
+  if (fromAttr === "ios" || fromAttr === "android") return fromAttr;
+  return null;
+}
+
+export function isAndroidNativeWithoutMicManifest(): boolean {
+  if (getWinelioNativePlatform() !== "android") return false;
+  return !readNativeAppMeta()?.capabilities?.microphone;
+}
+
+export function getNativeAndroidBuild(): number {
+  const meta = readNativeAppMeta();
+  if (meta?.platform !== "android") return 0;
+  return Number(meta.build ?? 0) || 0;
+}
+
 export function canOpenWinelioAppSettings(): boolean {
   return typeof window !== "undefined" && typeof window.__WINELIO_OPEN_APP_SETTINGS__ === "function";
 }
@@ -358,6 +391,33 @@ export function openWinelioAppSettings(): void {
   if (canOpenWinelioAppSettings()) {
     window.__WINELIO_OPEN_APP_SETTINGS__!();
   }
+}
+
+export function openWinelioAppSettingsAndVerify(timeoutMs = 750): Promise<boolean> {
+  if (!canOpenWinelioAppSettings() || typeof document === "undefined") {
+    return Promise.resolve(false);
+  }
+  return new Promise<boolean>((resolve) => {
+    let settled = false;
+    const finish = (opened: boolean) => {
+      if (settled) return;
+      settled = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("blur", onBlur);
+      clearTimeout(timer);
+      resolve(opened);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") finish(true);
+    };
+    const onBlur = () => finish(true);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("blur", onBlur);
+    const timer = setTimeout(() => {
+      finish(document.visibilityState === "hidden" || !document.hasFocus());
+    }, timeoutMs);
+    openWinelioAppSettings();
+  });
 }
 
 export async function prepareAssistantNativePermissions(options?: {
@@ -371,7 +431,8 @@ export async function prepareAssistantNativePermissions(options?: {
     return null;
   }
   try {
-    const timeoutMs = options?.promptSettings ? 2500 : 12000;
+    const isModernAndroid = getNativeAndroidBuild() >= 20;
+    const timeoutMs = isModernAndroid ? 45000 : options?.promptSettings ? 2500 : 12000;
     return await Promise.race([
       window.__WINELIO_PREPARE_ASSISTANT_PERMISSIONS__(options),
       new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),

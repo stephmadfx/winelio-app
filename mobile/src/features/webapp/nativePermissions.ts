@@ -14,6 +14,7 @@ export type AssistantPermissionsResult = {
   microphone: PermissionState;
   contacts: PermissionState;
   canOpenSettings: boolean;
+  blockedInSettings?: boolean;
 };
 
 const nativeMicModule =
@@ -51,7 +52,7 @@ function promptMicAndContactsSettingsAlert(contactsDenied: boolean): void {
   );
 }
 
-async function resolveMicrophonePermission(): Promise<{
+async function resolveIosMicrophonePermission(): Promise<{
   state: PermissionState;
   blockedInSettings: boolean;
 }> {
@@ -68,26 +69,6 @@ async function resolveMicrophonePermission(): Promise<{
       return { state: "denied", blockedInSettings: true };
     } catch {
       return { state: "undetermined", blockedInSettings: false };
-    }
-  }
-
-  if (Platform.OS === "android") {
-    try {
-      const perm = PermissionsAndroid.PERMISSIONS.RECORD_AUDIO;
-      const already = await PermissionsAndroid.check(perm);
-      if (already) {
-        return { state: "granted", blockedInSettings: false };
-      }
-      const res = await PermissionsAndroid.request(perm);
-      if (res === PermissionsAndroid.RESULTS.GRANTED) {
-        return { state: "granted", blockedInSettings: false };
-      }
-      return {
-        state: "denied",
-        blockedInSettings: res === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN,
-      };
-    } catch {
-      return { state: "denied", blockedInSettings: false };
     }
   }
 
@@ -110,6 +91,80 @@ async function resolveContactsPermission(shouldRequest: boolean): Promise<Permis
   }
 }
 
+async function ensureAndroidAssistantPermissions(options: {
+  includeContacts: boolean;
+  promptSettings: boolean;
+}): Promise<AssistantPermissionsResult> {
+  const micPerm = PermissionsAndroid.PERMISSIONS.RECORD_AUDIO;
+  const contactsPerm = PermissionsAndroid.PERMISSIONS.READ_CONTACTS;
+
+  try {
+    const micAlready = await PermissionsAndroid.check(micPerm);
+    const contactsAlready = options.includeContacts
+      ? await PermissionsAndroid.check(contactsPerm)
+      : false;
+
+    const toRequest: Array<typeof micPerm | typeof contactsPerm> = [];
+    if (!micAlready) toRequest.push(micPerm);
+    if (options.includeContacts && !contactsAlready) toRequest.push(contactsPerm);
+
+    if (toRequest.length === 0) {
+      let contactsState: PermissionState = contactsAlready ? "granted" : "undetermined";
+      if (!options.includeContacts) {
+        contactsState = (await PermissionsAndroid.check(contactsPerm)) ? "granted" : "undetermined";
+      }
+      return {
+        status: "ok",
+        microphone: "granted",
+        contacts: contactsState,
+        canOpenSettings: true,
+        blockedInSettings: false,
+      };
+    }
+
+    // Un seul appel Activity.requestPermissions groupé évite l'écrasement de mPermissionListener sur Android
+    const results = await PermissionsAndroid.requestMultiple(toRequest);
+    const micResult = micAlready
+      ? PermissionsAndroid.RESULTS.GRANTED
+      : results[micPerm];
+    const contactsResult = contactsAlready
+      ? PermissionsAndroid.RESULTS.GRANTED
+      : options.includeContacts
+        ? results[contactsPerm]
+        : undefined;
+
+    const micState: PermissionState =
+      micResult === PermissionsAndroid.RESULTS.GRANTED ? "granted" : "denied";
+    const contactsState: PermissionState =
+      contactsResult === PermissionsAndroid.RESULTS.GRANTED
+        ? "granted"
+        : contactsResult
+          ? "denied"
+          : "undetermined";
+    const micBlockedInSettings = micResult === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN;
+
+    if (options.promptSettings && micState !== "granted" && micBlockedInSettings) {
+      promptMicAndContactsSettingsAlert(contactsState === "denied");
+    }
+
+    return {
+      status: "ok",
+      microphone: micState,
+      contacts: contactsState,
+      canOpenSettings: true,
+      blockedInSettings: micBlockedInSettings,
+    };
+  } catch {
+    return {
+      status: "ok",
+      microphone: "denied",
+      contacts: "undetermined",
+      canOpenSettings: true,
+      blockedInSettings: false,
+    };
+  }
+}
+
 export async function ensureAssistantPermissions(options: {
   includeContacts?: boolean;
   promptSettings?: boolean;
@@ -118,7 +173,14 @@ export async function ensureAssistantPermissions(options: {
 
   const run = (async (): Promise<AssistantPermissionsResult> => {
     const includeContacts = options.includeContacts !== false;
-    const mic = await resolveMicrophonePermission();
+    if (Platform.OS === "android") {
+      return ensureAndroidAssistantPermissions({
+        includeContacts,
+        promptSettings: Boolean(options.promptSettings),
+      });
+    }
+
+    const mic = await resolveIosMicrophonePermission();
     const contacts = await resolveContactsPermission(includeContacts);
 
     if (options.promptSettings && mic.state !== "granted" && mic.blockedInSettings) {
@@ -129,7 +191,8 @@ export async function ensureAssistantPermissions(options: {
       status: "ok",
       microphone: mic.state,
       contacts,
-      canOpenSettings: Platform.OS === "ios" || Platform.OS === "android",
+      canOpenSettings: Platform.OS === "ios",
+      blockedInSettings: mic.blockedInSettings,
     };
   })();
 

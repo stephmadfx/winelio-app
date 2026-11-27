@@ -5,6 +5,10 @@ import { parseNativeBridgeMessage, type NativeBridgeMessage } from "./nativeBrid
 export { parseNativeBridgeMessage, type NativeBridgeMessage };
 
 const nativeAppVersion = Constants.expoConfig?.version ?? "";
+const nativeBuildNumber =
+  Platform.OS === "android"
+    ? (Constants.expoConfig?.android?.versionCode ?? 20)
+    : Number(Constants.expoConfig?.ios?.buildNumber ?? 0) || undefined;
 
 export const nativeBridgeScript = `
   (function () {
@@ -238,6 +242,7 @@ export const nativeBridgeScript = `
     window.__WINELIO_NATIVE_APP__ = {
       platform: "${Platform.OS}",
       version: ${JSON.stringify(nativeAppVersion)},
+      build: ${JSON.stringify(nativeBuildNumber ?? null)},
       capabilities: { contacts: true, microphone: true }
     };
     window.dispatchEvent(new CustomEvent("winelio:native-ready"));

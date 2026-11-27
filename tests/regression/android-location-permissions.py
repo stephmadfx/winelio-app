@@ -27,7 +27,9 @@ public class LocationPermissionTest {
   static class PermissionRequest {
     static final String RESOURCE_AUDIO_CAPTURE="audio", RESOURCE_VIDEO_CAPTURE="camera", RESOURCE_PROTECTED_MEDIA_ID="media";
     List<String> received;
+    boolean denied;
     void grant(String[] values) { received=Arrays.asList(values); }
+    void deny() { denied=true; }
   }
   Object getThemedReactContext() { return null; }
   LocationPermissionTest mWebView=this;
@@ -73,7 +75,14 @@ public class LocationPermissionTest {
     t.start(); t.pendingPermissions.add("camera");
     assert !t.webviewPermissionsListener.onRequestPermissionsResult(3,new String[]{"fine","coarse"},new int[]{-1,-1});
     assert t.calls==1 && !t.allowed && t.requested.equals(List.of("camera"));
-    System.out.println("PASS Android location: cached precise/approximate, fresh request, mixed grants, denial, single callback, camera and queue");
+    t.pendingPermissions.clear();
+    PermissionRequest deniedAudio=new PermissionRequest(); t.permissionRequest=deniedAudio; t.grantedPermissions=new ArrayList<>();
+    assert t.webviewPermissionsListener.onRequestPermissionsResult(3,new String[]{"audio"},new int[]{-1});
+    assert deniedAudio.denied && deniedAudio.received==null && t.permissionRequest==null;
+    PermissionRequest cancelledAudio=new PermissionRequest(); t.permissionRequest=cancelledAudio; t.grantedPermissions=new ArrayList<>();
+    assert t.webviewPermissionsListener.onRequestPermissionsResult(3,new String[]{},new int[]{});
+    assert cancelledAudio.denied && t.permissionRequest==null;
+    System.out.println("PASS Android location: cached precise/approximate, fresh request, mixed grants, denial, single callback, camera, audio denial and queue");
   }
 }
 '''

@@ -6,8 +6,11 @@ import {
   canOpenWinelioAppSettings,
   canSearchDeviceContacts,
   enrichContactMunicipality,
+  getNativeAndroidBuild,
+  getWinelioNativePlatform,
+  isAndroidNativeWithoutMicManifest,
   mergePhoneContactIntoForm,
-  openWinelioAppSettings,
+  openWinelioAppSettingsAndVerify,
   parseVcardText,
   pickPhoneContactInteractive,
   prepareAssistantNativePermissions,
@@ -177,6 +180,10 @@ export function AiRecommendationAssistant({
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [assistantError, setAssistantError] = useState<string | null>(null);
   const [showSettingsCta, setShowSettingsCta] = useState(false);
+  const [micCanRePrompt, setMicCanRePrompt] = useState(false);
+  const [openingSettings, setOpeningSettings] = useState(false);
+  const [showManualAndroidGuide, setShowManualAndroidGuide] = useState(false);
+  const [needsPlayStoreUpdate, setNeedsPlayStoreUpdate] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [geoShared, setGeoShared] = useState(false);
   const [editingContactDetails, setEditingContactDetails] = useState(false);
@@ -302,15 +309,24 @@ export function AiRecommendationAssistant({
 
   useEffect(() => {
     const requestInitialNativePermissions = () => {
+      // Sur iOS uniquement : sur Android, un appel au montage peut écraser mPermissionListener lors du clic micro
+      if (getWinelioNativePlatform() !== "ios") return;
       void prepareAssistantNativePermissions({
         includeContacts: true,
         promptSettings: false,
       });
     };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        setShowManualAndroidGuide(false);
+      }
+    };
     requestInitialNativePermissions();
     window.addEventListener("winelio:native-ready", requestInitialNativePermissions);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       window.removeEventListener("winelio:native-ready", requestInitialNativePermissions);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       stopAudioPlayback();
       cleanupMediaStream();
       if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
@@ -711,18 +727,82 @@ export function AiRecommendationAssistant({
     unlockAudioContext(true);
     setAssistantError(null);
     setShowSettingsCta(false);
+    setMicCanRePrompt(false);
+    setShowManualAndroidGuide(false);
+    setNeedsPlayStoreUpdate(false);
+
+    if (isAndroidNativeWithoutMicManifest()) {
+      setNeedsPlayStoreUpdate(true);
+      setAssistantError(
+        "Mettez à jour l'application Winelio sur Google Play pour activer le microphone, ou écrivez votre message ci-dessous.",
+      );
+      return;
+    }
 
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       setAssistantError("Votre appareil ne permet pas l'accès au microphone sur cette page.");
       return;
     }
 
+    const platform = getWinelioNativePlatform();
+    const androidBuild = getNativeAndroidBuild();
+
     try {
-      // Appel direct dans le geste utilisateur (sans await intermédiaire) pour préserver
-      // l'activation WebKit iOS et démarrer immédiatement la capture micro.
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // En parallèle (sans bloquer l'enregistrement), préparer l'autorisation Répertoire si pas encore demandée
-      void prepareAssistantNativePermissions({ includeContacts: true, promptSettings: false });
+      // Android natif (build >= 20) : demande groupée Micro + Contacts en un seul appel système avant getUserMedia
+      if (platform === "android" && androidBuild >= 20) {
+        const perm = await prepareAssistantNativePermissions({
+          includeContacts: true,
+          promptSettings: false,
+        });
+        if (!perm || perm.microphone !== "granted") {
+          const canRePrompt = Boolean(perm && perm.blockedInSettings === false);
+          setMicCanRePrompt(canRePrompt);
+          setShowSettingsCta(true);
+          setAssistantError(
+            canRePrompt
+              ? "Accès au microphone non accordé. Touchez « Autoriser le micro » ou écrivez votre message ci-dessous."
+              : "Autorisez l'accès au microphone et au répertoire dans les réglages de Winelio, ou écrivez votre message ci-dessous.",
+          );
+          return;
+        }
+      }
+
+      // Sur iOS : appel direct dans le geste utilisateur (sans await intermédiaire)
+      // Sur Android builds < 20 : garde-fou de 2,8 s si RNCWebChromeClient ne rejette pas un refus micro
+      const rawMediaPromise = navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream =
+        platform === "android" && androidBuild < 20
+          ? await new Promise<MediaStream>((resolve, reject) => {
+              let done = false;
+              const checkHang = setTimeout(() => {
+                if (!done && document.visibilityState === "visible" && document.hasFocus()) {
+                  done = true;
+                  reject(new Error("mic-denied"));
+                }
+              }, 2800);
+              rawMediaPromise.then(
+                (s) => {
+                  if (done) {
+                    s.getTracks().forEach((t) => t.stop());
+                    return;
+                  }
+                  done = true;
+                  clearTimeout(checkHang);
+                  resolve(s);
+                },
+                (err) => {
+                  if (done) return;
+                  done = true;
+                  clearTimeout(checkHang);
+                  reject(err);
+                },
+              );
+            })
+          : await rawMediaPromise;
+
+      if (platform === "ios") {
+        void prepareAssistantNativePermissions({ includeContacts: true, promptSettings: false });
+      }
       mediaStreamRef.current = stream;
       chunksRef.current = [];
       discardRecordingRef.current = false;
@@ -785,7 +865,9 @@ export function AiRecommendationAssistant({
     } catch {
       cleanupMediaStream();
       if (canOpenWinelioAppSettings()) {
-        void prepareAssistantNativePermissions({ includeContacts: true, promptSettings: true });
+        if (platform === "ios") {
+          void prepareAssistantNativePermissions({ includeContacts: true, promptSettings: true });
+        }
         setShowSettingsCta(true);
         setAssistantError(
           "Autorisez l'accès au microphone et au répertoire dans les réglages de Winelio, ou écrivez votre message ci-dessous.",
@@ -795,6 +877,28 @@ export function AiRecommendationAssistant({
           "Accès au microphone refusé. Autorisez le micro dans votre navigateur ou écrivez votre message ci-dessous.",
         );
       }
+    }
+  };
+
+  const handleAuthorizeMicOrOpenSettings = async () => {
+    if (openingSettings) return;
+    if (micCanRePrompt) {
+      await startRecording();
+      return;
+    }
+    setOpeningSettings(true);
+    try {
+      const opened = await openWinelioAppSettingsAndVerify(750);
+      setOpeningSettings(false);
+      if (!opened) {
+        setShowManualAndroidGuide(true);
+        if (getWinelioNativePlatform() === "android") {
+          setNeedsPlayStoreUpdate(true);
+        }
+      }
+    } catch {
+      setOpeningSettings(false);
+      setShowManualAndroidGuide(true);
     }
   };
 
@@ -1199,17 +1303,48 @@ export function AiRecommendationAssistant({
         {assistantError && (
           <div
             role="alert"
-            className="mx-4 mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs text-red-700"
+            className="mx-4 mb-3 space-y-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs text-red-700"
           >
-            <span>{assistantError}</span>
-            {showSettingsCta && canOpenWinelioAppSettings() && (
-              <button
-                type="button"
-                onClick={openWinelioAppSettings}
-                className="shrink-0 rounded-lg bg-winelio-orange px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-winelio-amber transition-colors cursor-pointer"
-              >
-                Ouvrir les réglages
-              </button>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span>{assistantError}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                {showSettingsCta && canOpenWinelioAppSettings() && (
+                  <button
+                    type="button"
+                    disabled={openingSettings}
+                    onClick={() => void handleAuthorizeMicOrOpenSettings()}
+                    className="shrink-0 rounded-lg bg-winelio-orange px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-winelio-amber disabled:opacity-60 transition-colors cursor-pointer"
+                  >
+                    {openingSettings
+                      ? "Ouverture…"
+                      : micCanRePrompt
+                        ? "Autoriser le micro"
+                        : "Ouvrir les réglages"}
+                  </button>
+                )}
+                {needsPlayStoreUpdate && (
+                  <a
+                    href="https://play.google.com/store/apps/details?id=app.winelio.mobile"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 rounded-lg border border-winelio-orange bg-white px-3 py-1.5 text-xs font-bold text-winelio-orange hover:bg-winelio-orange/5 transition-colors"
+                  >
+                    Mettre à jour sur Play Store
+                  </a>
+                )}
+              </div>
+            </div>
+            {showManualAndroidGuide && (
+              <div className="rounded-lg border border-red-200/80 bg-white px-3 py-2 text-[11px] leading-relaxed text-winelio-dark">
+                <p className="font-semibold text-winelio-dark">
+                  Activation manuelle sur Android (3 étapes) :
+                </p>
+                <ol className="mt-1 list-decimal pl-4 space-y-0.5 text-winelio-gray">
+                  <li>Ouvrez l&apos;application <strong>Paramètres</strong> de votre téléphone</li>
+                  <li>Allez dans <strong>Applications → Winelio → Autorisations</strong></li>
+                  <li>Activez <strong>Microphone</strong> et <strong>Contacts</strong>, puis revenez ici</li>
+                </ol>
+              </div>
             )}
           </div>
         )}
