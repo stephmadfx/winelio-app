@@ -3,7 +3,9 @@ import { parseVcardText, splitPhoneAndCountryCode } from "../src/app/(protected)
 import { isAiAssistantAllowed } from "../src/lib/ai-assistant-access.ts";
 import {
   auditSpokenEmail,
+  computeConversationStage,
   detectCriticalEmergency,
+  enforceStepByStepReply,
 } from "../src/lib/ai-recommendation-guardrails.ts";
 
 const COMMON_EMAIL_PROVIDERS =
@@ -128,5 +130,34 @@ if (!typoGmial.ok) {
 
 const validOrange = auditSpokenEmail("claire tiret martin arobase orange point fr");
 assert.deepEqual(validOrange, { ok: true, email: "claire-martin@orange.fr" });
+
+// Rythme conversationnel progressif (une seule étape à la fois, sans interrogatoire groupé)
+const stChoosePro = computeConversationStage({ selectedProId: null }, 6);
+assert.equal(stChoosePro.stage, "choose_pro");
+const sanitizedWallOfQuestions = enforceStepByStepReply(
+  "J'ai trouvé 6 plombiers près de Maubeuge. Pour quel besoin et quelle urgence ? Et pouvez-vous me donner le prénom, nom, e-mail, téléphone, adresse, ville et code postal ?",
+  stChoosePro,
+  6,
+);
+assert.ok(!/e-?mail|code postal/i.test(sanitizedWallOfQuestions));
+assert.ok(sanitizedWallOfQuestions.includes("6 professionnels"));
+
+const stDescribeNeed = computeConversationStage({ selectedProId: "pro-1", description: "" }, 0);
+assert.equal(stDescribeNeed.stage, "describe_need");
+assert.equal(
+  enforceStepByStepReply(
+    "Quel est le besoin et donnez-moi aussi le prénom, l'e-mail et l'adresse du client ?",
+    stDescribeNeed,
+    0,
+  ),
+  "C'est bien noté ! De quel type d'intervention s'agit-il et est-ce urgent ?",
+);
+
+const stNameOnly = computeConversationStage({
+  selectedProId: "pro-1",
+  description: "Fuite chauffe-eau",
+  contactForm: {},
+});
+assert.equal(stNameOnly.stage, "contact_name");
 
 console.log("check-ai-recommendation: OK");

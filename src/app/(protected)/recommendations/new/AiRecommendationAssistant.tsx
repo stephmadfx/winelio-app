@@ -54,7 +54,7 @@ type UiMessage = {
 };
 
 const INITIAL_GREETING =
-  "Bonjour ! Touchez le micro et dites-moi pour qui vous cherchez un professionnel, son besoin et sa ville.";
+  "Bonjour ! Touchez « Parler » et dites-moi simplement quel professionnel vous cherchez et autour de quelle ville.";
 
 const QUICK_PROMPTS = [
   "Mon voisin cherche un plombier rapidement",
@@ -188,6 +188,7 @@ export function AiRecommendationAssistant({
   const [geoShared, setGeoShared] = useState(false);
   const [editingContactDetails, setEditingContactDetails] = useState(false);
   const [contactFromDirectory, setContactFromDirectory] = useState(false);
+  const [expandedProMsgIds, setExpandedProMsgIds] = useState<Record<string, boolean>>({});
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -200,7 +201,8 @@ export function AiRecommendationAssistant({
   const activeSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   const ttsAbortRef = useRef<AbortController | null>(null);
   const playbackSeqRef = useRef(0);
-  const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const assistantCardRef = useRef<HTMLDivElement | null>(null);
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const summaryCardRef = useRef<HTMLDivElement | null>(null);
   const vcardInputRef = useRef<HTMLInputElement | null>(null);
   const lastCompositionEndRef = useRef<number | null>(null);
@@ -234,7 +236,10 @@ export function AiRecommendationAssistant({
   };
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const el = chatScrollRef.current;
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }
   }, [messages, transcribing, thinking]);
 
   const unlockAudioContext = (forRecording = false) => {
@@ -933,6 +938,7 @@ export function AiRecommendationAssistant({
 
   const handleSelectProFromChat = (pro: Professional) => {
     onSelectPro(pro.id, pro);
+    setExpandedProMsgIds({});
     const proLabel = pro.company_name ?? `${pro.first_name ?? ""} ${pro.last_name ?? ""}`.trim();
     void sendUserMessage(`Je choisis ${proLabel}.`);
   };
@@ -1066,7 +1072,8 @@ export function AiRecommendationAssistant({
       />
       {/* Colonne Dialogue Vocal & Écrit avec liseré lumineux tournant tout autour du bloc */}
       <div
-        className="lg:col-span-7 relative"
+        ref={assistantCardRef}
+        className="lg:col-span-7 relative scroll-mt-16"
         style={{
           borderRadius: "18px",
           padding: "2px",
@@ -1095,11 +1102,11 @@ export function AiRecommendationAssistant({
           className="relative z-10 bg-white flex flex-col"
           style={{ borderRadius: "16px", overflow: "hidden" }}
         >
-        {/* Barre supérieure de l'assistant : empilée proprement sur mobile, en ligne sur sm+ */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 border-b border-winelio-gray/10 bg-winelio-light/70 px-3.5 sm:px-4 py-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-winelio-orange to-winelio-amber text-white shadow-sm">
-              <svg aria-hidden="true" className="w-5 h-5 overflow-visible" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        {/* Barre supérieure compacte sur une seule ligne pour préserver la hauteur mobile */}
+        <div className="flex items-center justify-between gap-2 border-b border-winelio-gray/10 bg-winelio-light/70 px-3 sm:px-4 py-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-winelio-orange to-winelio-amber text-white shadow-sm">
+              <svg aria-hidden="true" className="w-4 h-4 sm:w-5 sm:h-5 overflow-visible" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <line x1="4.5" y1="8.5" x2="4.5" y2="14.5" strokeLinecap="round" className="mic-bar-inner" />
                 <line x1="19.5" y1="8.5" x2="19.5" y2="14.5" strokeLinecap="round" className="mic-bar-inner" />
                 <g className="mic-capsule-anim">
@@ -1108,19 +1115,19 @@ export function AiRecommendationAssistant({
               </svg>
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-winelio-dark truncate">Assistant recommandation Winelio</p>
-              <p className="text-xs text-winelio-gray truncate">
-                {speaking ? "Parle actuellement…" : "Parlez au micro ou écrivez ci-dessous"}
+              <p className="text-xs sm:text-sm font-bold text-winelio-dark truncate">Assistant vocal</p>
+              <p className="text-[11px] text-winelio-gray truncate">
+                {speaking ? "Vous répond…" : "Étape par étape"}
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={shareGeo}
               disabled={geoShared}
-              className={`inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer min-h-9 ${
+              className={`inline-flex items-center justify-center gap-1 rounded-xl border px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer min-h-8 ${
                 geoShared
                   ? "border-green-200 bg-green-50 text-green-700"
                   : "border-winelio-gray/20 bg-white text-winelio-gray hover:border-winelio-orange/40 hover:text-winelio-dark"
@@ -1130,7 +1137,8 @@ export function AiRecommendationAssistant({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
               </svg>
-              <span>{geoShared ? "Position active" : "Autour de moi"}</span>
+              <span className="hidden sm:inline">{geoShared ? "Position active" : "Autour de moi"}</span>
+              <span className="sm:hidden">{geoShared ? "GPS ✓" : "GPS"}</span>
             </button>
 
             <button
@@ -1141,32 +1149,43 @@ export function AiRecommendationAssistant({
                 setVoiceEnabled(next);
                 if (!next) stopAudioPlayback();
               }}
-              className={`inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer min-h-9 ${
+              className={`inline-flex items-center justify-center gap-1 rounded-xl border px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer min-h-8 ${
                 voiceEnabled
                   ? "border-winelio-orange/30 bg-winelio-orange/10 text-winelio-orange"
                   : "border-winelio-gray/20 bg-white text-winelio-gray"
               }`}
             >
               {voiceEnabled ? (
-                <svg aria-hidden="true" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg aria-hidden="true" className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
                 </svg>
               ) : (
-                <svg aria-hidden="true" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg aria-hidden="true" className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 011.28.531V19.94a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.506-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.395C2.806 8.757 3.63 8.25 4.51 8.25H6.75z" />
                 </svg>
               )}
-              <span>{voiceEnabled ? "Voix IA active" : "Voix coupée"}</span>
+              <span className="hidden sm:inline">{voiceEnabled ? "Voix IA active" : "Voix coupée"}</span>
+              <span className="sm:hidden">{voiceEnabled ? "Voix" : "Muet"}</span>
             </button>
           </div>
         </div>
 
-        {/* Fil de discussion */}
-        <div className="p-3.5 sm:p-4 space-y-3 sm:space-y-4 min-h-[135px] max-h-[42dvh] sm:min-h-[280px] sm:max-h-[440px] overflow-y-auto">
-          {messages.map((m) => (
+        {/* Fil de discussion (scroll interne confiné pour ne jamais pousser le bouton micro hors écran) */}
+        <div
+          ref={chatScrollRef}
+          className="p-3 sm:p-4 space-y-3 min-h-[120px] max-h-[35dvh] sm:min-h-[260px] sm:max-h-[420px] overflow-y-auto overscroll-contain"
+        >
+          {messages.map((m) => {
+            const pros = m.professionals ?? [];
+            const pickedInMsg = pros.find((p) => p.id === selectedProId) ?? null;
+            const isExpanded = Boolean(expandedProMsgIds[m.id]);
+            const visiblePros = isExpanded ? pros : pros.slice(0, 3);
+            const hiddenCount = pros.length - visiblePros.length;
+
+            return (
             <div key={m.id} className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}>
               <div
-                className={`max-w-[90%] sm:max-w-[88%] rounded-2xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-sm leading-relaxed break-words ${
+                className={`max-w-[92%] sm:max-w-[88%] rounded-2xl px-3.5 sm:px-4 py-2.5 text-sm leading-relaxed break-words ${
                   m.role === "user"
                     ? "bg-gradient-to-br from-winelio-orange to-winelio-amber text-white rounded-br-sm"
                     : "bg-winelio-light text-winelio-dark border border-winelio-gray/10 rounded-bl-sm"
@@ -1175,56 +1194,93 @@ export function AiRecommendationAssistant({
                 {m.content}
               </div>
 
-              {/* Cartes de professionnels cliquables proposées par l'IA */}
-              {m.professionals && m.professionals.length > 0 && (
-                <div className="mt-2.5 w-full sm:max-w-[95%] space-y-2">
-                  {m.professionals.map((p) => {
-                    const label = p.company_name ?? `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim();
-                    const isPicked = selectedProId === p.id;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => handleSelectProFromChat(p)}
-                        className={`w-full flex items-center justify-between gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left transition-all cursor-pointer ${
-                          isPicked
-                            ? "border-winelio-orange bg-winelio-orange/8"
-                            : "border-winelio-gray/15 bg-white hover:border-winelio-orange/40"
-                        }`}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-sm font-semibold text-winelio-dark line-clamp-1 break-all sm:break-normal">
-                              {label}
-                            </span>
-                            {p.is_claimed && (
-                              <span className="shrink-0 rounded-full bg-green-50 px-1.5 py-0.5 text-[10px] font-semibold text-green-700 ring-1 ring-green-200">
-                                Vérifié
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-winelio-gray mt-0.5 truncate">
-                            {[
-                              p.category_name,
-                              p.city,
-                              p.avg_rating != null ? `★ ${p.avg_rating.toFixed(1)}` : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </p>
-                        </div>
-                        <span
-                          className={`shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold ${
-                            isPicked
-                              ? "bg-winelio-orange text-white"
-                              : "bg-winelio-orange/10 text-winelio-orange"
-                          }`}
+              {/* Cartes de professionnels cliquables : repliées automatiquement une fois le pro choisi */}
+              {pros.length > 0 && (
+                <div className="mt-2 w-full sm:max-w-[95%] space-y-1.5">
+                  {pickedInMsg && !isExpanded ? (
+                    <div className="flex items-center justify-between gap-2 rounded-xl border border-winelio-orange/35 bg-winelio-orange/8 px-3 py-2">
+                      <span className="text-xs font-semibold text-winelio-dark truncate">
+                        ✓{" "}
+                        {pickedInMsg.company_name ??
+                          `${pickedInMsg.first_name ?? ""} ${pickedInMsg.last_name ?? ""}`.trim()}{" "}
+                        sélectionné
+                      </span>
+                      {pros.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedProMsgIds((prev) => ({ ...prev, [m.id]: true }))
+                          }
+                          className="shrink-0 text-xs font-semibold text-winelio-orange hover:underline cursor-pointer"
                         >
-                          {isPicked ? "Choisi ✓" : "Choisir"}
-                        </span>
-                      </button>
-                    );
-                  })}
+                          Changer ({pros.length})
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      {visiblePros.map((p) => {
+                        const label =
+                          p.company_name ?? `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim();
+                        const isPicked = selectedProId === p.id;
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => handleSelectProFromChat(p)}
+                            className={`w-full flex items-center justify-between gap-2 rounded-xl border-2 px-3 py-2 text-left transition-all cursor-pointer ${
+                              isPicked
+                                ? "border-winelio-orange bg-winelio-orange/8"
+                                : "border-winelio-gray/15 bg-white hover:border-winelio-orange/40"
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-xs sm:text-sm font-semibold text-winelio-dark line-clamp-1">
+                                  {label}
+                                </span>
+                                {p.is_claimed && (
+                                  <span className="shrink-0 rounded-full bg-green-50 px-1.5 py-0.5 text-[10px] font-semibold text-green-700 ring-1 ring-green-200">
+                                    Vérifié
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-winelio-gray mt-0.5 truncate">
+                                {[
+                                  p.category_name,
+                                  p.city,
+                                  p.avg_rating != null ? `★ ${p.avg_rating.toFixed(1)}` : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </p>
+                            </div>
+                            <span
+                              className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold ${
+                                isPicked
+                                  ? "bg-winelio-orange text-white"
+                                  : "bg-winelio-orange/10 text-winelio-orange"
+                              }`}
+                            >
+                              {isPicked ? "Choisi ✓" : "Choisir"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                      {hiddenCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedProMsgIds((prev) => ({ ...prev, [m.id]: true }))
+                          }
+                          className="w-full rounded-lg border border-winelio-gray/20 bg-winelio-light/60 py-1.5 text-xs font-semibold text-winelio-gray hover:text-winelio-dark cursor-pointer"
+                        >
+                          Voir {hiddenCount} autre{hiddenCount > 1 ? "s" : ""} professionnel
+                          {hiddenCount > 1 ? "s" : ""}
+                        </button>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
 
@@ -1272,7 +1328,8 @@ export function AiRecommendationAssistant({
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
 
           {messages.length === 1 && !recording && !transcribing && !thinking && (
             <div className="pt-0.5 flex sm:flex-wrap gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -1295,8 +1352,6 @@ export function AiRecommendationAssistant({
               <span>{transcribing ? "Transcription de votre voix…" : "L'assistant réfléchit…"}</span>
             </div>
           )}
-
-          <div ref={chatEndRef} />
         </div>
 
         {/* Message d'erreur éventuel */}
@@ -1400,11 +1455,11 @@ export function AiRecommendationAssistant({
                     onClick={() => void startRecording()}
                     disabled={transcribing || thinking}
                     aria-label="Parler au microphone"
-                    className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-winelio-orange to-winelio-amber text-white shadow-md shadow-winelio-orange/25 hover:opacity-95 active:scale-95 disabled:opacity-50 transition-transform cursor-pointer"
+                    className="relative inline-flex h-12 items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-br from-winelio-orange to-winelio-amber px-3.5 sm:px-4 text-xs sm:text-sm font-bold text-white shadow-md shadow-winelio-orange/25 hover:opacity-95 active:scale-95 disabled:opacity-50 transition-transform cursor-pointer"
                   >
                     <svg
                       aria-hidden="true"
-                      className="w-6 h-6 overflow-visible"
+                      className="w-5 h-5 shrink-0 overflow-visible"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -1452,6 +1507,7 @@ export function AiRecommendationAssistant({
                         />
                       </g>
                     </svg>
+                    <span>Parler</span>
                   </button>
                 </div>
 
@@ -1542,9 +1598,20 @@ export function AiRecommendationAssistant({
         ref={summaryCardRef}
         className="lg:col-span-5 rounded-2xl border border-winelio-gray/15 bg-white p-4 sm:p-5 shadow-sm space-y-3.5 sm:space-y-4 scroll-mt-20"
       >
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-base font-bold text-winelio-dark">Fiche remplie en direct</h2>
-          <span className="text-xs text-winelio-gray">Modifiable à tout moment</span>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() =>
+                assistantCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }
+              className="lg:hidden inline-flex items-center gap-1 rounded-lg bg-winelio-orange/10 px-2.5 py-1 text-xs font-semibold text-winelio-orange cursor-pointer"
+            >
+              <span>↑ Micro</span>
+            </button>
+            <span className="text-xs text-winelio-gray">Modifiable à tout moment</span>
+          </div>
         </div>
 
         {/* 1. Professionnel */}

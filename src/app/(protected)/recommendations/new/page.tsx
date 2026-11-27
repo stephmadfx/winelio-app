@@ -169,12 +169,12 @@ export default function NewRecommendationPage() {
   };
 
   return (
-    <div className={mode === "classic" ? "pb-20 lg:pb-0" : "pb-4 lg:pb-0"}>
-      <div className="mb-5 sm:mb-6">
+    <div className="pb-28 lg:pb-0">
+      <div className={mode === "ai" ? "mb-3 sm:mb-6" : "mb-5 sm:mb-6"}>
         <button
           type="button"
           onClick={() => router.push("/recommendations")}
-          className="mb-3 inline-flex items-center gap-1.5 py-1 text-sm text-winelio-gray hover:text-winelio-dark transition-colors cursor-pointer"
+          className="mb-2 sm:mb-3 inline-flex items-center gap-1.5 py-1 text-sm text-winelio-gray hover:text-winelio-dark transition-colors cursor-pointer"
         >
           <svg aria-hidden="true" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -182,7 +182,7 @@ export default function NewRecommendationPage() {
           Retour
         </button>
         <h1 className="text-xl sm:text-2xl font-bold text-winelio-dark tracking-tight">Nouvelle recommandation</h1>
-        <p className="mt-1 text-xs sm:text-sm text-winelio-gray leading-relaxed">
+        <p className={`mt-1 text-xs sm:text-sm text-winelio-gray leading-relaxed ${mode === "ai" ? "hidden sm:block" : ""}`}>
           {aiEnabled
             ? "Laissez-vous guider à la voix par l'assistant IA ou remplissez votre recommandation étape par étape."
             : "Remplissez votre recommandation étape par étape."}
@@ -194,7 +194,7 @@ export default function NewRecommendationPage() {
             role="tablist"
             aria-label="Mode de saisie de la recommandation"
             onKeyDown={handleTabKeyDown}
-            className="mt-4 sm:mt-5 flex overflow-x-auto border-b border-winelio-gray/15 gap-1 sm:gap-2"
+            className="mt-2.5 sm:mt-5 flex overflow-x-auto border-b border-winelio-gray/15 gap-1 sm:gap-2"
           >
             <button
               ref={aiTabRef}

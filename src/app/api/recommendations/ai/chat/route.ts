@@ -3,7 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { isAiAssistantAllowed } from "@/lib/ai-assistant-access";
 import {
   auditSpokenEmail,
+  computeConversationStage,
   detectCriticalEmergency,
+  enforceStepByStepReply,
 } from "@/lib/ai-recommendation-guardrails";
 import { fakeLastActive } from "@/lib/fake-last-active";
 import {
@@ -185,60 +187,26 @@ function redactContactInfo(text: string | null | undefined): string | null {
 const PREMATURE_COMPLETION_RE =
   /consentement|rgpd|envoyer la recommandation|tout est complet|pr[êe]t[es]? [àa] [êe]tre envoy/i;
 
-function computeMissingState(draft: DraftInput | undefined, patch: DraftPatch) {
-  const proId = patch.selectedProId !== undefined ? patch.selectedProId : draft?.selectedProId;
-  const desc = (patch.description ?? draft?.description ?? "").trim();
-  const contactId =
-    patch.selectedContactId !== undefined ? patch.selectedContactId : draft?.selectedContactId;
-  const cf: Partial<ContactFormData> = {
-    ...(draft?.contactForm ?? {}),
-    ...(patch.contactForm ?? {}),
-  };
-
-  const missingFields: string[] = [];
-  if (!proId) missingFields.push("professionnel");
-  if (!desc) missingFields.push("description du besoin");
-
-  if (!contactId) {
-    if (!cf.first_name?.trim()) missingFields.push("prénom");
-    if (!cf.last_name?.trim()) missingFields.push("nom");
-    if (!cf.email?.trim()) missingFields.push("e-mail");
-    if (!cf.phone?.trim()) missingFields.push("téléphone");
-    if (!cf.address?.trim()) missingFields.push("adresse (numéro et rue)");
-    if (!cf.city?.trim()) missingFields.push("ville");
-    if (!cf.postal_code?.trim()) missingFields.push("code postal");
-  }
-
-  const personLabel = cf.first_name?.trim() || "cette personne";
-  let suggestedQuestion = "Tout est complet ! Il ne vous reste plus qu'à cocher la case de consentement RGPD et cliquer sur « Envoyer la recommandation ».";
-
-  if (!proId) {
-    suggestedQuestion =
-      "Quel type de professionnel recherchez-vous et autour de quelle ville ?";
-  } else if (!desc) {
-    suggestedQuestion =
-      "Pouvez-vous me décrire en quelques mots le besoin pour que le professionnel prépare son appel ?";
-  } else if (!contactId) {
-    if (!cf.first_name?.trim() || !cf.last_name?.trim()) {
-      suggestedQuestion =
-        "Quel est le prénom et le nom de la personne que vous souhaitez recommander ?";
-    } else if (!cf.phone?.trim() && !cf.email?.trim()) {
-      suggestedQuestion = `C'est noté pour ${personLabel} ! Quels sont son numéro de téléphone et son adresse e-mail ?`;
-    } else if (!cf.email?.trim()) {
-      suggestedQuestion = `Merci ! Quelle est l'adresse e-mail de ${personLabel} ?`;
-    } else if (!cf.phone?.trim()) {
-      suggestedQuestion = `Merci ! Quel est le numéro de téléphone de ${personLabel} ?`;
-    } else if (!cf.address?.trim() || !cf.city?.trim() || !cf.postal_code?.trim()) {
-      const missingAddrParts = [
-        !cf.address?.trim() ? "numéro et rue" : null,
-        !cf.city?.trim() ? "ville" : null,
-        !cf.postal_code?.trim() ? "code postal" : null,
-      ].filter(Boolean);
-      suggestedQuestion = `Presque terminé ! Quelle est l'adresse postale de ${personLabel} (${missingAddrParts.join(", ")}) ?`;
-    }
-  }
-
-  return { missingFields, suggestedQuestion };
+function computeMissingState(
+  draft: DraftInput | undefined,
+  patch: DraftPatch,
+  surfacedProsCount = 0,
+) {
+  return computeConversationStage(
+    {
+      selectedProId: patch.selectedProId !== undefined ? patch.selectedProId : draft?.selectedProId,
+      recentProfessionalsCount: draft?.recentProfessionals?.length ?? 0,
+      description: patch.description ?? draft?.description ?? "",
+      urgency: patch.urgency ?? draft?.urgency,
+      selectedContactId:
+        patch.selectedContactId !== undefined ? patch.selectedContactId : draft?.selectedContactId,
+      contactForm: {
+        ...(draft?.contactForm ?? {}),
+        ...(patch.contactForm ?? {}),
+      },
+    },
+    surfacedProsCount,
+  );
 }
 
 function cleanSpokenPhone(raw: string): string {
@@ -459,7 +427,8 @@ export async function POST(req: Request) {
           ? `${draft.selectedContactLabel || "Sélectionné"} (${draft.selectedContactId})`
           : null,
         nouveau_contact: draft.contactForm,
-        champs_obligatoires_manquants: initialStatus.missingFields,
+        etape_actuelle: initialStatus.stage,
+        prochaine_question_unique: initialStatus.suggestedQuestion,
         gps: Boolean(body?.userLocation),
       })
     : "{}";
@@ -470,13 +439,15 @@ RÈGLE ABSOLUE DE MISE EN RELATION CACHÉE : Ne donne ni n'invente JAMAIS les co
 VÉRIFICATION CRITIQUE DU NOM ET DE L'E-MAIL : Une erreur sur le nom ou surtout sur l'adresse e-mail du proche rend la recommandation non valable. Dès que le membre dicte un nom ou une adresse e-mail :
 - répète explicitement dans ta réponse l'adresse e-mail (et le nom) que tu as comprise pour qu'il la vérifie à l'écran ;
 - s'il y a la moindre ambiguïté phonétique, homophonie ou erreur signalée par update_draft, demande-lui de l'épeler lettre par lettre, de la corriger au clavier, ou d'utiliser le bouton « Répertoire ».
-Éléments requis TOUS OBLIGATOIRES avant la fin :
-1) Professionnel Winelio : utilise search_professionals dès que tu connais le métier/besoin + une ville/code postal (ou gps=true). Si le membre choisit un pro parmi pros_proposes_recemment ("le premier", numéro ou nom), passe son id exact dans update_draft.selected_pro_id.
-2) Besoin + urgence ("urgent", "normal", "flexible").
-3) Recommandé : cherche d'abord avec find_existing_contacts si un nom est cité ; s'il n'existe pas dans le carnet, il faut OBLIGATOIREMENT demander et remplir TOUS ces 7 champs via update_draft : prénom, nom, téléphone, e-mail, numéro et rue (address), ville et code postal.
-INTERDICTION ABSOLUE d'inviter à cocher le consentement RGPD ou de cliquer sur "Envoyer la recommandation" tant que champs_encore_manquants n'est pas vide ([]). Regroupe naturellement les questions (ex: téléphone + e-mail ensemble, puis adresse complète rue + ville).
-Appelle TOUJOURS update_draft dès qu'une info est donnée, même partielle. Si le membre cite dans une même phrase un besoin/métier ET le nom de son proche, appelle à la fois search_professionals, find_existing_contacts et update_draft avant ta réponse finale pour ne jamais redemander ce qu'il vient de dire.
-STYLE VOCAL FLUIDE ET RAPIDE : réponds en 1 ou 2 phrases naturelles et chaleureuses (20 à 35 mots maximum). Quand des fiches pros s'affichent sous ton message, ne récite pas toute la liste : dis simplement combien tu en as trouvé et invite à en choisir un.
+RYTHME CONVERSATIONNEL STRICT — UNE SEULE ÉTAPE À LA FOIS (INTERDICTION ABSOLUE DE TOUT DEMANDER D'UN COUP) :
+Respecte impérativement cet ordre naturel, en ne posant QU'UNE SEULE question courte par message :
+- Étape 1 (Professionnel) : cherche avec search_professionals dès que tu as un métier + une ville (ou gps=true), puis laisse le membre choisir un professionnel. TANT QU'AUCUN PRO N'EST CHOISI, NE DEMANDE JAMAIS le nom, le prénom, l'e-mail, le téléphone ou l'adresse du proche !
+- Étape 2 (Type d'intervention & Urgence) : une fois le pro choisi, demande UNIQUEMENT le type d'intervention précis et si c'est urgent ("urgent", "normal" ou "flexible"). NE DEMANDE PAS ENCORE les coordonnées du proche !
+- Étape 3 (Prénom & Nom du proche) : une fois le pro ET le type d'intervention connus, demande d'abord UNIQUEMENT le prénom et le nom de la personne recommandée (et appelle find_existing_contacts dès qu'un nom est cité).
+- Étape 4 (Coordonnées restantes du proche, petit à petit) : demande ensuite seulement son téléphone et son e-mail, PUIS dans un dernier échange son adresse postale (numéro, rue et ville).
+INTERDICTION ABSOLUE d'inviter à cocher le consentement RGPD ou de cliquer sur "Envoyer la recommandation" tant que tous les champs (pro, besoin, prénom, nom, téléphone, e-mail, rue, ville, code postal) ne sont pas remplis.
+Appelle TOUJOURS update_draft dès qu'une info est donnée spontanément par le membre, même s'il anticipe une étape.
+STYLE VOCAL FLUIDE ET COURT : réponds en 1 ou 2 phrases naturelles (maximum 28 mots) et pose UNIQUEMENT la question correspondant à l'étape en cours. Quand des fiches pros s'affichent, dis simplement combien tu en as trouvé et invite à en choisir un.
 Catégories : ${categoryNames.join(", ")}.
 Brouillon : ${draftSummary}`;
 
@@ -579,10 +550,11 @@ Brouillon : ${draftSummary}`;
     if (!Array.isArray(toolCalls) || toolCalls.length === 0) {
       const rawReply = typeof choice.content === "string" ? choice.content : "";
       let reply = sanitizeAssistantReply(rawReply);
-      const currentStatus = computeMissingState(draft, patch);
+      const currentStatus = computeMissingState(draft, patch, surfacedPros?.length ?? 0);
       if (currentStatus.missingFields.length > 0 && PREMATURE_COMPLETION_RE.test(reply)) {
         reply = currentStatus.suggestedQuestion;
       }
+      reply = enforceStepByStepReply(reply, currentStatus, surfacedPros?.length ?? 0);
       if (justCapturedSpokenEmail && !reply.toLowerCase().includes(justCapturedSpokenEmail)) {
         reply = `${reply ? `${reply} ` : ""}J'ai noté l'e-mail ${justCapturedSpokenEmail}${
           justCapturedSpokenName ? ` pour ${justCapturedSpokenName}` : ""
@@ -708,6 +680,10 @@ Brouillon : ${draftSummary}`;
                 verified: p.is_claimed,
                 avg_rating: p.avg_rating,
               })),
+              consigne_reponse:
+                mapped.length > 0
+                  ? `Annonce simplement en 1 phrase courte que tu as trouvé ${mapped.length} professionnel(s) et invite le membre à en choisir un. NE DEMANDE SURTOUT PAS le nom, prénom, e-mail, téléphone ou adresse maintenant.`
+                  : "Aucun professionnel trouvé autour de cette zone : propose d'essayer une ville voisine ou une autre catégorie.",
             };
           }
         }
@@ -858,16 +834,16 @@ Brouillon : ${draftSummary}`;
           }
         }
 
-        const nextStatus = computeMissingState(draft, patch);
+        const nextStatus = computeMissingState(draft, patch, surfacedPros?.length ?? 0);
         toolResult = {
           ok: warnings.length === 0,
           applied: Object.keys(patch),
           warnings,
           ready_to_submit: nextStatus.missingFields.length === 0,
-          champs_encore_manquants: nextStatus.missingFields,
+          etape_suivante: nextStatus.stage,
           consigne_suite:
             nextStatus.missingFields.length > 0
-              ? `INCOMPLET : il manque encore [${nextStatus.missingFields.join(", ")}]. INTERDIT de parler du consentement RGPD ou du bouton Envoyer ! Demande maintenant : "${nextStatus.suggestedQuestion}"`
+              ? `Pose UNIQUEMENT cette prochaine question courte (ne demande RIEN d'autre en avance, et ne parle pas encore du consentement RGPD) : "${nextStatus.suggestedQuestion}"`
               : "COMPLET : tous les champs sont remplis, invite le membre à cocher le consentement RGPD et cliquer sur Envoyer la recommandation.",
         };
       }

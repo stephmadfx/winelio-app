@@ -1,4 +1,8 @@
-import { EMAIL_REGEX } from "@/app/(protected)/recommendations/new/types";
+import {
+  type ContactFormData,
+  EMAIL_REGEX,
+  type Urgency,
+} from "@/app/(protected)/recommendations/new/types";
 
 const COMMON_EMAIL_PROVIDERS =
   "(gmail\\.com|orange\\.fr|wanadoo\\.fr|outlook\\.fr|outlook\\.com|hotmail\\.fr|hotmail\\.com|yahoo\\.fr|yahoo\\.com|free\\.fr|sfr\\.fr|laposte\\.net|icloud\\.com|bbox\\.fr|live\\.fr)";
@@ -150,4 +154,142 @@ export function detectCriticalEmergency(userMessage: string): string | null {
     }
   }
   return null;
+}
+
+export type ConversationStage =
+  | "search_pro"
+  | "choose_pro"
+  | "describe_need"
+  | "contact_name"
+  | "contact_reach"
+  | "contact_address"
+  | "complete";
+
+export type DraftStageInput = {
+  selectedProId?: string | null;
+  recentProfessionalsCount?: number;
+  description?: string;
+  urgency?: Urgency;
+  selectedContactId?: string | null;
+  contactForm?: Partial<ContactFormData>;
+};
+
+export function computeConversationStage(
+  state: DraftStageInput,
+  surfacedProsCount = 0,
+): {
+  stage: ConversationStage;
+  missingFields: string[];
+  suggestedQuestion: string;
+} {
+  const proId = state.selectedProId ?? null;
+  const desc = (state.description ?? "").trim();
+  const contactId = state.selectedContactId ?? null;
+  const cf = state.contactForm ?? {};
+
+  const missingFields: string[] = [];
+  if (!proId) missingFields.push("professionnel");
+  if (!desc) missingFields.push("description du besoin");
+
+  if (!contactId) {
+    if (!cf.first_name?.trim()) missingFields.push("prénom");
+    if (!cf.last_name?.trim()) missingFields.push("nom");
+    if (!cf.email?.trim()) missingFields.push("e-mail");
+    if (!cf.phone?.trim()) missingFields.push("téléphone");
+    if (!cf.address?.trim()) missingFields.push("adresse (numéro et rue)");
+    if (!cf.city?.trim()) missingFields.push("ville");
+    if (!cf.postal_code?.trim()) missingFields.push("code postal");
+  }
+
+  const personLabel = cf.first_name?.trim() || "cette personne";
+  const candidateProsCount = surfacedProsCount || (state.recentProfessionalsCount ?? 0);
+
+  let stage: ConversationStage = "complete";
+  let suggestedQuestion =
+    "Tout est complet ! Il ne vous reste plus qu'à cocher la case de consentement RGPD et appuyer sur « Envoyer la recommandation ».";
+
+  if (!proId) {
+    if (candidateProsCount > 0) {
+      stage = "choose_pro";
+      suggestedQuestion =
+        candidateProsCount === 1
+          ? "J'ai trouvé 1 professionnel correspondant. Souhaitez-vous le choisir ?"
+          : `J'ai trouvé ${candidateProsCount} professionnels dans ce secteur. Lequel souhaitez-vous choisir ?`;
+    } else {
+      stage = "search_pro";
+      suggestedQuestion =
+        "Quel type de professionnel recherchez-vous et autour de quelle ville ?";
+    }
+  } else if (!desc) {
+    stage = "describe_need";
+    suggestedQuestion =
+      "C'est bien noté ! De quel type d'intervention s'agit-il et est-ce urgent ?";
+  } else if (!contactId) {
+    if (!cf.first_name?.trim() || !cf.last_name?.trim()) {
+      stage = "contact_name";
+      suggestedQuestion =
+        "Parfait ! Quel est le prénom et le nom de la personne pour qui vous faites cette recommandation ?";
+    } else if (!cf.phone?.trim() && !cf.email?.trim()) {
+      stage = "contact_reach";
+      suggestedQuestion = `C'est noté pour ${personLabel} ! Quels sont son numéro de téléphone et son adresse e-mail ?`;
+    } else if (!cf.email?.trim()) {
+      stage = "contact_reach";
+      suggestedQuestion = `Merci ! Quelle est l'adresse e-mail de ${personLabel} ?`;
+    } else if (!cf.phone?.trim()) {
+      stage = "contact_reach";
+      suggestedQuestion = `Merci ! Quel est le numéro de téléphone de ${personLabel} ?`;
+    } else if (!cf.address?.trim() || !cf.city?.trim() || !cf.postal_code?.trim()) {
+      stage = "contact_address";
+      const missingAddrParts = [
+        !cf.address?.trim() ? "numéro et rue" : null,
+        !cf.city?.trim() ? "ville" : null,
+        !cf.postal_code?.trim() ? "code postal" : null,
+      ].filter(Boolean);
+      suggestedQuestion = `Dernière information : quelle est l'adresse postale de ${personLabel} (${missingAddrParts.join(", ")}) ?`;
+    }
+  }
+
+  return { stage, missingFields, suggestedQuestion };
+}
+
+const CONTACT_INTERROGATION_RE =
+  /\b(pr[ée]nom|nom\s+de\s+famille|e-?mail|courriel|adresse\s+postale|code\s+postal|num[ée]ro\s+de\s+t[ée]l[ée]phone)\b/i;
+
+export function enforceStepByStepReply(
+  reply: string,
+  status: ReturnType<typeof computeConversationStage>,
+  surfacedProsCount: number,
+): string {
+  if (!reply) return status.suggestedQuestion;
+
+  if (
+    (status.stage === "search_pro" ||
+      status.stage === "choose_pro" ||
+      status.stage === "describe_need") &&
+    CONTACT_INTERROGATION_RE.test(reply)
+  ) {
+    if (surfacedProsCount > 0 && status.stage === "choose_pro") {
+      return surfacedProsCount === 1
+        ? "J'ai trouvé 1 professionnel correspondant. Touchez « Choisir » ou dites-moi si vous souhaitez le sélectionner."
+        : `J'ai trouvé ${surfacedProsCount} professionnels dans ce secteur. Touchez « Choisir » sur celui qui vous convient, ou dites-moi son nom au micro.`;
+    }
+    return status.suggestedQuestion;
+  }
+
+  if (
+    status.stage === "contact_name" &&
+    /\b(e-?mail|courriel)\b/i.test(reply) &&
+    /\b(adresse|code\s+postal)\b/i.test(reply)
+  ) {
+    return status.suggestedQuestion;
+  }
+
+  if (
+    status.stage === "contact_reach" &&
+    /\b(num[ée]ro\s+et\s+rue|adresse\s+postale|code\s+postal)\b/i.test(reply)
+  ) {
+    return status.suggestedQuestion;
+  }
+
+  return reply;
 }
