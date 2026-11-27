@@ -1,3 +1,10 @@
+import { useRef, useState } from "react";
+import {
+  enrichContactMunicipality,
+  mergePhoneContactIntoForm,
+  parseVcardText,
+  pickPhoneContactInteractive,
+} from "./phone-contacts";
 import { Contact, ContactFormData, SelfProfile, inputCls } from "./types";
 
 const COUNTRY_CODES = [
@@ -10,6 +17,7 @@ const COUNTRY_CODES = [
 interface StepContactProps {
   contacts: Contact[];
   selfProfile: SelfProfile | null;
+  phoneBookEnabled?: boolean;
   selectedContactId: string | null;
   setSelectedContactId: (id: string | null) => void;
   createContact: boolean;
@@ -76,15 +84,22 @@ const ThirdPartyConsentCheckbox = ({
 );
 
 export const StepContact = ({
-  contacts, selfProfile,
+  contacts, selfProfile, phoneBookEnabled = false,
   selectedContactId, setSelectedContactId,
   createContact, setCreateContact,
   contactForm, setContactForm, contactErrors, setContactErrors,
   thirdPartyConsent, setThirdPartyConsent,
 }: StepContactProps) => {
+  const vcardInputRef = useRef<HTMLInputElement | null>(null);
+  const [importFeedback, setImportFeedback] = useState<string | null>(null);
+
+  const referrerEmail = selfProfile?.email?.trim().toLowerCase() ?? "";
+  const otherContacts = contacts.filter((c) => !referrerEmail || (c.email ?? "").trim().toLowerCase() !== referrerEmail);
+
   const resetContactForm = () => {
     setCreateContact(false);
     setContactErrors({});
+    setImportFeedback(null);
     setThirdPartyConsent(false);
     setContactForm({ first_name: "", last_name: "", email: "", phone: "", country_code: "+33", address: "", city: "", postal_code: "" });
   };
@@ -94,11 +109,60 @@ export const StepContact = ({
     if (contactErrors[field]) setContactErrors({ ...contactErrors, [field]: "" });
   };
 
-  const referrerEmail = selfProfile?.email?.trim().toLowerCase() ?? "";
-  const otherContacts = contacts.filter((c) => !referrerEmail || (c.email ?? "").trim().toLowerCase() !== referrerEmail);
+  const applyPickedPhoneContact = (picked: Parameters<typeof mergePhoneContactIntoForm>[1]) => {
+    if (referrerEmail && picked.email && picked.email.toLowerCase() === referrerEmail) {
+      setImportFeedback("Vous ne pouvez pas importer votre propre fiche comme personne recommandée.");
+      return;
+    }
+    const merged = mergePhoneContactIntoForm(contactForm, picked);
+    setContactForm(merged);
+    setContactErrors({});
+    setSelectedContactId(null);
+    setCreateContact(true);
+    setThirdPartyConsent(false);
+    setImportFeedback(null);
+  };
+
+  const handleImportFromPhone = async () => {
+    setImportFeedback(null);
+    const res = await pickPhoneContactInteractive();
+    if (res.status === "selected") {
+      applyPickedPhoneContact(res.contact);
+    } else if (res.status === "needs-vcard") {
+      vcardInputRef.current?.click();
+    } else if (res.status === "denied") {
+      setImportFeedback("Accès au répertoire refusé dans les réglages du téléphone.");
+    } else if (res.status === "error") {
+      setImportFeedback(res.message);
+    }
+  };
+
+  const handleVcardFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const text = await file.text().catch(() => "");
+    const parsed = parseVcardText(text);
+    if (!parsed) {
+      setImportFeedback("Ce fichier ne semble pas être une fiche contact (.vcf) valide.");
+      return;
+    }
+    const enriched = await enrichContactMunicipality(parsed);
+    applyPickedPhoneContact(enriched);
+  };
 
   return (
     <div>
+      <input
+        ref={vcardInputRef}
+        type="file"
+        accept=".vcf,text/vcard,text/x-vcard"
+        onChange={(e) => void handleVcardFileChange(e)}
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+
       <div className="mb-6">
         <h2 className="text-lg font-bold text-winelio-dark">Qui est le recommandé ?</h2>
         <p className="mt-1 text-sm text-winelio-gray">
@@ -111,15 +175,39 @@ export const StepContact = ({
         </div>
       </div>
 
+      {importFeedback && (
+        <div role="alert" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-800">
+          {importFeedback}
+        </div>
+      )}
+
       {!createContact ? (
         <div className="space-y-3">
-          <button type="button" onClick={() => { setCreateContact(true); setSelectedContactId(null); setThirdPartyConsent(false); }}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-winelio-orange/40 px-5 py-4 text-sm font-semibold text-winelio-orange hover:border-winelio-orange hover:bg-winelio-orange/5 transition-all cursor-pointer">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-            Ajouter un nouveau recommandé
-          </button>
+          <div className={phoneBookEnabled ? "grid grid-cols-1 sm:grid-cols-2 gap-3" : "space-y-3"}>
+            {phoneBookEnabled && (
+              <button
+                type="button"
+                onClick={() => void handleImportFromPhone()}
+                className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-winelio-orange/35 bg-winelio-orange/5 px-5 py-4 text-sm font-semibold text-winelio-orange hover:border-winelio-orange hover:bg-winelio-orange/10 transition-all cursor-pointer"
+              >
+                <svg aria-hidden="true" className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                </svg>
+                <span>Choisir dans le répertoire</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => { setCreateContact(true); setSelectedContactId(null); setThirdPartyConsent(false); }}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-winelio-orange/40 px-5 py-4 text-sm font-semibold text-winelio-orange hover:border-winelio-orange hover:bg-winelio-orange/5 transition-all cursor-pointer"
+            >
+              <svg aria-hidden="true" className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+              <span>Saisir un nouveau contact</span>
+            </button>
+          </div>
           {otherContacts.length > 0 && (
             <>
               <Separator />
@@ -149,47 +237,59 @@ export const StepContact = ({
         </div>
       ) : (
         <div className="rounded-2xl border border-winelio-gray/10 bg-white p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-semibold text-winelio-dark">Nouveau recommandé</p>
-            <button type="button" onClick={resetContactForm} className="text-xs text-winelio-gray hover:text-winelio-dark transition-colors cursor-pointer">Annuler</button>
+            <div className="flex items-center gap-3">
+              {phoneBookEnabled && (
+                <button
+                  type="button"
+                  onClick={() => void handleImportFromPhone()}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-winelio-orange/30 bg-winelio-orange/5 px-2.5 py-1.5 text-xs font-semibold text-winelio-orange hover:border-winelio-orange transition-colors cursor-pointer"
+                >
+                  Répertoire du téléphone
+                </button>
+              )}
+              <button type="button" onClick={resetContactForm} className="text-xs text-winelio-gray hover:text-winelio-dark transition-colors cursor-pointer">Annuler</button>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Prénom" error={contactErrors.first_name}>
-              <input type="text" value={contactForm.first_name} onChange={(e) => setField("first_name", e.target.value)}
+            <Field id="sc-first-name" label="Prénom" error={contactErrors.first_name}>
+              <input id="sc-first-name" name="first_name" autoComplete="given-name" required type="text" value={contactForm.first_name} onChange={(e) => setField("first_name", e.target.value)}
                 placeholder="Pierre" className={inputCls(!!contactErrors.first_name)} />
             </Field>
-            <Field label="Nom" error={contactErrors.last_name}>
-              <input type="text" value={contactForm.last_name} onChange={(e) => setField("last_name", e.target.value)}
+            <Field id="sc-last-name" label="Nom" error={contactErrors.last_name}>
+              <input id="sc-last-name" name="last_name" autoComplete="family-name" required type="text" value={contactForm.last_name} onChange={(e) => setField("last_name", e.target.value)}
                 placeholder="Dupont" className={inputCls(!!contactErrors.last_name)} />
             </Field>
           </div>
-          <Field label="Email" error={contactErrors.email}>
-            <input type="email" value={contactForm.email} onChange={(e) => setField("email", e.target.value)}
+          <Field id="sc-email" label="Email" error={contactErrors.email}>
+            <input id="sc-email" name="email" autoComplete="email" required type="email" value={contactForm.email} onChange={(e) => setField("email", e.target.value)}
               placeholder="pierre.dupont@email.com" className={inputCls(!!contactErrors.email)} />
           </Field>
-          <Field label="Téléphone" error={contactErrors.phone}>
+          <Field id="sc-phone" label="Téléphone" error={contactErrors.phone}>
             <div className="flex gap-2">
-              <select value={contactForm.country_code} onChange={(e) => setField("country_code", e.target.value)}
+              <label htmlFor="sc-country-code" className="sr-only">Indicatif pays</label>
+              <select id="sc-country-code" name="country_code" autoComplete="tel-country-code" value={contactForm.country_code} onChange={(e) => setField("country_code", e.target.value)}
                 className="rounded-xl border border-winelio-gray/20 px-2 py-3 text-sm bg-white focus:border-winelio-orange focus:outline-none focus:ring-2 focus:ring-winelio-orange/15 w-24 shrink-0 cursor-pointer">
                 {COUNTRY_CODES.map(([code, label]) => (
                   <option key={code} value={code}>{label} {code}</option>
                 ))}
               </select>
-              <input type="tel" value={contactForm.phone} onChange={(e) => setField("phone", e.target.value)}
+              <input id="sc-phone" name="phone" autoComplete="tel-national" inputMode="tel" required type="tel" value={contactForm.phone} onChange={(e) => setField("phone", e.target.value)}
                 placeholder="6 12 34 56 78" className={inputCls(!!contactErrors.phone)} />
             </div>
           </Field>
-          <Field label="Adresse" error={contactErrors.address}>
-            <input type="text" value={contactForm.address} onChange={(e) => setField("address", e.target.value)}
+          <Field id="sc-address" label="Adresse" error={contactErrors.address}>
+            <input id="sc-address" name="address" autoComplete="street-address" required type="text" value={contactForm.address} onChange={(e) => setField("address", e.target.value)}
               placeholder="123 rue de la Paix" className={inputCls(!!contactErrors.address)} />
           </Field>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Ville" error={contactErrors.city}>
-              <input type="text" value={contactForm.city} onChange={(e) => setField("city", e.target.value)}
+            <Field id="sc-city" label="Ville" error={contactErrors.city}>
+              <input id="sc-city" name="city" autoComplete="address-level2" required type="text" value={contactForm.city} onChange={(e) => setField("city", e.target.value)}
                 placeholder="Paris" className={inputCls(!!contactErrors.city)} />
             </Field>
-            <Field label="Code postal" error={contactErrors.postal_code}>
-              <input type="text" value={contactForm.postal_code} onChange={(e) => setField("postal_code", e.target.value)}
+            <Field id="sc-postal-code" label="Code postal" error={contactErrors.postal_code}>
+              <input id="sc-postal-code" name="postal_code" autoComplete="postal-code" inputMode="numeric" required type="text" value={contactForm.postal_code} onChange={(e) => setField("postal_code", e.target.value)}
                 placeholder="75000" className={inputCls(!!contactErrors.postal_code)} />
             </Field>
           </div>
@@ -214,9 +314,9 @@ const Separator = () => (
   </div>
 );
 
-const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (
+const Field = ({ id, label, error, children }: { id: string; label: string; error?: string; children: React.ReactNode }) => (
   <div>
-    <label className="mb-1.5 block text-sm font-medium text-winelio-dark">
+    <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-winelio-dark">
       {label} <span className="text-winelio-orange">*</span>
     </label>
     {children}

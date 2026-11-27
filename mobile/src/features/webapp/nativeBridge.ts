@@ -5,7 +5,7 @@ const nativeAppVersion = Constants.expoConfig?.version ?? "";
 
 export type NativeBridgeMessage = {
   requestId?: string;
-  type: "share" | "pushToken" | "webError" | "pageReady" | "pageBlank";
+  type: "share" | "pushToken" | "pickContact" | "searchContacts" | "webError" | "pageReady" | "pageBlank";
   payload?: {
     message?: string;
     source?: string;
@@ -14,6 +14,7 @@ export type NativeBridgeMessage = {
     text?: string;
     url?: string;
     prompt?: boolean;
+    query?: string;
   };
 };
 
@@ -152,7 +153,65 @@ export const nativeBridgeScript = `
       });
     };
 
-    window.__WINELIO_NATIVE_APP__ = { platform: "${Platform.OS}", version: ${JSON.stringify(nativeAppVersion)} };
+    var pendingContactRequests = {};
+    var contactSequence = 0;
+    window.__WINELIO_NATIVE_CONTACTS_RESULT__ = function (id, result) {
+      var resolve = pendingContactRequests[id];
+      if (!resolve) return;
+      delete pendingContactRequests[id];
+      resolve(result || { status: "error" });
+    };
+    window.__WINELIO_PICK_CONTACT__ = function () {
+      return new Promise(function (resolve) {
+        var id = "contact-pick-" + String(Date.now()) + "-" + String(++contactSequence);
+        pendingContactRequests[id] = resolve;
+        window.setTimeout(function () {
+          if (pendingContactRequests[id]) {
+            delete pendingContactRequests[id];
+            resolve({ status: "canceled" });
+          }
+        }, 120000);
+        try {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: "pickContact",
+            requestId: id
+          }));
+        } catch (_) {
+          delete pendingContactRequests[id];
+          resolve({ status: "unavailable" });
+        }
+      });
+    };
+    window.__WINELIO_SEARCH_CONTACTS__ = function (query) {
+      return new Promise(function (resolve) {
+        var q = typeof query === "string" ? query.trim().slice(0, 120) : "";
+        if (q.length < 2) return resolve({ status: "ok", contacts: [] });
+        var id = "contact-search-" + String(Date.now()) + "-" + String(++contactSequence);
+        pendingContactRequests[id] = resolve;
+        window.setTimeout(function () {
+          if (pendingContactRequests[id]) {
+            delete pendingContactRequests[id];
+            resolve({ status: "error", message: "Délai dépassé" });
+          }
+        }, 20000);
+        try {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: "searchContacts",
+            requestId: id,
+            payload: { query: q }
+          }));
+        } catch (_) {
+          delete pendingContactRequests[id];
+          resolve({ status: "unavailable" });
+        }
+      });
+    };
+
+    window.__WINELIO_NATIVE_APP__ = {
+      platform: "${Platform.OS}",
+      version: ${JSON.stringify(nativeAppVersion)},
+      capabilities: { contacts: true, microphone: true }
+    };
     window.dispatchEvent(new CustomEvent("winelio:native-ready"));
     return true;
   })();
@@ -206,11 +265,16 @@ export const parseNativeBridgeMessage = (value: string): NativeBridgeMessage | n
       if (!payload.text && !payload.url) return null;
       if (payload.url && !/^https?:\/\//i.test(payload.url)) return null;
     }
-    if (message.type === "pushToken") {
+    if (message.type === "pushToken" || message.type === "pickContact") {
       if (typeof message.requestId !== "string" || message.requestId.length > 100) return null;
       return message;
     }
-    return ["share", "pushToken", "webError", "pageReady", "pageBlank"].includes(message.type) ? message : null;
+    if (message.type === "searchContacts") {
+      if (typeof message.requestId !== "string" || message.requestId.length > 100) return null;
+      if (typeof message.payload?.query !== "string" || message.payload.query.length > 120) return null;
+      return message;
+    }
+    return ["share", "pushToken", "pickContact", "searchContacts", "webError", "pageReady", "pageBlank"].includes(message.type) ? message : null;
   } catch {
     return null;
   }

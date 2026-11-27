@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { CATEGORY_SELECT } from "@/components/category-options";
+import { isAiAssistantAllowed } from "@/lib/ai-assistant-access";
 
 export async function GET() {
   const db = await createClient();
@@ -12,5 +13,14 @@ export async function GET() {
     db.from("categories").select(CATEGORY_SELECT).order("name"),
   ]);
   if (profile.error || contacts.error || categories.error) return NextResponse.json({ error: "Impossible de charger les informations de la recommandation." }, { status: 500 });
-  return NextResponse.json({ userId: user.id, profile: { ...profile.data, email: user.email ?? "" }, contacts: contacts.data, categories: categories.data }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json(
+    {
+      userId: user.id,
+      aiAssistantEnabled: isAiAssistantAllowed(user),
+      profile: { ...profile.data, email: user.email ?? "" },
+      contacts: contacts.data,
+      categories: categories.data,
+    },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

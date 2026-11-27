@@ -10,7 +10,7 @@ import { CategoryOptions } from "@/components/category-options";
 interface StepProfessionalProps {
   userId: string | null;
   selectedProId: string | null;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, pro?: Professional) => void;
 }
 
 const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {

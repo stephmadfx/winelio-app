@@ -2,7 +2,7 @@
   "expo": {
     "name": "Winelio",
     "slug": "winelio",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "icon": "./assets/images/icon.png",
     "orientation": "portrait",
     "scheme": "winelio",
@@ -16,6 +16,8 @@
       },
       "infoPlist": {
         "NSCameraUsageDescription": "Winelio utilise l’appareil photo pour joindre une image ou mettre à jour votre profil.",
+        "NSMicrophoneUsageDescription": "Winelio utilise le microphone uniquement lorsque vous dictez une recommandation à l’assistant vocal.",
+        "NSContactsUsageDescription": "Winelio accède à vos contacts uniquement lorsque vous choisissez ou recherchez un proche à recommander.",
         "NSPhotoLibraryUsageDescription": "Winelio accède à vos photos uniquement lorsque vous choisissez une image à joindre.",
         "NSLocationWhenInUseUsageDescription": "Winelio utilise votre position pour proposer les professionnels pertinents autour de vous.",
         "UIBackgroundModes": [
@@ -25,7 +27,7 @@
       "entitlements": {
         "aps-environment": "production"
       },
-      "buildNumber": "12",
+      "buildNumber": "13",
       "associatedDomains": [
         "applinks:winelio.app"
       ],
@@ -36,6 +38,9 @@
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS",
+        "READ_CONTACTS",
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "POST_NOTIFICATIONS"
@@ -46,7 +51,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": true,
-      "versionCode": 16,
+      "versionCode": 17,
       "intentFilters": [
         {
           "action": "VIEW",
@@ -88,6 +93,12 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Winelio accède à vos contacts uniquement lorsque vous choisissez ou recherchez un proche à recommander."
+        }
+      ],
       [
         "expo-notifications",
         {

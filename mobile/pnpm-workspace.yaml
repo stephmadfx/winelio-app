@@ -3,4 +3,5 @@ allowBuilds:
 onlyBuiltDependencies:
   - unrs-resolver
 patchedDependencies:
+  expo-constants@18.0.13: patches/expo-constants@18.0.13.patch
   react-native-webview@13.15.0: patches/react-native-webview@13.15.0.patch

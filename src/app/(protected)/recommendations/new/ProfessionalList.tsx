@@ -17,7 +17,7 @@ const formatDistance = (km: number, precision: Professional["geo_precision"]): s
 interface ProfessionalListProps {
   professionals: Professional[];
   selectedProId: string | null;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, pro?: Professional) => void;
   geoGranted: boolean;
   radius: number;
   onExpandRadius: () => void;
@@ -59,7 +59,7 @@ export const ProfessionalList = ({ professionals, selectedProId, onSelect, geoGr
             className={`relative w-full flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all cursor-pointer ${
               isSelected ? "border-winelio-orange bg-winelio-orange/5 shadow-sm shadow-winelio-orange/10" : "border-transparent bg-white hover:border-winelio-orange/20 shadow-sm"
             }`}>
-            <button type="button" onClick={() => onSelect(p.id)} aria-pressed={isSelected} aria-label={`Sélectionner ${label}`} className="absolute inset-0 rounded-2xl focus-visible:outline-2 focus-visible:outline-winelio-orange" />
+            <button type="button" onClick={() => onSelect(p.id, p)} aria-pressed={isSelected} aria-label={`Sélectionner ${label}`} className="absolute inset-0 rounded-2xl focus-visible:outline-2 focus-visible:outline-winelio-orange" />
             <ProInitials name={label} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">

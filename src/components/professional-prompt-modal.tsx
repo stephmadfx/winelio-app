@@ -7,7 +7,7 @@ import { ArrowRight, BriefcaseBusiness, CheckCircle2, Play, X } from "lucide-rea
 import { ProOnboardingVideoPlayer } from "@/components/pro-onboarding-video";
 
 const SNOOZE_KEY = "winelio-pro-prompt-snoozed";
-const HIDDEN_PATHS = ["/profile", "/profile/pro-onboarding", "/companies", "/settings"];
+const HIDDEN_PATHS = ["/profile", "/profile/pro-onboarding", "/companies", "/settings", "/recommendations/new"];
 
 export function ProfessionalPromptModal({
   delayMs = 20_000,
