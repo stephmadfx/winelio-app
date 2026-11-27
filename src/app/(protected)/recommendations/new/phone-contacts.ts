@@ -371,7 +371,11 @@ export async function prepareAssistantNativePermissions(options?: {
     return null;
   }
   try {
-    return await window.__WINELIO_PREPARE_ASSISTANT_PERMISSIONS__(options);
+    const timeoutMs = options?.promptSettings ? 2500 : 12000;
+    return await Promise.race([
+      window.__WINELIO_PREPARE_ASSISTANT_PERMISSIONS__(options),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ]);
   } catch {
     return null;
   }

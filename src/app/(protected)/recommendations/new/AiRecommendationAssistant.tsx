@@ -229,16 +229,20 @@ export function AiRecommendationAssistant({
     chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages, transcribing, thinking]);
 
-  const unlockAudioContext = () => {
+  const unlockAudioContext = (forRecording = false) => {
     if (typeof window === "undefined") return null;
     try {
       const nav = navigator as Navigator & { audioSession?: { type?: string } };
-      if (nav.audioSession && nav.audioSession.type !== "playback") {
-        nav.audioSession.type = "playback";
+      if (nav.audioSession) {
+        const desired = forRecording ? "play-and-record" : "playback";
+        if (nav.audioSession.type !== desired) {
+          nav.audioSession.type = desired;
+        }
       }
     } catch {
       // Ignoré sur les navigateurs sans navigator.audioSession
     }
+    if (forRecording) return audioCtxRef.current;
     const Ctx =
       window.AudioContext ||
       (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -700,22 +704,10 @@ export function AiRecommendationAssistant({
 
   const startRecording = async () => {
     if (recording || transcribing || thinking) return;
-    unlockAudioContext();
     stopAudioPlayback();
+    unlockAudioContext(true);
     setAssistantError(null);
     setShowSettingsCta(false);
-
-    const nativePerm = await prepareAssistantNativePermissions({
-      includeContacts: true,
-      promptSettings: true,
-    });
-    if (nativePerm && nativePerm.microphone === "denied") {
-      setShowSettingsCta(Boolean(nativePerm.canOpenSettings));
-      setAssistantError(
-        "Autorisez l'accès au microphone et au répertoire dans les réglages de Winelio, ou écrivez votre message ci-dessous.",
-      );
-      return;
-    }
 
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       setAssistantError("Votre appareil ne permet pas l'accès au microphone sur cette page.");
@@ -723,7 +715,11 @@ export function AiRecommendationAssistant({
     }
 
     try {
+      // Appel direct dans le geste utilisateur (sans await intermédiaire) pour préserver
+      // l'activation WebKit iOS et démarrer immédiatement la capture micro.
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // En parallèle (sans bloquer l'enregistrement), préparer l'autorisation Répertoire si pas encore demandée
+      void prepareAssistantNativePermissions({ includeContacts: true, promptSettings: false });
       mediaStreamRef.current = stream;
       chunksRef.current = [];
       discardRecordingRef.current = false;
